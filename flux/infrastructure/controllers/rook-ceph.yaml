@@ -1,0 +1,73 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: rook-ceph
+      version: v1.14.8
+      sourceRef:
+        kind: HelmRepository
+        name: rook-release
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    crds:
+      enabled: true
+    monitoring:
+      enabled: true
+    csi:
+      kubeletDirPath: /var/lib/kubelet
+      enableLiveness: true
+      driver:
+        image:
+          repository: quay.io/cephcsi/cephcsi
+          tag: v3.12.1
+      provisioner:
+        enabled: true
+    cephCluster:
+      mon:
+        count: 1
+        allowMultiplePerNode: true
+      storage:
+        useAllNodes: true
+        useAllDevices: false
+        config:
+          metadataDevice: /dev/nvme1n1
+        devices:
+          - name: /dev/sda
+          - name: /dev/sdb
+          - name: /dev/sdc
+          - name: /dev/sdd
+          - name: /dev/sde
+          - name: /dev/sdf
+          - name: /dev/sdg
+          - name: /dev/sdh
+          - name: /dev/sdi
+          - name: /dev/sdj
+          - name: /dev/sdk
+          - name: /dev/sdl
+          - name: /dev/sdm
+          - name: /dev/sdn
+          - name: /dev/sdo
+          - name: /dev/sdp
+      disruptionManagement:
+        managePodBudgets: true
+        osdMaintenanceTime: 30
+        podBudgetTime: 30
+      crashCollector:
+        disableDisruptionFree: false
+      healthCheck:
+        daemonHealth:
+          mon:
+            interval: 45s
+          osd:
+            interval: 60s
+          status:
+            interval: 60s

@@ -1,0 +1,68 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: cilium
+  namespace: kube-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: cilium
+      version: 1.16.5
+      sourceRef:
+        kind: HelmRepository
+        name: cilium
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+    disableWaitForRole: false
+  upgrade:
+    crds: CreateReplace
+    disableWaitForRole: false
+  values:
+    kubeProxyReplacement: true
+    k8sServiceHost: 127.0.0.1
+    k8sServicePort: 6443
+    ipam:
+      mode: kubernetes
+    loadBalancer:
+      algorithm: maglev
+    hubble:
+      relay:
+        enabled: true
+      ui:
+        enabled: true
+    operator:
+      replicas: 1
+      resources:
+        requests:
+          cpu: 100m
+          memory: 128Mi
+        limits:
+          cpu: 200m
+          memory: 256Mi
+    rollOutPods: true
+    autoDirectNodeRoutes: true
+    routingMode: native
+    l2announcements:
+      enabled: true
+    masquerade: false
+    tunnel: disabled
+    preallocateBPFMaps: true
+    securityContext:
+      capabilities:
+        ciliumAgent:
+          - CHOWN
+          - KILL
+          - NET_ADMIN
+          - NET_RAW
+          - IPC_LOCK
+          - SYS_ADMIN
+          - SYS_RESOURCE
+          - DAC_OVERRIDE
+          - FOWNER
+          - SETGID
+          - SETUID
+        cleanCiliumState:
+          - NET_ADMIN
+          - SYS_ADMIN

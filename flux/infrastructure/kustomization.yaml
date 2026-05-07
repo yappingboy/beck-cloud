@@ -4,6 +4,9 @@ kind: Kustomization
 namespace: flux-system
 
 resources:
+  - sources
+  - controllers
+  - configs
   - csi-snapshotter
   - traefik
   - cert-manager
@@ -11,3 +14,5 @@ resources:
   - security
   - llm-stack
   - velero
+  - rancher
+  - media

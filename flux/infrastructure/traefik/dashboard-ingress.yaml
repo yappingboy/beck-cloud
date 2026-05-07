@@ -1,15 +1,47 @@
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: traefik-dashboard
   namespace: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - traefik.beckcloud.local
+      secretName: traefik-dashboard-tls
+  rules:
+    - host: traefik.beckcloud.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: traefik
+                port:
+                  number: 9000
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
+metadata:
+  name: traefik-dashboard-https
+  namespace: traefik
 spec:
   entryPoints:
-    - web
     - websecure
+  tls:
+    secretName: traefik-dashboard-tls
   routes:
     - match: Host(`traefik.beckcloud.local`)
       kind: Rule
+      middlewares:
+        - name: keycloak-forwardauth
+          namespace: traefik
+        - name: security-headers
+          namespace: traefik
       services:
         - name: api@internal
           kind: TraefikService

@@ -1,0 +1,62 @@
+apiVersion: ceph.rook.io/v1
+kind: CephCluster
+metadata:
+  name: rook-ceph
+  namespace: rook-ceph
+spec:
+  dataDirHostPath: /var/lib/rook
+  mon:
+    count: 1
+    allowMultiplePerNode: true
+  dashboard:
+    enabled: true
+    urlPrefix: /
+    ssl: false
+    prometheusEndpoint: http://prometheus-prometheus-prometheus.monitoring.svc:9090
+  network:
+    provider: host
+    connections:
+      requireMsgr2: true
+  storage:
+    useAllNodes: true
+    useAllDevices: false
+    config:
+      metadataDevice: /dev/nvme1n1
+    devices:
+      - name: sda
+      - name: sdb
+      - name: sdc
+      - name: sdd
+      - name: sde
+      - name: sdf
+      - name: sdg
+      - name: sdh
+      - name: sdi
+      - name: sdj
+      - name: sdk
+      - name: sdl
+      - name: sdm
+      - name: sdn
+      - name: sdo
+      - name: sdp
+  disruptionManagement:
+    managePodBudgets: true
+    osdMaintenanceTime: 30
+    podBudgetTime: 30
+  crashCollector:
+    disableDisruptionFree: false
+  healthCheck:
+    daemonHealth:
+      mon:
+        enabled: true
+        interval: 45s
+      osd:
+        enabled: true
+        interval: 60s
+      status:
+        enabled: true
+        interval: 60s
+  priorityClassNames:
+    - system-node-critical
+  skipUpgradeChecks: true
+  continueUpgradeAfterChecksEvenIfNotHealthy: false

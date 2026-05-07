@@ -1,0 +1,64 @@
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-forwardauth
+  namespace: traefik
+spec:
+  forwardAuth:
+    address: "http://oauth2-proxy.identity.svc.cluster.local:4180/oauth2/auth"
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-Email
+      - X-Auth-Request-Groups
+      - X-Auth-Request-User
+      - X-Auth-Request-Preferred-Username
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-errors
+  namespace: traefik
+spec:
+  errors:
+    status:
+      - "401"
+    query: "/oauth2/sign_in?rd={url}"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-chain
+  namespace: traefik
+spec:
+  chain:
+    middlewares:
+      - name: keycloak-forwardauth
+      - name: keycloak-errors
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: security-headers
+  namespace: traefik
+spec:
+  headers:
+    stsSeconds: 31536000
+    stsIncludeSubdomains: true
+    stsPreload: true
+    forceSTSHeader: true
+    frameDeny: true
+    contentTypeNosniff: true
+    browserXssFilter: true
+    customRequestHeaders:
+      X-Forwarded-Proto: "https"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: redirect-to-https
+  namespace: traefik
+spec:
+  redirectScheme:
+    scheme: https
+    permanent: true

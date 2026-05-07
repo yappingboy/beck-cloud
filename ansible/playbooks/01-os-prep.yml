@@ -1,0 +1,215 @@
+---
+# 01-os-prep.yml — OS Preparation, Hardening, NVIDIA Drivers, Disk Setup
+# DESTRUCTIVE: Wipes all Ceph OSD disks (sda-sdp)
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-os-prep.yml
+
+- name: OS Preparation and Hardening
+  hosts: homelab
+  become: true
+  gather_facts: true
+
+  vars:
+    swapfile: /swapfile
+    nvidia_driver_version: "{{ nvidia_driver_version }}"
+
+  tasks:
+    # System updates
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Upgrade all packages
+      ansible.builtin.apt:
+        upgrade: dist
+        autoremove: true
+        autoclean: true
+
+    # Install required packages
+    - name: Install system packages
+      ansible.builtin.apt:
+        name:
+          - curl
+          - wget
+          - gnupg
+          - ca-certificates
+          - lvm2
+          - xfsprogs
+          - cryptsetup
+          - open-iscsi
+          - rbd-fuse
+          - jq
+          - htop
+          - nvme-cli
+          - smartmontools
+          - net-tools
+          - iproute2
+          - chrony
+          - fail2ban
+          - ufw
+        state: present
+        update_cache: true
+
+    - name: Remove docker.io (conflicts with containerd)
+      ansible.builtin.apt:
+        name: docker.io
+        state: absent
+        purge: true
+
+    # Kernel modules
+    - name: Load required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+        - rbd
+        - nvme
+        - dm_mod
+        - dm_snapshot
+        - dm_mirror
+        - dm_log
+
+    - name: Persist kernel modules
+      ansible.builtin.copy:
+        content: |
+          overlay
+          br_netfilter
+          rbd
+          nvme
+          dm_mod
+          dm_snapshot
+          dm_mirror
+          dm_log
+        dest: /etc/modules-load.d/beck-cloud.conf
+        mode: '0644'
+
+    # Sysctl hardening
+    - name: Set sysctl parameters
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { key: 'net.ipv4.ip_forward', value: '1' }
+        - { key: 'net.bridge.bridge-nf-call-iptables', value: '1' }
+        - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+        - { key: 'net.netfilter.nf_conntrack_max', value: '1048576' }
+        - { key: 'vm.swappiness', value: '10' }
+        - { key: 'vm.dirty_ratio', value: '10' }
+        - { key: 'vm.dirty_background_ratio', value: '5' }
+        - { key: 'vm.max_map_count', value: '262144' }
+        - { key: 'fs.inotify.max_user_watches', value: '524288' }
+        - { key: 'fs.inotify.max_user_instances', value: '8192' }
+
+    # Swap
+    - name: Disable swap
+      ansible.builtin.command: swapoff -a
+      changed_when: true
+
+    - name: Remove swap from fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^.*swap.*$'
+        state: absent
+
+    # NTP
+    - name: Configure Chrony NTP
+      ansible.builtin.copy:
+        content: |
+          server 0.pool.ntp.org iburst
+          server 1.pool.ntp.org iburst
+          server 2.pool.ntp.org iburst
+          driftfile /var/lib/chrony/drift
+          makestep 1.0 3
+          rtcsync
+        dest: /etc/chrony/chrony.conf
+        mode: '0644'
+      notify: restart chrony
+
+    # SSH hardening
+    - name: Harden SSH configuration
+      ansible.builtin.lineinfile:
+        path: /etc/ssh/sshd_config
+        regexp: "{{ item.regexp }}"
+        line: "{{ item.line }}"
+        state: present
+      loop:
+        - { regexp: '^#?PermitRootLogin', line: 'PermitRootLogin prohibit-password' }
+        - { regexp: '^#?PasswordAuthentication', line: 'PasswordAuthentication no' }
+        - { regexp: '^#?X11Forwarding', line: 'X11Forwarding no' }
+        - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+        - { regexp: '^#?LoginGraceTime', line: 'LoginGraceTime 60' }
+      notify: restart sshd
+
+    # NVIDIA drivers
+    - name: Install NVIDIA driver
+      when: install_nvidia | bool
+      block:
+        - name: Add NVIDIA driver repo
+          ansible.builtin.apt_repository:
+            repo: ppa:graphics-drivers/ppa
+            state: present
+
+        - name: Install NVIDIA driver
+          ansible.builtin.apt:
+            name: "nvidia-driver-{{ nvidia_driver_version }}"
+            state: present
+
+    # UFW firewall
+    - name: Enable UFW
+      community.general.ufw:
+        state: enabled
+        policy: deny
+
+    - name: Allow SSH through firewall
+      community.general.ufw:
+        rule: allow
+        port: "22"
+        proto: tcp
+
+    - name: Allow K3s API
+      community.general.ufw:
+        rule: allow
+        port: "6443"
+        proto: tcp
+
+    - name: Allow Ceph ports
+      community.general.ufw:
+        rule: allow
+        port: "{{ item }}"
+        proto: tcp
+      loop:
+        - "6789"
+        - "3300"
+        - "6800:7300"
+
+    # Disk wipe (DESTRUCTIVE)
+    - name: Wipe Ceph OSD disks
+      when: wipe_ceph_disks | default(false) | bool
+      block:
+        - name: Stop Ceph OSDs if running
+          ansible.builtin.command: systemctl stop ceph-osd@*
+          ignore_errors: true
+
+        - name: Wipe disk signatures
+          ansible.builtin.command: "wipefs -a {{ item }}"
+          loop: "{{ ceph_osd_devices }}"
+
+        - name: Wipe filesystems
+          ansible.builtin.command: "dd if=/dev/zero of={{ item }} bs=1M count=100"
+          loop: "{{ ceph_osd_devices }}"
+
+  handlers:
+    - name: restart chrony
+      ansible.builtin.systemd:
+        name: chrony
+        state: restarted
+
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: sshd
+        state: restarted

@@ -1,0 +1,190 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qbit-gluetun
+  namespace: torrent
+  labels:
+    app: qbit-gluetun
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qbit-gluetun
+  template:
+    metadata:
+      labels:
+        app: qbit-gluetun
+    spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: gluetun
+          image: qmcgaw/gluetun:v3.40.0
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value:pia
+            - name: VPN_TYPE
+              value:wireguard
+            - name: WIREGUARD_PRIVATE_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-vpn-secret
+                  key: wireguard-private-key
+            - name: WIREGUARD_ADDRESSES
+              value: 10.5.0.2/32
+            - name: SERVER_COUNTRIES
+              value: US
+            - name: TZ
+              value: America/New_York
+            - name: DOT
+              value: "on"
+          ports:
+            - containerPort: 8080
+              name: qbit
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /downloads
+            - name: gluetun-config
+              mountPath: /etc/gluetun
+          securityContext:
+            capabilities:
+              add:
+                - NET_ADMIN
+        - name: qbit
+          image: lscr.io/linuxserver/qbittorrent:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/New_York
+            - name: WEBUI_PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+              name: qbit-webui
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /downloads
+            - name: qbit-config
+              mountPath: /config
+          startupProbe:
+            httpGet:
+              path: /
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+          dependsOn:
+            - gluetun
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: media-downloads
+        - name: gluetun-config
+          emptyDir: {}
+        - name: qbit-config
+          persistentVolumeClaim:
+            claimName: qbit-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbit-gluetun
+  namespace: torrent
+spec:
+  selector:
+    app: qbit-gluetun
+  ports:
+    - name: qbit-webui
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qbittorrent
+  namespace: torrent
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - qbittorrent.beckcloud.local
+      secretName: qbittorrent-tls
+  rules:
+    - host: qbittorrent.beckcloud.local
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: qbit-gluetun
+                port:
+                  number: 8080
+---
+apiVersion: cilium.io/v2
+kind: CiliumNetworkPolicy
+metadata:
+  name: torrent-network-policy
+  namespace: torrent
+spec:
+  endpointSelector:
+    matchLabels:
+      app: qbit-gluetun
+  egress:
+    - toEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.ns.name: kube-system
+      toPorts:
+        - ports:
+            - port: "53"
+              protocol: UDP
+          rules:
+            l7:
+              - dns:
+                  domain: "*.cluster.local"
+    - toEntities:
+        - world
+      toPorts:
+        - ports:
+            - port: "1337"
+              protocol: UDP
+          description: PIA WireGuard VPN egress
+  ingress:
+    - fromEndpoints:
+        - matchLabels:
+            k8s:io.kubernetes.ns.name: media
+      toPorts:
+        - ports:
+            - port: "8080"
+              protocol: TCP
+    - fromEndpoints:
+        - matchLabels:
+            io.traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  ingressDeny: []
+  egressDeny: []
+  endpointsPolicyApplied: true

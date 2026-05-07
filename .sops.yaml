@@ -1,0 +1,9 @@
+creation:
+  age: >-
+    age1qyp2kq5qk7p8c3n9a2f0m4e6w8r9t0y1u2i3o4p5a6s7d8f9g0h1j2k3l4m5
+  encrypted_regex: "^(data|stringData)$"
+  version: "0.9.0"
+
+stores:
+  yaml:
+    indent: 2

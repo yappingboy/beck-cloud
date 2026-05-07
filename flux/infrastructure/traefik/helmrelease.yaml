@@ -47,4 +47,21 @@ spec:
         externalTrafficPolicy: Cluster
     ingressRoute:
       dashboard:
-        enabled: false
+        enabled: true
+        entryPoints:
+          - web
+    persistence:
+      enabled: true
+      mountPath: /var/log/traefik
+      size: 10Gi
+      storageClass: ceph-filesystem
+    additionalArguments:
+      - "--entrypoints.websecure.http.tls=true"
+      - "--entrypoints.websecure.http.tls.certresolver=letsencrypt-prod"
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+        filePath: /var/log/traefik/access.log
+        format: json

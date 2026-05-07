@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beck-cloud-config
+  namespace: flux-system
+data:
+  domain: "beckcloud.local"
+  ssl_email: "yappingboy@gmail.com"
+  homelab_ip: "172.16.0.7"
+  flux_version: "2.3.0"
+  k3s_version: "v1.31.4+k3s1"
+  cilium_version: "1.16.5"
+  ceph_version: "v1.14.8"
+  rancher_version: "2.9.4"
+  velero_version: "8.0.0"

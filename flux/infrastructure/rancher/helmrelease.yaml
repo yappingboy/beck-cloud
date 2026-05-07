@@ -1,0 +1,53 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: rancher
+  namespace: cattle-system
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: rancher
+      version: 2.9.4
+      sourceRef:
+        kind: HelmRepository
+        name: rancher-latest
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    fullnameOverride: rancher
+    replicaCount: 1
+    bootstrapPassword: ""
+    ingress:
+      enabled: true
+      className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
+    tls:
+      source: letsencrypt
+    letsencrypt:
+      email: yappingboy@gmail.com
+    auditLog:
+      level: 1
+    resources:
+      requests:
+        cpu: 500m
+        memory: 1Gi
+      limits:
+        cpu: "2"
+        memory: 4Gi
+    additionalManifests:
+      - apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cattle-fleet-local-system
+      - apiVersion: v1
+        kind: Namespace
+        metadata:
+          name: cattle-fleet-system
+    nodeSelector:
+      kubernetes.io/os: linux

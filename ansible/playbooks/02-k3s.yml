@@ -1,0 +1,117 @@
+---
+# 02-k3s.yml — Install K3s, Cilium, NVIDIA device plugin
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/02-k3s.yml
+
+- name: Install K3s Cluster
+  hosts: homelab
+  become: true
+  gather_facts: true
+
+  tasks:
+    # Pre-flight checks
+    - name: Check K3s already installed
+      ansible.builtin.stat:
+        path: /usr/local/bin/k3s
+      register: k3s_binary
+
+    - name: Write K3s install configuration
+      ansible.builtin.copy:
+        content: |
+          K3S_TOKEN={{ k3s_token }}
+          K3S_KUBECONFIG_MODE=644
+          K3S_KUBECONFIG=/etc/rancher/k3s/k3s.yaml
+          disable={{ k3s_disable | join(',') }}
+          disable-network-policy=true
+          {% for arg in k3s_kubelet_args %}
+          kubelet-arg={{ arg }}
+          {% endfor %}
+          write-kubeconfig-mode=644
+          node-label=nvidia.com/gpu.present=true
+        dest: /etc/systemd/system/k3s.service.env
+        mode: '0644'
+
+    - name: Install K3s
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | sh -s - \
+          --write-kubeconfig-mode 644 \
+          --write-kubeconfig /etc/rancher/k3s/k3s.yaml
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for K3s API to be available
+      ansible.builtin.wait_for:
+        port: 6443
+        delay: 5
+        timeout: 120
+
+    - name: Copy kubeconfig to user home
+      ansible.builtin.copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ ansible_env.HOME }}/.kube/config"
+        remote_src: true
+        mode: '0600'
+      become_user: "{{ ops_user }}"
+
+    # Install Helm
+    - name: Install Helm
+      ansible.builtin.get_url:
+        url: https://get.helm.sh/helm-v3.14.0-linux-amd64.tar.gz
+        dest: /tmp/helm.tar.gz
+      args:
+        creates: /usr/local/bin/helm
+
+    - name: Extract and install Helm binary
+      ansible.builtin.unarchive:
+        src: /tmp/helm.tar.gz
+        dest: /tmp
+        remote_src: true
+      when: not ansible_become_user
+
+    - name: Install Cilium
+      ansible.builtin.shell: |
+        kubectl create namespace kube-system --dry-run=client -o yaml | kubectl apply -f -
+        helm repo add cilium https://helm.cilium.io
+        helm upgrade --install cilium cilium/cilium \
+          --namespace kube-system \
+          --version {{ cilium_version }} \
+          --set kubeProxyReplacement=true \
+          --set k8sServiceHost={{ homelab_ip }} \
+          --set k8sServicePort=6443 \
+          --set ipam.mode=kubernetes \
+          --set loadBalancer.algorithm=maglev \
+          --set hubble.relay.enabled=true \
+          --set hubble.ui.enabled=true \
+          --set autoDirectNodeRoutes=true \
+          --set routingMode=native \
+          --set l2announcements.enabled=true \
+          --set tunnel=disabled
+      args:
+        creates: /usr/local/bin/cilium
+
+    # NVIDIA device plugin
+    - name: Install NVIDIA device plugin
+      when: install_nvidia | bool
+      block:
+        - name: Add NVIDIA Helm repo
+          ansible.builtin.shell: |
+            helm repo add nvidia https://helm.ngc.nvidia.com/nvidia
+            helm repo update
+
+        - name: Install NVIDIA device plugin
+          ansible.builtin.shell: |
+            kubectl create namespace nvidia --dry-run=client -o yaml | kubectl apply -f -
+            helm upgrade --install nvidia-device-plugin nvidia/nvidia-device-plugin \
+              --namespace nvidia \
+              --version 0.16.3 \
+              --set plugin.args='--time-slicing-config=/etc/nvidia-device-plugin/config.json' \
+              --set plugin.config='{"default":"default","defaultResource":"nvidia.com/gpu","versions":{"default":{"resources":[{"name":"nvidia.com/gpu","replicas":5}]}}}'
+
+  post_tasks:
+    - name: Display kubeconfig
+      ansible.builtin.debug:
+        msg: "Kubeconfig available at {{ ansible_env.HOME }}/.kube/config"
+
+    - name: Verify cluster
+      ansible.builtin.shell: |
+        kubectl get nodes -o wide
+        kubectl get pods -A

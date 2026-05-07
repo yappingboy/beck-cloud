@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: kube-system
+  labels:
+    name: kube-system
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nvidia
+  labels:
+    name: nvidia
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: rook-ceph
+  labels:
+    name: rook-ceph
