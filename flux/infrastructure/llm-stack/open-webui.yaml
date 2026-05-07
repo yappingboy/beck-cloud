@@ -1,0 +1,33 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: open-webui
+  namespace: llm
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: open-webui
+      version: 0.2.0
+      sourceRef:
+        kind: HelmRepository
+        name: open-webui
+        namespace: flux-system
+  values:
+    fullnameOverride: open-webui
+    replicaCount: 1
+    openai:
+      base_url: "http://litellm.llm.svc.cluster.local:8000/v1"
+      api_key: "sk-homelab-litellm-internal"
+    models:
+      - name: ollama-reasoning
+        mode: chat
+      - name: ollama-fast
+        mode: chat
+      - name: ollama-code
+        mode: chat
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - openwebui.beckcloud.local

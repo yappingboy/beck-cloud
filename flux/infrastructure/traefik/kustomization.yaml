@@ -1,0 +1,17 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: traefik
+
+resources:
+  - namespace.yaml
+  - helmrelease.yaml
+  - ingressroute.yaml
+  - dashboard-ingress.yaml
+
+helmReleases:
+  - name: traefik
+    chart:
+      repoURL: https://helm.traefik.io/traefik
+      version: 25.0.0
+      interval: 1m

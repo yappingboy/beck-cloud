@@ -1,0 +1,50 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: traefik
+      version: 25.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+        fields:
+          defaultMode: keep
+    providers:
+      kubernetesIngress:
+        publishedService:
+          enabled: true
+      kubernetesGateway:
+        enabled: true
+    ports:
+      web:
+        nodePort: 30080
+        exposed: true
+        port: 80
+      websecure:
+        nodePort: 30443
+        exposed: true
+        port: 443
+    service:
+      enabled: true
+      type: NodePort
+      spec:
+        externalTrafficPolicy: Cluster
+    ingressRoute:
+      dashboard:
+        enabled: false

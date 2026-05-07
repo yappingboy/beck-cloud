@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: identity
+
+resources:
+  - namespace.yaml
+  - lldap.yaml
+  - keycloak.yaml
+  - oauth2-proxy.yaml
+
+helmReleases:
+  - name: lldap
+    chart:
+      repoURL: https://charts.lldap.app
+      version: 0.4.0
+      interval: 1m
+  - name: keycloak
+    chart:
+      repoURL: https://charts.bitnami.com/bitnami
+      version: 22.4.3
+      interval: 1m
+  - name: oauth2-proxy
+    chart:
+      repoURL: https://oauth2-proxy.github.io/ingress-controllers
+      version: 7.6.0
+      interval: 1m

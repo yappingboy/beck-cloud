@@ -1,0 +1,36 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: litellm
+  namespace: llm
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: litellm
+      version: 1.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: litellm
+        namespace: flux-system
+  values:
+    fullnameOverride: litellm
+    replicaCount: 1
+    masterKey: "sk-homelab-litellm-internal"
+    models:
+      - name: ollama-reasoning
+        mode: chat
+        model: qwen3:8b
+        api_base: http://ollama-reasoning.llm.svc.cluster.local:11434
+      - name: ollama-fast
+        mode: chat
+        model: llama3.2:3b
+        api_base: http://ollama-fast.llm.svc.cluster.local:11434
+      - name: ollama-code
+        mode: chat
+        model: deepseek-coder:6.7b
+        api_base: http://ollama-code.llm.svc.cluster.local:11434
+      - name: ollama-embed
+        mode: chat
+        model: nomic-embed
+        api_base: http://ollama-embed.llm.svc.cluster.local:11434

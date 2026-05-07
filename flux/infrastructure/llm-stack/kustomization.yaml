@@ -1,0 +1,51 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: llm
+
+resources:
+  - namespace.yaml
+  - ollama-reasoning.yaml
+  - ollama-fast.yaml
+  - ollama-code.yaml
+  - ollama-embed.yaml
+  - litellm.yaml
+  - open-webui.yaml
+  - flowise.yaml
+
+helmReleases:
+  - name: ollama-reasoning
+    chart:
+      repoURL: https://ollama.ai/charts
+      version: 0.3.2
+      interval: 1m
+  - name: ollama-fast
+    chart:
+      repoURL: https://ollama.ai/charts
+      version: 0.3.2
+      interval: 1m
+  - name: ollama-code
+    chart:
+      repoURL: https://ollama.ai/charts
+      version: 0.3.2
+      interval: 1m
+  - name: ollama-embed
+    chart:
+      repoURL: https://ollama.ai/charts
+      version: 0.3.2
+      interval: 1m
+  - name: litellm
+    chart:
+      repoURL: https://charts.litellm.ai
+      version: 1.0.0
+      interval: 1m
+  - name: open-webui
+    chart:
+      repoURL: https://charts.openwebui.com
+      version: 0.2.0
+      interval: 1m
+  - name: flowise
+    chart:
+      repoURL: https://charts.flowise.ai
+      version: 1.0.0
+      interval: 1m

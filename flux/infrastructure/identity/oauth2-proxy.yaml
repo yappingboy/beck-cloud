@@ -1,0 +1,51 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: oauth2-proxy
+  namespace: identity
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: oauth2-proxy
+      version: 7.6.0
+      sourceRef:
+        kind: HelmRepository
+        name: oauth2-proxy
+        namespace: flux-system
+  values:
+    config:
+      provider: keycloak-oidc
+      provider_display_name: "Keycloak"
+      email_domains:
+        - "*"
+      client_id: "oauth2-proxy"
+      client_secret:
+        valueFrom:
+          secretKeyRef:
+            name: oauth2-proxy-client-secret
+            key: client-secret
+      redirect_url: "https://oauth2.beckcloud.local/oauth2/callback"
+      cookie_secure: true
+      cookie_httponly: true
+      cookie_samesite: "Lax"
+      cookie_secret:
+        valueFrom:
+          secretKeyRef:
+            name: oauth2-proxy-cookie-secret
+            key: cookie-secret
+      ldap_url: "ldap://lldap.identity.svc.cluster.local:3890"
+      ldap_search_base: "dc=homelab,dc=local"
+      ldap_user_search_filter: "(&(|(uid=%s)(mail=%s))(memberOf=cn=admins,ou=groups,dc=homelab,dc=local))"
+      login_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/auth"
+      redeem_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/token"
+      validate_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/userinfo"
+      upstream: "http://localhost:80"
+    ingress:
+      enabled: true
+      className: traefik
+      hosts:
+        - host: oauth2.beckcloud.local
+          paths:
+            - path: /oauth2/
+              pathType: Prefix

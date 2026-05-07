@@ -1,0 +1,125 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: lldap
+  namespace: identity
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: lldap
+      version: 0.4.0
+      sourceRef:
+        kind: HelmRepository
+        name: lldap
+        namespace: flux-system
+  values:
+    fullnameOverride: lldap
+    lldap:
+      config:
+        LDAP_BASE_DN: dc=homelab,dc=local
+        LDAP_USERS_DN: ou=users,dc=homelab,dc=local
+        LDAP_GROUPS_DN: ou=groups,dc=homelab,dc=local
+        LDAP_USER_MAIL_ATTR: mail
+        LDAP_USER_NAME_ATTR: cn
+        LDAP_GROUP_MEMBER_ATTR: memberUid
+        LDAP_GROUP_MEMBER_UID_ATTR: uid
+        LDAP_GROUP_UNIQUE_MEMBER_ATTR: uniqueMember
+        LDAP_USER_UNIQUE_ATTR: uid
+        LDAP_GROUP_UNIQUE_ATTR: cn
+        LDAP_USER_LOGIN_ATTR: uid
+        LDAP_USER_PASSWORD_ATTR: userPassword
+        LDAP_GROUP_NAME_ATTR: cn
+        LDAP_GROUP_MAIL_ATTR: mail
+        LDAP_GROUP_DESCRIPTION_ATTR: description
+        LDAP_USER_DESCRIPTION_ATTR: description
+        LDAP_USER_EMAIL_ATTR: mail
+        LDAP_USER_PHONE_ATTR: telephoneNumber
+        LDAP_GROUP_PHONE_ATTR: telephoneNumber
+        LDAP_USER_WEBSITE_ATTR: homepage
+        LDAP_GROUP_WEBSITE_ATTR: homepage
+        LDAP_USER_ADDRESS_ATTR: street
+        LDAP_GROUP_ADDRESS_ATTR: street
+        LDAP_USER_POSTAL_CODE_ATTR: postalCode
+        LDAP_GROUP_POSTAL_CODE_ATTR: postalCode
+        LDAP_USER_STATE_ATTR: st
+        LDAP_GROUP_STATE_ATTR: st
+        LDAP_USER_COUNTRY_ATTR: c
+        LDAP_GROUP_COUNTRY_ATTR: c
+        LDAP_USER_LOCALITY_ATTR: l
+        LDAP_GROUP_LOCALITY_ATTR: l
+        LDAP_USER_ORG_ATTR: o
+        LDAP_GROUP_ORG_ATTR: o
+        LDAP_USER_TITLE_ATTR: title
+        LDAP_GROUP_TITLE_ATTR: title
+        LDAP_USER_PHOTO_ATTR: jpegPhoto
+        LDAP_GROUP_PHOTO_ATTR: jpegPhoto
+        LDAP_USER_WECHAT_ATTR: wechatId
+        LDAP_GROUP_WECHAT_ATTR: wechatId
+        LDAP_USER_TELEGRAM_ATTR: telegramId
+        LDAP_GROUP_TELEGRAM_ATTR: telegramId
+        LDAP_USER_TWITTER_ATTR: twitterId
+        LDAP_GROUP_TWITTER_ATTR: twitterId
+        LDAP_USER_GITHUB_ATTR: githubId
+        LDAP_GROUP_GITHUB_ATTR: githubId
+        LDAP_USER_LINKEDIN_ATTR: linkedinId
+        LDAP_GROUP_LINKEDIN_ATTR: linkedinId
+        LDAP_USER_SLACK_ATTR: slackId
+        LDAP_GROUP_SLACK_ATTR: slackId
+        LDAP_USER_DISCORD_ATTR: discordId
+        LDAP_GROUP_DISCORD_ATTR: discordId
+        LDAP_USER_MSTEAMS_ATTR: msteamsId
+        LDAP_GROUP_MSTEAMS_ATTR: msteamsId
+        LDAP_USER_ZOOM_ATTR: zoomId
+        LDAP_GROUP_ZOOM_ATTR: zoomId
+        LDAP_USER_MEET_ATTR: meetId
+        LDAP_GROUP_MEET_ATTR: meetId
+        LDAP_USER_TWITCH_ATTR: twitchId
+        LDAP_GROUP_TWITCH_ATTR: twitchId
+        LDAP_USER_YOUTUBE_ATTR: youtubeId
+        LDAP_GROUP_YOUTUBE_ATTR: youtubeId
+        LDAP_USER_INSTAGRAM_ATTR: instagramId
+        LDAP_GROUP_INSTAGRAM_ATTR: instagramId
+        LDAP_USER_FACEBOOK_ATTR: facebookId
+        LDAP_GROUP_FACEBOOK_ATTR: facebookId
+        LDAP_USER_LINKEDIN_ATTR: linkedinId
+        LDAP_GROUP_LINKEDIN_ATTR: linkedinId
+        LDAP_USER_SLACK_ATTR: slackId
+        LDAP_GROUP_SLACK_ATTR: slackId
+        LDAP_USER_DISCORD_ATTR: discordId
+        LDAP_GROUP_DISCORD_ATTR: discordId
+        LDAP_USER_MSTEAMS_ATTR: msteamsId
+        LDAP_GROUP_MSTEAMS_ATTR: msteamsId
+        LDAP_USER_ZOOM_ATTR: zoomId
+        LDAP_GROUP_ZOOM_ATTR: zoomId
+        LDAP_USER_MEET_ATTR: meetId
+        LDAP_GROUP_MEET_ATTR: meetId
+        LDAP_USER_TWITCH_ATTR: twitchId
+        LDAP_GROUP_TWITCH_ATTR: twitchId
+        LDAP_USER_YOUTUBE_ATTR: youtubeId
+        LDAP_GROUP_YOUTUBE_ATTR: youtubeId
+        LDAP_USER_INSTAGRAM_ATTR: instagramId
+        LDAP_GROUP_INSTAGRAM_ATTR: instagramId
+        LDAP_USER_FACEBOOK_ATTR: facebookId
+        LDAP_GROUP_FACEBOOK_ATTR: facebookId
+      adminPassword:
+        valueFrom:
+          secretKeyRef:
+            name: lldap-admin-password
+            key: admin-password
+      database:
+        existingSecret:
+          name: lldap-database
+          usernameKey: username
+          passwordKey: password
+        database: lldap
+      service:
+        type: ClusterIP
+      ingress:
+        enabled: true
+        className: traefik
+        hosts:
+          - host: lldap.beckcloud.local
+            paths:
+              - path: /
+                pathType: Prefix

@@ -1,0 +1,29 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: ollama-embed
+  namespace: llm
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: ollama
+      version: 0.3.2
+      sourceRef:
+        kind: HelmRepository
+        name: ollama-embed
+        namespace: flux-system
+  values:
+    fullnameOverride: ollama-embed
+    replicaCount: 1
+    resources:
+      limits:
+        cpu: 2
+        memory: 2Gi
+    model: nomic-embed
+    gpu:
+      enabled: false
+    env:
+      - name: OLLAMA_GPU_LAYERS
+        value: "0"
+    parallel: 4

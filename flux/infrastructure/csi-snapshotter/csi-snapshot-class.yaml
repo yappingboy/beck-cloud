@@ -1,0 +1,17 @@
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: csi-snapshot-class
+driver: rook-ceph.rbd.csi.ceph.com
+deletionPolicy: Delete
+parameters:
+  snapshotType: ceph
+---
+apiVersion: snapshot.storage.k8s.io/v1
+kind: VolumeSnapshotClass
+metadata:
+  name: cephfs-snapshot-class
+driver: ceph.rook.io
+deletionPolicy: Delete
+parameters:
+  snapshotType: cephfs
