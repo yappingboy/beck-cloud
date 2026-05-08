@@ -45,7 +45,6 @@ spec:
     l2announcements:
       enabled: true
     masquerade: false
-    tunnel: disabled
     preallocateBPFMaps: true
     securityContext:
       capabilities:
