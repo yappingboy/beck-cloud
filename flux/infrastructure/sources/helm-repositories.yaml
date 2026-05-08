@@ -104,8 +104,9 @@ metadata:
   name: keycloak
   namespace: flux-system
 spec:
+  type: oci
   interval: 12h
-  url: https://charts.bitnami.com/bitnami
+  url: oci://registry-1.docker.io/bitnamicharts/keycloak
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
