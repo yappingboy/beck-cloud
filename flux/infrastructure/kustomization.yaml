@@ -7,7 +7,6 @@ resources:
   - configs
   - csi-snapshotter
   - traefik
-  - cert-manager
   - identity
   - security
   - velero
