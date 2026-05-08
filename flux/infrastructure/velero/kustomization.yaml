@@ -7,9 +7,4 @@ resources:
   - namespace.yaml
   - velero.yaml
 
-helmReleases:
-  - name: velero
-    chart:
-      repoURL: https://vmware-tanzu.github.io/helm-charts
-      version: 8.0.0
-      interval: 1m
+

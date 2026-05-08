@@ -8,14 +8,4 @@ resources:
   - wazuh.yaml
   - falco.yaml
 
-helmReleases:
-  - name: wazuh
-    chart:
-      repoURL: https://packages.wazuh.com/wazuh/4.9.0
-      version: 4.9.0
-      interval: 1m
-  - name: falco
-    chart:
-      repoURL: https://charts.falco.org
-      version: 4.24.0
-      interval: 1m
+
