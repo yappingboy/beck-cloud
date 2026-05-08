@@ -14,6 +14,6 @@ spec:
         name: jetstack
         namespace: flux-system
   install:
-    crds: CreateReplace
+    crds: Skip
   upgrade:
-    crds: CreateReplace
+    crds: Skip
