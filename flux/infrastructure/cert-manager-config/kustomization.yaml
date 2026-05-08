@@ -1,14 +1,7 @@
-apiVersion: kustomize.toolkit.fluxcd.io/v1
+apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-metadata:
-  name: cert-manager-config
-  namespace: flux-system
-spec:
-  interval: 1m
-  path: ./flux/infrastructure/cert-manager-config
-  prune: true
-  dependsOn:
-    - name: cert-manager
-  sourceRef:
-    kind: GitRepository
-    name: beck-cloud
+
+namespace: cert-manager
+
+resources:
+  - clusterissuer.yaml
