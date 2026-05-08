@@ -82,27 +82,6 @@ spec:
         LDAP_GROUP_INSTAGRAM_ATTR: instagramId
         LDAP_USER_FACEBOOK_ATTR: facebookId
         LDAP_GROUP_FACEBOOK_ATTR: facebookId
-        LDAP_USER_LINKEDIN_ATTR: linkedinId
-        LDAP_GROUP_LINKEDIN_ATTR: linkedinId
-        LDAP_USER_SLACK_ATTR: slackId
-        LDAP_GROUP_SLACK_ATTR: slackId
-        LDAP_USER_DISCORD_ATTR: discordId
-        LDAP_GROUP_DISCORD_ATTR: discordId
-        LDAP_USER_MSTEAMS_ATTR: msteamsId
-        LDAP_GROUP_MSTEAMS_ATTR: msteamsId
-        LDAP_USER_ZOOM_ATTR: zoomId
-        LDAP_GROUP_ZOOM_ATTR: zoomId
-        LDAP_USER_MEET_ATTR: meetId
-        LDAP_GROUP_MEET_ATTR: meetId
-        LDAP_USER_TWITCH_ATTR: twitchId
-        LDAP_GROUP_TWITCH_ATTR: twitchId
-        LDAP_USER_YOUTUBE_ATTR: youtubeId
-        LDAP_GROUP_YOUTUBE_ATTR: youtubeId
-        LDAP_USER_INSTAGRAM_ATTR: instagramId
-        LDAP_GROUP_INSTAGRAM_ATTR: instagramId
-        LDAP_USER_FACEBOOK_ATTR: facebookId
-        LDAP_GROUP_FACEBOOK_ATTR: facebookId
-      adminPassword:
         valueFrom:
           secretKeyRef:
             name: lldap-admin-password
