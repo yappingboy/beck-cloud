@@ -41,22 +41,13 @@ spec:
       - name: sdp
   disruptionManagement:
     managePodBudgets: true
-    osdMaintenanceTime: 30
-    podBudgetTime: 30
-  crashCollector:
-    disableDisruptionFree: false
   healthCheck:
     daemonHealth:
       mon:
-        enabled: true
         interval: 45s
       osd:
-        enabled: true
         interval: 60s
       status:
-        enabled: true
         interval: 60s
-  priorityClassNames:
-    - system-node-critical
   skipUpgradeChecks: true
   continueUpgradeAfterChecksEvenIfNotHealthy: false

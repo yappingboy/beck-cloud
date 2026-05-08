@@ -15,7 +15,7 @@ Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
 | L7 | Security (Wazuh + Falco) | ✅ HelmReleases defined |
 | L8 | Rancher (Multi-tenancy) | ✅ HelmRelease + namespace |
 | L9 | Media Platform (Jellyfin/Sonarr/Radarr/etc) | ✅ Full stack defined |
-| L10 | LLM/AI (LiteLLM + Ollama + Open-WebUI + Flowise) | ✅ Full stack defined |
+| L10 | LLM/AI | ⬜ Deferred — new direction planned |
 | L11 | Backup (Velero) | ✅ Full schedules + snapshot classes |
 | L12 | VM Test Overlay | ⬜ Not yet implemented |
 
@@ -43,7 +43,7 @@ Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
 │       ├── cert-manager/         # cert-manager + ClusterIssuers
 │       ├── identity/             # lldap, Keycloak, oauth2-proxy
 │       ├── security/             # Wazuh + Falco
-│       ├── llm-stack/            # LiteLLM, Ollama, Open-WebUI, Flowise
+│       ├── llm-stack.disabled/   # LLM stack — deferred (new direction)
 │       ├── velero/               # Velero backup
 │       ├── rancher/              # Rancher multi-tenancy
 │       ├── media/                # Jellyfin, Sonarr, Radarr, etc.
@@ -84,7 +84,7 @@ flux-system (bootstrap)
   └── infrastructure-sources (HelmRepos)
         └── infrastructure-controllers (Cilium, Rook-Ceph, NVIDIA)
               └── infrastructure-configs (CephCluster, StorageClasses)
-                    └── infrastructure-apps (Traefik, cert-manager, identity, security, llm, velero, rancher, media)
+                    └── infrastructure-apps (Traefik, cert-manager, identity, security, velero, rancher, media)
                           └── apps (deployment health checks)
 ```
 
@@ -102,8 +102,6 @@ flux-system (bootstrap)
 | Bazarr | https://bazarr.beckcloud.local | Keycloak SSO |
 | Jellyseerr | https://requests.beckcloud.local | OIDC |
 | qBittorrent | https://qbittorrent.beckcloud.local | — |
-| Open-WebUI | https://openwebui.beckcloud.local | OIDC |
-| Flowise | https://flowise.beckcloud.local | — |
 | Wazuh | https://wazuh.beckcloud.local | — |
 | Rancher | https://rancher.beckcloud.local | Keycloak SSO |
 

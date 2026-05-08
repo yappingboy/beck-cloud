@@ -52,25 +52,7 @@ metadata:
 spec:
   interval: 12h
   url: https://wazuh.github.io/helm-charts
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: ollama
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://k8s.ollama.com
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: open-webui
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://debain.github.io/open-webui-helm
----
+
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
@@ -133,25 +115,7 @@ metadata:
 spec:
   interval: 12h
   url: https://falcosecurity.github.io/charts
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: flowise
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://evandconley.github.io/flowise-helm-chart
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: litellm
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://litellm.github.io/helm-chart
----
+
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:

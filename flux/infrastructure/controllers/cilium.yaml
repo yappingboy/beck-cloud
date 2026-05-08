@@ -15,10 +15,8 @@ spec:
         namespace: flux-system
   install:
     crds: CreateReplace
-    disableWaitForRole: false
   upgrade:
     crds: CreateReplace
-    disableWaitForRole: false
   values:
     kubeProxyReplacement: true
     k8sServiceHost: 127.0.0.1

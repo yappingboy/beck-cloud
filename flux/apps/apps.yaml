@@ -16,38 +16,28 @@ spec:
     substituteFrom:
       - kind: ConfigMap
         name: beck-cloud-config
-  healthChecks: |
-    apiVersion: apps/v1
-    kind: Deployment
-    name: jellyfin
-    namespace: media
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: sonarr
-    namespace: media
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: radarr
-    namespace: media
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: qbit-gluetun
-    namespace: torrent
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: open-webui
-    namespace: llm
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: wazuh-dashboard
-    namespace: security
-    ---
-    apiVersion: apps/v1
-    kind: Deployment
-    name: rancher
-    namespace: cattle-system
+  healthChecks:
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: jellyfin
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: sonarr
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: radarr
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: qbit-gluetun
+      namespace: torrent
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: wazuh-dashboard
+      namespace: security
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: rancher
+      namespace: cattle-system

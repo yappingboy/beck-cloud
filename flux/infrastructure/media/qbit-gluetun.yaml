@@ -19,6 +19,10 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
+      initContainers:
+        - name: wait-for-gluetun
+          image: busybox:latest
+          command: ['sh', '-c', 'until curl -sf http://localhost:8080/v1/vpnstatus; do echo "Waiting for VPN..."; sleep 5; done']
       containers:
         - name: gluetun
           image: qmcgaw/gluetun:v3.40.0
@@ -31,9 +35,9 @@ spec:
               memory: 256Mi
           env:
             - name: VPN_SERVICE_PROVIDER
-              value:pia
+              value: pia
             - name: VPN_TYPE
-              value:wireguard
+              value: wireguard
             - name: WIREGUARD_PRIVATE_KEY
               valueFrom:
                 secretKeyRef:
@@ -94,8 +98,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 30
-          dependsOn:
-            - gluetun
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -105,86 +107,3 @@ spec:
         - name: qbit-config
           persistentVolumeClaim:
             claimName: qbit-config
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: qbit-gluetun
-  namespace: torrent
-spec:
-  selector:
-    app: qbit-gluetun
-  ports:
-    - name: qbit-webui
-      port: 8080
-      targetPort: 8080
-      protocol: TCP
-  type: ClusterIP
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: qbittorrent
-  namespace: torrent
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  tls:
-    - hosts:
-        - qbittorrent.beckcloud.local
-      secretName: qbittorrent-tls
-  rules:
-    - host: qbittorrent.beckcloud.local
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: qbit-gluetun
-                port:
-                  number: 8080
----
-apiVersion: cilium.io/v2
-kind: CiliumNetworkPolicy
-metadata:
-  name: torrent-network-policy
-  namespace: torrent
-spec:
-  endpointSelector:
-    matchLabels:
-      app: qbit-gluetun
-  egress:
-    - toEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.ns.name: kube-system
-      toPorts:
-        - ports:
-            - port: "53"
-              protocol: UDP
-          rules:
-            l7:
-              - dns:
-                  domain: "*.cluster.local"
-    - toEntities:
-        - world
-      toPorts:
-        - ports:
-            - port: "1337"
-              protocol: UDP
-          description: PIA WireGuard VPN egress
-  ingress:
-    - fromEndpoints:
-        - matchLabels:
-            k8s:io.kubernetes.ns.name: media
-      toPorts:
-        - ports:
-            - port: "8080"
-              protocol: TCP
-    - fromEndpoints:
-        - matchLabels:
-            io.traefik.ingress.kubernetes.io/router.entrypoints: websecure
-  ingressDeny: []
-  egressDeny: []
-  endpointsPolicyApplied: true

@@ -12,7 +12,6 @@ resources:
   - cert-manager
   - identity
   - security
-  - llm-stack
   - velero
   - rancher
   - media
