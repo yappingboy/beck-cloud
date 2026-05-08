@@ -7,3 +7,4 @@ resources:
   - configmap.yaml
   - gitrepo.yaml
   - infrastructure.yaml
+  - apps.yaml

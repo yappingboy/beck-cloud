@@ -7,6 +7,8 @@ spec:
   interval: 1m
   path: ./flux/infrastructure
   prune: true
+  dependsOn:
+    - name: flux-system
   sourceRef:
     kind: GitRepository
     name: beck-cloud
