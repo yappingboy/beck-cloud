@@ -23,8 +23,8 @@ spec:
         level: INFO
       access:
         enabled: true
-        fields:
-          defaultMode: keep
+        filePath: /var/log/traefik/access.log
+        format: json
     providers:
       kubernetesIngress:
         publishedService:
@@ -58,10 +58,3 @@ spec:
     additionalArguments:
       - "--entrypoints.websecure.http.tls=true"
       - "--entrypoints.websecure.http.tls.certresolver=letsencrypt-prod"
-    logs:
-      general:
-        level: INFO
-      access:
-        enabled: true
-        filePath: /var/log/traefik/access.log
-        format: json
