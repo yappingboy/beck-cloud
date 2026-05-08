@@ -47,8 +47,6 @@ parameters:
   csi.snapshotter.type: ceph.rbd
   clusterID: rook-ceph
 deletionPolicy: Delete
-labels:
-  velero.io/csi-volumesnapshot-class: "true"
 ---
 apiVersion: snapshot.storage.k8s.io/v1
 kind: VolumeSnapshotClass
@@ -59,5 +57,3 @@ parameters:
   csi.snapshotter.type: ceph.cephfs
   clusterID: rook-ceph
 deletionPolicy: Delete
-labels:
-  velero.io/csi-volumesnapshot-class: "true"
