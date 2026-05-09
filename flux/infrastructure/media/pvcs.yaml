@@ -1,5 +1,24 @@
+# Media/Torrent PVCs:
+# - media-library, media-downloads use hostPath bound to ZFS datasets on tank.
+# - Config PVCs use local-zfs (local-path-provisioner).
+
 ---
-# Shared RWX storage via CephFS (bound after Rook-Ceph is deployed)
+# PV for media-library (ZFS-backed, RWX via shared hostPath)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-media-library
+spec:
+  capacity:
+    storage: 60Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zfs
+  hostPath:
+    path: /mnt/tank/media/library
+    type: DirectoryOrCreate
+---
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -8,12 +27,27 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: ceph-filesystem
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 60Ti
-  volumeName: ""
-  selector: {}
+  volumeName: pv-media-library
+---
+# PV for media-downloads (ZFS-backed, RWX)
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv-media-downloads
+spec:
+  capacity:
+    storage: 10Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: local-zfs
+  hostPath:
+    path: /mnt/tank/media/downloads
+    type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -23,14 +57,13 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: ceph-filesystem
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 10Ti
-  volumeName: ""
-  selector: {}
+  volumeName: pv-media-downloads
 ---
-# RBD-backed config PVCs
+# Config PVCs (RWO, local-zfs)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -39,7 +72,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 20Gi
@@ -52,7 +85,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 10Gi
@@ -65,7 +98,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 10Gi
@@ -78,7 +111,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 10Gi
@@ -91,7 +124,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 5Gi
@@ -104,7 +137,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 5Gi
@@ -117,7 +150,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-block
+  storageClassName: local-zfs
   resources:
     requests:
       storage: 5Gi

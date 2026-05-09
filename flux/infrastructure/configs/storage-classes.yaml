@@ -1,59 +1,16 @@
+# StorageClasses: local-path-provisioner backed by ZFS tank
+# All volumes are RWO Retain by default (configs, DBs).
+# Shared media/torrent uses hostPath-based PVs in media/pvcs.yaml.
+
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ceph-block
-provisioner: rook-ceph.ceph.rbd.csi.ceph.com
+  name: local-zfs
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "true"
+provisioner: rke-driver-localpath
 parameters:
-  clusterID: rook-ceph
-  pool: replicapool
-  imageFormat: "2"
-  imageFeatures: layering
-  csi.storage.k8s.io/provisioner-secret-name: csi-rbd-secret
-  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
-  csi.storage.k8s.io/controller-expand-secret-name: csi-rbd-secret
-  csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
-  csi.storage.k8s.io/node-stage-secret-name: csi-rbd-secret
-  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
-  csi.storage.k8s.io/fstype: ext4
-allowVolumeExpansion: true
+  hostDir: /mnt/tank/k3s/volumes
 reclaimPolicy: Retain
 volumeBindingMode: WaitForFirstConsumer
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: ceph-filesystem
-provisioner: ceph.cephfs.csi.ceph.com
-parameters:
-  fsName: cephfs
-  clusterID: rook-ceph
-  csi.storage.k8s.io/provisioner-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/provisioner-secret-namespace: rook-ceph
-  csi.storage.k8s.io/controller-expand-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/controller-expand-secret-namespace: rook-ceph
-  csi.storage.k8s.io/node-stage-secret-name: csi-cephfs-secret
-  csi.storage.k8s.io/node-stage-secret-namespace: rook-ceph
-  csi.storage.k8s.io/fstype: ext4
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
-allowVolumeExpansion: true
----
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: ceph-rbd-snapclass
-driver: rook-ceph.rbd.csi.ceph.com
-parameters:
-  csi.snapshotter.type: ceph.rbd
-  clusterID: rook-ceph
-deletionPolicy: Delete
----
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: ceph-cephfs-snapclass
-driver: cephfs.csi.ceph.com
-parameters:
-  csi.snapshotter.type: ceph.cephfs
-  clusterID: rook-ceph
-deletionPolicy: Delete
+allowExpansion: true

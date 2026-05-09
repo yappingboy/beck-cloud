@@ -4,5 +4,4 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - cilium.yaml
-  - rook-ceph.yaml
   - nvidia-device-plugin.yaml

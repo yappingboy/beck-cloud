@@ -54,7 +54,7 @@ spec:
       enabled: true
       mountPath: /var/log/traefik
       size: 10Gi
-      storageClass: ceph-filesystem
+      storageClass: local-zfs
     additionalArguments:
       - "--entrypoints.websecure.http.tls=true"
       - "--entrypoints.websecure.http.tls.certresolver=letsencrypt-prod"
