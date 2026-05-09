@@ -11,7 +11,7 @@
   hosts: k3s_nodes
   become: true
   gather_facts: true
-  serial: 1  # server must be ready before workers join
+  serial: 1  # server must be fully up before workers attempt to join
 
   tasks:
     - name: Update apt cache
@@ -62,55 +62,86 @@
         - { key: 'vm.max_map_count',                    value: '262144' }
 
     # ── K3s server ──────────────────────────────────────────────────────
-    - name: Install K3s (server)
+    - name: Install K3s server
       when: k3s_role == 'server'
       ansible.builtin.shell: |
         curl -sfL https://get.k3s.io | \
           INSTALL_K3S_VERSION={{ k3s_version }} \
-          K3S_TOKEN={{ k3s_token }} \
+          {% if k3s_token != '' %}K3S_TOKEN={{ k3s_token }} {% endif %}\
           sh -s - server \
           --write-kubeconfig-mode 644 \
           --disable {{ k3s_disable | join(',') }} \
           --disable-network-policy \
-          {% for arg in k3s_kubelet_args %}
-          --kubelet-arg {{ arg }} \
-          {% endfor %}
-          --flannel-backend none
-      args:
-        creates: /usr/local/bin/k3s
-
-    # ── K3s worker ─────────────────────────────────────────────────────
-    - name: Install K3s (worker)
-      when: k3s_role == 'worker'
-      ansible.builtin.shell: |
-        curl -sfL https://get.k3s.io | \
-          INSTALL_K3S_VERSION={{ k3s_version }} \
-          K3S_TOKEN={{ k3s_token }} \
-          K3S_URL=https://{{ hostvars[groups['k3s_nodes'] | selectattr('k3s_role', 'equalto', 'server') | first]['ansible_host'] }}:6443 \
-          sh -s - agent \
-          {% for arg in k3s_kubelet_args %}
-          --kubelet-arg {{ arg }} \
+          --flannel-backend none \
+          {% for arg in k3s_kubelet_args %}\
+          --kubelet-arg {{ arg }} {% if not loop.last %}\
+          {% endif %}
           {% endfor %}
       args:
         creates: /usr/local/bin/k3s
 
-    - name: Wait for K3s API (server only)
+    - name: Wait for K3s API to be ready
       when: k3s_role == 'server'
       ansible.builtin.wait_for:
         port: 6443
         delay: 10
         timeout: 120
 
-    # ── Helm ────────────────────────────────────────────────────────────
-    - name: Install Helm (server only)
+    - name: Read K3s node-token from server
+      when: k3s_role == 'server'
+      ansible.builtin.slurp:
+        src: /var/lib/rancher/k3s/server/node-token
+      register: k3s_server_token_raw
+
+    - name: Cache server token as host fact for workers to consume
+      when: k3s_role == 'server'
+      ansible.builtin.set_fact:
+        k3s_join_token: "{{ k3s_server_token_raw.content | b64decode | trim }}"
+        cacheable: true
+
+    # ── K3s worker ─────────────────────────────────────────────────────
+    - name: Resolve server host facts for worker join
+      when: k3s_role == 'worker'
+      ansible.builtin.set_fact:
+        k3s_server_host: >-
+          {{ groups['k3s_nodes']
+             | map('extract', hostvars)
+             | selectattr('k3s_role', 'equalto', 'server')
+             | map(attribute='ansible_host')
+             | first }}
+        k3s_join_token: >-
+          {{ hostvars[
+               groups['k3s_nodes']
+               | map('extract', hostvars)
+               | selectattr('k3s_role', 'equalto', 'server')
+               | map(attribute='inventory_hostname')
+               | first
+             ]['k3s_join_token'] }}
+
+    - name: Install K3s worker
+      when: k3s_role == 'worker'
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          K3S_TOKEN={{ k3s_join_token }} \
+          K3S_URL=https://{{ k3s_server_host }}:6443 \
+          sh -s - agent \
+          {% for arg in k3s_kubelet_args %}\
+          --kubelet-arg {{ arg }} {% if not loop.last %}\
+          {% endif %}
+          {% endfor %}
+      args:
+        creates: /usr/local/bin/k3s
+
+    # ── Helm + Cilium (server only) ────────────────────────────────────────
+    - name: Install Helm
       when: k3s_role == 'server'
       ansible.builtin.shell: |
         curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
       args:
         creates: /usr/local/bin/helm
 
-    # ── Cilium ──────────────────────────────────────────────────────────
-    - name: Install Cilium CNI (server only)
+    - name: Install Cilium CNI
       when: k3s_role == 'server'
       ansible.builtin.shell: |
         helm repo add cilium https://helm.cilium.io

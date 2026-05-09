@@ -22,7 +22,6 @@ spec:
             limits:
               cpu: "8"
               memory: 8Gi
-              nvidia.com/gpu: "1"
             requests:
               cpu: 1
               memory: 2Gi

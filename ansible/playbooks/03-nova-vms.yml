@@ -13,7 +13,6 @@
 
   vars:
     openrc_path: "/home/{{ ops_user }}/openrc"
-    os_cmd: "bash -c '. {{ openrc_path }} && openstack'"
 
   tasks:
     - name: Verify OpenStack API is reachable
@@ -80,14 +79,14 @@
         . {{ openrc_path }} && \
         openstack router set --external-gateway public k3s-router
       changed_when: true
-      ignore_errors: true  # Idempotent — fails silently if already set
+      ignore_errors: true
 
     - name: Add tenant subnet to router
       ansible.builtin.shell: |
         . {{ openrc_path }} && \
         openstack router add subnet k3s-router k3s-subnet
       changed_when: true
-      ignore_errors: true  # Idempotent — fails silently if already added
+      ignore_errors: true
 
     # ── Security group ─────────────────────────────────────────────────
     - name: Create k3s security group
@@ -97,21 +96,29 @@
         openstack security group create k3s-sg --description "K3s cluster nodes"
       changed_when: true
 
-    - name: Add security group rules
+    - name: Add TCP/UDP security group rules
       ansible.builtin.shell: |
         . {{ openrc_path }} && openstack security group rule create \
           --proto {{ item.proto }} \
           --dst-port {{ item.port }} \
-          --remote-ip {{ item.remote | default('0.0.0.0/0') }} \
+          --remote-ip {{ item.remote }} \
           k3s-sg
       loop:
-        - { proto: tcp,  port: 22,   remote: "0.0.0.0/0",            desc: SSH }
-        - { proto: tcp,  port: 6443, remote: "0.0.0.0/0",            desc: "K3s API" }
-        - { proto: tcp,  port: "1-65535", remote: "{{ nova_network_cidr }}", desc: "intra-cluster TCP" }
-        - { proto: udp,  port: "1-65535", remote: "{{ nova_network_cidr }}", desc: "intra-cluster UDP" }
-        - { proto: icmp, port: "",   remote: "0.0.0.0/0",            desc: ICMP }
+        - { proto: tcp, port: 22,         remote: "0.0.0.0/0" }
+        - { proto: tcp, port: 6443,       remote: "0.0.0.0/0" }
+        - { proto: tcp, port: "1-65535",  remote: "{{ nova_network_cidr }}" }
+        - { proto: udp, port: "1-65535",  remote: "{{ nova_network_cidr }}" }
       changed_when: true
-      ignore_errors: true  # Rules may already exist
+      ignore_errors: true
+
+    - name: Add ICMP security group rule
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack security group rule create \
+          --proto icmp \
+          --remote-ip 0.0.0.0/0 \
+          k3s-sg
+      changed_when: true
+      ignore_errors: true
 
     # ── Launch instances ───────────────────────────────────────────────
     - name: Launch Nova VM instances

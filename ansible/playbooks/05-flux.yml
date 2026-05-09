@@ -9,7 +9,7 @@
   hosts: k3s_nodes
   become: true
   gather_facts: true
-  run_once: true  # Only bootstrap once from the server node
+  run_once: true
 
   vars:
     flux_version: "2.4.0"
@@ -20,6 +20,12 @@
     - name: Only run on K3s server
       ansible.builtin.meta: end_host
       when: k3s_role != 'server'
+
+    - name: Install age (required for SOPS key generation)
+      ansible.builtin.apt:
+        name: age
+        state: present
+        update_cache: false
 
     - name: Check Flux installation
       ansible.builtin.command: flux --version

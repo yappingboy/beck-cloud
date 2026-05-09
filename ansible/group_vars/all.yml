@@ -48,7 +48,9 @@ nova_k3s_vms:
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
-k3s_token: ""    # Override via ANSIBLE_K3S_TOKEN env var or vault
+# Leave empty to auto-generate; 04-k3s.yml reads the generated token from
+# the server and passes it to workers automatically.
+k3s_token: ""
 k3s_disable:
   - traefik
   - local-storage
@@ -110,6 +112,7 @@ nfs_client_network: "192.168.100.0/24"
 nfs_exports:
   - { path: "/tank/k3s",         options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/tank/media",       options: "rw,sync,no_subtree_check,no_root_squash" }
+  - { path: "/tank/torrent",     options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/tank/backup",      options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/archive/longterm", options: "ro,sync,no_subtree_check,no_root_squash" }
 
