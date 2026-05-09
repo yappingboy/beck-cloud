@@ -1,0 +1,6 @@
+# /etc/exports — NFS exports from ZFS to Nova VM network
+# Managed by Ansible (02-zfs.yml). Do not edit manually.
+
+{% for export in nfs_exports %}
+{{ export.path }} {{ nfs_client_network }}({{ export.options }})
+{% endfor %}

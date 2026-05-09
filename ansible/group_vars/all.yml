@@ -1,14 +1,54 @@
 ---
 # Beck Cloud — Ansible Variables
-# Update these for your environment
+# Ubuntu 26.04 + Sunbeam OpenStack + ZFS + K3s-on-Nova
 
 homelab_hostname: homelab
 homelab_ip: 172.16.0.7
 ops_user: stephen
 
-# K3s
-k3s_version: v1.31.4+k3s1
-k3s_token: ""
+# ── Sunbeam / OpenStack ───────────────────────────────────────────────
+sunbeam_channel: "2024.2/stable"
+
+# Provider network — a slice of your physical LAN for OpenStack floating IPs
+provider_network_cidr: "172.16.0.0/24"
+provider_network_gateway: "172.16.0.1"
+provider_network_pool_start: "172.16.0.100"
+provider_network_pool_end: "172.16.0.150"
+
+# Tenant network — private network inside OpenStack for Nova VMs
+nova_network_cidr: "192.168.100.0/24"
+nova_network_gateway: "192.168.100.1"
+nova_dns_servers:
+  - "8.8.8.8"
+  - "8.8.4.4"
+
+# Nova flavors
+nova_flavors:
+  - name: k3s.server
+    vcpus: 8
+    ram: 32768
+    disk: 100
+  - name: k3s.worker
+    vcpus: 12
+    ram: 32768
+    disk: 50
+
+# Nova VMs (K3s application cluster)
+nova_k3s_image: "ubuntu-26.04-server-cloudimg-amd64"
+nova_k3s_image_url: "https://cloud-images.ubuntu.com/plucky/current/plucky-server-cloudimg-amd64.img"
+nova_k3s_keypair: "homelab-key"
+nova_k3s_keypair_pub: "~/.ssh/id_ed25519.pub"
+nova_k3s_vms:
+  - name: k3s-server
+    flavor: k3s.server
+    role: server
+  - name: k3s-worker-1
+    flavor: k3s.worker
+    role: worker
+
+# ── K3s ──────────────────────────────────────────────────────────────
+k3s_version: v1.32.0+k3s1
+k3s_token: ""    # Override via ANSIBLE_K3S_TOKEN env var or vault
 k3s_disable:
   - traefik
   - local-storage
@@ -20,19 +60,16 @@ k3s_kubelet_args:
   - system-reserved=cpu=500m,memory=2Gi
 
 # Cilium
-cilium_version: 1.16.5
-cilium_helm_values:
-  kubeProxyReplacement: true
-  k8sServiceHost: "{{ homelab_ip }}"
-  k8sServicePort: 6443
+cilium_version: 1.17.0
 
-# NVIDIA
-install_nvidia: true
-nvidia_driver_version: 550
-nvidia_runtime: nvidia
+# ── ZFS ──────────────────────────────────────────────────────────────
+zfs_pool_name: tank
+zfs_archive_pool: archive
+zfs_slog_device: /dev/nvme1n1
 
-# Ceph
-ceph_osd_devices:
+# tank: two RAIDZ2 vdevs — 7+6 drives from the 5.5TB group
+# ~27.5TB (5 data disks) + ~22TB (4 data disks) = ~49.5TB usable from spinning disks
+zfs_raidz2_vdev1:
   - /dev/sda
   - /dev/sdb
   - /dev/sdc
@@ -40,36 +77,70 @@ ceph_osd_devices:
   - /dev/sde
   - /dev/sdf
   - /dev/sdg
-  - /dev/sdh
-  - /dev/sdi
+zfs_raidz2_vdev2:
   - /dev/sdj
   - /dev/sdk
   - /dev/sdl
-  - /dev/sdm
   - /dev/sdn
   - /dev/sdo
   - /dev/sdp
-ceph_wal_device: /dev/nvme1n1
 
-# Network
+# archive: mirrored 9.1TB pair — ~9.1TB usable
+zfs_archive_mirror:
+  - /dev/sdi
+  - /dev/sdm
+
+# Datasets — created by 02-zfs.yml
+zfs_datasets:
+  - { name: "tank/k3s",             recordsize: "128K", compression: "lz4" }
+  - { name: "tank/media",           recordsize: "1M",   compression: "off" }
+  - { name: "tank/media/library",   recordsize: "1M",   compression: "off" }
+  - { name: "tank/media/downloads", recordsize: "1M",   compression: "lz4" }
+  - { name: "tank/media/configs",   recordsize: "128K", compression: "lz4" }
+  - { name: "tank/torrent",         recordsize: "1M",   compression: "lz4" }
+  - { name: "tank/backup",          recordsize: "128K", compression: "lz4" }
+  - { name: "tank/logs",            recordsize: "128K", compression: "lz4" }
+  - { name: "archive/longterm",     recordsize: "1M",   compression: "lz4" }
+
+# ── NFS (ZFS host → Nova VMs) ────────────────────────────────────────
+# Nova VMs reach the host via the OVN external bridge.
+# Verify 172.16.0.7 is reachable from VMs after Sunbeam bootstrap.
+nfs_server_ip: "172.16.0.7"
+nfs_client_network: "192.168.100.0/24"
+nfs_exports:
+  - { path: "/tank/k3s",         options: "rw,sync,no_subtree_check,no_root_squash" }
+  - { path: "/tank/media",       options: "rw,sync,no_subtree_check,no_root_squash" }
+  - { path: "/tank/backup",      options: "rw,sync,no_subtree_check,no_root_squash" }
+  - { path: "/archive/longterm", options: "ro,sync,no_subtree_check,no_root_squash" }
+
+# ── NVIDIA ───────────────────────────────────────────────────────────
+# GPU passthrough disabled — Titan RTX stays on host, unused in this deployment
+install_nvidia: false
+
+# ── Network / NTP ────────────────────────────────────────────────────
 ntp_servers:
   - 0.pool.ntp.org
   - 1.pool.ntp.org
   - 2.pool.ntp.org
 
-# Firewall
+# UFW rules for the bare metal host
 firewall_allowed_ports:
-  - port: 22
-    comment: SSH
-  - port: 6443
-    comment: K3s API
-  - port: 6789
-    comment: Ceph MON
-  - port: 3300
-    comment: Ceph MGR
-  - port: 6800:7300
-    comment: Ceph OSD
+  - { port: "22",   proto: tcp, comment: SSH }
+  - { port: "5000", proto: tcp, comment: "Keystone API" }
+  - { port: "8774", proto: tcp, comment: "Nova API" }
+  - { port: "9696", proto: tcp, comment: "Neutron API" }
+  - { port: "8776", proto: tcp, comment: "Cinder API" }
+  - { port: "9292", proto: tcp, comment: "Glance API" }
+  - { port: "80",   proto: tcp, comment: "Horizon HTTP" }
+  - { port: "443",  proto: tcp, comment: "Horizon HTTPS" }
+  - { port: "4789", proto: udp, comment: "VXLAN (Neutron)" }
+  - { port: "2049", proto: tcp, comment: NFS }
+  - { port: "111",  proto: tcp, comment: "NFS portmapper" }
+  - { port: "111",  proto: udp, comment: "NFS portmapper" }
 
-# Domain
+# ── Domain / TLS ─────────────────────────────────────────────────────
 domain: beckcloud.local
 ssl_email: yappingboy@gmail.com
+
+# ── Secrets (override via env or vault) ──────────────────────────────
+github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"

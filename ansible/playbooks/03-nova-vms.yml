@@ -1,0 +1,174 @@
+---
+# 03-nova-vms.yml — Provision Nova VM instances for the K3s cluster
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/03-nova-vms.yml
+#
+# After this playbook:
+#   - Update inventory/hosts.yml k3s_nodes IPs to match assigned floating IPs
+#   - Then run 04-k3s.yml to install K3s on the VMs
+
+- name: Provision Nova VM instances for K3s
+  hosts: hypervisor
+  become: false
+  gather_facts: false
+
+  vars:
+    openrc_path: "/home/{{ ops_user }}/openrc"
+    os_cmd: "bash -c '. {{ openrc_path }} && openstack'"
+
+  tasks:
+    - name: Verify OpenStack API is reachable
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack catalog list -f value -c Name
+      changed_when: false
+      register: catalog
+      failed_when: catalog.rc != 0
+
+    # ── Image ──────────────────────────────────────────────────────────
+    - name: Check if Ubuntu 26.04 cloud image exists in Glance
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack image show {{ nova_k3s_image }} -f value -c id
+      register: image_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Ubuntu 26.04 cloud image
+      ansible.builtin.get_url:
+        url: "{{ nova_k3s_image_url }}"
+        dest: "/tmp/{{ nova_k3s_image }}.img"
+        mode: '0644'
+      when: image_check.rc != 0
+
+    - name: Upload Ubuntu 26.04 image to Glance
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack image create \
+          --container-format bare \
+          --disk-format qcow2 \
+          --file /tmp/{{ nova_k3s_image }}.img \
+          --public \
+          {{ nova_k3s_image }}
+      when: image_check.rc != 0
+      changed_when: true
+
+    # ── Tenant network ─────────────────────────────────────────────────
+    - name: Create tenant network for K3s VMs
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack network show k3s-net > /dev/null 2>&1 || \
+        openstack network create k3s-net
+      changed_when: true
+
+    - name: Create subnet on tenant network
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack subnet show k3s-subnet > /dev/null 2>&1 || \
+        openstack subnet create k3s-subnet \
+          --network k3s-net \
+          --subnet-range {{ nova_network_cidr }} \
+          --gateway {{ nova_network_gateway }} \
+          --dns-nameserver {{ nova_dns_servers | join(' --dns-nameserver ') }}
+      changed_when: true
+
+    - name: Create router to connect tenant net to provider net
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack router show k3s-router > /dev/null 2>&1 || \
+        openstack router create k3s-router
+      changed_when: true
+
+    - name: Set router external gateway
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack router set --external-gateway public k3s-router
+      changed_when: true
+      ignore_errors: true  # Idempotent — fails silently if already set
+
+    - name: Add tenant subnet to router
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack router add subnet k3s-router k3s-subnet
+      changed_when: true
+      ignore_errors: true  # Idempotent — fails silently if already added
+
+    # ── Security group ─────────────────────────────────────────────────
+    - name: Create k3s security group
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack security group show k3s-sg > /dev/null 2>&1 || \
+        openstack security group create k3s-sg --description "K3s cluster nodes"
+      changed_when: true
+
+    - name: Add security group rules
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack security group rule create \
+          --proto {{ item.proto }} \
+          --dst-port {{ item.port }} \
+          --remote-ip {{ item.remote | default('0.0.0.0/0') }} \
+          k3s-sg
+      loop:
+        - { proto: tcp,  port: 22,   remote: "0.0.0.0/0",            desc: SSH }
+        - { proto: tcp,  port: 6443, remote: "0.0.0.0/0",            desc: "K3s API" }
+        - { proto: tcp,  port: "1-65535", remote: "{{ nova_network_cidr }}", desc: "intra-cluster TCP" }
+        - { proto: udp,  port: "1-65535", remote: "{{ nova_network_cidr }}", desc: "intra-cluster UDP" }
+        - { proto: icmp, port: "",   remote: "0.0.0.0/0",            desc: ICMP }
+      changed_when: true
+      ignore_errors: true  # Rules may already exist
+
+    # ── Launch instances ───────────────────────────────────────────────
+    - name: Launch Nova VM instances
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && \
+        openstack server show {{ item.name }} > /dev/null 2>&1 || \
+        openstack server create \
+          --image {{ nova_k3s_image }} \
+          --flavor {{ item.flavor }} \
+          --network k3s-net \
+          --security-group k3s-sg \
+          --key-name {{ nova_k3s_keypair }} \
+          --wait \
+          {{ item.name }}
+      loop: "{{ nova_k3s_vms }}"
+      changed_when: true
+
+    - name: Wait for instances to reach ACTIVE status
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack server show {{ item.name }} -f value -c status
+      register: server_status
+      retries: 20
+      delay: 15
+      until: server_status.stdout == 'ACTIVE'
+      loop: "{{ nova_k3s_vms }}"
+      changed_when: false
+
+    # ── Floating IPs ───────────────────────────────────────────────────
+    - name: Allocate and assign floating IPs
+      ansible.builtin.shell: |
+        . {{ openrc_path }}
+        EXISTING=$(openstack floating ip list --port $(openstack server show {{ item.name }} -f value -c addresses | grep -oP '[0-9.]+' | tail -1) -f value -c "Floating IP Address" 2>/dev/null)
+        if [ -z "$EXISTING" ]; then
+          FIP=$(openstack floating ip create public -f value -c floating_ip_address)
+          openstack server add floating ip {{ item.name }} $FIP
+          echo $FIP
+        else
+          echo $EXISTING
+        fi
+      register: floating_ips
+      loop: "{{ nova_k3s_vms }}"
+      changed_when: true
+
+  post_tasks:
+    - name: Display VM summary
+      ansible.builtin.shell: |
+        . {{ openrc_path }} && openstack server list --long
+      register: server_list
+      changed_when: false
+
+    - name: Print VM details
+      ansible.builtin.debug:
+        msg: |
+          {{ server_list.stdout }}
+
+          NEXT STEPS:
+          1. Update ansible/inventory/hosts.yml k3s_nodes IPs to the
+             floating IPs shown above.
+          2. Verify SSH:  ssh ubuntu@<floating-ip>
+          3. Run: ansible-playbook playbooks/04-k3s.yml

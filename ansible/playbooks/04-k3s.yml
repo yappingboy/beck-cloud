@@ -1,0 +1,157 @@
+---
+# 04-k3s.yml — Install K3s + Cilium on Nova VM instances
+# Replaces the old bare-metal 02-k3s.yml
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/04-k3s.yml
+#
+# Prerequisites:
+#   - Nova VMs are running and reachable (03-nova-vms.yml done)
+#   - inventory/hosts.yml k3s_nodes IPs updated with floating IPs
+
+- name: Install K3s server
+  hosts: k3s_nodes
+  become: true
+  gather_facts: true
+  serial: 1  # server must be ready before workers join
+
+  tasks:
+    - name: Update apt cache
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install prerequisites on VMs
+      ansible.builtin.apt:
+        name:
+          - curl
+          - nfs-common
+          - open-iscsi
+          - jq
+        state: present
+
+    - name: Disable swap
+      ansible.builtin.command: swapoff -a
+      changed_when: true
+
+    - name: Remove swap from fstab
+      ansible.builtin.lineinfile:
+        path: /etc/fstab
+        regexp: '^.*swap.*$'
+        state: absent
+
+    - name: Load required kernel modules
+      community.general.modprobe:
+        name: "{{ item }}"
+        state: present
+      loop:
+        - overlay
+        - br_netfilter
+
+    - name: Set sysctl for K3s/Cilium
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { key: 'net.ipv4.ip_forward',                 value: '1' }
+        - { key: 'net.bridge.bridge-nf-call-iptables',  value: '1' }
+        - { key: 'net.bridge.bridge-nf-call-ip6tables', value: '1' }
+        - { key: 'fs.inotify.max_user_watches',         value: '524288' }
+        - { key: 'fs.inotify.max_user_instances',       value: '8192' }
+        - { key: 'vm.max_map_count',                    value: '262144' }
+
+    # ── K3s server ──────────────────────────────────────────────────────
+    - name: Install K3s (server)
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          K3S_TOKEN={{ k3s_token }} \
+          sh -s - server \
+          --write-kubeconfig-mode 644 \
+          --disable {{ k3s_disable | join(',') }} \
+          --disable-network-policy \
+          {% for arg in k3s_kubelet_args %}
+          --kubelet-arg {{ arg }} \
+          {% endfor %}
+          --flannel-backend none
+      args:
+        creates: /usr/local/bin/k3s
+
+    # ── K3s worker ─────────────────────────────────────────────────────
+    - name: Install K3s (worker)
+      when: k3s_role == 'worker'
+      ansible.builtin.shell: |
+        curl -sfL https://get.k3s.io | \
+          INSTALL_K3S_VERSION={{ k3s_version }} \
+          K3S_TOKEN={{ k3s_token }} \
+          K3S_URL=https://{{ hostvars[groups['k3s_nodes'] | selectattr('k3s_role', 'equalto', 'server') | first]['ansible_host'] }}:6443 \
+          sh -s - agent \
+          {% for arg in k3s_kubelet_args %}
+          --kubelet-arg {{ arg }} \
+          {% endfor %}
+      args:
+        creates: /usr/local/bin/k3s
+
+    - name: Wait for K3s API (server only)
+      when: k3s_role == 'server'
+      ansible.builtin.wait_for:
+        port: 6443
+        delay: 10
+        timeout: 120
+
+    # ── Helm ────────────────────────────────────────────────────────────
+    - name: Install Helm (server only)
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+      args:
+        creates: /usr/local/bin/helm
+
+    # ── Cilium ──────────────────────────────────────────────────────────
+    - name: Install Cilium CNI (server only)
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        helm repo add cilium https://helm.cilium.io
+        helm repo update
+        helm upgrade --install cilium cilium/cilium \
+          --namespace kube-system \
+          --version {{ cilium_version }} \
+          --set kubeProxyReplacement=true \
+          --set k8sServiceHost=127.0.0.1 \
+          --set k8sServicePort=6443 \
+          --set ipam.mode=kubernetes \
+          --set loadBalancer.algorithm=maglev \
+          --set hubble.relay.enabled=true \
+          --set hubble.ui.enabled=true \
+          --set operator.replicas=1 \
+          --set routingMode=native \
+          --set autoDirectNodeRoutes=true \
+          --set l2announcements.enabled=true
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Copy kubeconfig to ubuntu home
+      when: k3s_role == 'server'
+      ansible.builtin.copy:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: /home/ubuntu/.kube/config
+        remote_src: true
+        owner: ubuntu
+        mode: '0600'
+
+  post_tasks:
+    - name: Verify cluster nodes (server only)
+      when: k3s_role == 'server'
+      ansible.builtin.command: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: nodes
+      changed_when: false
+
+    - name: Print cluster state
+      when: k3s_role == 'server'
+      ansible.builtin.debug:
+        var: nodes.stdout_lines
