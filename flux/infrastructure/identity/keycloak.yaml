@@ -39,4 +39,4 @@ spec:
       enabled: true
       className: traefik
       hosts:
-        - keycloak.beckcloud.local
+        - keycloak.becklab.cloud

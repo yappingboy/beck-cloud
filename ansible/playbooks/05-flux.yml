@@ -1,0 +1,109 @@
+---
+# 05-flux.yml — Install Flux CLI and bootstrap GitOps on K3s VMs
+# Replaces 03-flux.yml (now targets k3s_nodes, not bare metal)
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/05-flux.yml
+#
+# Requires: GITHUB_TOKEN env var with repo write access
+
+- name: Install Flux CD and Bootstrap
+  hosts: k3s_nodes
+  become: true
+  gather_facts: true
+  run_once: true
+
+  vars:
+    flux_version: "2.4.0"
+    flux_repo_branch: "main"
+    age_key_path: "/root/.config/sops/age/homelab.agekey"
+
+  tasks:
+    - name: Only run on K3s server
+      ansible.builtin.meta: end_host
+      when: k3s_role != 'server'
+
+    - name: Install age (required for SOPS key generation)
+      ansible.builtin.apt:
+        name: age
+        state: present
+        update_cache: false
+
+    - name: Check Flux installation
+      ansible.builtin.command: flux --version
+      register: flux_version_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Flux CLI
+      when: flux_version_check.rc != 0
+      ansible.builtin.get_url:
+        url: "https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz"
+        dest: /tmp/flux.tar.gz
+        mode: '0644'
+
+    - name: Install Flux binary
+      when: flux_version_check.rc != 0
+      ansible.builtin.unarchive:
+        src: /tmp/flux.tar.gz
+        dest: /usr/local/bin
+        remote_src: true
+        include:
+          - flux
+        mode: '0755'
+
+    - name: Ensure SOPS age directory exists
+      ansible.builtin.file:
+        path: "{{ age_key_path | dirname }}"
+        state: directory
+        mode: '0700'
+
+    - name: Generate SOPS age key
+      ansible.builtin.command: age-keygen -o {{ age_key_path }}
+      args:
+        creates: "{{ age_key_path }}"
+
+    - name: Read age public key
+      ansible.builtin.shell: age-keygen -y {{ age_key_path }}
+      register: age_public_key
+      changed_when: false
+
+    - name: Create sops-age K8s secret for Flux
+      ansible.builtin.shell: |
+        kubectl create secret generic sops-age \
+          --namespace=flux-system \
+          --from-file=age.agekey={{ age_key_path }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Bootstrap Flux to GitHub
+      ansible.builtin.shell: |
+        flux bootstrap github \
+          --owner=yappingboy \
+          --repository=beck-cloud \
+          --branch={{ flux_repo_branch }} \
+          --path=flux \
+          --personal
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        GITHUB_TOKEN: "{{ github_token }}"
+      changed_when: true
+
+  post_tasks:
+    - name: Verify Flux health
+      ansible.builtin.command: flux check
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: flux_check
+      changed_when: false
+
+    - name: Print Flux status
+      ansible.builtin.debug:
+        msg: |
+          Flux version: {{ flux_version }}
+          SOPS age public key: {{ age_public_key.stdout }}
+
+          Add this public key to .sops.yaml age recipients, then
+          re-encrypt secrets: sops updatekeys flux/**/*.yaml
+
+          {{ flux_check.stdout }}

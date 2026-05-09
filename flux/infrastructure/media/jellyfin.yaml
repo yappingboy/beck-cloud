@@ -22,7 +22,6 @@ spec:
             limits:
               cpu: "8"
               memory: 8Gi
-              nvidia.com/gpu: "1"
             requests:
               cpu: 1
               memory: 2Gi
@@ -90,10 +89,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - jellyfin.beckcloud.local
+        - jellyfin.becklab.cloud
       secretName: jellyfin-tls
   rules:
-    - host: jellyfin.beckcloud.local
+    - host: jellyfin.becklab.cloud
       http:
         paths:
           - path: /

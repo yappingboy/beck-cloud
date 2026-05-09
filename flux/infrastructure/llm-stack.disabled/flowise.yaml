@@ -25,4 +25,4 @@ spec:
       enabled: true
       className: traefik
       hosts:
-        - flowise.beckcloud.local
+        - flowise.becklab.cloud

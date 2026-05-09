@@ -1,0 +1,181 @@
+---
+# 02-zfs.yml — Create ZFS pools, datasets, and NFS exports
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/02-zfs.yml
+#
+# Pool layout:
+#   tank    — two RAIDZ2 vdevs (~49.5TB usable) + NVMe SLOG
+#     vdev1 — raidz2: sda sdb sdc sdd sde sdf sdg  (5 data + 2 parity)
+#     vdev2 — raidz2: sdj sdk sdl sdn sdo sdp       (4 data + 2 parity)
+#     log   — nvme1n1                                (SLOG: write acceleration)
+#   archive — mirror: sdi sdm                        (~9.1TB usable)
+#
+# DESTRUCTIVE: set wipe_disks=true to wipe all spinning disk signatures.
+# Required on first run if disks were previously used for Ceph.
+# Example: ansible-playbook ... -e wipe_disks=true
+
+- name: Create ZFS pools, datasets, and NFS exports
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    wipe_disks: false
+    all_zfs_disks: "{{ zfs_raidz2_vdev1 + zfs_raidz2_vdev2 + zfs_archive_mirror }}"
+
+  tasks:
+    # ── Wipe (guarded) ──────────────────────────────────────────────────
+    - name: Wipe disk signatures (DESTRUCTIVE — requires wipe_disks=true)
+      when: wipe_disks | bool
+      block:
+        - name: Wipe filesystem signatures
+          ansible.builtin.command: wipefs -a {{ item }}
+          loop: "{{ all_zfs_disks }}"
+          changed_when: true
+
+        - name: Zero first 100MB of each disk
+          ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
+          loop: "{{ all_zfs_disks }}"
+          changed_when: true
+
+        - name: Wipe NVMe SLOG device
+          ansible.builtin.command: wipefs -a {{ zfs_slog_device }}
+          changed_when: true
+
+    # ── Pool creation ───────────────────────────────────────────────────
+    - name: Check if tank pool already exists
+      ansible.builtin.command: zpool list tank
+      register: tank_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Create tank pool (2x RAIDZ2 + NVMe SLOG)
+      when: tank_exists.rc != 0
+      ansible.builtin.command: >
+        zpool create -f tank
+        raidz2 {{ zfs_raidz2_vdev1 | join(' ') }}
+        raidz2 {{ zfs_raidz2_vdev2 | join(' ') }}
+        log {{ zfs_slog_device }}
+      changed_when: true
+
+    - name: Check if archive pool already exists
+      ansible.builtin.command: zpool list archive
+      register: archive_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Create archive pool (mirror)
+      when: archive_exists.rc != 0
+      ansible.builtin.command: >
+        zpool create -f archive
+        mirror {{ zfs_archive_mirror | join(' ') }}
+      changed_when: true
+
+    # ── Pool-level properties ───────────────────────────────────────────
+    - name: Set tank pool properties
+      ansible.builtin.command: zfs set {{ item.prop }}={{ item.value }} tank
+      loop:
+        - { prop: atime,   value: "off" }
+        - { prop: xattr,   value: "sa" }
+        - { prop: acltype, value: "posixacl" }
+      changed_when: true
+
+    - name: Set archive pool properties
+      ansible.builtin.command: zfs set {{ item.prop }}={{ item.value }} archive
+      loop:
+        - { prop: atime,   value: "off" }
+        - { prop: xattr,   value: "sa" }
+        - { prop: acltype, value: "posixacl" }
+      changed_when: true
+
+    # ── Datasets ─────────────────────────────────────────────────────────
+    - name: Create ZFS datasets
+      community.general.zfs:
+        name: "{{ item.name }}"
+        state: present
+        extra_zfs_properties:
+          recordsize: "{{ item.recordsize }}"
+          compression: "{{ item.compression }}"
+      loop: "{{ zfs_datasets }}"
+
+    # ── NFS exports ──────────────────────────────────────────────────────
+    - name: Ensure NFS export directories exist
+      ansible.builtin.file:
+        path: "{{ item.path }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ nfs_exports }}"
+
+    - name: Write /etc/exports
+      ansible.builtin.template:
+        src: templates/exports.j2
+        dest: /etc/exports
+        mode: '0644'
+      notify: reload nfs
+
+    - name: Enable and start nfs-kernel-server
+      ansible.builtin.systemd:
+        name: nfs-kernel-server
+        enabled: true
+        state: started
+
+    # ── Scrub schedule (systemd timer) ───────────────────────────────────
+    - name: Create ZFS scrub systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/zfs-scrub.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=ZFS scrub all pools
+
+          [Service]
+          Type=oneshot
+          ExecStart=/sbin/zpool scrub tank
+          ExecStart=/sbin/zpool scrub archive
+
+    - name: Create ZFS scrub systemd timer (weekly on Sunday 03:00)
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/zfs-scrub.timer
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Weekly ZFS scrub
+
+          [Timer]
+          OnCalendar=Sun 03:00
+          Persistent=true
+
+          [Install]
+          WantedBy=timers.target
+
+    - name: Enable ZFS scrub timer
+      ansible.builtin.systemd:
+        name: zfs-scrub.timer
+        enabled: true
+        state: started
+        daemon_reload: true
+
+  post_tasks:
+    - name: Display pool status
+      ansible.builtin.command: zpool status
+      register: pool_status
+      changed_when: false
+
+    - name: Display pool list
+      ansible.builtin.command: zpool list
+      register: pool_list
+      changed_when: false
+
+    - name: Print summary
+      ansible.builtin.debug:
+        msg: |
+          {{ pool_list.stdout }}
+          {{ pool_status.stdout }}
+
+          NFS exports:
+          {{ nfs_exports | map(attribute='path') | list | join(', ') }}
+          Serving to: {{ nfs_client_network }}
+
+  handlers:
+    - name: reload nfs
+      ansible.builtin.command: exportfs -ra
+      changed_when: true

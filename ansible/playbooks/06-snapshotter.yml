@@ -1,0 +1,41 @@
+---
+# 06-snapshotter.yml — Install CSI Snapshot CRDs on K3s
+# Replaces 04-snapshotter.yml (now targets k3s_nodes)
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/06-snapshotter.yml
+
+- name: Install CSI Snapshot CRDs
+  hosts: k3s_nodes
+  become: true
+  gather_facts: false
+  run_once: true
+
+  vars:
+    snapshotter_version: "release-8.0.0"
+    crd_base: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshotter_version }}/client/config/crd"
+
+  tasks:
+    - name: Only run on K3s server
+      ansible.builtin.meta: end_host
+      when: k3s_role != 'server'
+
+    - name: Apply CSI snapshot CRDs
+      ansible.builtin.command: >
+        kubectl apply -f {{ crd_base }}/{{ item }}
+      loop:
+        - snapshot.storage.k8s.io_volumesnapshotclasses.yaml
+        - snapshot.storage.k8s.io_volumesnapshotcontents.yaml
+        - snapshot.storage.k8s.io_volumesnapshots.yaml
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      changed_when: true
+
+    - name: Verify CRDs
+      ansible.builtin.command: kubectl get crd -l app.kubernetes.io/name=snapshot-controller
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: crd_check
+      changed_when: false
+
+    - name: Print CRD status
+      ansible.builtin.debug:
+        var: crd_check.stdout_lines

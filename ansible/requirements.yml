@@ -1,0 +1,12 @@
+---
+# Ansible Galaxy dependencies
+# Install before running any playbook:
+#   ansible-galaxy collection install -r ansible/requirements.yml
+
+collections:
+  - name: community.general
+    version: ">=9.0.0"
+  - name: ansible.posix
+    version: ">=1.5.0"
+  - name: openstack.cloud
+    version: ">=2.2.0"

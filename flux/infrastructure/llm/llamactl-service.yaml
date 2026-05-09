@@ -1,0 +1,16 @@
+# Expose the hypervisor's llamactl (running on bare metal) as a K8s Service.
+# Rho and any other K3s workloads can reach it at http://llamactl.llm/v1
+# without hardcoding the hypervisor IP.
+apiVersion: v1
+kind: Service
+metadata:
+  name: llamactl
+  namespace: llm
+spec:
+  type: ExternalName
+  externalName: "172.16.0.7"
+  ports:
+    - name: http
+      port: 8088
+      targetPort: 8088
+      protocol: TCP

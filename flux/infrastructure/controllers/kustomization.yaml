@@ -1,7 +1,8 @@
+# nvidia-device-plugin removed — GPU passthrough not used in this deployment
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
   - namespaces.yaml
   - cilium.yaml
-  - nvidia-device-plugin.yaml
+  - nfs-provisioner.yaml

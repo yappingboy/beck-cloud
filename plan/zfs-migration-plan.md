@@ -1,187 +1,192 @@
-# ZFS Migration Plan — Beck Cloud Homelab
+# ZFS + Sunbeam Deployment Plan — Beck Cloud
 
-> **Status:** Active — migration in progress
-> **Current storage:** Rook-Ceph (being decommissioned)
-> **Target:** Single-node ZFS pool (tank) with local-path-provisioner or ZFS CSI driver
+> **Status:** In progress — fresh deployment on Ubuntu 26.04
+> **Previous storage:** Rook-Ceph (decommissioned)
+> **Previous OS:** CentOS Stream 10 (replaced)
+> **Architecture:** Sunbeam OpenStack on bare metal → K3s on Nova VMs → ZFS/NFS for persistent storage
 
 ---
 
 ## 1. Pool Architecture
 
 ### Drive Inventory
+
 | Device | Size | Role |
 |--------|------|------|
-| sda, sdj, sdk, sdl, sdn, sdo, sdp | 5.5TB each | ZFS mirror pairs |
-| sdi, sdm | 9.1TB each | ZFS mirror pair |
-| sdg | 5.5TB | **Hot spare** |
-| nvme1n1 | 476GB | **SLOG/ZIL** (write acceleration) |
+| sda–sdg (7 drives) | 5.5TB each | RAIDZ2 vdev 1 |
+| sdj–sdp (6 drives) | 5.5TB each | RAIDZ2 vdev 2 |
+| sdi, sdm | 9.1TB each | archive mirror |
+| nvme1n1 | 476GB | ZFS SLOG (write log) |
+| nvme0n1 | — | OS boot drive |
 
-### Pool Design: `tank`
-```
+### Pool Design
+
+**`tank`** — primary data pool (~49.5TB usable)
+```bash
 zpool create -f tank \
-  mirror sda sdj \
-  mirror sdb sdk \
-  mirror sdc sdl \
-  mirror sdd sdn \
-  mirror sde sdo \
-  mirror sdf sdp \
-  mirror sdi sdm \
-  spare sdg \
+  raidz2 sda sdb sdc sdd sde sdf sdg \
+  raidz2 sdj sdk sdl sdn sdo sdp \
   log nvme1n1
 ```
+- vdev1: 7 drives RAIDZ2 → 5 data + 2 parity = **27.5TB usable**
+- vdev2: 6 drives RAIDZ2 → 4 data + 2 parity = **22TB usable**
+- SLOG on nvme1n1: accelerates sync writes (torrent downloads, DB fsync)
+- Fault tolerance: survives **2 simultaneous drive failures per vdev**
 
-**Result:** 7×2 mirrors + 1 hot spare + NVMe SLOG
-- **Raw capacity:** 7 × 5.5TB = 38.5TB (spare is reserved, not counted)
-- **With compression (~30% avg for media/docs):** ~50TB effective
-- **Single point of failure:** yes (single node, no replication to other host)
-- **Mitigation:** regular ZFS snapshots + offsite backup for critical data
+**`archive`** — high-capacity long-term storage (~9.1TB usable)
+```bash
+zpool create -f archive mirror sdi sdm
+```
+- Mirrored pair: survives 1 drive failure
+- Used for: long-term backups, cold data, offsite staging
+
+**Total usable: ~58.6TB** (close to previous 60TB single pool)
 
 ### Pool Properties
-```
-zfs set compression=lz4 tank
-zfs set atime=off tank
-zfs set recordsize=1M tank/media       # large sequential I/O (movies, VMs)
-zfs set recordsize=128K tank/plex-meta  # small random I/O (metadata)
-zfs set xattr=sa tank                   # store xattrs in inode (better performance)
-zfs setacl=posixacl tank               # POSIX ACLs for NFS/SMB sharing
+```bash
+zfs set atime=off xattr=sa acltype=posixacl tank
+zfs set atime=off xattr=sa acltype=posixacl archive
 ```
 
 ---
 
-## 2. ZFS Datasets (Service Layout)
+## 2. Dataset Layout
 
-| Dataset | Purpose | recordsize | compress | snapshots |
-|---------|---------|------------|----------|-----------|
-| `tank/system` | K3s local storage | 128K | lz4 | daily×7, weekly×4 |
-| `tank/media/plex` | Plex media | 1M | off | weekly |
-| `tank/media/downloads` | Download staging | 1M | lz4 | daily×3 |
-| `tank/media/library` | Processed media | 1M | off | daily×7 |
-| `tank/media/configs` | App configs (sonarr/radarr etc.) | 128K | lz4 | daily×14 |
-| `tank/logs` | Application logs | 128K | lz4 | daily×7 |
-| `tank/backup` | Local backups | 128K | lz4 | daily×30 |
-| `tank/k3s` | K3s persistent volumes | 128K | lz4 | daily×7 |
-| `tank/torrent` | qBittorrent/staging | 1M | lz4 | daily×3 |
-| `tank/plex-meta` | Plex metadata | 128K | off | weekly |
+| Dataset | recordsize | compression | NFS export | Purpose |
+|---------|-----------|-------------|------------|---------|
+| `tank/k3s` | 128K | lz4 | yes (rw) | K8s PVs via NFS provisioner |
+| `tank/media` | 1M | off | yes (rw) | Media library root |
+| `tank/media/library` | 1M | off | — | Processed media files |
+| `tank/media/downloads` | 1M | lz4 | — | Download staging |
+| `tank/media/configs` | 128K | lz4 | — | Sonarr/Radarr/etc configs |
+| `tank/torrent` | 1M | lz4 | — | qBittorrent active downloads |
+| `tank/backup` | 128K | lz4 | yes (rw) | Velero backup target (MinIO) |
+| `tank/logs` | 128K | lz4 | — | Application logs |
+| `archive/longterm` | 1M | lz4 | yes (ro) | Cold storage / offsite staging |
 
 ---
 
-## 3. K3s Storage Integration
+## 3. Storage Integration with K3s
 
-### Option A: local-path-provisioner (simplest)
-```yaml
-# storageclass-local-zfs.yaml
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: local-zfs
-provisioner: rancher.io/local-path
-reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
-parameters:
-  hostDir: /tank/k3s
-  mountDir: /data
+K3s runs inside Nova VMs. VMs cannot access ZFS datasets directly, so ZFS
+is exported via NFS from the bare metal host and consumed by the NFS subdir
+external provisioner inside K3s.
+
+```
+Bare metal host
+  ├─ ZFS tank pool
+  └─ NFS server (nfs-kernel-server)
+        ├─ /tank/k3s       → Nova VM: K3s → StorageClass: nfs-k3s (default)
+        ├─ /tank/media     → Nova VM: K3s → StorageClass: nfs-media
+        ├─ /tank/backup    → Nova VM: K3s → MinIO → Velero
+        └─ /archive/...    → Nova VM: K3s → StorageClass: nfs-archive (ro)
 ```
 
-### Option B: ZFS CSI Driver (dynamic, feature-rich)
+### StorageClasses
+
+| Class | NFS path | Default | Use for |
+|-------|----------|---------|----------|
+| `nfs-k3s` | /tank/k3s | **yes** | Identity, Keycloak, databases, configs |
+| `nfs-media` | /tank/media | no | Jellyfin, media library PVCs |
+| `nfs-bulk` | /tank/torrent | no | qBittorrent, download staging |
+
+### SLOG and Workload Match
+
+The NVMe SLOG on `nvme1n1` accelerates **synchronous writes**. This directly
+benefits:
+- Torrent client (qBittorrent uses `fsync` heavily)
+- Database backends (Keycloak/PostgreSQL, lldap)
+- NFS with `sync` export option (all exports use `sync`)
+
+Media **streaming** is async sequential read — SLOG has no effect, but the
+RAIDZ2 read parallelism across 11 spindles handles it well.
+
+---
+
+## 4. Velero Backup Strategy
+
+With NFS-backed storage, CSI volume snapshots are not available. Velero uses
+restic (node-agent) for filesystem-level PV backup instead.
+
+**Backup target options (choose one):**
+
+| Option | Complexity | Offsite | Notes |
+|--------|-----------|---------|-------|
+| MinIO on tank/backup | Low | No | Self-hosted S3; easy Velero integration |
+| Backblaze B2 | Low | Yes | Cheap object storage; native aws plugin |
+| AWS S3 | Medium | Yes | Most reliable; costs more |
+
+Recommended path: MinIO on `tank/backup` for primary, rclone to B2 for offsite.
+
+---
+
+## 5. Deployment Sequence
+
+```bash
+# 0. Bootstrap Sunbeam OpenStack on bare metal
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-sunbeam.yml
+
+# 1. OS hardening, KVM/NFS/ZFS prerequisites
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-os-prep.yml
+
+# 2. Create ZFS pools and NFS exports (add -e wipe_disks=true on first run)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-zfs.yml -e wipe_disks=true
+
+# 3. Provision Nova VM instances (K3s nodes)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-nova-vms.yml
+# → Update inventory/hosts.yml k3s_nodes IPs with assigned floating IPs
+
+# 4. Install K3s + Cilium on Nova VMs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-k3s.yml
+
+# 5. Bootstrap Flux GitOps
+GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-flux.yml
+
+# 6. Install CSI snapshot CRDs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-snapshotter.yml
 ```
-helm install zfs-csi-driver openzfs/zfs-csi-driver \
-  -n kube-system \
-  --set node.zfsPath=/tank
-```
-Then create a StorageClass backed by ZFS datasets with dynamic provisioning, snapshots, and clones.
-
-### Recommendation: Start with Option A, migrate to Option B later
-- Option A is zero-dependency (already ships with K3s)
-- Option B gives native ZFS snapshot support, which is the killer feature
 
 ---
 
-## 4. Migration Strategy
-
-### Phase 0: Preparation (Day 1)
-1. Install OpenZFS on CentOS Stream 10
-   ```bash
-   dnf install -y https://openzfs.github.io/release/rpm/zfs-release-$(rpm -E %dist).noarch.rpm
-   dnf install -y zfs
-   ```
-2. Create pool and datasets (dry run — no data yet)
-3. Verify pool health: `zpool status`, `zpool scrub --start tank`
-4. Install local-path-provisioner if not present
-
-### Phase 1: Non-critical services (Days 2-3)
-- **falco** (logs) → `tank/logs`
-- **monitoring stack** → `tank/logs`
-- **test pods** → clean up entirely
-- Verify each service works with ZFS-backed PVC
-
-### Phase 2: Media stack (Days 4-7)
-- Migrate one service at a time:
-  1. **qBittorrent** (torrent) → `tank/torrent`
-  2. **Plex** (media) → `tank/media` (move existing media files)
-  3. **Sonarr/Radarr** (config) → `tank/media/configs`
-  4. **Jellyfin/Bazarr/Jellyseerr/Prowlarr** (config) → `tank/media/configs`
-- Use `zfs send/receive` or `rsync` for large media transfers
-
-### Phase 3: Traefik + Ceph teardown (Days 8-10)
-- Point Traefik to `tank/system` or `tank/k3s`
-- Verify all services running on ZFS
-- **Stop Ceph:** `helm uninstall rook-ceph -n rook-ceph`
-- **Remove Ceph CRDs, storageclasses, CSI**
-- Remove Ceph LVM from HDDs
-- Add HDDs to ZFS pool
-
-### Phase 4: Cleanup & Optimization (Day 11)
-- Run first full `zpool scrub tank`
-- Configure ZFS snapshot schedules (cronjob or zfs-auto-snapshot)
-- Set up offsite backup strategy (rclone to cloud storage)
-- Update architecture docs
-
----
-
-## 5. Rollback Plan
-
-If ZFS migration fails at any phase:
-1. **Phase 0-2:** Easy rollback — just stop ZFS-backed services, Ceph still running
-2. **Phase 3:** Ceph data is still intact; revert K3s storageclass
-3. **After HDD wipe:** If Ceph data was already destroyed, restore from backups
-4. **Key:** Do NOT wipe Ceph OSDs until Phase 4 is verified working
-
----
-
-## 6. Risks & Mitigations
+## 6. Risks and Mitigations
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| nvme1n1 as SLOG fails | Write performance degrades | ZFS will fall back to sync writes to pool (safer, slower) |
-| Single drive failure | Data loss (single node) | Regular snapshots + offsite backups |
-| CentOS 10 OpenZFS compatibility | Build failures | Use official RPM repo or compile from source with kernel-headers |
-| Media transfer downtime | 24-48h for full media library | Transfer during low-usage windows, use rsync with resume |
-| ZFS pool corruption | Catastrophic data loss | `zpool scrub` weekly, regular backups, keep Ceph as emergency fallback |
+| RAIDZ2 rebuild on 5.5TB drives | ~36-48h degraded pool | `zpool scrub` weekly; never run degraded without alerting |
+| NVMe SLOG failure (power loss) | Pool may need `zpool clear` on next import | UPS on host; ZFS recovers safely on clean import |
+| NFS as storage backend | Higher latency vs local disk | `hard,intr` mount options; NFS v4.2 for best perf |
+| Single node = no live migration | VM failure = downtime | ZFS snapshots + Velero for fast restore |
+| Sunbeam 26.04 early adopter | Potential snap bugs | Pin snap channel; check Canonical release notes |
+| Nova VM IP changes | K3s cluster loses quorum | Use static IPs via Neutron port allocation |
 
 ---
 
-## 7. Timeline Estimate
+## 7. Static IP Allocation for Nova VMs
 
-| Phase | Duration | Notes |
-|-------|----------|-------|
-| Preparation | 1 day | OpenZFS install, pool creation |
-| Non-critical services | 2 days | Testing, troubleshooting |
-| Media stack | 3-5 days | Largest migration (TB of data) |
-| Ceph teardown | 2 days | Service migration, cleanup |
-| Cleanup & optimization | 1 day | Scrub, backup, docs |
-| **Total** | **9-11 days** | ~2 weeks realistic buffer |
+To prevent VM IPs from changing across reboots, create fixed Neutron ports
+before launching instances:
+
+```bash
+. ~/openrc
+openstack port create --network k3s-net --fixed-ip subnet=k3s-subnet,ip-address=192.168.100.10 k3s-server-port
+openstack port create --network k3s-net --fixed-ip subnet=k3s-subnet,ip-address=192.168.100.11 k3s-worker1-port
+
+# Then launch with --port instead of --network:
+openstack server create --port k3s-server-port ... k3s-server
+```
 
 ---
 
-## 8. Alternative: Keep Ceph + Fix Issues
+## 8. Post-Deployment Checklist
 
-Before committing to ZFS, consider whether the Ceph issues are fixable:
-- CephFS missing: need `CephFilesystem` CR (we added this in commit 66966e7)
-- Ceph cluster version check: fixed with `cephVersion.image` patch (commit 098186b)
-- Dashboard error: cosmetic issue (admin user creation failing)
-- OSD processing: still running, just slow
-
-**Ceph pros:** Distributed, multi-node capable, proven in production
-**Ceph cons:** Complex, heavy resource usage, single-node doesn't need it
-
-If the server stays single-node, ZFS is almost certainly the simpler and more performant choice.
+- [ ] `zpool status` — all vdevs ONLINE
+- [ ] `zpool list` — capacity as expected (~49.5TB tank, ~9.1TB archive)
+- [ ] NFS mounts reachable from Nova VMs: `showmount -e 172.16.0.7`
+- [ ] K3s nodes all Ready: `kubectl get nodes`
+- [ ] NFS provisioner running: `kubectl get pods -n kube-system | grep nfs`
+- [ ] Default StorageClass set: `kubectl get sc`
+- [ ] Flux reconciling: `flux get all`
+- [ ] All HelmReleases healthy: `flux get helmreleases -A`
+- [ ] Deploy MinIO on tank/backup, configure Velero storage location
+- [ ] Test backup: `velero backup create test-backup --include-namespaces default`
+- [ ] Weekly scrub timer active: `systemctl status zfs-scrub.timer`

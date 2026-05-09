@@ -1,3 +1,18 @@
+# Velero — K8s resource + volume backup
+#
+# Backup strategy:
+#   - K8s resources: backed up to backupStorageLocation (configure below)
+#   - Volumes: restic/node-agent filesystem backup (no CSI snapshots needed)
+#
+# Backup storage: configure a backupStorageLocation pointing to one of:
+#   A) MinIO on tank/backup (self-hosted S3, recommended)
+#      helm install minio ... --set persistence.storageClass=nfs-bulk
+#   B) Backblaze B2 or AWS S3 for offsite backup
+#
+# Until configured, uncomment the 'configuration' block and fill in credentials.
+# Create the velero-credentials secret first:
+#   kubectl create secret generic velero-credentials -n velero \
+#     --from-literal=cloud='[default]\naws_access_key_id=<id>\naws_secret_access_key=<key>'
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -19,126 +34,87 @@ spec:
     crds: CreateReplace
   values:
     fullnameOverride: velero
-    deployment:
-      replicas: 1
+
+    # restic/node-agent does filesystem-level backup of PV contents.
+    # Works with any storage backend including NFS — no CSI snapshots required.
+    nodeAgent:
+      enabled: true
+      podVolumePath: /var/lib/kubelet/pods
+
     configuration:
+      defaultVolumesToFsBackup: true
+      uploaderType: restic
+
       backupStorageLocation:
         - name: default
-          provider: csi
+          provider: aws
           bucket: velero-backups
+          default: true
           config:
-            csiSnapshotClassName: csi-snapshot-class
-            resourceGroup: beck-cloud
-            storageAccount: velerostorage
+            region: minio
+            s3ForcePathStyle: "true"
+            # s3Url: http://<minio-service>:9000   # Uncomment and set after MinIO is deployed
           credential:
             name: velero-credentials
             key: cloud
-          default: true
-      volumeSnapshotLocation:
-        - name: default
-          provider: csi
-          config:
-            csiSnapshotClassName: csi-snapshot-class
-          credential:
-            name: velero-credentials
-            key: cloud
-          default: true
-      features: EnableCSI
-    scheduler:
-      disabled: true
+
     initContainers:
-      - name: velero-plugin-for-csi
-        image: velero/velero-plugin-for-csi:v0.9.0
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.10.0
         volumeMounts:
           - name: plugins
             mountPath: /target
+
+    # Backup schedules — volumes use restic (snapshotVolumes: false)
     cronJobTemplates:
       - name: identity-6h
         schedule: "0 */6 * * *"
         template:
-          ttlHoursAfterSuccess: 720
+          ttl: "720h0m0s"
           includedNamespaces:
             - identity
-          excludedNamespaces:
-            - kube-system
-            - flux-system
           storageLocation: default
-          snapshotVolumes: true
-          volumeSnapshotLocations:
-            - default
-          ttl: "720h0m0s"
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
       - name: security-daily
         schedule: "0 2 * * *"
         template:
-          ttlHoursAfterSuccess: 2160
+          ttl: "2160h0m0s"
           includedNamespaces:
             - security
-          excludedNamespaces:
-            - kube-system
-            - flux-system
           storageLocation: default
-          snapshotVolumes: true
-          volumeSnapshotLocations:
-            - default
-          ttl: "2160h0m0s"
-      - name: llm-daily
-        schedule: "0 3 * * *"
-        template:
-          ttlHoursAfterSuccess: 168
-          includedNamespaces:
-            - llm
-          excludedNamespaces:
-            - kube-system
-            - flux-system
-          excludedResources:
-            - persistentvolumeclaims
-          storageLocation: default
-          snapshotVolumes: true
-          volumeSnapshotLocations:
-            - default
-          ttl: "168h0m0s"
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
       - name: media-daily
         schedule: "0 1 * * *"
         template:
-          ttlHoursAfterSuccess: 336
+          ttl: "336h0m0s"
           includedNamespaces:
             - media
             - torrent
-          excludedNamespaces:
-            - kube-system
-            - flux-system
           excludedResources:
             - persistentvolumeclaims
           storageLocation: default
-          volumeSnapshotLocations:
-            - default
-          ttl: "336h0m0s"
+          snapshotVolumes: false
+
       - name: rancher-daily
         schedule: "0 4 * * *"
         template:
-          ttlHoursAfterSuccess: 720
-          includedNamespaces:
-            - cattle-*
-          excludedNamespaces:
-            - kube-system
-            - flux-system
-          storageLocation: default
-          snapshotVolumes: true
-          volumeSnapshotLocations:
-            - default
           ttl: "720h0m0s"
+          includedNamespaces:
+            - cattle-system
+          storageLocation: default
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
       - name: full-cluster-weekly
         schedule: "0 2 * * 0"
         template:
-          ttlHoursAfterSuccess: 2160
-          includedNamespaces:
-            - "*"
+          ttl: "2160h0m0s"
           excludedNamespaces:
             - kube-system
-          excludedResources:
-            - persistentvolumeclaims
           storageLocation: default
-          snapshotVolumes: true
-          volumeSnapshotLocations:
-            - default
-          ttl: "2160h0m0s"
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true

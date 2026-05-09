@@ -1,16 +1,41 @@
-# StorageClasses: local-path-provisioner backed by ZFS tank
-# All volumes are RWO Retain by default (configs, DBs).
-# Shared media/torrent uses hostPath-based PVs in media/pvcs.yaml.
+# StorageClasses backed by NFS exports from the ZFS tank pool on the bare metal host.
+# The NFS provisioner (controllers/nfs-provisioner.yaml) handles dynamic provisioning.
+#
+# nfs-k3s   — default: K8s system workloads, databases, configs (small random I/O)
+# nfs-media  — Jellyfin, media library (large sequential reads)
+# nfs-bulk   — downloads, torrent staging (large sequential writes)
 
+# nfs-k3s is set as default by the provisioner HelmRelease.
+# Defined here for reference only — the provisioner creates it.
+---
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: local-zfs
+  name: nfs-media
   annotations:
-    storageclass.kubernetes.io/is-default-class: "true"
-provisioner: rke-driver-localpath
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: cluster.local/nfs-subdir-external-provisioner
 parameters:
-  hostDir: /mnt/tank/k3s/volumes
+  server: "172.16.0.7"
+  path: /tank/media
+  pathPattern: "${.PVC.namespace}/${.PVC.name}"
+  onDelete: retain
 reclaimPolicy: Retain
-volumeBindingMode: WaitForFirstConsumer
-allowExpansion: true
+volumeBindingMode: Immediate
+allowVolumeExpansion: true
+---
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: nfs-bulk
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: cluster.local/nfs-subdir-external-provisioner
+parameters:
+  server: "172.16.0.7"
+  path: /tank/torrent
+  pathPattern: "${.PVC.namespace}/${.PVC.name}"
+  onDelete: delete
+reclaimPolicy: Delete
+volumeBindingMode: Immediate
+allowVolumeExpansion: true

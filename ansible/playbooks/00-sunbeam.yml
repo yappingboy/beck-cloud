@@ -1,0 +1,159 @@
+---
+# 00-sunbeam.yml — Install and bootstrap Sunbeam OpenStack (single-node)
+# Run FIRST, before any other playbook.
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/00-sunbeam.yml
+#
+# Prerequisites:
+#   - Ubuntu 26.04 LTS installed, snap available
+#   - VT-x/AMD-V enabled in BIOS
+#   - ops_user has passwordless sudo
+#   - Physical NIC is up on 172.16.0.0/24
+#
+# What this does:
+#   1. Installs the openstack snap (Sunbeam)
+#   2. Prepares the node (groups, kernel params, OVN)
+#   3. Bootstraps a single-node OpenStack cluster (control + compute only)
+#   4. Configures external networking for floating IPs
+#   5. Creates Nova flavors and uploads the SSH keypair
+#
+# NOTE: sunbeam cluster bootstrap takes 15-30 minutes on first run.
+# If it fails mid-way, run: sunbeam cluster bootstrap --role control,compute
+# again — it is designed to be re-entrant.
+
+- name: Install and bootstrap Sunbeam OpenStack
+  hosts: hypervisor
+  become: false
+  gather_facts: true
+
+  vars:
+    openrc_path: "/home/{{ ops_user }}/openrc"
+    manifest_path: "/home/{{ ops_user }}/sunbeam-manifest.yaml"
+
+  tasks:
+    - name: Install openstack snap
+      become: true
+      community.general.snap:
+        name: openstack
+        channel: "{{ sunbeam_channel }}"
+        state: present
+
+    - name: Add ops_user to required groups (snap_daemon, libvirt, kvm)
+      become: true
+      ansible.builtin.user:
+        name: "{{ ops_user }}"
+        groups: "{{ item }}"
+        append: true
+      loop:
+        - snap_daemon
+        - libvirt
+        - kvm
+      ignore_errors: true  # Groups may not exist until snap is fully initialized
+
+    - name: Copy Sunbeam manifest
+      ansible.builtin.template:
+        src: templates/sunbeam-manifest.yaml.j2
+        dest: "{{ manifest_path }}"
+        mode: '0600'
+
+    - name: Run sunbeam prepare-node
+      ansible.builtin.command: sunbeam prepare-node
+      changed_when: true
+      # Idempotent — safe to re-run. Configures OVN, kernel modules, groups.
+
+    - name: Log out and back in to pick up new groups
+      ansible.builtin.debug:
+        msg: |
+          If this is the first run, you may need to log out and back in
+          for group membership changes to take effect before bootstrap.
+          Re-run this playbook after doing so if bootstrap fails.
+
+    - name: Bootstrap Sunbeam cluster (control + compute, no MicroCeph storage)
+      ansible.builtin.command: >
+        sunbeam cluster bootstrap
+        --role control,compute
+        --manifest {{ manifest_path }}
+        --accept-defaults
+      changed_when: true
+      async: 2400
+      poll: 30
+      # 40-minute timeout. Bootstrap provisions MicroK8s + all OpenStack services.
+
+    - name: Run sunbeam configure
+      ansible.builtin.command: >
+        sunbeam configure
+        --openrc {{ openrc_path }}
+        --accept-defaults
+      changed_when: true
+      # Creates default project/user, external network, demo tenant network.
+      # If accept-defaults produces wrong network config, run manually:
+      #   sunbeam configure --openrc ~/openrc
+
+    - name: Generate openrc credentials file
+      ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
+      args:
+        creates: "{{ openrc_path }}"
+
+    - name: Secure openrc file
+      ansible.builtin.file:
+        path: "{{ openrc_path }}"
+        mode: '0600'
+
+    - name: Install OpenStack CLI client
+      become: true
+      ansible.builtin.apt:
+        name:
+          - python3-openstackclient
+          - python3-keystoneauth1
+        state: present
+        update_cache: true
+
+    - name: Wait for OpenStack API to respond
+      ansible.builtin.shell: |
+        set -e
+        . {{ openrc_path }}
+        openstack catalog list -f value -c Name
+      register: catalog_check
+      retries: 12
+      delay: 30
+      until: catalog_check.rc == 0
+      changed_when: false
+
+    - name: Create Nova flavors
+      ansible.builtin.shell: |
+        set -e
+        . {{ openrc_path }}
+        openstack flavor show {{ item.name }} > /dev/null 2>&1 || \
+        openstack flavor create \
+          --ram {{ item.ram }} \
+          --disk {{ item.disk }} \
+          --vcpus {{ item.vcpus }} \
+          --public \
+          {{ item.name }}
+      loop: "{{ nova_flavors }}"
+      changed_when: true
+
+    - name: Upload SSH keypair to Nova
+      ansible.builtin.shell: |
+        set -e
+        . {{ openrc_path }}
+        openstack keypair show {{ nova_k3s_keypair }} > /dev/null 2>&1 || \
+        openstack keypair create \
+          --public-key {{ nova_k3s_keypair_pub }} \
+          {{ nova_k3s_keypair }}
+      changed_when: true
+
+  post_tasks:
+    - name: Display Sunbeam status
+      ansible.builtin.command: sunbeam cluster status
+      changed_when: false
+      register: sunbeam_status
+
+    - name: Print status
+      ansible.builtin.debug:
+        msg: |
+          {{ sunbeam_status.stdout }}
+
+          Next steps:
+            1. Verify Horizon at http://{{ homelab_ip }} or via: sunbeam dashboard-url
+            2. Run: ansible-playbook playbooks/01-os-prep.yml
+            3. Run: ansible-playbook playbooks/02-zfs.yml  (set wipe_disks=true on first run)

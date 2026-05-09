@@ -10,10 +10,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - traefik.beckcloud.local
+        - traefik.becklab.cloud
       secretName: traefik-dashboard-tls
   rules:
-    - host: traefik.beckcloud.local
+    - host: traefik.becklab.cloud
       http:
         paths:
           - path: /
@@ -35,7 +35,7 @@ spec:
   tls:
     secretName: traefik-dashboard-tls
   routes:
-    - match: Host(`traefik.beckcloud.local`)
+    - match: Host(`traefik.becklab.cloud`)
       kind: Rule
       middlewares:
         - name: keycloak-forwardauth

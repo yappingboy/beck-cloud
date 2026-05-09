@@ -1,0 +1,349 @@
+---
+# rho — Persistent AI sysadmin agent
+# Personality defined in SOUL.md ConfigMap; tasks in RHO.md ConfigMap.
+# Calls llamactl (on hypervisor) for inference; uses kubectl + flux + ssh for actions.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: rho
+  namespace: llm
+---
+# Full cluster read + targeted write — rho needs broad visibility to be useful.
+# Restrict to read-only once you've validated autonomous actions are safe.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: rho-cluster-admin
+subjects:
+  - kind: ServiceAccount
+    name: rho
+    namespace: llm
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rho-soul
+  namespace: llm
+data:
+  SOUL.md: |
+    # BeckLab Sysadmin AI
+
+    You are an autonomous infrastructure operator for the BeckLab homelab.
+
+    ## Environment
+    - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 26.04, 128GB RAM
+    - Hypervisor layer: Sunbeam OpenStack (Nova/Neutron/Glance/Keystone)
+    - ZFS storage: `tank` pool (RAIDZ2×2, ~49TB) + `archive` pool (mirror, ~9TB)
+    - NFS exports: /tank/k3s, /tank/media, /tank/torrent, /tank/backup, /tank/llm, /archive/longterm
+    - K3s cluster: server 192.168.100.10, worker 192.168.100.11
+    - GitOps: Flux CD → github.com/yappingboy/beck-cloud (branch: main)
+    - Domain: becklab.cloud
+    - Media stack: Jellyfin, Sonarr, Radarr, Bazarr, Prowlarr, Jellyseerr
+    - Identity: lldap + oauth2-proxy (dc=becklab,dc=cloud)
+    - Security: Wazuh, Traefik ingress, cert-manager TLS
+    - Backups: Velero + restic (MinIO on /tank/backup — configure when ready)
+
+    ## Your Tools
+    All commands execute on the K3s server node via kubectl or on the hypervisor via SSH.
+    - `kubectl`: inspect pods, nodes, events, logs, restart deployments
+    - `flux`: check reconciliation (`flux get all -A`), trigger (`flux reconcile`)
+    - `ssh becklab`: run zpool, zfs, openstack, systemctl, journalctl on hypervisor
+    - `curl http://llamactl.llm:8088/api/instances/`: check LLM instance health
+
+    ## Autonomy Levels
+    **AUTONOMOUS — do without asking:**
+    - Read pod logs, describe resources, get events
+    - Restart a single crashlooping pod (not an entire Deployment scale-down)
+    - Trigger `flux reconcile` on a drifted Kustomization
+    - Run `zpool status`, `zfs list`, `df -h`
+    - Open a GitHub issue to report a finding
+    - Generate and log health reports
+
+    **CONFIRM BEFORE ACTING:**
+    - Deleting any PVC or PersistentVolume
+    - Scaling a Deployment to 0
+    - Modifying any Flux GitRepository or HelmRepository source
+    - Any command touching /tank/media, /tank/backup data paths
+    - Rebooting a Nova VM or the hypervisor
+
+    **NEVER:**
+    - `wipefs`, `zpool destroy`, `dd if=/dev/zero`, `kubectl delete namespace`
+    - Force-push to git remote
+    - Disable or delete cert-manager, Flux, or Traefik
+
+    ## Proactive Monitoring (every heartbeat)
+    Run these checks automatically and report only deviations from healthy state:
+
+    1. **K3s health**: `kubectl get nodes` — all nodes Ready?
+    2. **Pod health**: any pod in CrashLoopBackOff, OOMKilled, or Pending >5min?
+    3. **Flux sync**: `flux get kustomizations -A` — any Failed or stale >1h?
+    4. **ZFS pools**: `ssh becklab zpool status` — any DEGRADED or FAULTED?
+    5. **Disk space**: NFS mounts <10% free = WARNING; <5% = CRITICAL
+    6. **Nova VMs**: `ssh becklab . /root/openrc && openstack server list` — all ACTIVE?
+    7. **Certificates**: any cert-manager Certificate not Ready or expiring <14 days?
+    8. **Velero**: last backup status for each schedule (identity, security, media)
+
+    ## Response Format
+    Structure every report:
+    ```
+    STATUS: [OK | WARNING | CRITICAL]
+    TIMESTAMP: <ISO 8601>
+    FINDINGS:
+      - <finding or "none">
+    ACTIONS_TAKEN:
+      - <action or "none">
+    ESCALATIONS:
+      - <item needing human attention or "none">
+    ```
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rho-tasks
+  namespace: llm
+data:
+  RHO.md: |
+    # BeckLab Maintenance Tasks
+
+    ## Recurring
+    - [ ] Heartbeat health check every 30 minutes (pods, ZFS, Flux, Nova, certs)
+    - [ ] Daily at 06:00: summarize last 24h of events, disk usage trends
+    - [ ] Weekly on Sunday: verify Velero backup completed for all schedules
+    - [ ] Weekly: check cert-manager certificates — flag anything expiring in <30 days
+    - [ ] Weekly: review resource utilization (CPU/RAM/storage) and flag growth trends
+
+    ## Standing Orders
+    - Immediately alert on: ZFS pool degraded, K3s node NotReady, Flux sync failed >1h,
+      any namespace with >3 crashlooping pods
+    - Auto-restart: single pod in CrashLoopBackOff (max 2 autonomous attempts, then escalate)
+    - Auto-trigger: `flux reconcile` on any Kustomization Failed state
+    - Watch media stack restarts — Jellyfin crashes often indicate NFS mount issues
+
+    ## Pending Investigations
+    - [ ] Velero backup storage: MinIO not yet deployed on /tank/backup. Track and prompt
+          when free space on /tank/backup > 100GB (enough for MinIO bootstrap)
+    - [ ] lldap LDAP base DN migrated to dc=becklab,dc=cloud — verify oauth2-proxy login works
+          after next identity stack deployment
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: rho-models
+  namespace: llm
+data:
+  models.json: |
+    {
+      "default": {
+        "provider": "openai-compatible",
+        "model": "qwen-sysadmin",
+        "baseUrl": "http://172.16.0.7:8088/v1",
+        "apiKey": "no-auth-required"
+      }
+    }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rho
+  namespace: llm
+  labels:
+    app: rho
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: rho
+  template:
+    metadata:
+      labels:
+        app: rho
+    spec:
+      serviceAccountName: rho
+      initContainers:
+        # Install rho + kubectl + flux on first start; cached in shared volume.
+        - name: setup
+          image: node:20-bookworm-slim
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              cd /app
+              if [ ! -f /app/bin/rho ]; then
+                # Install system tools
+                apt-get update -qq && apt-get install -y -qq curl unzip openssh-client 2>/dev/null
+                # kubectl
+                KUBE_VER=$(curl -sL https://dl.k8s.io/release/stable.txt)
+                curl -sLo /app/bin/kubectl "https://dl.k8s.io/release/${KUBE_VER}/bin/linux/amd64/kubectl"
+                chmod +x /app/bin/kubectl
+                # flux CLI
+                FLUX_VER=2.4.0
+                curl -sL "https://github.com/fluxcd/flux2/releases/download/v${FLUX_VER}/flux_${FLUX_VER}_linux_amd64.tar.gz" | tar -xz -C /app/bin/ flux
+                # rho
+                npm install -g @rhobot-dev/rho --prefix /app/npm 2>/dev/null
+                ln -sf /app/npm/bin/rho /app/bin/rho
+                echo "Setup complete"
+              else
+                echo "Already set up, skipping"
+              fi
+          volumeMounts:
+            - name: app
+              mountPath: /app
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+      containers:
+        - name: rho
+          image: node:20-bookworm-slim
+          command:
+            - /bin/sh
+            - -c
+            - |
+              set -e
+              export PATH="/app/bin:/app/npm/bin:$PATH"
+              export HOME=/data
+              export KUBECONFIG=/var/run/secrets/kubernetes.io/serviceaccount/..data/token
+              # Wire up in-cluster kubectl access
+              mkdir -p /data/.kube
+              cat > /data/.kube/config <<EOF
+              apiVersion: v1
+              kind: Config
+              clusters:
+              - cluster:
+                  certificate-authority: /var/run/secrets/kubernetes.io/serviceaccount/ca.crt
+                  server: https://kubernetes.default.svc
+                name: local
+              contexts:
+              - context:
+                  cluster: local
+                  user: rho
+                name: local
+              current-context: local
+              users:
+              - name: rho
+                user:
+                  tokenFile: /var/run/secrets/kubernetes.io/serviceaccount/token
+              EOF
+              export KUBECONFIG=/data/.kube/config
+              # Copy config files from ConfigMaps
+              mkdir -p /data/.pi/agent
+              cp /config/models.json /data/.pi/agent/models.json
+              cp /config/SOUL.md /data/SOUL.md
+              cp /config/RHO.md /data/RHO.md
+              # Init rho workspace if needed
+              cd /data
+              rho init 2>/dev/null || true
+              rho start
+          env:
+            - name: PATH
+              value: "/app/bin:/app/npm/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+            - name: HOME
+              value: /data
+            - name: NODE_PATH
+              value: /app/npm/lib/node_modules
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: data
+              mountPath: /data
+            - name: soul
+              mountPath: /config/SOUL.md
+              subPath: SOUL.md
+            - name: tasks
+              mountPath: /config/RHO.md
+              subPath: RHO.md
+            - name: models
+              mountPath: /config/models.json
+              subPath: models.json
+            - name: hypervisor-ssh
+              mountPath: /data/.ssh
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: app
+          emptyDir: {}
+        - name: data
+          persistentVolumeClaim:
+            claimName: rho-data
+        - name: soul
+          configMap:
+            name: rho-soul
+        - name: tasks
+          configMap:
+            name: rho-tasks
+        - name: models
+          configMap:
+            name: rho-models
+        - name: hypervisor-ssh
+          secret:
+            secretName: rho-ssh-key
+            defaultMode: 0400
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: rho-data
+  namespace: llm
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: nfs-k3s
+  resources:
+    requests:
+      storage: 5Gi
+---
+# rho-ssh-key must be created manually before deploying:
+#   kubectl create secret generic rho-ssh-key -n llm \
+#     --from-file=id_ed25519=~/.ssh/id_ed25519 \
+#     --from-file=id_ed25519.pub=~/.ssh/id_ed25519.pub \
+#     --from-literal=config="Host becklab\n  HostName 172.16.0.7\n  User stephen\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking no"
+apiVersion: v1
+kind: Service
+metadata:
+  name: rho
+  namespace: llm
+spec:
+  selector:
+    app: rho
+  ports:
+    - name: http
+      port: 80
+      targetPort: 3000
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rho
+  namespace: llm
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - rho.becklab.cloud
+      secretName: rho-tls
+  rules:
+    - host: rho.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rho
+                port:
+                  number: 80
