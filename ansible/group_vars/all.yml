@@ -114,11 +114,20 @@ nfs_exports:
   - { path: "/tank/media",       options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/tank/torrent",     options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/tank/backup",      options: "rw,sync,no_subtree_check,no_root_squash" }
+  - { path: "/tank/llm",         options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/archive/longterm", options: "ro,sync,no_subtree_check,no_root_squash" }
 
 # ── NVIDIA ────────────────────────────────────────────────────────────────────
 # GPU passthrough disabled — Titan RTX stays on host, unused in this deployment
 install_nvidia: false
+
+# AI Sysadmin — Rho + Llamactl + Llama-server
+llm_model_hf_repo: Qwen/Qwen2.5-32B-Instruct-GGUF
+llm_model_hf_file: qwen2.5-32b-instruct-q4_k_m.gguf
+llm_model_name: qwen-sysadmin
+llm_llamactl_port: 8088
+llm_context_size: 32768
+llm_threads: 16
 
 # ── Network / NTP ─────────────────────────────────────────────────────────────
 ntp_servers:

@@ -12,3 +12,4 @@ resources:
   - velero
   - rancher
   - media
+  - llm

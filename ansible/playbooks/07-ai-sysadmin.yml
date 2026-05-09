@@ -1,0 +1,258 @@
+---
+# 07-ai-sysadmin.yml — Deploy Llamactl + Llama-server on hypervisor
+#
+# Architecture:
+#   - Llamactl manages llama-server instances as native processes (no Docker)
+#   - llama-server serves Qwen2.5-32B-Instruct Q4_K_M on CPU
+#   - Rho agent runs in K3s (08-rho is handled via Flux), calls http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1
+#
+# Model: ~20GB in RAM — leaves >100GB for OpenStack + K3s VMs on a 128GB host
+# Speed: ~2-4 tok/s on CPU; suitable for async sysadmin workloads
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/07-ai-sysadmin.yml
+# NOTE: Initial model download is ~20GB. Run with --timeout=3600.
+
+- name: Deploy AI Sysadmin Stack on Hypervisor
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  tasks:
+    # ── ZFS dataset ─────────────────────────────────────────────────────
+    - name: Create tank/llm ZFS dataset
+      community.general.zfs:
+        name: tank/llm
+        state: present
+        extra_zfs_properties:
+          recordsize: "1M"
+          compression: lz4
+
+    - name: Create models subdirectory
+      ansible.builtin.file:
+        path: /tank/llm/models
+        state: directory
+        mode: '0755'
+
+    # ── Model download ───────────────────────────────────────────────────
+    - name: Install Python3 and pip
+      ansible.builtin.apt:
+        name:
+          - python3
+          - python3-pip
+          - unzip
+          - jq
+        state: present
+
+    - name: Install huggingface-hub
+      ansible.builtin.pip:
+        name: "huggingface-hub[cli]"
+        state: present
+        executable: pip3
+
+    - name: Check if model already downloaded
+      ansible.builtin.stat:
+        path: "/tank/llm/models/{{ llm_model_hf_file }}"
+      register: model_stat
+
+    - name: Download Qwen2.5-32B-Instruct Q4_K_M from HuggingFace (~20GB)
+      when: not model_stat.stat.exists
+      ansible.builtin.command: >
+        huggingface-cli download {{ llm_model_hf_repo }}
+        {{ llm_model_hf_file }}
+        --local-dir /tank/llm/models
+        --local-dir-use-symlinks False
+      async: 7200
+      poll: 30
+
+    # ── Llama-server binary ──────────────────────────────────────────────
+    - name: Check llama-server binary
+      ansible.builtin.stat:
+        path: /usr/local/bin/llama-server
+      register: llama_bin
+
+    - name: Download latest llama-server binary from llama.cpp releases
+      when: not llama_bin.stat.exists
+      ansible.builtin.shell: |
+        set -e
+        LATEST=$(curl -s https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | jq -r '.tag_name')
+        URL="https://github.com/ggml-org/llama.cpp/releases/download/${LATEST}/llama-${LATEST}-bin-ubuntu-x64.zip"
+        curl -fsSL "$URL" -o /tmp/llama-release.zip
+        unzip -oj /tmp/llama-release.zip "*/llama-server" -d /tmp/llama-bin/
+        install -m 0755 /tmp/llama-bin/llama-server /usr/local/bin/llama-server
+        rm -rf /tmp/llama-release.zip /tmp/llama-bin
+      args:
+        executable: /bin/bash
+
+    # ── Llamactl binary ──────────────────────────────────────────────────
+    - name: Check llamactl binary
+      ansible.builtin.stat:
+        path: /usr/local/bin/llamactl
+      register: llamactl_bin
+
+    - name: Download latest llamactl binary
+      when: not llamactl_bin.stat.exists
+      ansible.builtin.shell: |
+        set -e
+        LATEST=$(curl -s https://api.github.com/repos/lordmathis/llamactl/releases/latest | jq -r '.tag_name')
+        # Try tar.gz first, fall back to raw binary
+        URL="https://github.com/lordmathis/llamactl/releases/download/${LATEST}/llamactl_linux_amd64.tar.gz"
+        if curl -fsSL "$URL" -o /tmp/llamactl.tar.gz 2>/dev/null; then
+          tar -xzf /tmp/llamactl.tar.gz -C /tmp/
+          install -m 0755 /tmp/llamactl /usr/local/bin/llamactl
+          rm -f /tmp/llamactl.tar.gz /tmp/llamactl
+        else
+          RAW_URL="https://github.com/lordmathis/llamactl/releases/download/${LATEST}/llamactl_Linux_x86_64"
+          curl -fsSL "$RAW_URL" -o /usr/local/bin/llamactl
+          chmod 0755 /usr/local/bin/llamactl
+        fi
+      args:
+        executable: /bin/bash
+
+    # ── Llamactl config ──────────────────────────────────────────────────
+    - name: Create llamactl config and data directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: directory
+        mode: '0755'
+      loop:
+        - /etc/llamactl
+        - /var/log/llamactl
+        - /var/lib/llamactl
+
+    - name: Write llamactl configuration
+      ansible.builtin.copy:
+        dest: /etc/llamactl/llamactl.yml
+        mode: '0644'
+        content: |
+          server:
+            host: "0.0.0.0"
+            port: {{ llm_llamactl_port }}
+
+          instances:
+            port_range:
+              min: 8100
+              max: 8200
+            logs_directory: "/var/log/llamactl"
+            idle_timeout: 0
+
+          backends:
+            llama-cpp:
+              command: "llama-server"
+              args: []
+              docker:
+                enabled: false
+
+          database:
+            path: "/var/lib/llamactl/llamactl.db"
+
+          auth:
+            require_inference_auth: false
+            require_management_auth: false
+      notify: restart llamactl
+
+    # ── Systemd service ──────────────────────────────────────────────────
+    - name: Install llamactl systemd service
+      ansible.builtin.copy:
+        dest: /etc/systemd/system/llamactl.service
+        mode: '0644'
+        content: |
+          [Unit]
+          Description=Llamactl LLM Management Server
+          Documentation=https://llamactl.org
+          After=network.target
+
+          [Service]
+          Type=simple
+          ExecStart=/usr/local/bin/llamactl --config /etc/llamactl/llamactl.yml
+          WorkingDirectory=/var/lib/llamactl
+          Restart=on-failure
+          RestartSec=10
+          StandardOutput=journal
+          StandardError=journal
+
+          [Install]
+          WantedBy=multi-user.target
+      notify: restart llamactl
+
+    - name: Enable and start llamactl
+      ansible.builtin.systemd:
+        name: llamactl
+        state: started
+        enabled: true
+        daemon_reload: true
+
+    - name: Wait for llamactl API to be ready
+      ansible.builtin.wait_for:
+        host: "127.0.0.1"
+        port: "{{ llm_llamactl_port }}"
+        delay: 5
+        timeout: 60
+
+    # ── Register Qwen instance ───────────────────────────────────────────
+    - name: Check if model instance already registered
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ llm_llamactl_port }}/api/instances/{{ llm_model_name }}"
+        method: GET
+        status_code: [200, 404]
+      register: instance_check
+
+    - name: Register Qwen2.5-32B model instance in llamactl
+      when: instance_check.status == 404
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ llm_llamactl_port }}/api/instances/"
+        method: POST
+        body_format: json
+        body:
+          name: "{{ llm_model_name }}"
+          backend: "llama-cpp"
+          model: "/tank/llm/models/{{ llm_model_hf_file }}"
+          args:
+            - "--ctx-size"
+            - "{{ llm_context_size | string }}"
+            - "--threads"
+            - "{{ llm_threads | string }}"
+            - "--batch-size"
+            - "512"
+            - "--metrics"
+        status_code: [200, 201]
+      register: instance_create
+
+    - name: Start model instance
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ llm_llamactl_port }}/api/instances/{{ llm_model_name }}/start"
+        method: POST
+        status_code: [200, 201, 204]
+      when: instance_check.status == 404
+
+    # ── Firewall ─────────────────────────────────────────────────────────
+    - name: Allow llamactl API from Nova VM subnet
+      community.general.ufw:
+        rule: allow
+        port: "{{ llm_llamactl_port }}"
+        proto: tcp
+        from_ip: "{{ nova_network_cidr }}"
+        comment: "Llamactl LLM API (K3s rho agent)"
+
+  post_tasks:
+    - name: Show llamactl instance status
+      ansible.builtin.uri:
+        url: "http://127.0.0.1:{{ llm_llamactl_port }}/api/instances/{{ llm_model_name }}"
+        method: GET
+        status_code: [200, 404]
+      register: final_status
+      changed_when: false
+
+    - name: Print summary
+      ansible.builtin.debug:
+        msg: |
+          Llamactl running at: http://{{ homelab_ip }}:{{ llm_llamactl_port }}
+          Model instance: {{ llm_model_name }} — {{ final_status.json.status | default('unknown') }}
+          OpenAI-compatible endpoint: http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1/chat/completions
+          Rho agent in K3s should use: http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1
+
+  handlers:
+    - name: restart llamactl
+      ansible.builtin.systemd:
+        name: llamactl
+        state: restarted
+        daemon_reload: true
