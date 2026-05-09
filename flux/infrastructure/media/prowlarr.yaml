@@ -71,10 +71,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - prowlarr.beckcloud.local
+        - prowlarr.becklab.cloud
       secretName: prowlarr-tls
   rules:
-    - host: prowlarr.beckcloud.local
+    - host: prowlarr.becklab.cloud
       http:
         paths:
           - path: /

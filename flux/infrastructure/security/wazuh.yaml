@@ -35,4 +35,4 @@ spec:
         enabled: true
         className: traefik
         hosts:
-          - wazuh.beckcloud.local
+          - wazuh.becklab.cloud

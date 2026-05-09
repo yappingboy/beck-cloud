@@ -2,11 +2,11 @@
 # Beck Cloud — Ansible Variables
 # Ubuntu 26.04 + Sunbeam OpenStack + ZFS + K3s-on-Nova
 
-homelab_hostname: homelab
+homelab_hostname: becklab
 homelab_ip: 172.16.0.7
 ops_user: stephen
 
-# ── Sunbeam / OpenStack ───────────────────────────────────────────────
+# ── Sunbeam / OpenStack ────────────────────────────────────────────────────────
 sunbeam_channel: "2024.2/stable"
 
 # Provider network — a slice of your physical LAN for OpenStack floating IPs
@@ -46,7 +46,7 @@ nova_k3s_vms:
     flavor: k3s.worker
     role: worker
 
-# ── K3s ──────────────────────────────────────────────────────────────
+# ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
 k3s_token: ""    # Override via ANSIBLE_K3S_TOKEN env var or vault
 k3s_disable:
@@ -62,7 +62,7 @@ k3s_kubelet_args:
 # Cilium
 cilium_version: 1.17.0
 
-# ── ZFS ──────────────────────────────────────────────────────────────
+# ── ZFS ───────────────────────────────────────────────────────────────────────
 zfs_pool_name: tank
 zfs_archive_pool: archive
 zfs_slog_device: /dev/nvme1n1
@@ -102,7 +102,7 @@ zfs_datasets:
   - { name: "tank/logs",            recordsize: "128K", compression: "lz4" }
   - { name: "archive/longterm",     recordsize: "1M",   compression: "lz4" }
 
-# ── NFS (ZFS host → Nova VMs) ────────────────────────────────────────
+# ── NFS (ZFS host → Nova VMs) ─────────────────────────────────────────────────
 # Nova VMs reach the host via the OVN external bridge.
 # Verify 172.16.0.7 is reachable from VMs after Sunbeam bootstrap.
 nfs_server_ip: "172.16.0.7"
@@ -113,11 +113,11 @@ nfs_exports:
   - { path: "/tank/backup",      options: "rw,sync,no_subtree_check,no_root_squash" }
   - { path: "/archive/longterm", options: "ro,sync,no_subtree_check,no_root_squash" }
 
-# ── NVIDIA ───────────────────────────────────────────────────────────
+# ── NVIDIA ────────────────────────────────────────────────────────────────────
 # GPU passthrough disabled — Titan RTX stays on host, unused in this deployment
 install_nvidia: false
 
-# ── Network / NTP ────────────────────────────────────────────────────
+# ── Network / NTP ─────────────────────────────────────────────────────────────
 ntp_servers:
   - 0.pool.ntp.org
   - 1.pool.ntp.org
@@ -138,9 +138,9 @@ firewall_allowed_ports:
   - { port: "111",  proto: tcp, comment: "NFS portmapper" }
   - { port: "111",  proto: udp, comment: "NFS portmapper" }
 
-# ── Domain / TLS ─────────────────────────────────────────────────────
-domain: beckcloud.local
+# ── Domain / TLS ──────────────────────────────────────────────────────────────
+domain: becklab.cloud
 ssl_email: yappingboy@gmail.com
 
-# ── Secrets (override via env or vault) ──────────────────────────────
+# ── Secrets (override via env or vault) ───────────────────────────────────────
 github_token: "{{ lookup('env', 'GITHUB_TOKEN') }}"

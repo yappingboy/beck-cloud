@@ -30,4 +30,4 @@ spec:
       enabled: true
       className: traefik
       hosts:
-        - openwebui.beckcloud.local
+        - openwebui.becklab.cloud

@@ -81,10 +81,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - bazarr.beckcloud.local
+        - bazarr.becklab.cloud
       secretName: bazarr-tls
   rules:
-    - host: bazarr.beckcloud.local
+    - host: bazarr.becklab.cloud
       http:
         paths:
           - path: /

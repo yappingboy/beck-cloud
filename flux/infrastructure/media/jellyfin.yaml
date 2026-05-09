@@ -90,10 +90,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - jellyfin.beckcloud.local
+        - jellyfin.becklab.cloud
       secretName: jellyfin-tls
   rules:
-    - host: jellyfin.beckcloud.local
+    - host: jellyfin.becklab.cloud
       http:
         paths:
           - path: /

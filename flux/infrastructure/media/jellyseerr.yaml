@@ -66,10 +66,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - requests.beckcloud.local
+        - requests.becklab.cloud
       secretName: jellyseerr-tls
   rules:
-    - host: requests.beckcloud.local
+    - host: requests.becklab.cloud
       http:
         paths:
           - path: /

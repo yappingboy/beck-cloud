@@ -81,10 +81,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - radarr.beckcloud.local
+        - radarr.becklab.cloud
       secretName: radarr-tls
   rules:
-    - host: radarr.beckcloud.local
+    - host: radarr.becklab.cloud
       http:
         paths:
           - path: /

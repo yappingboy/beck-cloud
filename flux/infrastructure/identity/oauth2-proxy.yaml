@@ -25,7 +25,7 @@ spec:
           secretKeyRef:
             name: oauth2-proxy-client-secret
             key: client-secret
-      redirect_url: "https://oauth2.beckcloud.local/oauth2/callback"
+      redirect_url: "https://oauth2.becklab.cloud/oauth2/callback"
       cookie_secure: true
       cookie_httponly: true
       cookie_samesite: "Lax"
@@ -35,17 +35,17 @@ spec:
             name: oauth2-proxy-cookie-secret
             key: cookie-secret
       ldap_url: "ldap://lldap.identity.svc.cluster.local:3890"
-      ldap_search_base: "dc=homelab,dc=local"
-      ldap_user_search_filter: "(&(|(uid=%s)(mail=%s))(memberOf=cn=admins,ou=groups,dc=homelab,dc=local))"
-      login_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/auth"
-      redeem_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/token"
-      validate_url: "https://keycloak.beckcloud.local/realms/homelab/protocol/openid-connect/userinfo"
+      ldap_search_base: "dc=becklab,dc=cloud"
+      ldap_user_search_filter: "(&(|(uid=%s)(mail=%s))(memberOf=cn=admins,ou=groups,dc=becklab,dc=cloud))"
+      login_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/auth"
+      redeem_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token"
+      validate_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/userinfo"
       upstream: "http://localhost:80"
     ingress:
       enabled: true
       className: traefik
       hosts:
-        - host: oauth2.beckcloud.local
+        - host: oauth2.becklab.cloud
           paths:
             - path: /oauth2/
               pathType: Prefix

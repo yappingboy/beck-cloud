@@ -17,9 +17,9 @@ spec:
     fullnameOverride: lldap
     lldap:
       config:
-        LDAP_BASE_DN: dc=homelab,dc=local
-        LDAP_USERS_DN: ou=users,dc=homelab,dc=local
-        LDAP_GROUPS_DN: ou=groups,dc=homelab,dc=local
+        LDAP_BASE_DN: dc=becklab,dc=cloud
+        LDAP_USERS_DN: ou=users,dc=becklab,dc=cloud
+        LDAP_GROUPS_DN: ou=groups,dc=becklab,dc=cloud
         LDAP_USER_MAIL_ATTR: mail
         LDAP_USER_NAME_ATTR: cn
         LDAP_GROUP_MEMBER_ATTR: memberUid
@@ -98,7 +98,7 @@ spec:
         enabled: true
         className: traefik
         hosts:
-          - host: lldap.beckcloud.local
+          - host: lldap.becklab.cloud
             paths:
               - path: /
                 pathType: Prefix

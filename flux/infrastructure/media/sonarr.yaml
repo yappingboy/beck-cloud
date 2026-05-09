@@ -81,10 +81,10 @@ metadata:
 spec:
   tls:
     - hosts:
-        - sonarr.beckcloud.local
+        - sonarr.becklab.cloud
       secretName: sonarr-tls
   rules:
-    - host: sonarr.beckcloud.local
+    - host: sonarr.becklab.cloud
       http:
         paths:
           - path: /
