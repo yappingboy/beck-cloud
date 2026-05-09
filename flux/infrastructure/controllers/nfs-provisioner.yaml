@@ -1,0 +1,52 @@
+# NFS subdir external provisioner — dynamically provisions PersistentVolumes
+# backed by subdirectories on the ZFS NFS export from the bare metal host.
+#
+# NFS server: the hypervisor host (172.16.0.7) exporting /tank/k3s
+# This is the default StorageClass; see configs/storage-classes.yaml for others.
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nfs-subdir-external-provisioner
+  namespace: kube-system
+spec:
+  interval: 5m
+  dependsOn:
+    - name: cilium
+      namespace: kube-system
+  chart:
+    spec:
+      chart: nfs-subdir-external-provisioner
+      version: ">=4.0.18"
+      sourceRef:
+        kind: HelmRepository
+        name: nfs-subdir-external-provisioner
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    nfs:
+      server: 172.16.0.7
+      path: /tank/k3s
+      mountOptions:
+        - nfsvers=4.2
+        - hard
+        - intr
+        - rsize=1048576
+        - wsize=1048576
+    storageClass:
+      name: nfs-k3s
+      defaultClass: true
+      reclaimPolicy: Retain
+      archiveOnDelete: false
+      pathPattern: "${.PVC.namespace}/${.PVC.name}"
+    resources:
+      requests:
+        cpu: 50m
+        memory: 64Mi
+      limits:
+        cpu: 200m
+        memory: 128Mi
