@@ -1,6 +1,6 @@
 # Beck Cloud — Private Cloud Platform
 
-Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
+Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 
 ## Architecture
 
@@ -8,14 +8,14 @@ Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
 |-------|-----------|--------|
 | L1 | OS & Bootstrap (Ansible) | ✅ Playbooks ready |
 | L2 | K3s + Cilium | ✅ HelmRelease defined |
-| L3 | Rook-Ceph Storage | ✅ HelmRelease + CephCluster + StorageClasses |
+| L3 | ZFS Storage + Local Path Provisioner | ✅ Pool plan + datasets + StorageClasses |
 | L4 | GitOps (Flux CD) | ✅ Bootstrap + Sources + Controllers + Configs |
 | L5 | Traefik + cert-manager | ✅ HelmReleases + SSO middlewares |
 | L6 | Identity (lldap + Keycloak + oauth2-proxy) | ✅ Full stack defined |
 | L7 | Security (Wazuh + Falco) | ✅ HelmReleases defined |
 | L8 | Rancher (Multi-tenancy) | ✅ HelmRelease + namespace |
 | L9 | Media Platform (Jellyfin/Sonarr/Radarr/etc) | ✅ Full stack defined |
-| L10 | LLM/AI | ⬜ Deferred — new direction planned |
+| L10 | LLM/AI | ⬛ Removed (deferred) — will revisit later |
 | L11 | Backup (Velero) | ✅ Full schedules + snapshot classes |
 | L12 | VM Test Overlay | ⬜ Not yet implemented |
 
@@ -36,8 +36,8 @@ Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
 │   ├── apps/apps.yaml            # Application layer kustomization
 │   └── infrastructure/
 │       ├── sources/              # HelmRepository definitions
-│       ├── controllers/          # Cilium, Rook-Ceph, NVIDIA plugin
-│       ├── configs/              # CephCluster, StorageClasses
+│       ├── controllers/          # Cilium, ZFS/local-storage, NVIDIA plugin
+│       ├── configs/              # ZFS datasets, StorageClasses
 │       ├── csi-snapshotter/      # VolumeSnapshotClasses
 │       ├── traefik/              # Traefik + SSO middlewares + dashboard
 │       ├── cert-manager/         # cert-manager + ClusterIssuers
@@ -82,8 +82,8 @@ Production-grade private cloud on K3s + Rook-Ceph, managed via Flux CD GitOps.
 ```
 flux-system (bootstrap)
   └── infrastructure-sources (HelmRepos)
-        └── infrastructure-controllers (Cilium, Rook-Ceph, NVIDIA)
-              └── infrastructure-configs (CephCluster, StorageClasses)
+        └── infrastructure-controllers (Cilium, ZFS/local-storage, NVIDIA)
+              └── infrastructure-configs (ZFS datasets, StorageClasses)
                     └── infrastructure-apps (Traefik, cert-manager, identity, security, velero, rancher, media)
                           └── apps (deployment health checks)
 ```
@@ -124,7 +124,7 @@ flux-system (bootstrap)
 
 - **No hypervisor**: K3s on bare metal (previous Proxmox caused data loss)
 - **Cilium over Flannel**: eBPF NetworkPolicy for torrent VPN isolation
-- **Rook-Ceph**: Single operator, CephFS RWX for hardlinks, block + FS + S3
+- **ZFS**: Single-node storage with native snapshots, compression, checksumming
 - **Flux (pull)**: No external CI with cluster credentials
 - **lldap**: Simpler than OpenLDAP, compatible with Keycloak
 - **qBit + Gluetun**: Same Pod for VPN-only egress + kill-switch
