@@ -83,8 +83,9 @@
           when: tank_exists.rc != 0
 
         - name: Settle udev after signature wipe
-          ansible.builtin.command: udevadm settle
+          ansible.builtin.command: udevadm settle --timeout=300
           changed_when: false
+          failed_when: false
 
     # ── Optional zero-fill (DESTRUCTIVE — requires wipe_disks=true) ──────
     - name: Zero first 100MB of each disk (DESTRUCTIVE — requires wipe_disks=true)
