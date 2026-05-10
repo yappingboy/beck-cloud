@@ -6,7 +6,7 @@
 #   tank    — two RAIDZ1 vdevs (~60.5TB usable) + NVMe SLOG
 #     vdev1 — raidz1: sda sdb sdc sdd sde sdf sdg  (6 data + 1 parity)
 #     vdev2 — raidz1: sdj sdk sdl sdn sdo sdh       (5 data + 1 parity)
-#     log   — nvme1n1                                (SLOG: write acceleration)
+#     log   — auto-detected NVMe                      (SLOG: write acceleration)
 #   archive — mirror: sdi sdm                        (~9.1TB usable)
 #
 # DESTRUCTIVE: set wipe_disks=true to wipe all spinning disk signatures.
@@ -23,6 +23,29 @@
     all_zfs_disks: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_archive_mirror }}"
 
   tasks:
+    # ── Detect free NVMe for SLOG ────────────────────────────────────────
+    - name: Find unused NVMe device for SLOG
+      ansible.builtin.shell: |
+        set -e
+        ZPOOL_DEVS=$(zpool status 2>/dev/null | awk '/nvme/{print $1}' | sed 's|/dev/||' || true)
+        for dev in $(lsblk -d -n -o NAME | grep '^nvme'); do
+          # Skip if already in a zpool
+          echo "$ZPOOL_DEVS" | grep -qw "$dev" && continue
+          # Skip if it has any mounted partitions or filesystem
+          lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -q . && continue
+          echo "/dev/$dev"
+          exit 0
+        done
+        echo "ERROR: no free NVMe found" >&2
+        exit 1
+      register: nvme_detect
+      changed_when: false
+      failed_when: nvme_detect.rc != 0
+
+    - name: Show detected SLOG device
+      ansible.builtin.debug:
+        msg: "Using NVMe SLOG device: {{ nvme_detect.stdout | trim }}"
+
     # ── Wipe (guarded) ──────────────────────────────────────────────────
     - name: Wipe disk signatures (DESTRUCTIVE — requires wipe_disks=true)
       when: wipe_disks | bool
@@ -38,7 +61,7 @@
           changed_when: true
 
         - name: Wipe NVMe SLOG device
-          ansible.builtin.command: wipefs -a {{ zfs_slog_device }}
+          ansible.builtin.command: wipefs -a {{ nvme_detect.stdout | trim }}
           changed_when: true
 
     # ── Pool creation ───────────────────────────────────────────────────
@@ -54,7 +77,7 @@
         zpool create -f tank
         raidz1 {{ zfs_raidz1_vdev1 | join(' ') }}
         raidz1 {{ zfs_raidz1_vdev2 | join(' ') }}
-        log {{ zfs_slog_device }}
+        log {{ nvme_detect.stdout | trim }}
       changed_when: true
 
     - name: Check if archive pool already exists
