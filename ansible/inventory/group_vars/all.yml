@@ -67,7 +67,7 @@ cilium_version: 1.17.0
 # ── ZFS ───────────────────────────────────────────────────────────────────────
 zfs_pool_name: tank
 zfs_archive_pool: archive
-zfs_slog_device: /dev/nvme1n1
+# zfs_slog_device: auto-detected in 02-zfs.yml (first NVMe not in any zpool or mounted)
 
 # tank: two RAIDZ1 vdevs — 7+6 drives from the 5.5TB group
 # ~33TB (6 data disks) + ~27.5TB (5 data disks) = ~60.5TB usable from spinning disks
