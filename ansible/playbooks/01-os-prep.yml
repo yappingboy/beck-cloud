@@ -131,6 +131,39 @@
         mode: '0644'
       notify: restart chrony
 
+    # ── NVIDIA drivers ───────────────────────────────────────────────────
+    # Must be installed before 07-ai-sysadmin.yml so llama-server can use the GPU.
+    # Titan RTX (TU102) has 24GB GDDR6 — Qwen2.5-32B Q4_K_M fits entirely in VRAM.
+    - name: Install ubuntu-drivers utility
+      ansible.builtin.apt:
+        name:
+          - ubuntu-drivers-common
+          - nvidia-cuda-toolkit
+        state: present
+
+    - name: Check if NVIDIA driver already loaded
+      ansible.builtin.command: nvidia-smi
+      register: nvidia_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install recommended NVIDIA driver
+      ansible.builtin.command: ubuntu-drivers install
+      when: nvidia_check.rc != 0
+      register: nvidia_install
+
+    - name: Reboot to activate NVIDIA kernel module
+      ansible.builtin.reboot:
+        msg: "Rebooting to activate NVIDIA drivers"
+        reboot_timeout: 300
+      when: nvidia_install is changed
+
+    - name: Verify NVIDIA driver is active post-reboot
+      ansible.builtin.command: nvidia-smi
+      register: nvidia_verify
+      changed_when: false
+      failed_when: nvidia_verify.rc != 0
+
     - name: Harden SSH configuration
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config

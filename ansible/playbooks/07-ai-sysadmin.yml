@@ -1,13 +1,14 @@
 ---
-# 07-ai-sysadmin.yml — Deploy Llamactl + Llama-server on hypervisor
+# 07-ai-sysadmin.yml — Deploy Llamactl + Llama-server (CUDA) on hypervisor
 #
 # Architecture:
 #   - Llamactl manages llama-server instances as native processes (no Docker)
-#   - llama-server serves Qwen2.5-32B-Instruct Q4_K_M on CPU
-#   - Rho agent runs in K3s (08-rho is handled via Flux), calls http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1
+#   - llama-server uses the CUDA build — all 64 Qwen layers offloaded to Titan RTX
+#   - Rho agent runs in K3s (via Flux), calls http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1
 #
-# Model: ~20GB in RAM — leaves >100GB for OpenStack + K3s VMs on a 128GB host
-# Speed: ~2-4 tok/s on CPU; suitable for async sysadmin workloads
+# Prerequisites: 01-os-prep.yml must have run and rebooted (NVIDIA driver active)
+# Model: Qwen2.5-32B Q4_K_M ~20GB — fits in Titan RTX 24GB VRAM with headroom
+# Speed: ~40 tok/s on GPU vs ~3 tok/s on CPU
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/07-ai-sysadmin.yml
 # NOTE: Initial model download is ~20GB. Run with --timeout=3600.
@@ -18,6 +19,17 @@
   gather_facts: true
 
   tasks:
+    # ── GPU pre-flight ───────────────────────────────────────────────────
+    - name: Verify NVIDIA GPU is available (01-os-prep.yml must have run)
+      ansible.builtin.command: nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
+      register: gpu_info
+      changed_when: false
+      failed_when: gpu_info.rc != 0
+
+    - name: Show GPU info
+      ansible.builtin.debug:
+        msg: "GPU available: {{ gpu_info.stdout }}"
+
     # ── ZFS dataset ─────────────────────────────────────────────────────
     - name: Create tank/llm ZFS dataset
       community.general.zfs:
@@ -70,13 +82,20 @@
         path: /usr/local/bin/llama-server
       register: llama_bin
 
-    - name: Download latest llama-server binary from llama.cpp releases
+    - name: Download CUDA-enabled llama-server binary from llama.cpp releases
       when: not llama_bin.stat.exists
       ansible.builtin.shell: |
         set -e
-        LATEST=$(curl -s https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | jq -r '.tag_name')
-        URL="https://github.com/ggml-org/llama.cpp/releases/download/${LATEST}/llama-${LATEST}-bin-ubuntu-x64.zip"
-        curl -fsSL "$URL" -o /tmp/llama-release.zip
+        # Find the ubuntu x64 CUDA asset (picks highest CUDA version if multiple)
+        ASSET_URL=$(curl -s https://api.github.com/repos/ggml-org/llama.cpp/releases/latest | \
+          jq -r '.assets[] | select(.name | test("bin-ubuntu-x64-cuda")) | .browser_download_url' | \
+          sort -V | tail -1)
+        if [ -z "$ASSET_URL" ]; then
+          echo "ERROR: no CUDA ubuntu-x64 asset found in latest llama.cpp release" >&2
+          exit 1
+        fi
+        echo "Downloading: $ASSET_URL"
+        curl -fsSL "$ASSET_URL" -o /tmp/llama-release.zip
         unzip -oj /tmp/llama-release.zip "*/llama-server" -d /tmp/llama-bin/
         install -m 0755 /tmp/llama-bin/llama-server /usr/local/bin/llama-server
         rm -rf /tmp/llama-release.zip /tmp/llama-bin
@@ -207,6 +226,8 @@
           backend: "llama-cpp"
           model: "/tank/llm/models/{{ llm_model_hf_file }}"
           args:
+            - "--n-gpu-layers"
+            - "99"
             - "--ctx-size"
             - "{{ llm_context_size | string }}"
             - "--threads"
