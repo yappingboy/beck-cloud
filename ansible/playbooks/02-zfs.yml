@@ -46,31 +46,69 @@
       ansible.builtin.debug:
         msg: "Using NVMe SLOG device: {{ nvme_detect.stdout | trim }}"
 
-    # ── Wipe (guarded) ──────────────────────────────────────────────────
-    - name: Wipe disk signatures (DESTRUCTIVE — requires wipe_disks=true)
-      when: wipe_disks | bool
-      block:
-        - name: Wipe filesystem signatures
-          ansible.builtin.command: wipefs -a {{ item }}
-          loop: "{{ all_zfs_disks }}"
-          changed_when: true
-
-        - name: Zero first 100MB of each disk
-          ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
-          loop: "{{ all_zfs_disks }}"
-          changed_when: true
-
-        - name: Wipe NVMe SLOG device
-          ansible.builtin.command: wipefs -a {{ nvme_detect.stdout | trim }}
-          changed_when: true
-
-    # ── Pool creation ───────────────────────────────────────────────────
+    # ── Pool existence checks (must run before wipe and create) ─────────
     - name: Check if tank pool already exists
       ansible.builtin.command: zpool list tank
       register: tank_exists
       failed_when: false
       changed_when: false
 
+    - name: Check if archive pool already exists
+      ansible.builtin.command: zpool list archive
+      register: archive_exists
+      failed_when: false
+      changed_when: false
+
+    # ── Wipe partition signatures (always runs before pool create) ───────
+    # wipefs only removes signatures — it does not destroy data.
+    # The dd zero-fill below is the destructive step; that stays guarded.
+    - name: Wipe partition signatures on pool disks
+      when: tank_exists.rc != 0 or archive_exists.rc != 0
+      block:
+        - name: Wipe signatures on tank disks
+          ansible.builtin.command: wipefs -a {{ item }}
+          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 }}"
+          changed_when: true
+          when: tank_exists.rc != 0
+
+        - name: Wipe signatures on archive disks
+          ansible.builtin.command: wipefs -a {{ item }}
+          loop: "{{ zfs_archive_mirror }}"
+          changed_when: true
+          when: archive_exists.rc != 0
+
+        - name: Wipe signatures on NVMe SLOG
+          ansible.builtin.command: wipefs -a {{ nvme_detect.stdout | trim }}
+          changed_when: true
+          when: tank_exists.rc != 0
+
+        - name: Settle udev after signature wipe
+          ansible.builtin.command: udevadm settle
+          changed_when: false
+
+    # ── Optional zero-fill (DESTRUCTIVE — requires wipe_disks=true) ──────
+    - name: Zero first 100MB of each disk (DESTRUCTIVE — requires wipe_disks=true)
+      when: wipe_disks | bool
+      block:
+        - name: Zero-fill tank disks
+          ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
+          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 }}"
+          changed_when: true
+
+        - name: Zero-fill archive disks
+          ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
+          loop: "{{ zfs_archive_mirror }}"
+          changed_when: true
+
+        - name: Zero-fill NVMe SLOG
+          ansible.builtin.command: dd if=/dev/zero of={{ nvme_detect.stdout | trim }} bs=1M count=100 conv=fdatasync
+          changed_when: true
+
+        - name: Settle udev after zero-fill
+          ansible.builtin.command: udevadm settle
+          changed_when: false
+
+    # ── Pool creation ───────────────────────────────────────────────────
     - name: Create tank pool (2x RAIDZ1 + NVMe SLOG)
       when: tank_exists.rc != 0
       ansible.builtin.command: >
@@ -79,12 +117,6 @@
         raidz1 {{ zfs_raidz1_vdev2 | join(' ') }}
         log {{ nvme_detect.stdout | trim }}
       changed_when: true
-
-    - name: Check if archive pool already exists
-      ansible.builtin.command: zpool list archive
-      register: archive_exists
-      failed_when: false
-      changed_when: false
 
     - name: Create archive pool (mirror)
       when: archive_exists.rc != 0
