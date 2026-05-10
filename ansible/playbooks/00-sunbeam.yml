@@ -60,17 +60,11 @@
         dest: "{{ manifest_path }}"
         mode: '0600'
 
-    - name: Run sunbeam prepare-node
-      ansible.builtin.command: sunbeam prepare-node
-      changed_when: true
-      # Idempotent — safe to re-run. Configures OVN, kernel modules, groups.
-
-    - name: Log out and back in to pick up new groups
-      ansible.builtin.debug:
-        msg: |
-          If this is the first run, you may need to log out and back in
-          for group membership changes to take effect before bootstrap.
-          Re-run this playbook after doing so if bootstrap fails.
+    - name: Check if Sunbeam cluster already bootstrapped
+      ansible.builtin.command: sunbeam cluster status
+      register: cluster_status
+      failed_when: false
+      changed_when: false
 
     - name: Bootstrap Sunbeam cluster (control + compute, no MicroCeph storage)
       ansible.builtin.command: >
@@ -78,10 +72,12 @@
         --role control,compute
         --manifest {{ manifest_path }}
         --accept-defaults
+      when: cluster_status.rc != 0
       changed_when: true
       async: 2400
       poll: 30
       # 40-minute timeout. Bootstrap provisions MicroK8s + all OpenStack services.
+      # prepare-node was removed in 2024.1 — bootstrap handles node setup internally.
 
     - name: Run sunbeam configure
       ansible.builtin.command: >
