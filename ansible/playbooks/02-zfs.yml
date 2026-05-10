@@ -4,7 +4,7 @@
 #
 # Pool layout:
 #   tank    — two RAIDZ1 vdevs (~60.5TB usable) + NVMe SLOG
-#     vdev1 — raidz1: sda sdb sdc sdd sde sdf sdg  (6 data + 1 parity)
+#     vdev1 — raidz1: sdb sdc sdd sde sdf sdg       (5 data + 1 parity)
 #     vdev2 — raidz1: sdj sdk sdl sdn sdo sdh       (5 data + 1 parity)
 #     log   — auto-detected NVMe                      (SLOG: write acceleration)
 #   archive — mirror: sdi sdm                        (~9.1TB usable)
