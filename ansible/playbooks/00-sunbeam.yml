@@ -54,6 +54,9 @@
         - kvm
       ignore_errors: true  # Groups may not exist until snap is fully initialized
 
+    - name: Reset SSH connection to pick up new group membership
+      ansible.builtin.meta: reset_connection
+
     - name: Copy Sunbeam manifest
       ansible.builtin.template:
         src: templates/sunbeam-manifest.yaml.j2
@@ -61,36 +64,35 @@
         mode: '0600'
 
     - name: Check if Sunbeam cluster already bootstrapped
-      ansible.builtin.shell: sg snap_daemon -c "sunbeam cluster status"
+      ansible.builtin.command: sunbeam cluster status
       register: cluster_status
       failed_when: false
       changed_when: false
 
     - name: Bootstrap Sunbeam cluster (control + compute, no MicroCeph storage)
-      ansible.builtin.shell: >
-        sg snap_daemon -c "sunbeam cluster bootstrap
+      ansible.builtin.command: >
+        sunbeam cluster bootstrap
         --role control,compute
         --manifest {{ manifest_path }}
-        --accept-defaults"
+        --accept-defaults
       when: cluster_status.rc != 0
       changed_when: true
       async: 2400
       poll: 30
-      # sg snap_daemon activates the group without requiring a re-login.
       # prepare-node was removed in 2024.1 — bootstrap handles node setup internally.
 
     - name: Run sunbeam configure
-      ansible.builtin.shell: >
-        sg snap_daemon -c "sunbeam configure
+      ansible.builtin.command: >
+        sunbeam configure
         --openrc {{ openrc_path }}
-        --accept-defaults"
+        --accept-defaults
       changed_when: true
       # Creates default project/user, external network, demo tenant network.
       # If accept-defaults produces wrong network config, run manually:
-      #   sg snap_daemon -c "sunbeam configure --openrc ~/openrc"
+      #   sunbeam configure --openrc ~/openrc
 
     - name: Generate openrc credentials file
-      ansible.builtin.shell: sg snap_daemon -c "sunbeam openrc" > {{ openrc_path }}
+      ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
       args:
         creates: "{{ openrc_path }}"
 
@@ -145,7 +147,7 @@
 
   post_tasks:
     - name: Display Sunbeam status
-      ansible.builtin.shell: sg snap_daemon -c "sunbeam cluster status"
+      ansible.builtin.command: sunbeam cluster status
       changed_when: false
       register: sunbeam_status
 
