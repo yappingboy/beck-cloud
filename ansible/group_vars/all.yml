@@ -102,6 +102,7 @@ zfs_datasets:
   - { name: "tank/torrent",         recordsize: "1M",   compression: "lz4" }
   - { name: "tank/backup",          recordsize: "128K", compression: "lz4" }
   - { name: "tank/logs",            recordsize: "128K", compression: "lz4" }
+  - { name: "tank/llm",             recordsize: "1M",   compression: "lz4" }
   - { name: "archive/longterm",     recordsize: "1M",   compression: "lz4" }
 
 # ── NFS (ZFS host → Nova VMs) ─────────────────────────────────────────────────

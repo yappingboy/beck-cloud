@@ -10,6 +10,7 @@ resources:
   - identity
   - security
   - velero
-  - rancher
   - media
   - llm
+  # rancher: removed — K3s + Flux replaces Rancher's management role;
+  #          files kept in flux/infrastructure/rancher/ for reference
