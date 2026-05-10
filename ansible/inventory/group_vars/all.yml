@@ -69,9 +69,9 @@ zfs_pool_name: tank
 zfs_archive_pool: archive
 zfs_slog_device: /dev/nvme1n1
 
-# tank: two RAIDZ2 vdevs — 7+6 drives from the 5.5TB group
-# ~27.5TB (5 data disks) + ~22TB (4 data disks) = ~49.5TB usable from spinning disks
-zfs_raidz2_vdev1:
+# tank: two RAIDZ1 vdevs — 7+6 drives from the 5.5TB group
+# ~33TB (6 data disks) + ~27.5TB (5 data disks) = ~60.5TB usable from spinning disks
+zfs_raidz1_vdev1:
   - /dev/sda
   - /dev/sdb
   - /dev/sdc
@@ -79,13 +79,13 @@ zfs_raidz2_vdev1:
   - /dev/sde
   - /dev/sdf
   - /dev/sdg
-zfs_raidz2_vdev2:
+zfs_raidz1_vdev2:
   - /dev/sdj
   - /dev/sdk
   - /dev/sdl
   - /dev/sdn
   - /dev/sdo
-  - /dev/sdp
+  - /dev/sdh
 
 # archive: mirrored 9.1TB pair — ~9.1TB usable
 zfs_archive_mirror:

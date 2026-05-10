@@ -3,9 +3,9 @@
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-zfs.yml
 #
 # Pool layout:
-#   tank    — two RAIDZ2 vdevs (~49.5TB usable) + NVMe SLOG
-#     vdev1 — raidz2: sda sdb sdc sdd sde sdf sdg  (5 data + 2 parity)
-#     vdev2 — raidz2: sdj sdk sdl sdn sdo sdp       (4 data + 2 parity)
+#   tank    — two RAIDZ1 vdevs (~60.5TB usable) + NVMe SLOG
+#     vdev1 — raidz1: sda sdb sdc sdd sde sdf sdg  (6 data + 1 parity)
+#     vdev2 — raidz1: sdj sdk sdl sdn sdo sdh       (5 data + 1 parity)
 #     log   — nvme1n1                                (SLOG: write acceleration)
 #   archive — mirror: sdi sdm                        (~9.1TB usable)
 #
@@ -20,7 +20,7 @@
 
   vars:
     wipe_disks: false
-    all_zfs_disks: "{{ zfs_raidz2_vdev1 + zfs_raidz2_vdev2 + zfs_archive_mirror }}"
+    all_zfs_disks: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_archive_mirror }}"
 
   tasks:
     # ── Wipe (guarded) ──────────────────────────────────────────────────
@@ -48,12 +48,12 @@
       failed_when: false
       changed_when: false
 
-    - name: Create tank pool (2x RAIDZ2 + NVMe SLOG)
+    - name: Create tank pool (2x RAIDZ1 + NVMe SLOG)
       when: tank_exists.rc != 0
       ansible.builtin.command: >
         zpool create -f tank
-        raidz2 {{ zfs_raidz2_vdev1 | join(' ') }}
-        raidz2 {{ zfs_raidz2_vdev2 | join(' ') }}
+        raidz1 {{ zfs_raidz1_vdev1 | join(' ') }}
+        raidz1 {{ zfs_raidz1_vdev2 | join(' ') }}
         log {{ zfs_slog_device }}
       changed_when: true
 
