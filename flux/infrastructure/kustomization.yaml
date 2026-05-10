@@ -9,7 +9,9 @@ resources:
   - traefik
   - identity
   - security
-  - velero
-  - rancher
   - media
+  # velero: removed — Flux GitOps (all state in git) + ZFS snapshots (data layer)
+  #         replace it. Re-add if off-cluster DR becomes a requirement.
   - llm
+  # rancher: removed — K3s + Flux replaces Rancher's management role;
+  #          files kept in flux/infrastructure/rancher/ for reference
