@@ -39,7 +39,8 @@
           - nfs-kernel-server
           - nfs-common
           # KVM/QEMU (Sunbeam/Nova hypervisor)
-          - qemu-kvm
+          # qemu-kvm is a virtual package on Ubuntu 26.04; use the concrete provider
+          - qemu-system-x86
           - libvirt-daemon-system
           - virtinst
           - cpu-checker
