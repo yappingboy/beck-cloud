@@ -7,7 +7,7 @@ homelab_ip: 172.16.0.7
 ops_user: stephen
 
 # ── Sunbeam / OpenStack ────────────────────────────────────────────────────────
-sunbeam_channel: "2024.2/stable"
+sunbeam_channel: "2024.1/stable"
 
 # Provider network — a slice of your physical LAN for OpenStack floating IPs
 provider_network_cidr: "172.16.0.0/24"
