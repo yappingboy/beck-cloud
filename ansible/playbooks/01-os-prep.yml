@@ -148,7 +148,9 @@
       changed_when: false
 
     - name: Install recommended NVIDIA driver
-      ansible.builtin.command: ubuntu-drivers install
+      ansible.builtin.shell: ubuntu-drivers install 2>/dev/null || ubuntu-drivers autoinstall
+      args:
+        executable: /bin/bash
       when: nvidia_check.rc != 0
       register: nvidia_install
 

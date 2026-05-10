@@ -124,10 +124,8 @@ data:
     - Watch media stack restarts — Jellyfin crashes often indicate NFS mount issues
 
     ## Pending Investigations
-    - [ ] Velero backup storage: MinIO not yet deployed on /tank/backup. Track and prompt
-          when free space on /tank/backup > 100GB (enough for MinIO bootstrap)
-    - [ ] lldap LDAP base DN migrated to dc=becklab,dc=cloud — verify oauth2-proxy login works
-          after next identity stack deployment
+    - [ ] Confirm oauth2-proxy → lldap login works after identity stack first deployment
+    - [ ] Monitor /tank/backup free space; flag when > 100GB free (MinIO candidate)
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -205,9 +203,10 @@ spec:
             - -c
             - |
               set -e
+              # Install system tools needed for sysadmin work (ssh, curl not in slim image)
+              apt-get update -qq && apt-get install -y -qq curl openssh-client 2>/dev/null
               export PATH="/app/bin:/app/npm/bin:$PATH"
               export HOME=/data
-              export KUBECONFIG=/var/run/secrets/kubernetes.io/serviceaccount/..data/token
               # Wire up in-cluster kubectl access
               mkdir -p /data/.kube
               cat > /data/.kube/config <<EOF
@@ -303,11 +302,13 @@ spec:
     requests:
       storage: 5Gi
 ---
-# rho-ssh-key must be created manually before deploying:
+# rho-ssh-key must be created manually before deploying.
+# The config file MUST use actual newlines (printf, not echo -e or literal \n):
+#
 #   kubectl create secret generic rho-ssh-key -n llm \
 #     --from-file=id_ed25519=~/.ssh/id_ed25519 \
 #     --from-file=id_ed25519.pub=~/.ssh/id_ed25519.pub \
-#     --from-literal=config="Host becklab\n  HostName 172.16.0.7\n  User stephen\n  IdentityFile ~/.ssh/id_ed25519\n  StrictHostKeyChecking no"
+#     --from-file=config=<(printf 'Host becklab\n  HostName 172.16.0.7\n  User stephen\n  IdentityFile /data/.ssh/id_ed25519\n  StrictHostKeyChecking no\n')
 apiVersion: v1
 kind: Service
 metadata:
