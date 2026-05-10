@@ -30,12 +30,17 @@
     manifest_path: "/home/{{ ops_user }}/sunbeam-manifest.yaml"
 
   tasks:
+    - name: Check if openstack snap already installed
+      ansible.builtin.command: snap list openstack
+      register: snap_check
+      failed_when: false
+      changed_when: false
+
     - name: Install openstack snap
       become: true
-      community.general.snap:
-        name: openstack
-        channel: "{{ sunbeam_channel }}"
-        state: present
+      ansible.builtin.command: snap install openstack --channel="{{ sunbeam_channel }}"
+      when: snap_check.rc != 0
+      changed_when: true
 
     - name: Add ops_user to required groups (snap_daemon, libvirt, kvm)
       become: true
