@@ -143,6 +143,39 @@
       failed_when: false
       changed_when: false
 
+    - name: Check for stale Juju machine agent services (persists across snap purge)
+      ansible.builtin.shell: >
+        systemctl list-units --all 'jujud-machine-*' --no-legend | grep -q jujud-machine
+      register: juju_machine_agent_check
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale Juju machine agent (causes 'machine is already provisioned')
+      become: true
+      when: >
+        'localhost' not in juju_ctrl_check.stdout and
+        juju_machine_agent_check.rc == 0
+      block:
+        - name: Stop juju machine agent services
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: stopped
+          with_fileglob: /etc/systemd/system/jujud-machine-*.service
+          ignore_errors: true
+
+        - name: Remove juju machine agent service files
+          ansible.builtin.shell: rm -f /etc/systemd/system/jujud-machine-*.service
+          changed_when: true
+
+        - name: Remove juju machine agent data directory
+          ansible.builtin.file:
+            path: /var/lib/juju
+            state: absent
+
+        - name: Reload systemd after removing machine agent
+          ansible.builtin.systemd:
+            daemon_reload: true
+
     - name: Remove stale Juju LXD trust entry if controller is absent
       ansible.builtin.command: lxc config trust remove juju
       when: "'localhost' not in juju_ctrl_check.stdout"
@@ -170,10 +203,10 @@
       failed_when: false
       changed_when: false
 
-    - name: Check if Sunbeam Juju model already exists (more reliable than cluster status)
+    - name: Check if Sunbeam cluster is fully deployed
       ansible.builtin.shell: >
-        juju models --controller localhost-localhost 2>/dev/null | grep -q openstack
-      register: sunbeam_model_check
+        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
+      register: sunbeam_deployed_check
       failed_when: false
       changed_when: false
 
@@ -183,7 +216,7 @@
         --role control,compute
         --manifest {{ manifest_path }}
         --accept-defaults
-      when: sunbeam_model_check.rc != 0
+      when: sunbeam_deployed_check.rc != 0
       changed_when: true
       async: 2400
       poll: 30
@@ -203,13 +236,16 @@
       changed_when: true
       failed_when: false
       register: configure_result
-      # --accept-defaults may not exist on all 2024.1 builds; failed_when: false
-      # lets us fall through to the manual openrc generation below if it fails.
 
-    - name: Generate openrc credentials file
+    - name: Re-check if configure wrote the openrc file
+      ansible.builtin.stat:
+        path: "{{ openrc_path }}"
+      register: openrc_after_configure
+
+    - name: Generate openrc credentials file (fallback if configure did not write it)
       ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
-      args:
-        creates: "{{ openrc_path }}"
+      when: not openrc_after_configure.stat.exists
+      changed_when: true
 
     - name: Secure openrc file
       ansible.builtin.file:
