@@ -4,6 +4,7 @@
 
 homelab_hostname: becklab
 homelab_ip: 172.16.0.7
+homelab_network_cidr: "172.16.0.0/16"
 ops_user: stephen
 
 # ── Sunbeam / OpenStack ────────────────────────────────────────────────────────
