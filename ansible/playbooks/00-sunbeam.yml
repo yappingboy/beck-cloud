@@ -143,6 +143,12 @@
       failed_when: false
       changed_when: false
 
+    - name: Remove stale Juju LXD trust entry if controller is absent
+      ansible.builtin.command: lxc config trust remove juju
+      when: "'localhost' not in juju_ctrl_check.stdout"
+      failed_when: false
+      changed_when: false
+
     - name: Bootstrap Juju controller on LXD
       ansible.builtin.command: juju bootstrap localhost
       when: "'localhost' not in juju_ctrl_check.stdout"
