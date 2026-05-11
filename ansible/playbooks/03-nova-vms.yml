@@ -23,21 +23,21 @@
       failed_when: catalog.rc != 0
 
     # ── Image ──────────────────────────────────────────────────────────
-    - name: Check if Ubuntu 26.04 cloud image exists in Glance
+    - name: Check if Ubuntu 24.04 cloud image exists in Glance
       ansible.builtin.shell: |
         . {{ openrc_path }} && openstack image show {{ nova_k3s_image }} -f value -c id
       register: image_check
       failed_when: false
       changed_when: false
 
-    - name: Download Ubuntu 26.04 cloud image
+    - name: Download Ubuntu 24.04 cloud image
       ansible.builtin.get_url:
         url: "{{ nova_k3s_image_url }}"
         dest: "/tmp/{{ nova_k3s_image }}.img"
         mode: '0644'
       when: image_check.rc != 0
 
-    - name: Upload Ubuntu 26.04 image to Glance
+    - name: Upload Ubuntu 24.04 image to Glance
       ansible.builtin.shell: |
         . {{ openrc_path }} && openstack image create \
           --container-format bare \

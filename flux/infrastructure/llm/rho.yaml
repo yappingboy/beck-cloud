@@ -35,7 +35,7 @@ data:
     You are an autonomous infrastructure operator for the BeckLab homelab.
 
     ## Environment
-    - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 26.04, 128GB RAM
+    - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 24.04, 128GB RAM
     - Hypervisor layer: Sunbeam OpenStack (Nova/Neutron/Glance/Keystone)
     - ZFS storage: `tank` pool (RAIDZ2×2, ~49TB) + `archive` pool (mirror, ~9TB)
     - NFS exports: /tank/k3s, /tank/media, /tank/torrent, /tank/backup, /tank/llm, /archive/longterm

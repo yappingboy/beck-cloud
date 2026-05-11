@@ -1,6 +1,6 @@
 # ZFS + Sunbeam Deployment Plan — Beck Cloud
 
-> **Status:** In progress — fresh deployment on Ubuntu 26.04
+> **Status:** In progress — fresh deployment on Ubuntu 24.04 LTS (Sunbeam 2024.1 requires noble)
 > **Previous storage:** Rook-Ceph (decommissioned)
 > **Previous OS:** CentOS Stream 10 (replaced)
 > **Architecture:** Sunbeam OpenStack on bare metal → K3s on Nova VMs → ZFS/NFS for persistent storage
@@ -156,7 +156,7 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-snapshotter
 | NVMe SLOG failure (power loss) | Pool may need `zpool clear` on next import | UPS on host; ZFS recovers safely on clean import |
 | NFS as storage backend | Higher latency vs local disk | `hard,intr` mount options; NFS v4.2 for best perf |
 | Single node = no live migration | VM failure = downtime | ZFS snapshots + Velero for fast restore |
-| Sunbeam 26.04 early adopter | Potential snap bugs | Pin snap channel; check Canonical release notes |
+| Sunbeam 2024.1 on noble (24.04) | Snap channel pinned to LTS | Track 2024.x/stable; check Canonical release notes |
 | Nova VM IP changes | K3s cluster loses quorum | Use static IPs via Neutron port allocation |
 
 ---
