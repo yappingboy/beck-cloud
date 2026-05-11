@@ -92,7 +92,7 @@
 
     - name: Install lxd snap
       become: true
-      ansible.builtin.command: snap install lxd --channel="5.21/stable"
+      ansible.builtin.command: snap install lxd --channel="latest/stable"
       when: lxd_check.rc != 0
       changed_when: true
 
@@ -148,15 +148,22 @@
       poll: 30
       # prepare-node was removed in 2024.1 — bootstrap handles node setup internally.
 
+    - name: Check if sunbeam already configured (openrc exists)
+      ansible.builtin.stat:
+        path: "{{ openrc_path }}"
+      register: openrc_stat
+
     - name: Run sunbeam configure
       ansible.builtin.command: >
         sunbeam configure
         --openrc {{ openrc_path }}
         --accept-defaults
+      when: not openrc_stat.stat.exists
       changed_when: true
-      # Creates default project/user, external network, demo tenant network.
-      # If accept-defaults produces wrong network config, run manually:
-      #   sunbeam configure --openrc ~/openrc
+      failed_when: false
+      register: configure_result
+      # --accept-defaults may not exist on all 2024.1 builds; failed_when: false
+      # lets us fall through to the manual openrc generation below if it fails.
 
     - name: Generate openrc credentials file
       ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
