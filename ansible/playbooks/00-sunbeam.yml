@@ -143,6 +143,39 @@
       failed_when: false
       changed_when: false
 
+    - name: Check for stale Juju machine agent services (persists across snap purge)
+      ansible.builtin.shell: >
+        systemctl list-units --all 'jujud-machine-*' --no-legend | grep -q jujud-machine
+      register: juju_machine_agent_check
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale Juju machine agent (causes 'machine is already provisioned')
+      become: true
+      when: >
+        'localhost' not in juju_ctrl_check.stdout and
+        juju_machine_agent_check.rc == 0
+      block:
+        - name: Stop juju machine agent services
+          ansible.builtin.systemd:
+            name: "{{ item }}"
+            state: stopped
+          with_fileglob: /etc/systemd/system/jujud-machine-*.service
+          ignore_errors: true
+
+        - name: Remove juju machine agent service files
+          ansible.builtin.shell: rm -f /etc/systemd/system/jujud-machine-*.service
+          changed_when: true
+
+        - name: Remove juju machine agent data directory
+          ansible.builtin.file:
+            path: /var/lib/juju
+            state: absent
+
+        - name: Reload systemd after removing machine agent
+          ansible.builtin.systemd:
+            daemon_reload: true
+
     - name: Remove stale Juju LXD trust entry if controller is absent
       ansible.builtin.command: lxc config trust remove juju
       when: "'localhost' not in juju_ctrl_check.stdout"
