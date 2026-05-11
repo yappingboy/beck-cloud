@@ -138,7 +138,7 @@
       poll: 15
 
     - name: Wait for Juju controller API to be reachable
-      ansible.builtin.command: juju status
+      ansible.builtin.command: juju controllers
       register: juju_ready
       until: juju_ready.rc == 0
       retries: 20
