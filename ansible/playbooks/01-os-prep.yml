@@ -194,6 +194,23 @@
         comment: "{{ item.comment }}"
       loop: "{{ firewall_allowed_ports }}"
 
+    - name: Allow LXD bridge traffic through UFW (required for Juju/Sunbeam)
+      community.general.ufw:
+        rule: allow
+        interface: lxdbr0
+        direction: "{{ item }}"
+      loop:
+        - in
+        - out
+
+    - name: Allow LXD bridge routing through UFW
+      ansible.builtin.command: "ufw route allow {{ item }} on lxdbr0"
+      loop:
+        - in
+        - out
+      changed_when: true
+      failed_when: false
+
     - name: Enable and start libvirtd
       ansible.builtin.systemd:
         name: libvirtd

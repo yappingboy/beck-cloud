@@ -112,10 +112,17 @@
       failed_when: false
       changed_when: false
 
-    - name: Initialize LXD
+    - name: Initialize LXD with auto config
       ansible.builtin.command: lxd init --auto
       when: lxd_init_check.rc != 0
       changed_when: true
+
+    - name: Ensure lxdbr0 bridge exists
+      become: true
+      ansible.builtin.command: lxc network create lxdbr0
+      register: bridge_create
+      failed_when: false
+      changed_when: bridge_create.rc == 0
 
     - name: Check if Juju controller already exists
       ansible.builtin.command: juju controllers
@@ -127,8 +134,16 @@
       ansible.builtin.command: juju bootstrap localhost
       when: "'localhost' not in juju_ctrl_check.stdout"
       changed_when: true
-      async: 600
+      async: 1800
       poll: 15
+
+    - name: Wait for Juju controller API to be reachable
+      ansible.builtin.command: juju status
+      register: juju_ready
+      until: juju_ready.rc == 0
+      retries: 20
+      delay: 15
+      changed_when: false
 
     - name: Check if Sunbeam cluster already bootstrapped
       ansible.builtin.command: sunbeam cluster status
