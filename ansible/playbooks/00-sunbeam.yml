@@ -222,30 +222,30 @@
       poll: 30
       # prepare-node was removed in 2024.1 — bootstrap handles node setup internally.
 
-    - name: Check if sunbeam already configured (openrc exists)
-      ansible.builtin.stat:
-        path: "{{ openrc_path }}"
-      register: openrc_stat
+    - name: Check if sunbeam already configured (openrc exists and has auth-url)
+      ansible.builtin.shell: >
+        grep -q OS_AUTH_URL {{ openrc_path }} 2>/dev/null
+      register: openrc_valid
+      failed_when: false
+      changed_when: false
 
     - name: Run sunbeam configure
       ansible.builtin.command: >
         sunbeam configure
         --openrc {{ openrc_path }}
         --accept-defaults
-      when: not openrc_stat.stat.exists
+      when: openrc_valid.rc != 0
       changed_when: true
       failed_when: false
       register: configure_result
 
-    - name: Re-check if configure wrote the openrc file
-      ansible.builtin.stat:
-        path: "{{ openrc_path }}"
-      register: openrc_after_configure
-
-    - name: Generate openrc credentials file (fallback if configure did not write it)
+    - name: Generate openrc from sunbeam (authoritative source, always overwrites stale file)
       ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
-      when: not openrc_after_configure.stat.exists
       changed_when: true
+
+    - name: Verify openrc has required auth-url
+      ansible.builtin.shell: grep -q OS_AUTH_URL {{ openrc_path }}
+      changed_when: false
 
     - name: Secure openrc file
       ansible.builtin.file:
