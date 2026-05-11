@@ -75,6 +75,15 @@
         dest: "{{ manifest_path }}"
         mode: '0600'
 
+    - name: Connect required snap interfaces for openstack
+      become: true
+      ansible.builtin.command: snap connect openstack:{{ item }}
+      loop:
+        - ssh-keys
+        - dot-local-share-juju
+      failed_when: false
+      changed_when: true
+
     - name: Check if Sunbeam cluster already bootstrapped
       ansible.builtin.command: sunbeam cluster status
       register: cluster_status
