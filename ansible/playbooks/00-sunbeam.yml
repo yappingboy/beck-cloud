@@ -180,7 +180,7 @@
       ansible.builtin.shell: |
         lxc config trust list -f csv 2>/dev/null \
           | grep -i juju \
-          | cut -d',' -f1 \
+          | cut -d',' -f4 \
           | xargs -r -I{} lxc config trust remove {} 2>/dev/null
         exit 0
       when: "'localhost' not in juju_ctrl_check.stdout"
