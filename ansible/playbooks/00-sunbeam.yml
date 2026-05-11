@@ -176,8 +176,13 @@
           ansible.builtin.systemd:
             daemon_reload: true
 
-    - name: Remove stale Juju LXD trust entry if controller is absent
-      ansible.builtin.command: lxc config trust remove juju
+    - name: Remove stale Juju LXD trust entries if controller is absent
+      ansible.builtin.shell: |
+        lxc config trust list -f csv 2>/dev/null \
+          | grep -i juju \
+          | cut -d',' -f1 \
+          | xargs -r -I{} lxc config trust remove {} 2>/dev/null
+        exit 0
       when: "'localhost' not in juju_ctrl_check.stdout"
       failed_when: false
       changed_when: false
