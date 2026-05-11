@@ -164,9 +164,10 @@
       failed_when: false
       changed_when: false
 
-    - name: Check if Sunbeam cluster already bootstrapped
-      ansible.builtin.command: sunbeam cluster status
-      register: cluster_status
+    - name: Check if Sunbeam Juju model already exists (more reliable than cluster status)
+      ansible.builtin.shell: >
+        juju models --controller localhost-localhost 2>/dev/null | grep -q openstack
+      register: sunbeam_model_check
       failed_when: false
       changed_when: false
 
@@ -176,7 +177,7 @@
         --role control,compute
         --manifest {{ manifest_path }}
         --accept-defaults
-      when: cluster_status.rc != 0
+      when: sunbeam_model_check.rc != 0
       changed_when: true
       async: 2400
       poll: 30
