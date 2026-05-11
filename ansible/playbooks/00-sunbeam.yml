@@ -137,6 +137,13 @@
       failed_when: false
       changed_when: bridge_create.rc == 0
 
+    - name: Check if Sunbeam cluster is fully deployed (early check for cleanup gating)
+      ansible.builtin.shell: >
+        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
+      register: sunbeam_precheck
+      failed_when: false
+      changed_when: false
+
     - name: Check if Juju controller already exists
       ansible.builtin.command: juju controllers
       register: juju_ctrl_check
@@ -152,15 +159,13 @@
 
     - name: Remove stale Juju machine agent (causes 'machine is already provisioned')
       become: true
-      when: >
-        'localhost' not in juju_ctrl_check.stdout and
-        juju_machine_agent_check.rc == 0
+      when: sunbeam_precheck.rc != 0 and juju_machine_agent_check.rc == 0
       block:
         - name: Stop juju machine agent services
-          ansible.builtin.systemd:
-            name: "{{ item }}"
-            state: stopped
-          with_fileglob: /etc/systemd/system/jujud-machine-*.service
+          ansible.builtin.shell: >
+            systemctl list-units --all 'jujud-machine-*' --no-legend
+            | awk '{print $1}'
+            | xargs -r systemctl stop 2>/dev/null
           ignore_errors: true
 
         - name: Remove juju machine agent service files
