@@ -202,9 +202,16 @@
       delay: 15
       changed_when: false
 
-    - name: Reload Juju spaces so subnets are discoverable by Sunbeam
+    - name: Reload Juju spaces so LXD bridge subnets are discovered
       ansible.builtin.command: juju reload-spaces --model controller
       register: reload_spaces
+      failed_when: false
+      changed_when: false
+
+    - name: Register physical host subnet in Juju (not discoverable via LXD reload-spaces)
+      ansible.builtin.shell: |
+        juju subnets 2>/dev/null | grep -q "{{ provider_network_cidr }}" || \
+        juju add-subnet "{{ provider_network_cidr }}" alpha
       failed_when: false
       changed_when: false
 
