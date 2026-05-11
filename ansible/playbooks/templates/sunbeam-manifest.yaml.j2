@@ -7,7 +7,10 @@
 # Glance uses the local file backend; Cinder is unused.
 
 bootstrap:
-  management_cidr: "{{ homelab_ip }}/24"
+  # management_cidr must be the network CIDR (e.g. 172.16.0.0/24), not a host
+  # address (172.16.0.7/24). Sunbeam uses this to find a matching interface
+  # and subnet — a host-style CIDR fails interface discovery.
+  management_cidr: "{{ provider_network_cidr }}"
 
 # Provider network — a slice of your physical LAN allocated for floating IPs.
 # OVN creates an external bridge attached to this range.
