@@ -158,6 +158,12 @@
       delay: 15
       changed_when: false
 
+    - name: Reload Juju spaces so subnets are discoverable by Sunbeam
+      ansible.builtin.command: juju reload-spaces --model controller
+      register: reload_spaces
+      failed_when: false
+      changed_when: false
+
     - name: Check if Sunbeam cluster already bootstrapped
       ansible.builtin.command: sunbeam cluster status
       register: cluster_status
