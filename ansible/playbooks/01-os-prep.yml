@@ -98,8 +98,13 @@
         reload: true
       loop:
         - { key: 'net.ipv4.ip_forward',                  value: '1' }
-        - { key: 'net.bridge.bridge-nf-call-iptables',   value: '1' }
-        - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '1' }
+        # bridge-nf-call-iptables must be 0 on the LXD host: when 1, UFW's
+        # default DROP filters DHCP packets between juju controller
+        # containers and dnsmasq on lxdbr0, causing "Waiting for address"
+        # bootstrap hangs. K3s nodes (Nova VMs) set this to 1 in 04-k3s.yml,
+        # which is the correct scope.
+        - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
+        - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '0' }
         - { key: 'net.netfilter.nf_conntrack_max',        value: '1048576' }
         - { key: 'vm.swappiness',                         value: '10' }
         - { key: 'vm.dirty_ratio',                        value: '10' }
@@ -184,6 +189,17 @@
         - { regexp: '^#?MaxAuthTries',           line: 'MaxAuthTries 3' }
         - { regexp: '^#?LoginGraceTime',         line: 'LoginGraceTime 60' }
       notify: restart sshd
+
+    # LXD containers need forward traffic allowed through the bridge. UFW's
+    # default DROP forward policy silently kills inter-container and
+    # container-to-host DHCP, causing juju bootstrap to hang at "Waiting for
+    # address". The explicit "allow on lxdbr0" rules below aren't enough on
+    # their own — the underlying iptables FORWARD chain default must be ACCEPT.
+    - name: Set UFW DEFAULT_FORWARD_POLICY to ACCEPT (required for LXD)
+      ansible.builtin.lineinfile:
+        path: /etc/default/ufw
+        regexp: '^DEFAULT_FORWARD_POLICY='
+        line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
 
     - name: Enable UFW with deny default
       community.general.ufw:
