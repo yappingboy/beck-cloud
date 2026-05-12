@@ -1,11 +1,13 @@
 # Sunbeam single-node deployment manifest (Sunbeam 2024.1 / Ubuntu 24.04 noble)
 # Passed to: sunbeam cluster bootstrap --manifest <this-file>
+#
+# NOTE: 02-sunbeam.yml currently uses --accept-defaults without a manifest,
+# which matches the official install guide and works reliably. This file is
+# kept here in case a manifest is needed for customisation (e.g. non-default
+# provider network settings in a future re-run).
 
 deployment:
   bootstrap:
-    # Tell Sunbeam which subnet is the management/API plane. Without this,
-    # --accept-defaults tries to auto-detect and fails with
-    # "No subnets available in any space" on multi-interface or LXD hosts.
     management_cidr: "{{ management_cidr }}"
 
   user:
