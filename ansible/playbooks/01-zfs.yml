@@ -1,6 +1,6 @@
 ---
-# 02-zfs.yml — Create ZFS pools, datasets, and NFS exports
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/02-zfs.yml
+# 01-zfs.yml — Create ZFS pools, datasets, and NFS exports
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-zfs.yml
 #
 # Disks are auto-discovered by size from lsblk (no hardcoded /dev/sdX):
 #   tank    — all 5.5T disks, split evenly across `tank_vdev_count` RAIDZ1 vdevs

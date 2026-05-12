@@ -1,10 +1,10 @@
 ---
-# 03-nova-vms.yml — Provision Nova VM instances for the K3s cluster
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/03-nova-vms.yml
+# 04-nova-vms.yml — Provision Nova VM instances for the K3s cluster
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/04-nova-vms.yml
 #
 # After this playbook:
 #   - Update inventory/hosts.yml k3s_nodes IPs to match assigned floating IPs
-#   - Then run 04-k3s.yml to install K3s on the VMs
+#   - Then run 05-k3s.yml to install K3s on the VMs
 
 - name: Provision Nova VM instances for K3s
   hosts: hypervisor
@@ -178,4 +178,4 @@
           1. Update ansible/inventory/hosts.yml k3s_nodes IPs to the
              floating IPs shown above.
           2. Verify SSH:  ssh ubuntu@<floating-ip>
-          3. Run: ansible-playbook playbooks/04-k3s.yml
+          3. Run: ansible-playbook playbooks/05-k3s.yml

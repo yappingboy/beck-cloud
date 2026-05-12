@@ -126,27 +126,34 @@ Recommended path: MinIO on `tank/backup` for primary, rclone to B2 for offsite.
 ## 5. Deployment Sequence
 
 ```bash
-# 0. Bootstrap Sunbeam OpenStack on bare metal
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-sunbeam.yml
+# 0. Minimal prereqs: packages, KVM, kernel modules, swap off, NTP
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-prereqs.yml
 
-# 1. OS hardening, KVM/NFS/ZFS prerequisites
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-os-prep.yml
+# 1. Create ZFS pools and NFS exports (add -e wipe_disks=true on first run)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-zfs.yml -e wipe_disks=true
 
-# 2. Create ZFS pools and NFS exports (add -e wipe_disks=true on first run)
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-zfs.yml -e wipe_disks=true
+# 2. Bootstrap Sunbeam OpenStack on bare metal (BEFORE hardening — UFW
+#    + bridge-nf-call break LXD/juju bootstrap)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-sunbeam.yml
 
-# 3. Provision Nova VM instances (K3s nodes)
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-nova-vms.yml
+# 3. Apply host hardening (UFW + LXD allow rules, sysctls, SSH, NVIDIA)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-harden.yml
+
+# 4. Provision Nova VM instances (K3s nodes)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-nova-vms.yml
 # → Update inventory/hosts.yml k3s_nodes IPs with assigned floating IPs
 
-# 4. Install K3s + Cilium on Nova VMs
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-k3s.yml
+# 5. Install K3s + Cilium on Nova VMs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-k3s.yml
 
-# 5. Bootstrap Flux GitOps
-GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-flux.yml
+# 6. Bootstrap Flux GitOps
+GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-flux.yml
 
-# 6. Install CSI snapshot CRDs
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-snapshotter.yml
+# 7. Install CSI snapshot CRDs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07-snapshotter.yml
+
+# 8. (Optional) AI sysadmin: Llamactl + llama-server on host GPU
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08-ai-sysadmin.yml
 ```
 
 ---

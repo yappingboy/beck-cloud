@@ -1,94 +1,27 @@
 ---
-# 01-os-prep.yml — OS hardening, KVM/ZFS prerequisites, firewall
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-os-prep.yml
+# 03-harden.yml — Apply host hardening AFTER Sunbeam is bootstrapped.
+#
+# This runs after 02-sunbeam.yml deliberately: enabling UFW or turning on
+# bridge-nf-call during Sunbeam bootstrap breaks LXD's dnsmasq and hangs
+# juju with "Waiting for address". By the time we get here, juju has its
+# controller container running and Sunbeam's networking is established —
+# we just need to lock things down without killing the existing flows.
+#
+# What lives here:
+#   • Sysctl tuning (networking, memory, inotify, hugepages)
+#   • bridge-nf-call-iptables = 0 on the LXD host (K3s VMs override to 1)
+#   • Optional NVIDIA driver install (install_nvidia=true)
+#   • SSH hardening
+#   • UFW with LXD-friendly forward policy + explicit lxdbr0 allow rules
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/03-harden.yml
 
-- name: OS Preparation and Hardening
+- name: Host hardening (post-Sunbeam)
   hosts: hypervisor
   become: true
   gather_facts: true
 
   tasks:
-    - name: Update apt cache and upgrade packages
-      ansible.builtin.apt:
-        update_cache: true
-        upgrade: dist
-        autoremove: true
-        autoclean: true
-        cache_valid_time: 3600
-
-    - name: Install system packages
-      ansible.builtin.apt:
-        name:
-          - curl
-          - wget
-          - gnupg
-          - ca-certificates
-          - jq
-          - htop
-          - nvme-cli
-          - smartmontools
-          - net-tools
-          - iproute2
-          - chrony
-          - fail2ban
-          - ufw
-          - rsyslog
-          # ZFS
-          - zfsutils-linux
-          - zfs-dkms
-          # NFS server (ZFS → Nova VMs)
-          - nfs-kernel-server
-          - nfs-common
-          # KVM/QEMU (Sunbeam/Nova hypervisor)
-          # qemu-kvm is a virtual package on Ubuntu 24.04; use the concrete provider
-          - qemu-system-x86
-          - libvirt-daemon-system
-          - virtinst
-          - cpu-checker
-          # Misc tools
-          - open-iscsi
-          - cryptsetup
-        state: present
-        update_cache: true
-
-    - name: Remove packages that conflict with Sunbeam/containerd
-      ansible.builtin.apt:
-        name:
-          - docker.io
-          - docker-compose
-        state: absent
-        purge: true
-
-    - name: Verify KVM hardware support
-      ansible.builtin.command: kvm-ok
-      register: kvm_ok
-      changed_when: false
-      failed_when: "'KVM acceleration can be used' not in kvm_ok.stdout"
-
-    - name: Load required kernel modules
-      community.general.modprobe:
-        name: "{{ item }}"
-        state: present
-      loop:
-        - overlay
-        - br_netfilter
-        - nvme
-        - vhost_net
-        - nfs
-        - nfsd
-
-    - name: Persist kernel modules
-      ansible.builtin.copy:
-        content: |
-          overlay
-          br_netfilter
-          nvme
-          vhost_net
-          nfs
-          nfsd
-        dest: /etc/modules-load.d/beck-cloud.conf
-        mode: '0644'
-
     - name: Set sysctl parameters
       ansible.posix.sysctl:
         name: "{{ item.key }}"
@@ -101,7 +34,7 @@
         # bridge-nf-call-iptables must be 0 on the LXD host: when 1, UFW's
         # default DROP filters DHCP packets between juju controller
         # containers and dnsmasq on lxdbr0, causing "Waiting for address"
-        # bootstrap hangs. K3s nodes (Nova VMs) set this to 1 in 04-k3s.yml,
+        # bootstrap hangs. K3s nodes (Nova VMs) set this to 1 in 05-k3s.yml,
         # which is the correct scope.
         - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
         - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '0' }
@@ -114,33 +47,11 @@
         - { key: 'fs.inotify.max_user_instances',         value: '8192' }
         # Hugepages for KVM/QEMU performance
         - { key: 'vm.nr_hugepages',                       value: '4096' }
-
-    - name: Disable swap
-      ansible.builtin.command: swapoff -a
-      changed_when: true
-
-    - name: Remove swap from fstab
-      ansible.builtin.lineinfile:
-        path: /etc/fstab
-        regexp: '^.*swap.*$'
-        state: absent
-
-    - name: Configure Chrony NTP
-      ansible.builtin.copy:
-        content: |
-          {% for server in ntp_servers %}
-          server {{ server }} iburst
-          {% endfor %}
-          driftfile /var/lib/chrony/drift
-          makestep 1.0 3
-          rtcsync
-        dest: /etc/chrony/chrony.conf
-        mode: '0644'
-      notify: restart chrony
+      failed_when: false
 
     # ── NVIDIA drivers ───────────────────────────────────────────────────
     # Only runs when install_nvidia: true (group_vars/all.yml).
-    # Titan RTX (TU102) has 24GB GDDR6 — stays on host for llama-server (07-ai-sysadmin.yml).
+    # Titan RTX (TU102) has 24GB GDDR6 — stays on host for llama-server (08-ai-sysadmin.yml).
     - name: Install ubuntu-drivers utility and CUDA toolkit
       ansible.builtin.apt:
         name:
@@ -192,27 +103,14 @@
 
     # LXD containers need forward traffic allowed through the bridge. UFW's
     # default DROP forward policy silently kills inter-container and
-    # container-to-host DHCP, causing juju bootstrap to hang at "Waiting for
-    # address". The explicit "allow on lxdbr0" rules below aren't enough on
-    # their own — the underlying iptables FORWARD chain default must be ACCEPT.
+    # container-to-host DHCP. The explicit "allow on lxdbr0" rules below
+    # aren't enough on their own — the underlying iptables FORWARD chain
+    # default must be ACCEPT.
     - name: Set UFW DEFAULT_FORWARD_POLICY to ACCEPT (required for LXD)
       ansible.builtin.lineinfile:
         path: /etc/default/ufw
         regexp: '^DEFAULT_FORWARD_POLICY='
         line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
-
-    - name: Enable UFW with deny default
-      community.general.ufw:
-        state: enabled
-        policy: deny
-
-    - name: Configure UFW rules
-      community.general.ufw:
-        rule: allow
-        port: "{{ item.port }}"
-        proto: "{{ item.proto | default('tcp') }}"
-        comment: "{{ item.comment }}"
-      loop: "{{ firewall_allowed_ports }}"
 
     - name: Allow LXD bridge traffic through UFW (required for Juju/Sunbeam)
       community.general.ufw:
@@ -231,18 +129,21 @@
       changed_when: true
       failed_when: false
 
-    - name: Enable and start libvirtd
-      ansible.builtin.systemd:
-        name: libvirtd
-        enabled: true
-        state: started
+    - name: Configure UFW rules
+      community.general.ufw:
+        rule: allow
+        port: "{{ item.port }}"
+        proto: "{{ item.proto | default('tcp') }}"
+        comment: "{{ item.comment }}"
+      loop: "{{ firewall_allowed_ports }}"
+
+    # Enable UFW last, after every allow rule is in place.
+    - name: Enable UFW with deny default
+      community.general.ufw:
+        state: enabled
+        policy: deny
 
   handlers:
-    - name: restart chrony
-      ansible.builtin.systemd:
-        name: chrony
-        state: restarted
-
     - name: restart sshd
       ansible.builtin.systemd:
         name: ssh

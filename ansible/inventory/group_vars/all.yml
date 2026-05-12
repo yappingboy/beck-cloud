@@ -48,7 +48,7 @@ nova_k3s_vms:
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
-# Leave empty to auto-generate; 04-k3s.yml reads the generated token from
+# Leave empty to auto-generate; 05-k3s.yml reads the generated token from
 # the server and passes it to workers automatically.
 k3s_token: ""
 k3s_disable:
@@ -67,14 +67,14 @@ cilium_version: 1.17.0
 # ── ZFS ───────────────────────────────────────────────────────────────────────
 zfs_pool_name: tank
 zfs_archive_pool: archive
-# Disks are auto-discovered in 02-zfs.yml by size from lsblk:
+# Disks are auto-discovered in 01-zfs.yml by size from lsblk:
 #   tank    — all 5.5T disks, split across tank_vdev_count RAIDZ1 vdevs
 #   archive — all 9.1T disks (first 2), used as a mirror
 #   SLOG    — first NVMe not in any zpool or mounted
 # To customize, override tank_disk_size / archive_disk_size / tank_vdev_count
-# in playbooks/02-zfs.yml (or via -e).
+# in playbooks/01-zfs.yml (or via -e).
 
-# Datasets — created by 02-zfs.yml
+# Datasets — created by 01-zfs.yml
 zfs_datasets:
   - { name: "tank/k3s",             recordsize: "128K", compression: "lz4" }
   - { name: "tank/media",           recordsize: "1M",   compression: "off" }

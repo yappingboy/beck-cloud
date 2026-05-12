@@ -1,7 +1,6 @@
 ---
-# 06-snapshotter.yml — Install CSI Snapshot CRDs on K3s
-# Replaces 04-snapshotter.yml (now targets k3s_nodes)
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/06-snapshotter.yml
+# 07-snapshotter.yml — Install CSI Snapshot CRDs on K3s
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/07-snapshotter.yml
 
 - name: Install CSI Snapshot CRDs
   hosts: k3s_nodes

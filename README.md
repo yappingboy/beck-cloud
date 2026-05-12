@@ -30,13 +30,16 @@ Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 │   ├── inventory/hosts.yml       # hypervisor + k3s_nodes groups
 │   ├── templates/                # Jinja2 templates
 │   └── playbooks/
-│       ├── 00-sunbeam.yml        # Sunbeam OpenStack bootstrap
-│       ├── 01-os-prep.yml        # OS hardening, ZFS/KVM prerequisites
-│       ├── 02-zfs.yml            # ZFS pools, datasets, NFS exports
-│       ├── 03-nova-vms.yml       # Provision K3s Nova instances
-│       ├── 04-k3s.yml            # K3s + Cilium on Nova VMs
-│       ├── 05-flux.yml           # Flux CLI + GitOps bootstrap
-│       └── 06-snapshotter.yml    # CSI snapshot CRDs
+│       ├── 00-prereqs.yml       # Minimal pre-Sunbeam prep (packages, KVM, swap, NTP)
+│       ├── 01-zfs.yml           # ZFS pools, datasets, NFS exports
+│       ├── 02-sunbeam.yml       # Sunbeam OpenStack bootstrap
+│       ├── 03-harden.yml        # UFW, sysctls, SSH hardening, NVIDIA
+│       ├── 04-nova-vms.yml      # Provision K3s Nova instances
+│       ├── 05-k3s.yml           # K3s + Cilium on Nova VMs
+│       ├── 06-flux.yml          # Flux CLI + GitOps bootstrap
+│       ├── 07-snapshotter.yml   # CSI snapshot CRDs
+│       ├── 08-ai-sysadmin.yml   # Llamactl + llama-server on host GPU
+│       └── 99-uninstall.yml     # Tear everything down (tiered, opt-in)
 ├── flux/
 │   ├── apps/apps.yaml            # Application layer kustomization
 │   └── infrastructure/
@@ -64,27 +67,34 @@ Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 # Install Ansible collections first
 ansible-galaxy collection install -r ansible/requirements.yml
 
-# 0. Bootstrap Sunbeam OpenStack on bare metal
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-sunbeam.yml
+# 0. Minimal prereqs: packages, KVM, swap off, kernel modules, NTP
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-prereqs.yml
 
-# 1. OS hardening + ZFS/KVM prerequisites
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-os-prep.yml
+# 1. Create ZFS pools + NFS exports (add -e wipe_disks=true on first run)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-zfs.yml -e wipe_disks=true
 
-# 2. Create ZFS pools + NFS exports (add -e wipe_disks=true on first run)
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-zfs.yml -e wipe_disks=true
+# 2. Bootstrap Sunbeam OpenStack on bare metal (run BEFORE hardening; UFW
+#    + bridge-nf-call break LXD/juju bootstrap)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-sunbeam.yml
 
-# 3. Provision Nova VM instances
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-nova-vms.yml
+# 3. Apply host hardening (UFW, sysctls, SSH, optional NVIDIA install)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-harden.yml
+
+# 4. Provision Nova VM instances
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-nova-vms.yml
 # → Update inventory k3s_nodes IPs then continue
 
-# 4. Install K3s + Cilium on Nova VMs
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-k3s.yml
+# 5. Install K3s + Cilium on Nova VMs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-k3s.yml
 
-# 5. Bootstrap Flux
-GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-flux.yml
+# 6. Bootstrap Flux
+GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-flux.yml
 
-# 6. Install CSI snapshot CRDs
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-snapshotter.yml
+# 7. Install CSI snapshot CRDs
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07-snapshotter.yml
+
+# 8. (Optional) AI sysadmin stack on host GPU
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08-ai-sysadmin.yml
 ```
 
 ## Flux Dependency Chain

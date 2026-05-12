@@ -1,26 +1,36 @@
 ---
 # 99-uninstall.yml — Tear down the entire Beck Cloud deployment
 #
-# Reverses 00-sunbeam.yml through 07-ai-sysadmin.yml. Designed to be safe by
+# Reverses 00-prereqs.yml through 08-ai-sysadmin.yml. Designed to be safe by
 # default: only removes services/snaps/configuration. Destructive steps
-# (wiping ZFS pools, zero-filling disks, removing apt packages) are opt-in via
-# flags below.
+# (wiping ZFS pools, zero-filling disks, removing apt packages, reverting
+# SSH hardening) are opt-in via flags below.
 #
 # Tiers (least → most destructive):
 #   Default              Stop services, destroy Sunbeam/Juju/LXD, remove snaps,
-#                        un-export NFS, revert host sysctls / UFW.
+#                        un-export NFS, reset UFW, revert sysctls + kernel
+#                        module persistence. Leaves SSH hardening and the
+#                        fstab swap removal alone (they don't impede a
+#                        redeploy and reverting them mid-session can lock
+#                        you out).
 #   -e destroy_zfs=true  Also `zpool destroy tank` and `zpool destroy archive`.
 #                        Datasets and snapshots are GONE. Disks themselves are
-#                        left with ZFS labels — re-running 02-zfs.yml will
+#                        left with ZFS labels — re-running 01-zfs.yml will
 #                        recreate the pools cleanly.
 #   -e wipe_disks=true   Implies destroy_zfs. After destroying pools, runs
 #                        `wipefs -a` + 100MB zero-fill on every tank/archive/
 #                        SLOG disk. Required if you want to repurpose the
 #                        drives outside ZFS.
 #   -e remove_packages=true
-#                        apt-remove the packages installed by 01-os-prep.yml
+#                        apt-remove the packages installed by 00-prereqs.yml
 #                        (KVM, ZFS, NFS, libvirt, etc.). Leaves the base OS
 #                        intact.
+#   -e revert_hardening=true
+#                        Also revert SSH config (re-enable password auth,
+#                        root login defaults) and re-add a /swapfile entry.
+#                        Use this when you want to fully return the host to
+#                        its pre-Beck-Cloud state. Run from console — SSH
+#                        will restart.
 #
 # Run (safe default):
 #   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml
@@ -37,6 +47,7 @@
     destroy_zfs: false
     wipe_disks: false
     remove_packages: false
+    revert_hardening: false
     confirm_uninstall: false
 
   pre_tasks:
@@ -60,6 +71,7 @@
           - "Destroy ZFS pools (tank, archive):              {{ destroy_zfs | bool }}"
           - "Zero-fill pool disks:                           {{ wipe_disks | bool }}"
           - "apt-remove host packages:                       {{ remove_packages | bool }}"
+          - "Revert SSH hardening + restore swap:            {{ revert_hardening | bool }}"
 
   tasks:
     # ── 1. Tear down Nova VMs (K3s nodes) via OpenStack while Sunbeam still runs ─
@@ -352,7 +364,7 @@
         state: disabled
       failed_when: false
 
-    # ── 12. Sysctls and kernel modules (revert 01-os-prep.yml) ──────────────
+    # ── 12. Sysctls and kernel modules (revert 03-harden.yml + 00-prereqs.yml) ─
     - name: Remove kernel modules persistence file
       ansible.builtin.file:
         path: /etc/modules-load.d/beck-cloud.conf
@@ -370,11 +382,67 @@
         - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
         - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '0' }
         - { key: 'vm.swappiness',                         value: '60' }
+        - { key: 'vm.dirty_ratio',                        value: '20' }
+        - { key: 'vm.dirty_background_ratio',             value: '10' }
+        - { key: 'vm.max_map_count',                      value: '65530' }
+        - { key: 'fs.inotify.max_user_watches',           value: '8192' }
+        - { key: 'fs.inotify.max_user_instances',         value: '128' }
         - { key: 'vm.nr_hugepages',                       value: '0' }
       failed_when: false
 
+    - name: Restore UFW DEFAULT_FORWARD_POLICY to DROP (UFW default)
+      ansible.builtin.lineinfile:
+        path: /etc/default/ufw
+        regexp: '^DEFAULT_FORWARD_POLICY='
+        line: 'DEFAULT_FORWARD_POLICY="DROP"'
+      failed_when: false
+
+    # ── 12b. SSH hardening + swap revert (opt-in via revert_hardening=true) ──
+    # SSH config and swap removal are kept by default because reverting them
+    # mid-session can either lock you out (SSH) or leave the host in a
+    # K8s-incompatible state if you redeploy. Flip the flag when you really
+    # want the OS back to a pre-Beck-Cloud state.
+    - name: Revert SSH hardening and restore swap (revert_hardening=true)
+      when: revert_hardening | bool
+      block:
+        - name: Restore default SSH config lines
+          ansible.builtin.lineinfile:
+            path: /etc/ssh/sshd_config
+            regexp: "{{ item.regexp }}"
+            line: "{{ item.line }}"
+            state: present
+          loop:
+            - { regexp: '^#?PermitRootLogin',        line: '#PermitRootLogin prohibit-password' }
+            - { regexp: '^#?PasswordAuthentication', line: '#PasswordAuthentication yes' }
+            - { regexp: '^#?X11Forwarding',          line: '#X11Forwarding yes' }
+            - { regexp: '^#?MaxAuthTries',           line: '#MaxAuthTries 6' }
+            - { regexp: '^#?LoginGraceTime',         line: '#LoginGraceTime 120' }
+
+        - name: Restart sshd
+          ansible.builtin.systemd:
+            name: ssh
+            state: restarted
+
+        - name: Check if a /swapfile exists on disk
+          ansible.builtin.stat:
+            path: /swapfile
+          register: swapfile_stat
+
+        - name: Re-add /swapfile to fstab (only if file exists)
+          ansible.builtin.lineinfile:
+            path: /etc/fstab
+            line: "/swapfile none swap sw 0 0"
+            state: present
+          when: swapfile_stat.stat.exists
+
+        - name: Re-enable swap from existing /swapfile
+          ansible.builtin.command: swapon -a
+          changed_when: true
+          failed_when: false
+          when: swapfile_stat.stat.exists
+
     # ── 13. Apt packages (optional) ─────────────────────────────────────────
-    - name: Remove host packages installed by 01-os-prep.yml
+    - name: Remove host packages installed by 00-prereqs.yml
       when: remove_packages | bool
       ansible.builtin.apt:
         name:
@@ -419,5 +487,5 @@
           - "  systemctl status nfs-kernel-server libvirtd   # both stopped"
           - "  sudo ufw status                               # inactive"
           - "  ip a show lxdbr0                              # should not exist"
-          - "If you plan to redeploy: reboot before re-running 01-os-prep.yml"
+          - "If you plan to redeploy: reboot before re-running 00-prereqs.yml"
           - "so dkms/zfs/kernel state is clean."

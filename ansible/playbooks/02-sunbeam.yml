@@ -1,7 +1,12 @@
 ---
-# 00-sunbeam.yml — Install and bootstrap Sunbeam OpenStack (single-node)
-# Run FIRST, before any other playbook.
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/00-sunbeam.yml
+# 02-sunbeam.yml — Install and bootstrap Sunbeam OpenStack (single-node)
+# Run AFTER 00-prereqs.yml + 01-zfs.yml, BEFORE 03-harden.yml.
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/02-sunbeam.yml
+#
+# Order rationale: this runs on a host that has packages + KVM + ZFS/NFS
+# installed but NO firewall yet. UFW with default DROP forward policy +
+# bridge-nf-call-iptables=1 kill LXD dnsmasq during juju bootstrap, so
+# hardening happens in 03-harden.yml *after* Sunbeam is up.
 #
 # Prerequisites:
 #   - Ubuntu 24.04 LTS (noble) installed
@@ -429,5 +434,5 @@
 
           Next steps:
             1. Verify Horizon at http://{{ homelab_ip }} or via: sunbeam dashboard-url
-            2. Run: ansible-playbook playbooks/01-os-prep.yml
-            3. Run: ansible-playbook playbooks/02-zfs.yml  (set wipe_disks=true on first run)
+            2. Run: ansible-playbook playbooks/03-harden.yml
+            3. Run: ansible-playbook playbooks/04-nova-vms.yml
