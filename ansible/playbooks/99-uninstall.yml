@@ -141,9 +141,11 @@
         set +e
         for ctrl in $(juju controllers --format json 2>/dev/null \
                       | python3 -c 'import sys,json; d=json.load(sys.stdin); print("\n".join((d.get("controllers") or {}).keys()))' 2>/dev/null); do
-          juju destroy-controller "$ctrl" --no-prompt --destroy-all-models --force --no-wait 2>/dev/null || true
-          juju unregister "$ctrl" --no-prompt 2>/dev/null || true
+          timeout 30 juju destroy-controller "$ctrl" --no-prompt --destroy-all-models --force --no-wait 2>/dev/null || true
+          timeout 10 juju unregister "$ctrl" --no-prompt 2>/dev/null || true
         done
+        # Brute-force cleanup regardless of whether destroy-controller succeeded
+        pkill -9 -f 'jujud\|juju-' 2>/dev/null || true
         exit 0
       when: juju_cli.rc == 0
       changed_when: true
