@@ -11,31 +11,34 @@
 
 ### Drive Inventory
 
-| Device | Size | Role |
-|--------|------|------|
-| sdb–sdg (6 drives) | 5.5TB each | RAIDZ1 vdev 1 |
-| sdh, sdj–sdl, sdn–sdo (6 drives) | 5.5TB each | RAIDZ1 vdev 2 |
-| sdi, sdm | 9.1TB each | archive mirror |
-| nvme0n1 | 476GB | ZFS SLOG (auto-detected — first free NVMe) |
-| nvme1n1 | — | OS boot drive |
+Disks are auto-discovered by size at playbook run-time (no hardcoded /dev/sdX).
+Discovery filters out anything already mounted or claimed by a zpool.
+
+| Size | Role |
+|------|------|
+| 5.5T | tank — all matching disks, split into `tank_vdev_count` RAIDZ1 vdevs |
+| 9.1T | archive — first 2 matching disks used as a mirror |
+| NVMe (unmounted) | ZFS SLOG (first free NVMe not in a pool) |
+| NVMe (OS) | boot drive, not touched |
 
 ### Pool Design
 
-**`tank`** — primary data pool (~55TB usable)
+**`tank`** — primary data pool (5.5T disks split into N RAIDZ1 vdevs)
 ```bash
+# Effective command (built dynamically):
 zpool create -f tank \
-  raidz1 sdb sdc sdd sde sdf sdg \
-  raidz1 sdh sdj sdk sdl sdn sdo \
-  log nvme0n1
+  raidz1 <slice 1 of 5.5T disks> \
+  raidz1 <slice 2 of 5.5T disks> \
+  ... \
+  log <first unmounted NVMe>
 ```
-- vdev1: 6 drives RAIDZ1 → 5 data + 1 parity = **~27.5TB usable**
-- vdev2: 6 drives RAIDZ1 → 5 data + 1 parity = **~27.5TB usable**
-- SLOG on nvme0n1: accelerates sync writes (torrent downloads, DB fsync)
+- Each RAIDZ1 vdev: N drives → (N-1) data + 1 parity
+- SLOG: accelerates sync writes (torrent downloads, DB fsync)
 - Fault tolerance: survives **1 simultaneous drive failure per vdev**
 
-**`archive`** — high-capacity long-term storage (~9.1TB usable)
+**`archive`** — high-capacity long-term storage (9.1T mirror)
 ```bash
-zpool create -f archive mirror sdi sdm
+zpool create -f archive mirror <2× 9.1T disks>
 ```
 - Mirrored pair: survives 1 drive failure
 - Used for: long-term backups, cold data, offsite staging
