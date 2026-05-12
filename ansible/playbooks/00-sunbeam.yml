@@ -230,39 +230,79 @@
       changed_when: false
 
     # Known intermittent: LXD's dnsmasq doesn't always serve lxdbr0 on first
-    # boot, so `juju bootstrap` hangs at "Waiting for address" then cancels.
-    # A snap restart of lxd reliably brings dnsmasq up. Skip if Juju is already
-    # bootstrapped (LXD running our controller container).
-    - name: Restart LXD to ensure dnsmasq serves lxdbr0
+    # boot. `snap restart lxd` brings the bridge back but dnsmasq may not bind
+    # on port 67 before juju launches a container. Cycling ipv4.dhcp forces
+    # LXD to re-spawn dnsmasq cleanly, then we wait for the process before
+    # letting juju proceed.
+    - name: Restart LXD daemon
       become: true
       ansible.builtin.command: snap restart lxd
       when: juju_needs_bootstrap
       changed_when: true
 
-    - name: Wait for LXD to be responsive after restart
+    - name: Wait for LXD API to respond after restart
       ansible.builtin.command: lxc list
       register: lxd_ready
-      retries: 15
+      retries: 20
       delay: 3
       until: lxd_ready.rc == 0
       when: juju_needs_bootstrap
       changed_when: false
 
-    - name: Wait for lxdbr0 to have an IPv4 address (dnsmasq up)
+    - name: Cycle lxdbr0 DHCP to force dnsmasq re-spawn
+      ansible.builtin.shell: |
+        lxc network set lxdbr0 ipv4.dhcp false
+        sleep 2
+        lxc network set lxdbr0 ipv4.dhcp true
+      when: juju_needs_bootstrap
+      changed_when: true
+
+    - name: Wait for dnsmasq to bind on lxdbr0 (port 67)
+      ansible.builtin.shell: |
+        pgrep -a dnsmasq | grep -q lxdbr0
+      register: dnsmasq_ready
+      retries: 20
+      delay: 2
+      until: dnsmasq_ready.rc == 0
+      when: juju_needs_bootstrap
+      changed_when: false
+
+    - name: Wait for lxdbr0 to have an IPv4 address
       ansible.builtin.shell: ip -4 addr show lxdbr0 | grep -q 'inet '
       register: lxdbr0_ready
-      retries: 20
-      delay: 3
+      retries: 10
+      delay: 2
       until: lxdbr0_ready.rc == 0
       when: juju_needs_bootstrap
       changed_when: false
 
-    - name: Bootstrap Juju controller on LXD
-      ansible.builtin.command: juju bootstrap localhost
+    # Bootstrap with retry: if the container doesn't get an address, delete it
+    # and try again rather than requiring a full playbook re-run.
+    - name: Bootstrap Juju controller on LXD (with retry on address failure)
+      ansible.builtin.shell: |
+        set -e
+        for attempt in 1 2 3; do
+          echo "Bootstrap attempt ${attempt}/3"
+          if juju bootstrap localhost 2>&1; then
+            echo "Bootstrap succeeded"
+            exit 0
+          fi
+          echo "Bootstrap failed, cleaning up before retry..."
+          juju destroy-controller localhost-localhost --no-prompt --destroy-all-models --force --no-wait 2>/dev/null || true
+          juju unregister localhost-localhost --no-prompt 2>/dev/null || true
+          lxc list --format csv -c n 2>/dev/null | grep -E '^juju-' | xargs -r -I{} lxc delete --force {} 2>/dev/null || true
+          lxc network set lxdbr0 ipv4.dhcp false && sleep 2 && lxc network set lxdbr0 ipv4.dhcp true
+          pgrep -a dnsmasq | grep -q lxdbr0 || sleep 5
+          sleep 10
+        done
+        echo "All bootstrap attempts failed"
+        exit 1
+      args:
+        executable: /bin/bash
       when: juju_needs_bootstrap
       changed_when: true
-      async: 1800
-      poll: 15
+      async: 3600
+      poll: 30
 
     - name: Wait for Juju controller API to be reachable
       ansible.builtin.command: juju controllers
