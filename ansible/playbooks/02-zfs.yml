@@ -2,12 +2,13 @@
 # 02-zfs.yml — Create ZFS pools, datasets, and NFS exports
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-zfs.yml
 #
-# Pool layout:
-#   tank    — two RAIDZ1 vdevs (~27.5TB each, ~55TB total) + NVMe SLOG
-#     vdev1 — raidz1: sdb sdc sdd sde sdf sdg       (5 data + 1 parity)
-#     vdev2 — raidz1: sdj sdk sdl sdn sdo sdh       (5 data + 1 parity)
-#     log   — auto-detected NVMe                      (SLOG: write acceleration)
-#   archive — mirror: sdi sdm                        (~9.1TB usable)
+# Disks are auto-discovered by size from lsblk (no hardcoded /dev/sdX):
+#   tank    — all 5.5T disks, split evenly across `tank_vdev_count` RAIDZ1 vdevs
+#             + NVMe SLOG (first unmounted NVMe not in any pool)
+#   archive — all 9.1T disks, used as a mirror
+#
+# Disks are filtered to exclude any that are mounted or already in a zpool,
+# so re-running this playbook is safe after pools exist.
 #
 # DESTRUCTIVE: set wipe_disks=true to wipe all spinning disk signatures.
 # Required on first run if disks were previously used for Ceph.
@@ -20,9 +21,99 @@
 
   vars:
     wipe_disks: false
-    all_zfs_disks: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 + zfs_archive_mirror }}"
+    tank_disk_size: "5.5T"
+    archive_disk_size: "9.1T"
+    # All discovered 5.5T disks are split into this many RAIDZ1 vdevs.
+    # The discovered count must be divisible by this number.
+    tank_vdev_count: 3
 
   tasks:
+    # ── Pool existence checks (must run before disk discovery) ──────────
+    - name: Check if tank pool already exists
+      ansible.builtin.command: zpool list tank
+      register: tank_exists
+      failed_when: false
+      changed_when: false
+
+    - name: Check if archive pool already exists
+      ansible.builtin.command: zpool list archive
+      register: archive_exists
+      failed_when: false
+      changed_when: false
+
+    # ── Disk discovery by size ──────────────────────────────────────────
+    # Picks every disk whose lsblk SIZE column matches the target size,
+    # then filters out anything that's mounted or already claimed by a zpool.
+    - name: Discover free disks by size
+      ansible.builtin.shell: |
+        set -euo pipefail
+        IN_POOL=$(zpool status 2>/dev/null \
+                  | awk 'NF>=2 && /ONLINE|DEGRADED|OFFLINE|UNAVAIL|FAULTED|REMOVED/ {print $1}' \
+                  | sed 's|.*/||' | sort -u || true)
+        lsblk -d -n -o NAME,SIZE,TYPE | awk -v sz="{{ item }}" '$3=="disk" && $2==sz {print $1}' | while read dev; do
+          # Skip if device (or any partition) is mounted anywhere
+          if lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -q .; then continue; fi
+          # Skip if device (or any partition) is in a zpool
+          if echo "$IN_POOL" | grep -qE "^${dev}([0-9p]+)?$"; then continue; fi
+          echo "/dev/$dev"
+        done | sort
+      args:
+        executable: /bin/bash
+      register: disks_by_size
+      changed_when: false
+      loop:
+        - "{{ tank_disk_size }}"
+        - "{{ archive_disk_size }}"
+
+    - name: Collect discovered disk lists
+      ansible.builtin.set_fact:
+        tank_disks: "{{ disks_by_size.results[0].stdout_lines }}"
+        archive_disks: "{{ disks_by_size.results[1].stdout_lines }}"
+
+    - name: Assert tank disk count is divisible by tank_vdev_count
+      when: tank_exists.rc != 0
+      ansible.builtin.assert:
+        that:
+          - tank_disks | length > 0
+          - (tank_disks | length) % (tank_vdev_count | int) == 0
+        fail_msg: >-
+          Found {{ tank_disks | length }} free {{ tank_disk_size }} disks, which is not
+          evenly divisible by tank_vdev_count={{ tank_vdev_count }}: {{ tank_disks }}
+
+    - name: Assert archive has at least 2 free disks
+      when: archive_exists.rc != 0
+      ansible.builtin.assert:
+        that:
+          - archive_disks | length >= 2
+        fail_msg: >-
+          archive pool needs at least 2 free {{ archive_disk_size }} disks but found
+          {{ archive_disks | length }}: {{ archive_disks }}
+
+    - name: Compute tank disks-per-vdev and slice into vdev groups
+      ansible.builtin.set_fact:
+        tank_disks_per_vdev: "{{ ((tank_disks | length) // (tank_vdev_count | int)) | int }}"
+      when: tank_disks | length > 0
+
+    - name: Build tank vdev list (one sublist per RAIDZ1 group)
+      ansible.builtin.set_fact:
+        tank_vdevs: >-
+          {{ tank_vdevs | default([]) +
+             [ tank_disks[(item | int) * (tank_disks_per_vdev | int) :
+                          ((item | int) + 1) * (tank_disks_per_vdev | int)] ] }}
+      loop: "{{ range(tank_vdev_count | int) | list }}"
+      when: tank_disks | length > 0
+
+    - name: Use first 2 archive disks as mirror
+      ansible.builtin.set_fact:
+        archive_mirror: "{{ archive_disks[:2] }}"
+
+    - name: Show discovered disk layout
+      ansible.builtin.debug:
+        msg:
+          - "tank vdevs ({{ tank_vdev_count }}× RAIDZ1, {{ tank_disks_per_vdev | default(0) }} disks each):"
+          - "{{ tank_vdevs | default([]) }}"
+          - "archive mirror ({{ archive_disk_size }}): {{ archive_mirror }}"
+
     # ── Detect free NVMe for SLOG ────────────────────────────────────────
     - name: Find unused NVMe device for SLOG
       ansible.builtin.shell: |
@@ -41,23 +132,12 @@
       register: nvme_detect
       changed_when: false
       failed_when: nvme_detect.rc != 0
+      when: tank_exists.rc != 0
 
     - name: Show detected SLOG device
+      when: tank_exists.rc != 0
       ansible.builtin.debug:
         msg: "Using NVMe SLOG device: {{ nvme_detect.stdout | trim }}"
-
-    # ── Pool existence checks (must run before wipe and create) ─────────
-    - name: Check if tank pool already exists
-      ansible.builtin.command: zpool list tank
-      register: tank_exists
-      failed_when: false
-      changed_when: false
-
-    - name: Check if archive pool already exists
-      ansible.builtin.command: zpool list archive
-      register: archive_exists
-      failed_when: false
-      changed_when: false
 
     # ── Wipe partition signatures (always runs before pool create) ───────
     # wipefs only removes signatures — it does not destroy data.
@@ -67,13 +147,13 @@
       block:
         - name: Wipe signatures on tank disks
           ansible.builtin.command: wipefs -a {{ item }}
-          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 }}"
+          loop: "{{ tank_disks }}"
           changed_when: true
           when: tank_exists.rc != 0
 
         - name: Wipe signatures on archive disks
           ansible.builtin.command: wipefs -a {{ item }}
-          loop: "{{ zfs_archive_mirror }}"
+          loop: "{{ archive_mirror }}"
           changed_when: true
           when: archive_exists.rc != 0
 
@@ -93,38 +173,37 @@
       block:
         - name: Zero-fill tank disks
           ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
-          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 }}"
+          loop: "{{ tank_disks }}"
           changed_when: true
 
         - name: Zero-fill archive disks
           ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
-          loop: "{{ zfs_archive_mirror }}"
+          loop: "{{ archive_mirror }}"
           changed_when: true
 
         - name: Zero-fill NVMe SLOG
           ansible.builtin.command: dd if=/dev/zero of={{ nvme_detect.stdout | trim }} bs=1M count=100 conv=fdatasync
           changed_when: true
+          when: tank_exists.rc != 0
 
         - name: Settle udev after zero-fill
           ansible.builtin.command: udevadm settle
           changed_when: false
 
     # ── Pool creation ───────────────────────────────────────────────────
-    - name: Create tank pool (2x RAIDZ1 + NVMe SLOG)
+    - name: Create tank pool (N× RAIDZ1 + NVMe SLOG)
       when: tank_exists.rc != 0
-      ansible.builtin.command: >
-        zpool create -f tank
-        raidz1 {{ zfs_raidz1_vdev1 | join(' ') }}
-        raidz1 {{ zfs_raidz1_vdev2 | join(' ') }}
-        raidz1 {{ zfs_raidz1_vdev3 | join(' ') }}
-        log {{ nvme_detect.stdout | trim }}
+      ansible.builtin.shell: |
+        zpool create -f tank \
+          {% for vdev in tank_vdevs %}raidz1 {{ vdev | join(' ') }} {% endfor %}\
+          log {{ nvme_detect.stdout | trim }}
       changed_when: true
 
     - name: Create archive pool (mirror)
       when: archive_exists.rc != 0
       ansible.builtin.command: >
         zpool create -f archive
-        mirror {{ zfs_archive_mirror | join(' ') }}
+        mirror {{ archive_mirror | join(' ') }}
       changed_when: true
 
     # ── Pool-level properties ───────────────────────────────────────────
