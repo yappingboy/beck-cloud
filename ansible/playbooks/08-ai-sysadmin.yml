@@ -1,16 +1,16 @@
 ---
-# 07-ai-sysadmin.yml — Deploy Llamactl + Llama-server (CUDA) on hypervisor
+# 08-ai-sysadmin.yml — Deploy Llamactl + Llama-server (CUDA) on hypervisor
 #
 # Architecture:
 #   - Llamactl manages llama-server instances as native processes (no Docker)
 #   - llama-server uses the CUDA build — all 64 Qwen layers offloaded to Titan RTX
 #   - Rho agent runs in K3s (via Flux), calls http://{{ homelab_ip }}:{{ llm_llamactl_port }}/v1
 #
-# Prerequisites: 01-os-prep.yml must have run and rebooted (NVIDIA driver active)
+# Prerequisites: 03-harden.yml must have run and rebooted (NVIDIA driver active)
 # Model: Qwen2.5-32B Q4_K_M ~20GB — fits in Titan RTX 24GB VRAM with headroom
 # Speed: ~40 tok/s on GPU vs ~3 tok/s on CPU
 #
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/07-ai-sysadmin.yml
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/08-ai-sysadmin.yml
 # NOTE: Initial model download is ~20GB. Run with --timeout=3600.
 
 - name: Deploy AI Sysadmin Stack on Hypervisor
@@ -20,7 +20,7 @@
 
   tasks:
     # ── GPU pre-flight ───────────────────────────────────────────────────
-    - name: Verify NVIDIA GPU is available (01-os-prep.yml must have run)
+    - name: Verify NVIDIA GPU is available (03-harden.yml must have run)
       ansible.builtin.command: nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
       register: gpu_info
       changed_when: false

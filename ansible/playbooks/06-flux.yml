@@ -1,7 +1,6 @@
 ---
-# 05-flux.yml — Install Flux CLI and bootstrap GitOps on K3s VMs
-# Replaces 03-flux.yml (now targets k3s_nodes, not bare metal)
-# Run: ansible-playbook -i inventory/hosts.yml playbooks/05-flux.yml
+# 06-flux.yml — Install Flux CLI and bootstrap GitOps on K3s VMs
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/06-flux.yml
 #
 # Requires: GITHUB_TOKEN env var with repo write access
 
