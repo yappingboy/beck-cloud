@@ -3,40 +3,30 @@
 #
 # Reverses 00-prereqs.yml through 08-ai-sysadmin.yml. Designed to be safe by
 # default: only removes services/snaps/configuration. Destructive steps
-# (wiping ZFS pools, zero-filling disks, removing apt packages, reverting
-# SSH hardening) are opt-in via flags below.
+# (zero-filling disks, removing apt packages, reverting SSH hardening)
+# are opt-in via flags below.
 #
 # Tiers (least → most destructive):
-#   Default              Stop services, destroy Sunbeam/Juju/LXD, remove snaps,
-#                        un-export NFS, reset UFW, revert sysctls + kernel
-#                        module persistence. Leaves SSH hardening and the
-#                        fstab swap removal alone (they don't impede a
-#                        redeploy and reverting them mid-session can lock
-#                        you out).
-#   -e destroy_zfs=true  Also `zpool destroy tank` and `zpool destroy archive`.
-#                        Datasets and snapshots are GONE. Disks themselves are
-#                        left with ZFS labels — wipefs and recreate pools manually if needed.
-#                        recreate the pools cleanly.
-#   -e wipe_disks=true   Implies destroy_zfs. After destroying pools, runs
-#                        `wipefs -a` + 100MB zero-fill on every tank/archive/
-#                        SLOG disk. Required if you want to repurpose the
-#                        drives outside ZFS.
+#   Default              Stop services, destroy Sunbeam/Juju/LXD, remove snaps
+#                        (including microceph --purge), tear down LVM volumes,
+#                        loop devices, and overlay mounts. Resets UFW and
+#                        sysctls. Leaves SSH hardening and fstab swap alone.
+#   -e wipe_disks=true   After cleanup, runs `wipefs -a` + 100MB zero-fill on
+#                        every non-OS block device. Required if you want to
+#                        repurpose drives for a fresh install.
 #   -e remove_packages=true
 #                        apt-remove the packages installed by 00-prereqs.yml
-#                        (KVM, ZFS, NFS, libvirt, etc.). Leaves the base OS
-#                        intact.
+#                        (KVM, libvirt, etc.). Leaves the base OS intact.
 #   -e revert_hardening=true
-#                        Also revert SSH config (re-enable password auth,
-#                        root login defaults) and re-add a /swapfile entry.
-#                        Use this when you want to fully return the host to
-#                        its pre-Beck-Cloud state. Run from console — SSH
-#                        will restart.
+#                        Also revert SSH config and re-add /swapfile to fstab.
+#                        Run from console — SSH will restart.
 #
 # Run (safe default):
-#   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml
-# Run (nuke everything including ZFS data):
 #   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml \
-#     -e destroy_zfs=true -e wipe_disks=true -e remove_packages=true
+#     -e confirm_uninstall=true
+# Run (nuke everything):
+#   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml \
+#     -e confirm_uninstall=true -e wipe_disks=true -e remove_packages=true
 
 - name: Beck Cloud — full uninstall
   hosts: hypervisor
@@ -44,7 +34,6 @@
   gather_facts: true
 
   vars:
-    destroy_zfs: false
     wipe_disks: false
     remove_packages: false
     revert_hardening: false
@@ -58,18 +47,18 @@
         fail_msg: >-
           This playbook will destroy the Beck Cloud deployment.
           Re-run with -e confirm_uninstall=true to proceed.
-          Add -e destroy_zfs=true to also wipe ZFS pools (data loss).
-          Add -e wipe_disks=true to zero-fill the disks.
-          Add -e remove_packages=true to apt-remove KVM/ZFS/NFS packages.
+          Add -e wipe_disks=true to zero-fill non-OS disks.
+          Add -e remove_packages=true to apt-remove KVM packages.
 
     - name: Show what will be destroyed
       ansible.builtin.debug:
         msg:
           - "=== Beck Cloud uninstall ==="
-          - "Stop & remove Sunbeam / Juju / LXD / microk8s:  YES"
-          - "Un-export NFS, revert sysctls, disable UFW:     YES"
-          - "Destroy ZFS pools (tank, archive):              {{ destroy_zfs | bool }}"
-          - "Zero-fill pool disks:                           {{ wipe_disks | bool }}"
+          - "Stop & remove Sunbeam / Juju / LXD / microk8s: YES"
+          - "Remove MicroCeph snap (--purge):                YES"
+          - "Tear down LVM volumes, loop devices, overlays:  YES"
+          - "Revert sysctls, disable UFW:                    YES"
+          - "Zero-fill non-OS disks:                         {{ wipe_disks | bool }}"
           - "apt-remove host packages:                       {{ remove_packages | bool }}"
           - "Revert SSH hardening + restore swap:            {{ revert_hardening | bool }}"
 
@@ -199,132 +188,104 @@
         state: absent
       failed_when: false
 
-    # ── 6. NFS exports ──────────────────────────────────────────────────────
-    - name: Stop and disable nfs-kernel-server
-      ansible.builtin.systemd:
-        name: nfs-kernel-server
-        state: stopped
-        enabled: false
+    # ── 6. MicroCeph ────────────────────────────────────────────────────────
+    - name: Check if microceph snap is installed
+      ansible.builtin.command: snap list microceph
+      register: microceph_check
       failed_when: false
+      changed_when: false
 
-    - name: Empty /etc/exports
-      ansible.builtin.copy:
-        content: ""
-        dest: /etc/exports
-        mode: '0644'
-
-    - name: Re-export to flush kernel table
-      ansible.builtin.command: exportfs -ra
+    - name: Remove microceph snap (--purge removes OSD data)
+      ansible.builtin.command: snap remove microceph --purge
+      when: microceph_check.rc == 0
       changed_when: true
       failed_when: false
 
-    # ── 7. ZFS scrub timer ──────────────────────────────────────────────────
-    - name: Disable and remove ZFS scrub timer
-      ansible.builtin.systemd:
-        name: zfs-scrub.timer
-        state: stopped
-        enabled: false
+    # ── 7. LVM volumes ──────────────────────────────────────────────────────
+    - name: Remove all LVM logical volumes
+      ansible.builtin.shell: |
+        set +e
+        for lv in $(lvs --noheadings -o lv_path 2>/dev/null | awk '{print $1}'); do
+          lvremove -f "$lv" 2>/dev/null || true
+        done
+        exit 0
+      changed_when: true
       failed_when: false
 
-    - name: Remove zfs-scrub unit files
-      ansible.builtin.file:
-        path: "{{ item }}"
-        state: absent
-      loop:
-        - /etc/systemd/system/zfs-scrub.timer
-        - /etc/systemd/system/zfs-scrub.service
+    - name: Remove all LVM volume groups
+      ansible.builtin.shell: |
+        set +e
+        for vg in $(vgs --noheadings -o vg_name 2>/dev/null | awk '{print $1}'); do
+          vgremove -f "$vg" 2>/dev/null || true
+        done
+        exit 0
+      changed_when: true
+      failed_when: false
 
-    # ── 8. ZFS pools — DESTRUCTIVE (gated) ──────────────────────────────────
-    - name: Destroy ZFS pools (DESTRUCTIVE — requires destroy_zfs=true)
-      when: destroy_zfs | bool or wipe_disks | bool
-      block:
-        - name: Check which pools exist
-          ansible.builtin.command: zpool list -H -o name
-          register: existing_pools
-          changed_when: false
-          failed_when: false
+    - name: Remove all LVM physical volumes
+      ansible.builtin.shell: |
+        set +e
+        for pv in $(pvs --noheadings -o pv_name 2>/dev/null | awk '{print $1}'); do
+          pvremove -f "$pv" 2>/dev/null || true
+        done
+        exit 0
+      changed_when: true
+      failed_when: false
 
-        - name: Collect disks attached to tank before destruction
-          ansible.builtin.shell: |
-            zpool status tank 2>/dev/null \
-              | awk '/^\t  / && $1 ~ /^(\/dev\/|sd|nvme)/ {print $1}' \
-              | sed 's|^|/dev/|;s|^/dev//dev/|/dev/|'
-          register: tank_member_disks
-          changed_when: false
-          failed_when: false
-          when: "'tank' in existing_pools.stdout_lines"
+    - name: Remove device-mapper devices
+      ansible.builtin.command: dmsetup remove_all
+      changed_when: true
+      failed_when: false
 
-        - name: Collect disks attached to archive before destruction
-          ansible.builtin.shell: |
-            zpool status archive 2>/dev/null \
-              | awk '/^\t  / && $1 ~ /^(\/dev\/|sd|nvme)/ {print $1}' \
-              | sed 's|^|/dev/|;s|^/dev//dev/|/dev/|'
-          register: archive_member_disks
-          changed_when: false
-          failed_when: false
-          when: "'archive' in existing_pools.stdout_lines"
+    # ── 8. Loop devices and overlay mounts ──────────────────────────────────
+    - name: Unmount all overlay filesystems
+      ansible.builtin.shell: |
+        set +e
+        # Iterate in reverse order to handle nested overlays
+        grep -E '^overlay ' /proc/mounts | awk '{print $2}' | sort -r | while read mnt; do
+          umount -l "$mnt" 2>/dev/null || true
+        done
+        exit 0
+      changed_when: true
+      failed_when: false
 
-        - name: Export then destroy tank
-          ansible.builtin.shell: |
-            zpool export tank 2>/dev/null || true
-            zpool destroy -f tank
-          when: "'tank' in existing_pools.stdout_lines"
-          changed_when: true
-
-        - name: Export then destroy archive
-          ansible.builtin.shell: |
-            zpool export archive 2>/dev/null || true
-            zpool destroy -f archive
-          when: "'archive' in existing_pools.stdout_lines"
-          changed_when: true
+    - name: Detach all loop devices
+      ansible.builtin.command: losetup -D
+      changed_when: true
+      failed_when: false
 
     # ── 9. Zero-fill disks — VERY DESTRUCTIVE (gated) ───────────────────────
     - name: Wipe disks (DESTRUCTIVE — requires wipe_disks=true)
       when: wipe_disks | bool
       block:
-        - name: Re-discover candidate disks by size for wipe
+        - name: Discover all non-OS block devices
           ansible.builtin.shell: |
             set -euo pipefail
-            lsblk -d -n -o NAME,SIZE,TYPE \
-              | awk -v sz="{{ item }}" '$3=="disk" && $2==sz {print "/dev/"$1}' \
-              | while read dev; do
-                  # Skip the one currently mounted as / (OS disk safety net)
-                  if lsblk -n -o MOUNTPOINT "$dev" 2>/dev/null | grep -qE '^/$|^/boot'; then
-                    continue
-                  fi
-                  echo "$dev"
-                done
-          args:
-            executable: /bin/bash
-          register: wipe_candidates
-          loop:
-            - "5.5T"
-            - "9.1T"
-          changed_when: false
-
-        - name: Find unmounted non-OS NVMe devices for wipe
-          ansible.builtin.shell: |
-            set -euo pipefail
-            for dev in $(lsblk -d -n -o NAME | grep '^nvme'); do
-              if lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -qE '^/$|^/boot'; then
-                continue
-              fi
-              if lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -q .; then
-                continue
-              fi
-              echo "/dev/$dev"
+            # Find the OS disk by tracing / and /boot back to the parent block device
+            os_devs=""
+            for mnt in / /boot /boot/efi; do
+              dev=$(findmnt -n -o SOURCE "$mnt" 2>/dev/null || true)
+              [ -z "$dev" ] && continue
+              # Strip partition suffix to get the disk (sda1→sda, nvme0n1p1→nvme0n1)
+              base=$(lsblk -n -o PKNAME "$dev" 2>/dev/null | head -1)
+              [ -n "$base" ] && os_devs="$os_devs /dev/$base"
+            done
+            # Enumerate all disks, excluding OS disk(s)
+            lsblk -d -n -o NAME,TYPE | awk '$2=="disk" {print "/dev/"$1}' | while read dev; do
+              skip=0
+              for od in $os_devs; do
+                [ "$dev" = "$od" ] && skip=1 && break
+              done
+              [ "$skip" -eq 0 ] && echo "$dev"
             done
           args:
             executable: /bin/bash
-          register: wipe_nvme
+          register: wipe_candidates
           changed_when: false
 
         - name: Aggregate disks to wipe
           ansible.builtin.set_fact:
-            disks_to_wipe: >-
-              {{ wipe_candidates.results[0].stdout_lines +
-                 wipe_candidates.results[1].stdout_lines +
-                 wipe_nvme.stdout_lines }}
+            disks_to_wipe: "{{ wipe_candidates.stdout_lines }}"
 
         - name: Show disks that will be zero-filled
           ansible.builtin.debug:
@@ -448,10 +409,6 @@
       when: remove_packages | bool
       ansible.builtin.apt:
         name:
-          - zfsutils-linux
-          - zfs-dkms
-          - nfs-kernel-server
-          - nfs-common
           - qemu-system-x86
           - libvirt-daemon-system
           - virtinst
@@ -484,10 +441,11 @@
         msg:
           - "=== Uninstall complete ==="
           - "Verify with:"
-          - "  snap list                  # should show no openstack/lxd/juju/microk8s"
-          - "  zpool list                 # {{ 'no pools' if destroy_zfs or wipe_disks else 'pools may still exist' }}"
-          - "  systemctl status nfs-kernel-server libvirtd   # both stopped"
-          - "  sudo ufw status                               # inactive"
-          - "  ip a show lxdbr0                              # should not exist"
-          - "If you plan to redeploy: reboot before re-running 00-prereqs.yml"
-          - "so dkms/zfs/kernel state is clean."
+          - "  snap list                  # should show no openstack/lxd/juju/microk8s/microceph"
+          - "  lvs; vgs; pvs              # should be empty"
+          - "  losetup -l                 # should be empty"
+          - "  grep overlay /proc/mounts  # should be empty"
+          - "  systemctl status libvirtd  # stopped"
+          - "  sudo ufw status            # inactive"
+          - "  ip a show lxdbr0           # should not exist"
+          - "If you plan to redeploy: reboot before re-running 00-prereqs.yml."
