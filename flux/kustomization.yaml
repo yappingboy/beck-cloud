@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# Root kustomization for the `flux-system` Kustomization (gotk-sync.yaml path: ./flux).
+# Includes:
+#   - flux-system/  : gotk-components + gotk-sync (the self-managing bootstrap)
+#   - infrastructure/flux-system/ : beck-cloud GitRepository, ConfigMap, and the layered
+#                                   Flux Kustomizations that deploy infrastructure and apps.
+resources:
+  - flux-system
+  - infrastructure/flux-system

@@ -13,16 +13,16 @@ spec:
         spec:
           containers:
             - name: recyclarr
-              image: ghcr.io/lameyjs/recyclarr:latest
+              image: ghcr.io/recyclarr/recyclarr:latest
               volumeMounts:
                 - name: config
                   mountPath: /config
                 - name: recyclarr-config
-                  mountPath: /recyclarr/config/yml
+                  mountPath: /recyclarr/config/recyclarr.yml
                   subPath: recyclarr.yml
               env:
-                - name: RECYLARR_CONFIG_FILE
-                  value: /recyclarr/config/yml
+                - name: RECYCLARR_CONFIG_FILE
+                  value: /recyclarr/config/recyclarr.yml
           restartPolicy: Never
           volumes:
             - name: config

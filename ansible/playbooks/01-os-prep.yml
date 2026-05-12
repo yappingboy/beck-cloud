@@ -40,7 +40,7 @@
           - nfs-kernel-server
           - nfs-common
           # KVM/QEMU (Sunbeam/Nova hypervisor)
-          # qemu-kvm is a virtual package on Ubuntu 26.04; use the concrete provider
+          # qemu-kvm is a virtual package on Ubuntu 24.04; use the concrete provider
           - qemu-system-x86
           - libvirt-daemon-system
           - virtinst
@@ -134,39 +134,42 @@
       notify: restart chrony
 
     # ── NVIDIA drivers ───────────────────────────────────────────────────
-    # Must be installed before 07-ai-sysadmin.yml so llama-server can use the GPU.
-    # Titan RTX (TU102) has 24GB GDDR6 — Qwen2.5-32B Q4_K_M fits entirely in VRAM.
-    - name: Install ubuntu-drivers utility
+    # Only runs when install_nvidia: true (group_vars/all.yml).
+    # Titan RTX (TU102) has 24GB GDDR6 — stays on host for llama-server (07-ai-sysadmin.yml).
+    - name: Install ubuntu-drivers utility and CUDA toolkit
       ansible.builtin.apt:
         name:
           - ubuntu-drivers-common
           - nvidia-cuda-toolkit
         state: present
+      when: install_nvidia | bool
 
     - name: Check if NVIDIA driver already loaded
       ansible.builtin.command: nvidia-smi
       register: nvidia_check
       failed_when: false
       changed_when: false
+      when: install_nvidia | bool
 
     - name: Install recommended NVIDIA driver
-      ansible.builtin.shell: ubuntu-drivers install 2>/dev/null || ubuntu-drivers autoinstall
+      ansible.builtin.shell: ubuntu-drivers autoinstall
       args:
         executable: /bin/bash
-      when: nvidia_check.rc != 0
+      when: install_nvidia | bool and nvidia_check.rc != 0
       register: nvidia_install
 
     - name: Reboot to activate NVIDIA kernel module
       ansible.builtin.reboot:
         msg: "Rebooting to activate NVIDIA drivers"
         reboot_timeout: 300
-      when: nvidia_install is changed
+      when: install_nvidia | bool and nvidia_install is changed
 
     - name: Verify NVIDIA driver is active post-reboot
       ansible.builtin.command: nvidia-smi
       register: nvidia_verify
       changed_when: false
       failed_when: nvidia_verify.rc != 0
+      when: install_nvidia | bool
 
     - name: Harden SSH configuration
       ansible.builtin.lineinfile:

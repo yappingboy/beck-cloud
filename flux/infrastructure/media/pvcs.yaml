@@ -1,24 +1,12 @@
-# Media/Torrent PVCs:
-# - media-library, media-downloads use hostPath bound to ZFS datasets on tank.
-# - Config PVCs use local-zfs (local-path-provisioner).
+# Media/Torrent PVCs backed by NFS StorageClasses provisioned from the ZFS host.
+#
+# StorageClass routing (defined in configs/storage-classes.yaml + nfs-provisioner.yaml):
+#   nfs-media  → /tank/media   (large sequential reads — library, downloads)
+#   nfs-bulk   → /tank/torrent (large sequential writes — torrent staging)
+#   nfs-k3s    → /tank/k3s    (default: small random I/O — configs, databases)
 
 ---
-# PV for media-library (ZFS-backed, RWX via shared hostPath)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pv-media-library
-spec:
-  capacity:
-    storage: 60Ti
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-zfs
-  hostPath:
-    path: /mnt/tank/media/library
-    type: DirectoryOrCreate
----
+# Shared media library (RWX — Jellyfin, Sonarr, Radarr all read from this)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -27,28 +15,13 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: local-zfs
+  storageClassName: nfs-media
   resources:
     requests:
       storage: 60Ti
-  volumeName: pv-media-library
 ---
-# PV for media-downloads (ZFS-backed, RWX)
-apiVersion: v1
-kind: PersistentVolume
-metadata:
-  name: pv-media-downloads
-spec:
-  capacity:
-    storage: 10Ti
-  accessModes:
-    - ReadWriteMany
-  persistentVolumeReclaimPolicy: Retain
-  storageClassName: local-zfs
-  hostPath:
-    path: /mnt/tank/media/downloads
-    type: DirectoryOrCreate
----
+# Media downloads staging area (RWX — written by qBittorrent, read by Sonarr/Radarr)
+# Lives in namespace 'media' so Sonarr/Radarr can mount it directly.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -57,13 +30,26 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: local-zfs
+  storageClassName: nfs-media
   resources:
     requests:
       storage: 10Ti
-  volumeName: pv-media-downloads
 ---
-# Config PVCs (RWO, local-zfs)
+# Torrent downloads (same NFS export, separate PVC in torrent namespace for qBittorrent)
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: torrent-downloads
+  namespace: torrent
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: nfs-bulk
+  resources:
+    requests:
+      storage: 10Ti
+---
+# Config PVCs (RWO, nfs-k3s default class)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -72,7 +58,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 20Gi
@@ -85,7 +71,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 10Gi
@@ -98,7 +84,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 10Gi
@@ -111,7 +97,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 10Gi
@@ -124,7 +110,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 5Gi
@@ -137,7 +123,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 5Gi
@@ -150,7 +136,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-zfs
+  storageClassName: nfs-k3s
   resources:
     requests:
       storage: 5Gi

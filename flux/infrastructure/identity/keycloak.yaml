@@ -11,30 +11,26 @@ spec:
       version: 25.2.0
       sourceRef:
         kind: HelmRepository
-        name: keycloak
+        name: bitnami
         namespace: flux-system
   values:
     fullnameOverride: keycloak
     auth:
       adminUsername: admin
-      adminPassword:
-        valueFrom:
-          secretKeyRef:
-            name: keycloak-admin-password
-            key: admin-password
+      existingSecret: keycloak-admin-password
+      secretKeys:
+        adminPasswordKey: admin-password
     postgresql:
       enabled: true
       auth:
         database: keycloak
         username: keycloak
-        password:
-          valueFrom:
-            secretKeyRef:
-              name: keycloak-postgres-password
-              key: password
+        existingSecret: keycloak-postgres-password
+        secretKeys:
+          userPasswordKey: password
     extraEnvVars:
-      - name: KEYCLOAK_EXTRA_ARGS
-        value: "-Djgroups.dns.query=keys-0.keys.internal -Djgroups.dns.query.timeout=2 -Djgroups.dns.query.retries=5"
+      - name: KC_CACHE
+        value: "local"
     ingress:
       enabled: true
       className: traefik

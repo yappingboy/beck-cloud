@@ -1,6 +1,6 @@
 # ZFS + Sunbeam Deployment Plan — Beck Cloud
 
-> **Status:** In progress — fresh deployment on Ubuntu 26.04
+> **Status:** In progress — fresh deployment on Ubuntu 24.04 LTS (Sunbeam 2024.1 requires noble)
 > **Previous storage:** Rook-Ceph (decommissioned)
 > **Previous OS:** CentOS Stream 10 (replaced)
 > **Architecture:** Sunbeam OpenStack on bare metal → K3s on Nova VMs → ZFS/NFS for persistent storage
@@ -13,25 +13,25 @@
 
 | Device | Size | Role |
 |--------|------|------|
-| sda–sdg (7 drives) | 5.5TB each | RAIDZ2 vdev 1 |
-| sdj–sdp (6 drives) | 5.5TB each | RAIDZ2 vdev 2 |
+| sdb–sdg (6 drives) | 5.5TB each | RAIDZ1 vdev 1 |
+| sdh, sdj–sdl, sdn–sdo (6 drives) | 5.5TB each | RAIDZ1 vdev 2 |
 | sdi, sdm | 9.1TB each | archive mirror |
-| nvme1n1 | 476GB | ZFS SLOG (write log) |
-| nvme0n1 | — | OS boot drive |
+| nvme0n1 | 476GB | ZFS SLOG (auto-detected — first free NVMe) |
+| nvme1n1 | — | OS boot drive |
 
 ### Pool Design
 
-**`tank`** — primary data pool (~49.5TB usable)
+**`tank`** — primary data pool (~55TB usable)
 ```bash
 zpool create -f tank \
-  raidz2 sda sdb sdc sdd sde sdf sdg \
-  raidz2 sdj sdk sdl sdn sdo sdp \
-  log nvme1n1
+  raidz1 sdb sdc sdd sde sdf sdg \
+  raidz1 sdh sdj sdk sdl sdn sdo \
+  log nvme0n1
 ```
-- vdev1: 7 drives RAIDZ2 → 5 data + 2 parity = **27.5TB usable**
-- vdev2: 6 drives RAIDZ2 → 4 data + 2 parity = **22TB usable**
-- SLOG on nvme1n1: accelerates sync writes (torrent downloads, DB fsync)
-- Fault tolerance: survives **2 simultaneous drive failures per vdev**
+- vdev1: 6 drives RAIDZ1 → 5 data + 1 parity = **~27.5TB usable**
+- vdev2: 6 drives RAIDZ1 → 5 data + 1 parity = **~27.5TB usable**
+- SLOG on nvme0n1: accelerates sync writes (torrent downloads, DB fsync)
+- Fault tolerance: survives **1 simultaneous drive failure per vdev**
 
 **`archive`** — high-capacity long-term storage (~9.1TB usable)
 ```bash
@@ -40,7 +40,7 @@ zpool create -f archive mirror sdi sdm
 - Mirrored pair: survives 1 drive failure
 - Used for: long-term backups, cold data, offsite staging
 
-**Total usable: ~58.6TB** (close to previous 60TB single pool)
+**Total usable: ~55TB**
 
 ### Pool Properties
 ```bash
@@ -156,7 +156,7 @@ ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-snapshotter
 | NVMe SLOG failure (power loss) | Pool may need `zpool clear` on next import | UPS on host; ZFS recovers safely on clean import |
 | NFS as storage backend | Higher latency vs local disk | `hard,intr` mount options; NFS v4.2 for best perf |
 | Single node = no live migration | VM failure = downtime | ZFS snapshots + Velero for fast restore |
-| Sunbeam 26.04 early adopter | Potential snap bugs | Pin snap channel; check Canonical release notes |
+| Sunbeam 2024.1 on noble (24.04) | Snap channel pinned to LTS | Track 2024.x/stable; check Canonical release notes |
 | Nova VM IP changes | K3s cluster loses quorum | Use static IPs via Neutron port allocation |
 
 ---

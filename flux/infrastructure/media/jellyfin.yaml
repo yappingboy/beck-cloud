@@ -45,10 +45,6 @@ spec:
               mountPath: /data/tv
             - name: media-downloads
               mountPath: /downloads
-          securityContext:
-            capabilities:
-              add:
-                - SYS_ADMIN
       volumes:
         - name: config
           persistentVolumeClaim:

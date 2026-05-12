@@ -4,21 +4,21 @@
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/00-sunbeam.yml
 #
 # Prerequisites:
-#   - Ubuntu 26.04 LTS installed, snap available
+#   - Ubuntu 24.04 LTS (noble) installed
 #   - VT-x/AMD-V enabled in BIOS
 #   - ops_user has passwordless sudo
-#   - Physical NIC is up on 172.16.0.0/24
+#   - Physical NIC is up with a routable IPv4 address
 #
 # What this does:
 #   1. Installs the openstack snap (Sunbeam)
-#   2. Prepares the node (groups, kernel params, OVN)
-#   3. Bootstraps a single-node OpenStack cluster (control + compute only)
+#   2. Runs `sunbeam prepare-node-script` — Sunbeam's own prep (groups, sysctls,
+#      kernel modules, microk8s/juju snaps). DO NOT pre-install juju/lxd ourselves.
+#   3. Bootstraps a single-node cluster (control + compute, no MicroCeph OSDs)
 #   4. Configures external networking for floating IPs
 #   5. Creates Nova flavors and uploads the SSH keypair
 #
-# NOTE: sunbeam cluster bootstrap takes 15-30 minutes on first run.
-# If it fails mid-way, run: sunbeam cluster bootstrap --role control,compute
-# again — it is designed to be re-entrant.
+# Re-entrant: if bootstrap fails mid-way, re-running the playbook resumes
+# from the failure point. Use `sunbeam cluster status` to inspect state.
 
 - name: Install and bootstrap Sunbeam OpenStack
   hosts: hypervisor
@@ -42,16 +42,20 @@
       when: snap_check.rc != 0
       changed_when: true
 
-    - name: Check if juju snap already installed
-      ansible.builtin.command: snap list juju
-      register: juju_check
+    - name: Check if prepare-node-script has already run (microk8s installed by it)
+      ansible.builtin.command: snap list microk8s
+      register: microk8s_check
       failed_when: false
       changed_when: false
 
-    - name: Install juju snap (required by Sunbeam bootstrap)
+    - name: Run sunbeam prepare-node-script (handles groups, sysctls, juju, microk8s)
       become: true
-      ansible.builtin.command: snap install juju --channel="3/stable"
-      when: juju_check.rc != 0
+      ansible.builtin.shell: |
+        set -o pipefail
+        sunbeam prepare-node-script --bootstrap | bash -x
+      args:
+        executable: /bin/bash
+      when: microk8s_check.rc != 0
       changed_when: true
 
     - name: Ensure SSH keypair exists for ops_user
@@ -61,28 +65,10 @@
         ssh_key_type: ed25519
         ssh_key_file: .ssh/id_ed25519
 
-    - name: Allow ops_user to SSH into localhost without password
-      ansible.posix.authorized_key:
-        user: "{{ ops_user }}"
-        state: present
-        key: "{{ lookup('file', '/home/{{ ops_user }}/.ssh/id_ed25519.pub') }}"
-
-    - name: Add ops_user to required groups (snap_daemon, libvirt, kvm)
-      become: true
-      ansible.builtin.user:
-        name: "{{ ops_user }}"
-        groups: "{{ item }}"
-        append: true
-      loop:
-        - snap_daemon
-        - libvirt
-        - kvm
-      ignore_errors: true  # Groups may not exist until snap is fully initialized
-
-    - name: Reset SSH connection to pick up new group membership
+    - name: Reset SSH connection to pick up group memberships added by prepare-node-script
       ansible.builtin.meta: reset_connection
 
-    - name: Copy Sunbeam manifest
+    - name: Render Sunbeam deployment manifest
       ansible.builtin.template:
         src: templates/sunbeam-manifest.yaml.j2
         dest: "{{ manifest_path }}"
@@ -223,7 +209,7 @@
     - name: Check if Sunbeam cluster is fully deployed
       ansible.builtin.shell: >
         sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
-      register: sunbeam_deployed_check
+      register: sunbeam_deployed
       failed_when: false
       changed_when: false
 
@@ -233,30 +219,27 @@
         --role control,compute
         --manifest {{ manifest_path }}
         --accept-defaults
-      when: sunbeam_deployed_check.rc != 0
+      when: sunbeam_deployed.rc != 0
       changed_when: true
-      async: 2400
+      async: 3600
       poll: 30
-      # prepare-node was removed in 2024.1 — bootstrap handles node setup internally.
 
-    - name: Check if sunbeam already configured (openrc exists and has auth-url)
-      ansible.builtin.shell: >
-        grep -q OS_AUTH_URL {{ openrc_path }} 2>/dev/null
+    - name: Check if openrc already valid
+      ansible.builtin.shell: grep -q OS_AUTH_URL {{ openrc_path }} 2>/dev/null
       register: openrc_valid
       failed_when: false
       changed_when: false
 
-    - name: Run sunbeam configure
+    - name: Run sunbeam configure (only if openrc missing/invalid)
       ansible.builtin.command: >
         sunbeam configure
         --openrc {{ openrc_path }}
+        --manifest {{ manifest_path }}
         --accept-defaults
       when: openrc_valid.rc != 0
       changed_when: true
-      failed_when: false
-      register: configure_result
 
-    - name: Generate openrc from sunbeam (authoritative source, always overwrites stale file)
+    - name: Generate openrc from sunbeam (authoritative source)
       ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
       changed_when: true
 

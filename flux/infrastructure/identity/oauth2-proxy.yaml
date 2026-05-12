@@ -14,33 +14,26 @@ spec:
         name: oauth2-proxy
         namespace: flux-system
   values:
-    config:
-      provider: keycloak-oidc
-      provider_display_name: "Keycloak"
-      email_domains:
-        - "*"
-      client_id: "oauth2-proxy"
-      client_secret:
-        valueFrom:
-          secretKeyRef:
-            name: oauth2-proxy-client-secret
-            key: client-secret
-      redirect_url: "https://oauth2.becklab.cloud/oauth2/callback"
-      cookie_secure: true
-      cookie_httponly: true
-      cookie_samesite: "Lax"
-      cookie_secret:
-        valueFrom:
-          secretKeyRef:
-            name: oauth2-proxy-cookie-secret
-            key: cookie-secret
-      ldap_url: "ldap://lldap.identity.svc.cluster.local:3890"
-      ldap_search_base: "dc=becklab,dc=cloud"
-      ldap_user_search_filter: "(&(|(uid=%s)(mail=%s))(memberOf=cn=admins,ou=groups,dc=becklab,dc=cloud))"
-      login_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/auth"
-      redeem_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token"
-      validate_url: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/userinfo"
-      upstream: "http://localhost:80"
+    # Secrets are read from Kubernetes secrets via configuration.existingSecret.
+    # Create before deploying:
+    #   kubectl -n identity create secret generic oauth2-proxy-secrets \
+    #     --from-literal=client-secret=<keycloak-client-secret> \
+    #     --from-literal=cookie-secret=$(openssl rand -base64 32)
+    configuration:
+      clientID: "oauth2-proxy"
+      existingSecret: oauth2-proxy-secrets
+      content: |
+        provider = "keycloak-oidc"
+        provider_display_name = "Keycloak"
+        email_domains = ["*"]
+        redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
+        cookie_secure = true
+        cookie_httponly = true
+        cookie_samesite = "Lax"
+        login_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/auth"
+        redeem_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token"
+        validate_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/userinfo"
+        upstream = "http://localhost:80"
     ingress:
       enabled: true
       className: traefik

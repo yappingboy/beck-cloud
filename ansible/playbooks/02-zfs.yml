@@ -3,7 +3,7 @@
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-zfs.yml
 #
 # Pool layout:
-#   tank    — two RAIDZ1 vdevs (~60.5TB usable) + NVMe SLOG
+#   tank    — two RAIDZ1 vdevs (~27.5TB each, ~55TB total) + NVMe SLOG
 #     vdev1 — raidz1: sdb sdc sdd sde sdf sdg       (5 data + 1 parity)
 #     vdev2 — raidz1: sdj sdk sdl sdn sdo sdh       (5 data + 1 parity)
 #     log   — auto-detected NVMe                      (SLOG: write acceleration)
@@ -186,8 +186,8 @@
 
           [Service]
           Type=oneshot
-          ExecStart=/sbin/zpool scrub tank
-          ExecStart=/sbin/zpool scrub archive
+          ExecStart=/usr/sbin/zpool scrub tank
+          ExecStart=/usr/sbin/zpool scrub archive
 
     - name: Create ZFS scrub systemd timer (weekly on Sunday 03:00)
       ansible.builtin.copy:
