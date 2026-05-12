@@ -166,15 +166,19 @@
     - name: Destroy broken Juju controller before re-bootstrap
       when: juju_controller_broken and sunbeam_precheck.rc != 0
       block:
-        - name: Try graceful destroy-controller
+        # 30-second timeout: destroy-controller --force --no-wait can still
+        # block indefinitely when the controller process is wedged. If it times
+        # out we fall through to the brute-force LXD container delete below.
+        - name: Try graceful destroy-controller (timeout 30s)
           ansible.builtin.shell: >
+            timeout 30
             juju destroy-controller localhost-localhost
             --no-prompt --destroy-all-models --force --no-wait 2>/dev/null
           failed_when: false
           changed_when: true
 
         - name: Unregister controller from juju client state
-          ansible.builtin.shell: juju unregister localhost-localhost --no-prompt 2>/dev/null
+          ansible.builtin.shell: timeout 10 juju unregister localhost-localhost --no-prompt 2>/dev/null
           failed_when: false
           changed_when: true
 
@@ -183,7 +187,10 @@
             path: "/home/{{ ops_user }}/.local/share/juju/controllers.yaml"
             state: absent
 
-        - name: Remove juju controller LXD container if it lingers
+        # Brute-force: kill every juju-* LXD container and every juju process.
+        # Runs unconditionally in the block so a hung destroy-controller above
+        # doesn't leave stale containers that block the next bootstrap attempt.
+        - name: Force-delete juju LXD containers
           ansible.builtin.shell: |
             lxc list --format csv -c n 2>/dev/null \
               | grep -E '^juju-' \
@@ -191,6 +198,12 @@
             exit 0
           changed_when: true
           failed_when: false
+
+        - name: Kill any lingering juju agent processes
+          ansible.builtin.shell: pkill -9 -f 'jujud\|juju-' 2>/dev/null || true
+          become: true
+          failed_when: false
+          changed_when: true
 
     - name: Check for stale Juju machine agent services (persists across snap purge)
       ansible.builtin.shell: >
