@@ -75,17 +75,17 @@ zfs_archive_pool: archive
 zfs_raidz1_vdev1:
   - /dev/sdb
   - /dev/sdc
-  - /dev/sdd
   - /dev/sde
+
+zfs_raidz1_vdev2:
   - /dev/sdf
   - /dev/sdg
-zfs_raidz1_vdev2:
+  - /dev/sdh
+
+zfs_raidz1_vdev3:
+  - /dev/sdi
   - /dev/sdj
   - /dev/sdk
-  - /dev/sdl
-  - /dev/sdn
-  - /dev/sdo
-  - /dev/sdh
 
 # archive: mirrored 9.1TB pair — ~9.1TB usable
 zfs_archive_mirror:

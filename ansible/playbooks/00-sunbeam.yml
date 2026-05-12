@@ -74,6 +74,138 @@
         dest: "{{ manifest_path }}"
         mode: '0600'
 
+    - name: Connect required snap interfaces for openstack
+      become: true
+      ansible.builtin.command: snap connect openstack:{{ item }}
+      loop:
+        - ssh-keys
+        - dot-local-share-juju
+      failed_when: false
+      changed_when: true
+
+    - name: Check if lxd snap already installed
+      ansible.builtin.command: snap list lxd
+      register: lxd_check
+      failed_when: false
+      changed_when: false
+
+    - name: Install lxd snap
+      become: true
+      ansible.builtin.command: snap install lxd --channel="latest/stable"
+      when: lxd_check.rc != 0
+      changed_when: true
+
+    - name: Add ops_user to lxd group
+      become: true
+      ansible.builtin.user:
+        name: "{{ ops_user }}"
+        groups: lxd
+        append: true
+
+    - name: Reset SSH connection to pick up lxd group
+      ansible.builtin.meta: reset_connection
+
+    - name: Check if LXD is already initialized
+      ansible.builtin.command: lxc storage list
+      register: lxd_init_check
+      failed_when: false
+      changed_when: false
+
+    - name: Initialize LXD with auto config
+      ansible.builtin.command: lxd init --auto
+      when: lxd_init_check.rc != 0
+      changed_when: true
+
+    - name: Ensure lxdbr0 bridge exists
+      become: true
+      ansible.builtin.command: lxc network create lxdbr0
+      register: bridge_create
+      failed_when: false
+      changed_when: bridge_create.rc == 0
+
+    - name: Check if Sunbeam cluster is fully deployed (early check for cleanup gating)
+      ansible.builtin.shell: >
+        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
+      register: sunbeam_precheck
+      failed_when: false
+      changed_when: false
+
+    - name: Check if Juju controller already exists
+      ansible.builtin.command: juju controllers
+      register: juju_ctrl_check
+      failed_when: false
+      changed_when: false
+
+    - name: Check for stale Juju machine agent services (persists across snap purge)
+      ansible.builtin.shell: >
+        systemctl list-units --all 'jujud-machine-*' --no-legend | grep -q jujud-machine
+      register: juju_machine_agent_check
+      failed_when: false
+      changed_when: false
+
+    - name: Remove stale Juju machine agent (causes 'machine is already provisioned')
+      become: true
+      when: sunbeam_precheck.rc != 0 and juju_machine_agent_check.rc == 0
+      block:
+        - name: Stop juju machine agent services
+          ansible.builtin.shell: >
+            systemctl list-units --all 'jujud-machine-*' --no-legend
+            | awk '{print $1}'
+            | xargs -r systemctl stop 2>/dev/null
+          ignore_errors: true
+
+        - name: Remove juju machine agent service files
+          ansible.builtin.shell: rm -f /etc/systemd/system/jujud-machine-*.service
+          changed_when: true
+
+        - name: Remove juju machine agent data directory
+          ansible.builtin.file:
+            path: /var/lib/juju
+            state: absent
+
+        - name: Reload systemd after removing machine agent
+          ansible.builtin.systemd:
+            daemon_reload: true
+
+    - name: Remove stale Juju LXD trust entries if controller is absent
+      ansible.builtin.shell: |
+        lxc config trust list -f csv 2>/dev/null \
+          | grep -i juju \
+          | cut -d',' -f4 \
+          | xargs -r -I{} lxc config trust remove {} 2>/dev/null
+        exit 0
+      when: "'localhost' not in juju_ctrl_check.stdout"
+      failed_when: false
+      changed_when: false
+
+    - name: Bootstrap Juju controller on LXD
+      ansible.builtin.command: juju bootstrap localhost
+      when: "'localhost' not in juju_ctrl_check.stdout"
+      changed_when: true
+      async: 1800
+      poll: 15
+
+    - name: Wait for Juju controller API to be reachable
+      ansible.builtin.command: juju controllers
+      register: juju_ready
+      until: juju_ready.rc == 0
+      retries: 20
+      delay: 15
+      changed_when: false
+
+    - name: Reload Juju spaces so LXD bridge subnets are discovered
+      ansible.builtin.command: juju reload-spaces --model controller
+      register: reload_spaces
+      failed_when: false
+      changed_when: false
+
+    - name: Register physical host subnet in Juju (not discoverable via LXD reload-spaces)
+      ansible.builtin.shell: |
+        juju subnets 2>/dev/null | grep -q "{{ provider_network_cidr }}" || \
+        juju add-subnet "{{ provider_network_cidr }}" alpha
+      failed_when: false
+      changed_when: false
+
     - name: Check if Sunbeam cluster is fully deployed
       ansible.builtin.shell: >
         sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"

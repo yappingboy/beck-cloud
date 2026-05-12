@@ -20,7 +20,7 @@
 
   vars:
     wipe_disks: false
-    all_zfs_disks: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_archive_mirror }}"
+    all_zfs_disks: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 + zfs_archive_mirror }}"
 
   tasks:
     # ── Detect free NVMe for SLOG ────────────────────────────────────────
@@ -67,7 +67,7 @@
       block:
         - name: Wipe signatures on tank disks
           ansible.builtin.command: wipefs -a {{ item }}
-          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 }}"
+          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 }}"
           changed_when: true
           when: tank_exists.rc != 0
 
@@ -93,7 +93,7 @@
       block:
         - name: Zero-fill tank disks
           ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
-          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 }}"
+          loop: "{{ zfs_raidz1_vdev1 + zfs_raidz1_vdev2 + zfs_raidz1_vdev3 }}"
           changed_when: true
 
         - name: Zero-fill archive disks
@@ -116,6 +116,7 @@
         zpool create -f tank
         raidz1 {{ zfs_raidz1_vdev1 | join(' ') }}
         raidz1 {{ zfs_raidz1_vdev2 | join(' ') }}
+        raidz1 {{ zfs_raidz1_vdev3 | join(' ') }}
         log {{ nvme_detect.stdout | trim }}
       changed_when: true
 
