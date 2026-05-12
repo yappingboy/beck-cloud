@@ -1,0 +1,423 @@
+---
+# 99-uninstall.yml — Tear down the entire Beck Cloud deployment
+#
+# Reverses 00-sunbeam.yml through 07-ai-sysadmin.yml. Designed to be safe by
+# default: only removes services/snaps/configuration. Destructive steps
+# (wiping ZFS pools, zero-filling disks, removing apt packages) are opt-in via
+# flags below.
+#
+# Tiers (least → most destructive):
+#   Default              Stop services, destroy Sunbeam/Juju/LXD, remove snaps,
+#                        un-export NFS, revert host sysctls / UFW.
+#   -e destroy_zfs=true  Also `zpool destroy tank` and `zpool destroy archive`.
+#                        Datasets and snapshots are GONE. Disks themselves are
+#                        left with ZFS labels — re-running 02-zfs.yml will
+#                        recreate the pools cleanly.
+#   -e wipe_disks=true   Implies destroy_zfs. After destroying pools, runs
+#                        `wipefs -a` + 100MB zero-fill on every tank/archive/
+#                        SLOG disk. Required if you want to repurpose the
+#                        drives outside ZFS.
+#   -e remove_packages=true
+#                        apt-remove the packages installed by 01-os-prep.yml
+#                        (KVM, ZFS, NFS, libvirt, etc.). Leaves the base OS
+#                        intact.
+#
+# Run (safe default):
+#   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml
+# Run (nuke everything including ZFS data):
+#   ansible-playbook -i inventory/hosts.yml playbooks/99-uninstall.yml \
+#     -e destroy_zfs=true -e wipe_disks=true -e remove_packages=true
+
+- name: Beck Cloud — full uninstall
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    destroy_zfs: false
+    wipe_disks: false
+    remove_packages: false
+    confirm_uninstall: false
+
+  pre_tasks:
+    - name: Refuse to run without explicit confirmation
+      ansible.builtin.assert:
+        that:
+          - confirm_uninstall | bool
+        fail_msg: >-
+          This playbook will destroy the Beck Cloud deployment.
+          Re-run with -e confirm_uninstall=true to proceed.
+          Add -e destroy_zfs=true to also wipe ZFS pools (data loss).
+          Add -e wipe_disks=true to zero-fill the disks.
+          Add -e remove_packages=true to apt-remove KVM/ZFS/NFS packages.
+
+    - name: Show what will be destroyed
+      ansible.builtin.debug:
+        msg:
+          - "=== Beck Cloud uninstall ==="
+          - "Stop & remove Sunbeam / Juju / LXD / microk8s:  YES"
+          - "Un-export NFS, revert sysctls, disable UFW:     YES"
+          - "Destroy ZFS pools (tank, archive):              {{ destroy_zfs | bool }}"
+          - "Zero-fill pool disks:                           {{ wipe_disks | bool }}"
+          - "apt-remove host packages:                       {{ remove_packages | bool }}"
+
+  tasks:
+    # ── 1. Tear down Nova VMs (K3s nodes) via OpenStack while Sunbeam still runs ─
+    - name: Check if openstack CLI is available
+      ansible.builtin.command: which openstack
+      register: openstack_cli
+      failed_when: false
+      changed_when: false
+
+    - name: Check if openrc credentials exist
+      ansible.builtin.stat:
+        path: "/home/{{ ops_user }}/admin-openrc"
+      register: openrc_file
+
+    - name: Delete Nova VMs before destroying Sunbeam
+      become: false
+      become_user: "{{ ops_user }}"
+      ansible.builtin.shell: |
+        set +e
+        source ~/admin-openrc 2>/dev/null || exit 0
+        for vm in {% for v in nova_k3s_vms %}{{ v.name }} {% endfor %}; do
+          openstack server delete --wait "$vm" 2>/dev/null || true
+        done
+        for port in {% for v in nova_k3s_vms %}{{ v.name }}-port {% endfor %}; do
+          openstack port delete "$port" 2>/dev/null || true
+        done
+        exit 0
+      when:
+        - openstack_cli.rc == 0
+        - openrc_file.stat.exists
+      changed_when: true
+      failed_when: false
+
+    # ── 2. Sunbeam cluster ──────────────────────────────────────────────────
+    - name: Check if sunbeam CLI is available
+      ansible.builtin.command: which sunbeam
+      register: sunbeam_cli
+      failed_when: false
+      changed_when: false
+
+    - name: Remove Sunbeam node from cluster (best-effort)
+      become: false
+      become_user: "{{ ops_user }}"
+      ansible.builtin.shell: |
+        sunbeam cluster remove --name $(hostname) 2>/dev/null || true
+      when: sunbeam_cli.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: Remove openstack snap
+      community.general.snap:
+        name: openstack
+        state: absent
+      failed_when: false
+
+    # ── 3. Juju controllers ─────────────────────────────────────────────────
+    - name: Check if juju CLI is available
+      ansible.builtin.command: which juju
+      register: juju_cli
+      failed_when: false
+      changed_when: false
+
+    - name: Destroy Juju controllers
+      become: false
+      become_user: "{{ ops_user }}"
+      ansible.builtin.shell: |
+        set +e
+        for ctrl in $(juju controllers --format json 2>/dev/null \
+                      | python3 -c 'import sys,json; d=json.load(sys.stdin); print("\n".join((d.get("controllers") or {}).keys()))' 2>/dev/null); do
+          juju destroy-controller "$ctrl" --no-prompt --destroy-all-models --force --no-wait 2>/dev/null || true
+          juju unregister "$ctrl" --no-prompt 2>/dev/null || true
+        done
+        exit 0
+      when: juju_cli.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: Wipe Juju client state
+      ansible.builtin.file:
+        path: "/home/{{ ops_user }}/.local/share/juju"
+        state: absent
+
+    - name: Remove juju snap
+      community.general.snap:
+        name: juju
+        state: absent
+      failed_when: false
+
+    # ── 4. LXD containers and bridge ────────────────────────────────────────
+    - name: Check if lxc CLI is available
+      ansible.builtin.command: which lxc
+      register: lxc_cli
+      failed_when: false
+      changed_when: false
+
+    - name: Force-delete all LXD containers
+      ansible.builtin.shell: |
+        set +e
+        lxc list --format csv -c n 2>/dev/null | while read name; do
+          [ -n "$name" ] && lxc delete --force "$name" 2>/dev/null
+        done
+        exit 0
+      when: lxc_cli.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: Delete lxdbr0 bridge
+      ansible.builtin.command: lxc network delete lxdbr0
+      when: lxc_cli.rc == 0
+      changed_when: true
+      failed_when: false
+
+    - name: Remove lxd snap
+      community.general.snap:
+        name: lxd
+        state: absent
+      failed_when: false
+
+    # ── 5. microk8s (used internally by Sunbeam) ────────────────────────────
+    - name: Remove microk8s snap
+      community.general.snap:
+        name: microk8s
+        state: absent
+      failed_when: false
+
+    # ── 6. NFS exports ──────────────────────────────────────────────────────
+    - name: Stop and disable nfs-kernel-server
+      ansible.builtin.systemd:
+        name: nfs-kernel-server
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Empty /etc/exports
+      ansible.builtin.copy:
+        content: ""
+        dest: /etc/exports
+        mode: '0644'
+
+    - name: Re-export to flush kernel table
+      ansible.builtin.command: exportfs -ra
+      changed_when: true
+      failed_when: false
+
+    # ── 7. ZFS scrub timer ──────────────────────────────────────────────────
+    - name: Disable and remove ZFS scrub timer
+      ansible.builtin.systemd:
+        name: zfs-scrub.timer
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Remove zfs-scrub unit files
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - /etc/systemd/system/zfs-scrub.timer
+        - /etc/systemd/system/zfs-scrub.service
+
+    # ── 8. ZFS pools — DESTRUCTIVE (gated) ──────────────────────────────────
+    - name: Destroy ZFS pools (DESTRUCTIVE — requires destroy_zfs=true)
+      when: destroy_zfs | bool or wipe_disks | bool
+      block:
+        - name: Check which pools exist
+          ansible.builtin.command: zpool list -H -o name
+          register: existing_pools
+          changed_when: false
+          failed_when: false
+
+        - name: Collect disks attached to tank before destruction
+          ansible.builtin.shell: |
+            zpool status tank 2>/dev/null \
+              | awk '/^\t  / && $1 ~ /^(\/dev\/|sd|nvme)/ {print $1}' \
+              | sed 's|^|/dev/|;s|^/dev//dev/|/dev/|'
+          register: tank_member_disks
+          changed_when: false
+          failed_when: false
+          when: "'tank' in existing_pools.stdout_lines"
+
+        - name: Collect disks attached to archive before destruction
+          ansible.builtin.shell: |
+            zpool status archive 2>/dev/null \
+              | awk '/^\t  / && $1 ~ /^(\/dev\/|sd|nvme)/ {print $1}' \
+              | sed 's|^|/dev/|;s|^/dev//dev/|/dev/|'
+          register: archive_member_disks
+          changed_when: false
+          failed_when: false
+          when: "'archive' in existing_pools.stdout_lines"
+
+        - name: Export then destroy tank
+          ansible.builtin.shell: |
+            zpool export tank 2>/dev/null || true
+            zpool destroy -f tank
+          when: "'tank' in existing_pools.stdout_lines"
+          changed_when: true
+
+        - name: Export then destroy archive
+          ansible.builtin.shell: |
+            zpool export archive 2>/dev/null || true
+            zpool destroy -f archive
+          when: "'archive' in existing_pools.stdout_lines"
+          changed_when: true
+
+    # ── 9. Zero-fill disks — VERY DESTRUCTIVE (gated) ───────────────────────
+    - name: Wipe disks (DESTRUCTIVE — requires wipe_disks=true)
+      when: wipe_disks | bool
+      block:
+        - name: Re-discover candidate disks by size for wipe
+          ansible.builtin.shell: |
+            set -euo pipefail
+            lsblk -d -n -o NAME,SIZE,TYPE \
+              | awk -v sz="{{ item }}" '$3=="disk" && $2==sz {print "/dev/"$1}' \
+              | while read dev; do
+                  # Skip the one currently mounted as / (OS disk safety net)
+                  if lsblk -n -o MOUNTPOINT "$dev" 2>/dev/null | grep -qE '^/$|^/boot'; then
+                    continue
+                  fi
+                  echo "$dev"
+                done
+          args:
+            executable: /bin/bash
+          register: wipe_candidates
+          loop:
+            - "5.5T"
+            - "9.1T"
+          changed_when: false
+
+        - name: Find unmounted non-OS NVMe devices for wipe
+          ansible.builtin.shell: |
+            set -euo pipefail
+            for dev in $(lsblk -d -n -o NAME | grep '^nvme'); do
+              if lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -qE '^/$|^/boot'; then
+                continue
+              fi
+              if lsblk -n -o MOUNTPOINT "/dev/$dev" 2>/dev/null | grep -q .; then
+                continue
+              fi
+              echo "/dev/$dev"
+            done
+          args:
+            executable: /bin/bash
+          register: wipe_nvme
+          changed_when: false
+
+        - name: Aggregate disks to wipe
+          ansible.builtin.set_fact:
+            disks_to_wipe: >-
+              {{ wipe_candidates.results[0].stdout_lines +
+                 wipe_candidates.results[1].stdout_lines +
+                 wipe_nvme.stdout_lines }}
+
+        - name: Show disks that will be zero-filled
+          ansible.builtin.debug:
+            msg: "About to wipe: {{ disks_to_wipe }}"
+
+        - name: wipefs each disk
+          ansible.builtin.command: wipefs -a {{ item }}
+          loop: "{{ disks_to_wipe }}"
+          changed_when: true
+          failed_when: false
+
+        - name: Zero first 100MB of each disk
+          ansible.builtin.command: dd if=/dev/zero of={{ item }} bs=1M count=100 conv=fdatasync
+          loop: "{{ disks_to_wipe }}"
+          changed_when: true
+          failed_when: false
+
+        - name: Settle udev
+          ansible.builtin.command: udevadm settle
+          changed_when: false
+          failed_when: false
+
+    # ── 10. libvirt ─────────────────────────────────────────────────────────
+    - name: Stop and disable libvirtd
+      ansible.builtin.systemd:
+        name: libvirtd
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    # ── 11. UFW reset ───────────────────────────────────────────────────────
+    - name: Reset UFW to defaults
+      community.general.ufw:
+        state: reset
+      failed_when: false
+
+    - name: Disable UFW
+      community.general.ufw:
+        state: disabled
+      failed_when: false
+
+    # ── 12. Sysctls and kernel modules (revert 01-os-prep.yml) ──────────────
+    - name: Remove kernel modules persistence file
+      ansible.builtin.file:
+        path: /etc/modules-load.d/beck-cloud.conf
+        state: absent
+
+    - name: Reset Beck Cloud sysctls to kernel defaults
+      ansible.posix.sysctl:
+        name: "{{ item.key }}"
+        value: "{{ item.value }}"
+        sysctl_set: true
+        state: present
+        reload: true
+      loop:
+        - { key: 'net.ipv4.ip_forward',                  value: '0' }
+        - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
+        - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '0' }
+        - { key: 'vm.swappiness',                         value: '60' }
+        - { key: 'vm.nr_hugepages',                       value: '0' }
+      failed_when: false
+
+    # ── 13. Apt packages (optional) ─────────────────────────────────────────
+    - name: Remove host packages installed by 01-os-prep.yml
+      when: remove_packages | bool
+      ansible.builtin.apt:
+        name:
+          - zfsutils-linux
+          - zfs-dkms
+          - nfs-kernel-server
+          - nfs-common
+          - qemu-system-x86
+          - libvirt-daemon-system
+          - virtinst
+          - cpu-checker
+          - open-iscsi
+          - cryptsetup
+          - fail2ban
+        state: absent
+        purge: true
+        autoremove: true
+
+    # ── 14. Stray state directories ─────────────────────────────────────────
+    - name: Remove Sunbeam/Juju/LXD state directories
+      ansible.builtin.file:
+        path: "{{ item }}"
+        state: absent
+      loop:
+        - "/home/{{ ops_user }}/.local/share/juju"
+        - "/home/{{ ops_user }}/.config/openstack"
+        - "/home/{{ ops_user }}/.sunbeam"
+        - "/home/{{ ops_user }}/admin-openrc"
+        - "/home/{{ ops_user }}/demo-openrc"
+        - "/var/snap/openstack/common"
+        - "/var/snap/lxd/common"
+        - "/var/snap/juju/common"
+
+  post_tasks:
+    - name: Print post-uninstall checklist
+      ansible.builtin.debug:
+        msg:
+          - "=== Uninstall complete ==="
+          - "Verify with:"
+          - "  snap list                  # should show no openstack/lxd/juju/microk8s"
+          - "  zpool list                 # {{ 'no pools' if destroy_zfs or wipe_disks else 'pools may still exist' }}"
+          - "  systemctl status nfs-kernel-server libvirtd   # both stopped"
+          - "  sudo ufw status                               # inactive"
+          - "  ip a show lxdbr0                              # should not exist"
+          - "If you plan to redeploy: reboot before re-running 01-os-prep.yml"
+          - "so dkms/zfs/kernel state is clean."
