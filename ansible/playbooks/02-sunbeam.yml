@@ -62,6 +62,41 @@
       failed_when: false
       changed_when: false
 
+    # MicroCeph refuses non-pristine disks. Wipe all non-OS block devices so
+    # a fresh bootstrap works even if a previous ZFS/Ceph deployment left data.
+    # Skipped when cluster is already bootstrapped.
+    - name: Wipe non-OS disks before bootstrap (MicroCeph requires pristine disks)
+      become: true
+      ansible.builtin.shell: |
+        set +e
+        # Identify OS disk(s) via mount points
+        os_devs=""
+        for mnt in / /boot /boot/efi; do
+          dev=$(findmnt -n -o SOURCE "$mnt" 2>/dev/null)
+          [ -z "$dev" ] && continue
+          base=$(lsblk -n -o PKNAME "$dev" 2>/dev/null | head -1)
+          [ -n "$base" ] && os_devs="$os_devs /dev/$base"
+        done
+        # Wipe every non-OS disk
+        lsblk -d -n -o NAME,TYPE | awk '$2=="disk" {print "/dev/"$1}' > /tmp/_all_disks
+        while IFS= read -r dev; do
+          skip=0
+          for od in $os_devs; do
+            [ "$dev" = "$od" ] && skip=1 && break
+          done
+          if [ "$skip" -eq 0 ]; then
+            echo "Wiping $dev"
+            wipefs -a "$dev" 2>/dev/null || true
+            dd if=/dev/zero of="$dev" bs=1M count=10 conv=fdatasync 2>/dev/null || true
+          fi
+        done < /tmp/_all_disks
+        rm -f /tmp/_all_disks
+        exit 0
+      args:
+        executable: /bin/bash
+      when: sunbeam_status_check.rc != 0
+      changed_when: true
+
     - name: Bootstrap Sunbeam cluster (control + compute + storage)
       ansible.builtin.shell: |
         sunbeam cluster bootstrap --accept-defaults --role control,compute,storage
