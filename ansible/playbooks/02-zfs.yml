@@ -70,15 +70,15 @@
         tank_disks: "{{ disks_by_size.results[0].stdout_lines }}"
         archive_disks: "{{ disks_by_size.results[1].stdout_lines }}"
 
-    - name: Assert tank disk count is divisible by tank_vdev_count
+    - name: Assert tank has enough disks for tank_vdev_count RAIDZ1 vdevs (≥2 per vdev)
       when: tank_exists.rc != 0
       ansible.builtin.assert:
         that:
-          - tank_disks | length > 0
-          - (tank_disks | length) % (tank_vdev_count | int) == 0
+          - tank_disks | length >= (tank_vdev_count | int) * 2
         fail_msg: >-
-          Found {{ tank_disks | length }} free {{ tank_disk_size }} disks, which is not
-          evenly divisible by tank_vdev_count={{ tank_vdev_count }}: {{ tank_disks }}
+          Found {{ tank_disks | length }} free {{ tank_disk_size }} disks; need at
+          least {{ (tank_vdev_count | int) * 2 }} (2 per vdev × {{ tank_vdev_count }} vdevs):
+          {{ tank_disks }}
 
     - name: Assert archive has at least 2 free disks
       when: archive_exists.rc != 0
@@ -89,19 +89,25 @@
           archive pool needs at least 2 free {{ archive_disk_size }} disks but found
           {{ archive_disks | length }}: {{ archive_disks }}
 
-    - name: Compute tank disks-per-vdev and slice into vdev groups
+    # If the disk count isn't evenly divisible by tank_vdev_count, the remainder
+    # become hot-spares — kept attached to the pool but not in any vdev until ZFS
+    # auto-promotes them after a drive failure.
+    - name: Compute tank disks-per-vdev (floor division) and spares (remainder)
       ansible.builtin.set_fact:
         tank_disks_per_vdev: "{{ ((tank_disks | length) // (tank_vdev_count | int)) | int }}"
-      when: tank_disks | length > 0
+        tank_disks_used: "{{ (((tank_disks | length) // (tank_vdev_count | int)) | int) * (tank_vdev_count | int) }}"
 
-    - name: Build tank vdev list (one sublist per RAIDZ1 group)
+    - name: Build tank vdev list (one sublist per RAIDZ1 group) and spares list
       ansible.builtin.set_fact:
         tank_vdevs: >-
           {{ tank_vdevs | default([]) +
              [ tank_disks[(item | int) * (tank_disks_per_vdev | int) :
                           ((item | int) + 1) * (tank_disks_per_vdev | int)] ] }}
       loop: "{{ range(tank_vdev_count | int) | list }}"
-      when: tank_disks | length > 0
+
+    - name: Collect leftover tank disks as hot-spares
+      ansible.builtin.set_fact:
+        tank_spares: "{{ tank_disks[tank_disks_used | int :] }}"
 
     - name: Use first 2 archive disks as mirror
       ansible.builtin.set_fact:
@@ -112,6 +118,7 @@
         msg:
           - "tank vdevs ({{ tank_vdev_count }}× RAIDZ1, {{ tank_disks_per_vdev | default(0) }} disks each):"
           - "{{ tank_vdevs | default([]) }}"
+          - "tank hot-spares ({{ tank_spares | length }}): {{ tank_spares }}"
           - "archive mirror ({{ archive_disk_size }}): {{ archive_mirror }}"
 
     # ── Detect free NVMe for SLOG ────────────────────────────────────────
@@ -191,11 +198,12 @@
           changed_when: false
 
     # ── Pool creation ───────────────────────────────────────────────────
-    - name: Create tank pool (N× RAIDZ1 + NVMe SLOG)
+    - name: Create tank pool (N× RAIDZ1 + optional spares + NVMe SLOG)
       when: tank_exists.rc != 0
       ansible.builtin.shell: |
         zpool create -f tank \
           {% for vdev in tank_vdevs %}raidz1 {{ vdev | join(' ') }} {% endfor %}\
+          {% if tank_spares | length > 0 %}spare {{ tank_spares | join(' ') }} {% endif %}\
           log {{ nvme_detect.stdout | trim }}
       changed_when: true
 
