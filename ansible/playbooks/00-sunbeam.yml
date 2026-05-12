@@ -48,10 +48,10 @@
       failed_when: false
       changed_when: false
 
-    - name: Run sunbeam prepare-node-script (handles groups, sysctls, juju, microk8s)
+    - name: Run sunbeam prepare-node-script (groups, sysctls, juju/microk8s snaps)
       ansible.builtin.shell: |
         set -o pipefail
-        sunbeam prepare-node-script --bootstrap | bash -x
+        sunbeam prepare-node-script | bash -x
       args:
         executable: /bin/bash
       when: microk8s_check.rc != 0
@@ -175,6 +175,34 @@
         exit 0
       when: "'localhost' not in juju_ctrl_check.stdout"
       failed_when: false
+      changed_when: false
+
+    # Known intermittent: LXD's dnsmasq doesn't always serve lxdbr0 on first
+    # boot, so `juju bootstrap` hangs at "Waiting for address" then cancels.
+    # A snap restart of lxd reliably brings dnsmasq up. Skip if Juju is already
+    # bootstrapped (LXD running our controller container).
+    - name: Restart LXD to ensure dnsmasq serves lxdbr0
+      become: true
+      ansible.builtin.command: snap restart lxd
+      when: "'localhost' not in juju_ctrl_check.stdout"
+      changed_when: true
+
+    - name: Wait for LXD to be responsive after restart
+      ansible.builtin.command: lxc list
+      register: lxd_ready
+      retries: 15
+      delay: 3
+      until: lxd_ready.rc == 0
+      when: "'localhost' not in juju_ctrl_check.stdout"
+      changed_when: false
+
+    - name: Wait for lxdbr0 to have an IPv4 address (dnsmasq up)
+      ansible.builtin.shell: ip -4 addr show lxdbr0 | grep -q 'inet '
+      register: lxdbr0_ready
+      retries: 20
+      delay: 3
+      until: lxdbr0_ready.rc == 0
+      when: "'localhost' not in juju_ctrl_check.stdout"
       changed_when: false
 
     - name: Bootstrap Juju controller on LXD
