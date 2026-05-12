@@ -1,41 +1,18 @@
-# StorageClasses backed by NFS exports from the ZFS tank pool on the bare metal host.
-# The NFS provisioner (controllers/nfs-provisioner.yaml) handles dynamic provisioning.
+# StorageClasses are managed by 05-k3s.yml, not Flux.
+# The ceph-rbd StorageClass requires the MicroCeph cluster FSID at creation
+# time, which is a runtime value not available in Git.
 #
-# nfs-k3s   — default: K8s system workloads, databases, configs (small random I/O)
-# nfs-media  — Jellyfin, media library (large sequential reads)
-# nfs-bulk   — downloads, torrent staging (large sequential writes)
-
-# nfs-k3s is set as default by the provisioner HelmRelease.
-# Defined here for reference only — the provisioner creates it.
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
+# Created by the playbook:
+#   ceph-rbd  (default) — Ceph RBD block storage via ceph-csi-rbd
+#                         pool: k3s-rbd, reclaimPolicy: Retain
+#
+# This ConfigMap exists so the configs/ kustomization has a valid resource.
+apiVersion: v1
+kind: ConfigMap
 metadata:
-  name: nfs-media
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "false"
-provisioner: cluster.local/nfs-subdir-external-provisioner
-parameters:
-  server: "172.16.0.7"
-  path: /tank/media
-  pathPattern: "${.PVC.namespace}/${.PVC.name}"
-  onDelete: retain
-reclaimPolicy: Retain
-volumeBindingMode: Immediate
-allowVolumeExpansion: true
----
-apiVersion: storage.k8s.io/v1
-kind: StorageClass
-metadata:
-  name: nfs-bulk
-  annotations:
-    storageclass.kubernetes.io/is-default-class: "false"
-provisioner: cluster.local/nfs-subdir-external-provisioner
-parameters:
-  server: "172.16.0.7"
-  path: /tank/torrent
-  pathPattern: "${.PVC.namespace}/${.PVC.name}"
-  onDelete: delete
-reclaimPolicy: Delete
-volumeBindingMode: Immediate
-allowVolumeExpansion: true
+  name: storage-config
+  namespace: kube-system
+data:
+  backend: ceph-rbd
+  provisioner: rbd.csi.ceph.com
+  managed-by: ansible-05-k3s.yml

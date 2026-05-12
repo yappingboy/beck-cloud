@@ -69,41 +69,10 @@ k3s_kubelet_args:
 # Cilium
 cilium_version: 1.17.0
 
-# ── ZFS ───────────────────────────────────────────────────────────────────────
-zfs_pool_name: tank
-zfs_archive_pool: archive
-# Disks are auto-discovered in 01-zfs.yml by size from lsblk:
-#   tank    — all 5.5T disks, split across tank_vdev_count RAIDZ1 vdevs
-#   archive — all 9.1T disks (first 2), used as a mirror
-#   SLOG    — first NVMe not in any zpool or mounted
-# To customize, override tank_disk_size / archive_disk_size / tank_vdev_count
-# in playbooks/01-zfs.yml (or via -e).
-
-# Datasets — created by 01-zfs.yml
-zfs_datasets:
-  - { name: "tank/k3s",             recordsize: "128K", compression: "lz4" }
-  - { name: "tank/media",           recordsize: "1M",   compression: "off" }
-  - { name: "tank/media/library",   recordsize: "1M",   compression: "off" }
-  - { name: "tank/media/downloads", recordsize: "1M",   compression: "lz4" }
-  - { name: "tank/media/configs",   recordsize: "128K", compression: "lz4" }
-  - { name: "tank/torrent",         recordsize: "1M",   compression: "lz4" }
-  - { name: "tank/backup",          recordsize: "128K", compression: "lz4" }
-  - { name: "tank/logs",            recordsize: "128K", compression: "lz4" }
-  - { name: "tank/llm",             recordsize: "1M",   compression: "lz4" }
-  - { name: "archive/longterm",     recordsize: "1M",   compression: "lz4" }
-
-# ── NFS (ZFS host → Nova VMs) ─────────────────────────────────────────────────
-# Nova VMs reach the host via the OVN external bridge.
-# Verify 172.16.0.7 is reachable from VMs after Sunbeam bootstrap.
-nfs_server_ip: "172.16.0.7"
-nfs_client_network: "192.168.100.0/24"
-nfs_exports:
-  - { path: "/tank/k3s",         options: "rw,sync,no_subtree_check,no_root_squash" }
-  - { path: "/tank/media",       options: "rw,sync,no_subtree_check,no_root_squash" }
-  - { path: "/tank/torrent",     options: "rw,sync,no_subtree_check,no_root_squash" }
-  - { path: "/tank/backup",      options: "rw,sync,no_subtree_check,no_root_squash" }
-  - { path: "/tank/llm",         options: "rw,sync,no_subtree_check,no_root_squash" }
-  - { path: "/archive/longterm", options: "ro,sync,no_subtree_check,no_root_squash" }
+# ── Ceph CSI (K3s storage via MicroCeph) ──────────────────────────────────────
+# MicroCeph is deployed by Sunbeam (--role storage). The K3s CSI driver is
+# installed by 05-k3s.yml which creates the k3s-rbd pool + client.k3s-rbd key.
+ceph_k3s_pool: k3s-rbd
 
 # ── NVIDIA ────────────────────────────────────────────────────────────────────
 # GPU passthrough disabled — Titan RTX stays on host, unused in this deployment

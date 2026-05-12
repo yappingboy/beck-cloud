@@ -37,8 +37,7 @@ data:
     ## Environment
     - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 24.04, 128GB RAM
     - Hypervisor layer: Sunbeam OpenStack (Nova/Neutron/Glance/Keystone)
-    - ZFS storage: `tank` pool (RAIDZ1×2, ~55TB) + `archive` pool (mirror, ~9TB)
-    - NFS exports: /tank/k3s, /tank/media, /tank/torrent, /tank/backup, /tank/llm, /archive/longterm
+    - Storage: MicroCeph (deployed by Sunbeam --role storage), K3s uses ceph-rbd StorageClass via ceph-csi-rbd
     - K3s cluster: server 192.168.100.10, worker 192.168.100.11
     - GitOps: Flux CD → github.com/yappingboy/beck-cloud (branch: main)
     - Domain: becklab.cloud
@@ -297,7 +296,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 5Gi

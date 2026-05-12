@@ -1,12 +1,14 @@
-# Media/Torrent PVCs backed by NFS StorageClasses provisioned from the ZFS host.
+# Media/Torrent PVCs backed by Ceph RBD (ceph-rbd StorageClass).
+# StorageClass created by 05-k3s.yml using MicroCeph as the backend.
 #
-# StorageClass routing (defined in configs/storage-classes.yaml + nfs-provisioner.yaml):
-#   nfs-media  → /tank/media   (large sequential reads — library, downloads)
-#   nfs-bulk   → /tank/torrent (large sequential writes — torrent staging)
-#   nfs-k3s    → /tank/k3s    (default: small random I/O — configs, databases)
+# All PVCs use ReadWriteOnce. On a single-worker K3s cluster all media
+# pods co-locate on k3s-worker-1, so multiple pods can mount the same
+# RWO volume simultaneously (K8s allows this when pods share a node).
+# If you add a second worker and need true RWX, enable CephFS via:
+#   sudo microceph.ceph fs new cephfs cephfs_meta cephfs_data
+# and add a ceph-csi-cephfs StorageClass.
 
 ---
-# Shared media library (RWX — Jellyfin, Sonarr, Radarr all read from this)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -14,14 +16,12 @@ metadata:
   namespace: media
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: nfs-media
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 60Ti
 ---
-# Media downloads staging area (RWX — written by qBittorrent, read by Sonarr/Radarr)
-# Lives in namespace 'media' so Sonarr/Radarr can mount it directly.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -29,13 +29,12 @@ metadata:
   namespace: media
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: nfs-media
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10Ti
 ---
-# Torrent downloads (same NFS export, separate PVC in torrent namespace for qBittorrent)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -43,13 +42,12 @@ metadata:
   namespace: torrent
 spec:
   accessModes:
-    - ReadWriteMany
-  storageClassName: nfs-bulk
+    - ReadWriteOnce
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10Ti
 ---
-# Config PVCs (RWO, nfs-k3s default class)
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -58,7 +56,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 20Gi
@@ -71,7 +69,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10Gi
@@ -84,7 +82,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10Gi
@@ -97,7 +95,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 10Gi
@@ -110,7 +108,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 5Gi
@@ -123,7 +121,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 5Gi
@@ -136,7 +134,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: nfs-k3s
+  storageClassName: ceph-rbd
   resources:
     requests:
       storage: 5Gi

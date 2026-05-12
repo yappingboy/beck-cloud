@@ -46,12 +46,6 @@
           - net-tools
           - iproute2
           - chrony
-          # ZFS (used by 01-zfs.yml)
-          - zfsutils-linux
-          - zfs-dkms
-          # NFS server (ZFS → Nova VMs, used by 01-zfs.yml)
-          - nfs-kernel-server
-          - nfs-common
           # KVM/QEMU (Sunbeam/Nova hypervisor)
           # qemu-kvm is a virtual package on Ubuntu 24.04; use the concrete provider
           - qemu-system-x86
@@ -90,16 +84,12 @@
       loop:
         - nvme
         - vhost_net
-        - nfs
-        - nfsd
 
     - name: Persist kernel modules
       ansible.builtin.copy:
         content: |
           nvme
           vhost_net
-          nfs
-          nfsd
         dest: /etc/modules-load.d/beck-cloud.conf
         mode: '0644'
 

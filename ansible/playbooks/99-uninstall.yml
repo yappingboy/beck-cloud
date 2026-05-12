@@ -15,7 +15,7 @@
 #                        you out).
 #   -e destroy_zfs=true  Also `zpool destroy tank` and `zpool destroy archive`.
 #                        Datasets and snapshots are GONE. Disks themselves are
-#                        left with ZFS labels — re-running 01-zfs.yml will
+#                        left with ZFS labels — wipefs and recreate pools manually if needed.
 #                        recreate the pools cleanly.
 #   -e wipe_disks=true   Implies destroy_zfs. After destroying pools, runs
 #                        `wipefs -a` + 100MB zero-fill on every tank/archive/

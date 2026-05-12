@@ -1,6 +1,6 @@
 ---
 # 02-sunbeam.yml — Install and bootstrap Sunbeam OpenStack (single-node)
-# Run AFTER 00-prereqs.yml + 01-zfs.yml, BEFORE 03-harden.yml.
+# Run AFTER 00-prereqs.yml, BEFORE 03-harden.yml.
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-sunbeam.yml
 #
 # Follows the official Ubuntu OpenStack install guide exactly:

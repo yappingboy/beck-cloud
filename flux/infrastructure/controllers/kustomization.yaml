@@ -5,4 +5,4 @@ kind: Kustomization
 resources:
   - namespaces.yaml
   - cilium.yaml
-  - nfs-provisioner.yaml
+  # ceph-csi-rbd is installed by 05-k3s.yml (needs runtime FSID from MicroCeph)

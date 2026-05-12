@@ -22,31 +22,10 @@
       ansible.builtin.apt:
         name:
           - curl
-          - nfs-common
+          - ceph-common   # required for ceph-csi-rbd to mount RBD volumes on nodes
           - open-iscsi
           - jq
         state: present
-
-    # ── NFS pre-flight ──────────────────────────────────────────────────
-    # The NFS subdir external provisioner (deployed by Flux) mounts these
-    # exports dynamically. Fail fast here rather than letting provisioner
-    # pods CrashLoop with obscure mount errors.
-    - name: Verify NFS server is reachable and exports are visible
-      ansible.builtin.command: showmount -e {{ nfs_server_ip }}
-      register: nfs_showmount
-      changed_when: false
-      failed_when: nfs_showmount.rc != 0
-
-    - name: Assert required NFS exports exist on server
-      ansible.builtin.assert:
-        that:
-          - "'/tank/k3s' in nfs_showmount.stdout"
-          - "'/tank/media' in nfs_showmount.stdout"
-          - "'/tank/torrent' in nfs_showmount.stdout"
-        fail_msg: >-
-          NFS server {{ nfs_server_ip }} is missing required exports.
-          Run playbook 01-zfs.yml first (it creates the pools and configures
-          nfs-kernel-server). Exports seen: {{ nfs_showmount.stdout }}
 
     - name: Disable swap
       ansible.builtin.command: swapoff -a
@@ -214,3 +193,152 @@
       when: k3s_role == 'server'
       ansible.builtin.debug:
         var: nodes.stdout_lines
+
+# ── Ceph CSI ─────────────────────────────────────────────────────────────────
+# Play 1: extract FSID + create K3s RBD pool + client key from MicroCeph on host
+- name: Prepare MicroCeph for K3s CSI
+  hosts: hypervisor
+  become: true
+  gather_facts: false
+
+  tasks:
+    - name: Get MicroCeph cluster FSID
+      ansible.builtin.command: microceph.ceph fsid
+      register: ceph_fsid
+      changed_when: false
+
+    - name: Create K3s RBD pool
+      ansible.builtin.shell: |
+        microceph.ceph osd pool create k3s-rbd 32 32 replicated 2>/dev/null || true
+        microceph.ceph osd pool application enable k3s-rbd rbd 2>/dev/null || true
+        microceph.rbd pool init k3s-rbd 2>/dev/null || true
+      changed_when: true
+
+    - name: Create Ceph client key for K3s CSI
+      ansible.builtin.shell: |
+        microceph.ceph auth get-or-create client.k3s-rbd \
+          mon 'profile rbd' \
+          osd 'profile rbd pool=k3s-rbd' \
+          mgr 'profile rbd pool=k3s-rbd' \
+          --format json \
+          | python3 -c "import sys,json; print(json.load(sys.stdin)[0]['key'])"
+      register: ceph_k3s_key
+      changed_when: false
+      no_log: true
+
+# Play 2: install ceph-csi-rbd driver + StorageClass on the K3s server
+- name: Install Ceph CSI RBD driver in K3s
+  hosts: k3s_nodes
+  become: true
+  gather_facts: false
+
+  vars:
+    ceph_fsid: "{{ hostvars[groups['hypervisor'][0]]['ceph_fsid'].stdout | trim }}"
+    ceph_mon_addr: "{{ homelab_ip }}:6789"
+    ceph_k3s_key: "{{ hostvars[groups['hypervisor'][0]]['ceph_k3s_key'].stdout | trim }}"
+    kubeconfig: /etc/rancher/k3s/k3s.yaml
+
+  tasks:
+    - name: Check if ceph-csi-rbd is already installed
+      ansible.builtin.command: helm status ceph-csi-rbd -n ceph-csi
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      register: ceph_csi_installed
+      failed_when: false
+      changed_when: false
+      when: k3s_role == 'server'
+
+    - name: Add ceph-csi Helm repo
+      ansible.builtin.shell: |
+        helm repo add ceph-csi https://ceph.github.io/csi-charts
+        helm repo update
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: false
+      when: k3s_role == 'server'
+
+    - name: Create ceph-csi namespace
+      ansible.builtin.shell: |
+        kubectl create namespace ceph-csi --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: false
+      when: k3s_role == 'server'
+
+    - name: Apply Ceph CSI config ConfigMap
+      ansible.builtin.shell: |
+        cat <<'MANIFEST' | kubectl apply -f -
+        apiVersion: v1
+        kind: ConfigMap
+        metadata:
+          name: ceph-csi-config
+          namespace: ceph-csi
+        data:
+          config.json: '[{"clusterID":"{{ ceph_fsid }}","monitors":["{{ ceph_mon_addr }}"]}]'
+        MANIFEST
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: true
+      when: k3s_role == 'server'
+
+    - name: Apply Ceph RBD credential secret
+      ansible.builtin.shell: |
+        cat <<'MANIFEST' | kubectl apply -f -
+        apiVersion: v1
+        kind: Secret
+        metadata:
+          name: csi-rbd-secret
+          namespace: ceph-csi
+        type: Opaque
+        stringData:
+          userID: "k3s-rbd"
+          userKey: "{{ ceph_k3s_key }}"
+        MANIFEST
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: true
+      no_log: true
+      when: k3s_role == 'server'
+
+    - name: Install ceph-csi-rbd via Helm
+      ansible.builtin.shell: |
+        helm upgrade --install ceph-csi-rbd ceph-csi/ceph-csi-rbd \
+          --namespace ceph-csi \
+          --set csiConfig[0].clusterID={{ ceph_fsid }} \
+          --set 'csiConfig[0].monitors[0]={{ ceph_mon_addr }}' \
+          --set provisioner.replicaCount=1 \
+          --wait --timeout 5m
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      when: k3s_role == 'server' and ceph_csi_installed.rc != 0
+      changed_when: true
+
+    - name: Apply ceph-rbd StorageClass (default)
+      ansible.builtin.shell: |
+        cat <<'MANIFEST' | kubectl apply -f -
+        apiVersion: storage.k8s.io/v1
+        kind: StorageClass
+        metadata:
+          name: ceph-rbd
+          annotations:
+            storageclass.kubernetes.io/is-default-class: "true"
+        provisioner: rbd.csi.ceph.com
+        parameters:
+          clusterID: "{{ ceph_fsid }}"
+          pool: k3s-rbd
+          imageFormat: "2"
+          imageFeatures: layering
+          csi.storage.k8s.io/provisioner-secret-name: csi-rbd-secret
+          csi.storage.k8s.io/provisioner-secret-namespace: ceph-csi
+          csi.storage.k8s.io/controller-expand-secret-name: csi-rbd-secret
+          csi.storage.k8s.io/controller-expand-secret-namespace: ceph-csi
+          csi.storage.k8s.io/node-stage-secret-name: csi-rbd-secret
+          csi.storage.k8s.io/node-stage-secret-namespace: ceph-csi
+        reclaimPolicy: Retain
+        allowVolumeExpansion: true
+        volumeBindingMode: Immediate
+        MANIFEST
+      environment:
+        KUBECONFIG: "{{ kubeconfig }}"
+      changed_when: true
+      when: k3s_role == 'server'
