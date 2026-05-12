@@ -135,6 +135,58 @@
       failed_when: false
       changed_when: false
 
+    # A controller can be registered but have no API addresses if a previous
+    # bootstrap crashed mid-flight (e.g. dnsmasq race left the controller LXD
+    # container without an IP). `juju show-controller` will return non-empty
+    # api-endpoints only when it's actually reachable.
+    - name: Check if Juju controller has working API endpoints
+      ansible.builtin.shell: |
+        set -o pipefail
+        juju show-controller localhost-localhost 2>/dev/null \
+          | awk '/api-endpoints:/{flag=1;next}/^[^ ]/{flag=0}flag' \
+          | grep -E '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' -q
+      args:
+        executable: /bin/bash
+      register: juju_api_healthy
+      failed_when: false
+      changed_when: false
+
+    - name: Set fact — Juju controller is broken (registered but unreachable)
+      ansible.builtin.set_fact:
+        juju_controller_broken: >-
+          {{ ('localhost' in juju_ctrl_check.stdout) and (juju_api_healthy.rc != 0) }}
+        juju_needs_bootstrap: >-
+          {{ ('localhost' not in juju_ctrl_check.stdout) or (juju_api_healthy.rc != 0) }}
+
+    - name: Destroy broken Juju controller before re-bootstrap
+      when: juju_controller_broken and sunbeam_precheck.rc != 0
+      block:
+        - name: Try graceful destroy-controller
+          ansible.builtin.shell: >
+            juju destroy-controller localhost-localhost
+            --no-prompt --destroy-all-models --force --no-wait 2>/dev/null
+          failed_when: false
+          changed_when: true
+
+        - name: Unregister controller from juju client state
+          ansible.builtin.shell: juju unregister localhost-localhost --no-prompt 2>/dev/null
+          failed_when: false
+          changed_when: true
+
+        - name: Remove juju client controller cache
+          ansible.builtin.file:
+            path: "/home/{{ ops_user }}/.local/share/juju/controllers.yaml"
+            state: absent
+
+        - name: Remove juju controller LXD container if it lingers
+          ansible.builtin.shell: |
+            lxc list --format csv -c n 2>/dev/null \
+              | grep -E '^juju-' \
+              | xargs -r -I{} lxc delete --force {}
+            exit 0
+          changed_when: true
+          failed_when: false
+
     - name: Check for stale Juju machine agent services (persists across snap purge)
       ansible.builtin.shell: >
         systemctl list-units --all 'jujud-machine-*' --no-legend | grep -q jujud-machine
@@ -166,14 +218,14 @@
           ansible.builtin.systemd:
             daemon_reload: true
 
-    - name: Remove stale Juju LXD trust entries if controller is absent
+    - name: Remove stale Juju LXD trust entries if controller is absent or broken
       ansible.builtin.shell: |
         lxc config trust list -f csv 2>/dev/null \
           | grep -i juju \
           | cut -d',' -f4 \
           | xargs -r -I{} lxc config trust remove {} 2>/dev/null
         exit 0
-      when: "'localhost' not in juju_ctrl_check.stdout"
+      when: juju_needs_bootstrap
       failed_when: false
       changed_when: false
 
@@ -184,7 +236,7 @@
     - name: Restart LXD to ensure dnsmasq serves lxdbr0
       become: true
       ansible.builtin.command: snap restart lxd
-      when: "'localhost' not in juju_ctrl_check.stdout"
+      when: juju_needs_bootstrap
       changed_when: true
 
     - name: Wait for LXD to be responsive after restart
@@ -193,7 +245,7 @@
       retries: 15
       delay: 3
       until: lxd_ready.rc == 0
-      when: "'localhost' not in juju_ctrl_check.stdout"
+      when: juju_needs_bootstrap
       changed_when: false
 
     - name: Wait for lxdbr0 to have an IPv4 address (dnsmasq up)
@@ -202,12 +254,12 @@
       retries: 20
       delay: 3
       until: lxdbr0_ready.rc == 0
-      when: "'localhost' not in juju_ctrl_check.stdout"
+      when: juju_needs_bootstrap
       changed_when: false
 
     - name: Bootstrap Juju controller on LXD
       ansible.builtin.command: juju bootstrap localhost
-      when: "'localhost' not in juju_ctrl_check.stdout"
+      when: juju_needs_bootstrap
       changed_when: true
       async: 1800
       poll: 15
