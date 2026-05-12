@@ -260,24 +260,26 @@
       block:
         - name: Discover all non-OS block devices
           ansible.builtin.shell: |
-            set -euo pipefail
-            # Find the OS disk by tracing / and /boot back to the parent block device
+            set +e
+            # Identify the OS disk(s) by tracing /, /boot, /boot/efi to parent device
             os_devs=""
             for mnt in / /boot /boot/efi; do
-              dev=$(findmnt -n -o SOURCE "$mnt" 2>/dev/null || true)
+              dev=$(findmnt -n -o SOURCE "$mnt" 2>/dev/null)
               [ -z "$dev" ] && continue
-              # Strip partition suffix to get the disk (sda1→sda, nvme0n1p1→nvme0n1)
               base=$(lsblk -n -o PKNAME "$dev" 2>/dev/null | head -1)
               [ -n "$base" ] && os_devs="$os_devs /dev/$base"
             done
-            # Enumerate all disks, excluding OS disk(s)
-            lsblk -d -n -o NAME,TYPE | awk '$2=="disk" {print "/dev/"$1}' | while read dev; do
+            # Enumerate all disks, print those that are NOT the OS disk
+            lsblk -d -n -o NAME,TYPE | awk '$2=="disk" {print "/dev/"$1}' > /tmp/_all_disks
+            while IFS= read -r dev; do
               skip=0
               for od in $os_devs; do
                 [ "$dev" = "$od" ] && skip=1 && break
               done
               [ "$skip" -eq 0 ] && echo "$dev"
-            done
+            done < /tmp/_all_disks
+            rm -f /tmp/_all_disks
+            exit 0
           args:
             executable: /bin/bash
           register: wipe_candidates
