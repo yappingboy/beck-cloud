@@ -1,11 +1,13 @@
 # Sunbeam single-node deployment manifest (Sunbeam 2024.1 / Ubuntu 24.04 noble)
 # Passed to: sunbeam cluster bootstrap --manifest <this-file>
-#
-# Only the fields required to drive a headless deploy are set here.
-# Everything else is left to --accept-defaults so Sunbeam auto-detects
-# (management_cidr, storage settings, etc.).
 
 deployment:
+  bootstrap:
+    # Tell Sunbeam which subnet is the management/API plane. Without this,
+    # --accept-defaults tries to auto-detect and fails with
+    # "No subnets available in any space" on multi-interface or LXD hosts.
+    management_cidr: "{{ management_cidr }}"
+
   user:
     run_demo_setup: false
 

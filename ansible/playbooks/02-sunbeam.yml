@@ -330,42 +330,14 @@
       delay: 15
       changed_when: false
 
-    # Juju must know about at least one subnet before Sunbeam's cluster
-    # bootstrap runs — it uses Juju internally to place OpenStack charms
-    # and fails with "No subnets available in any space" if none are registered.
-    # `juju reload-spaces` discovers subnets from the LXD substrate (lxdbr0).
-    - name: Reload Juju spaces so LXD bridge subnets are discovered
+    # Best-effort: reload Juju spaces so it knows about the lxdbr0 subnet.
+    # Non-fatal — the real fix for "No subnets available in any space" is
+    # management_cidr in the manifest (sunbeam-manifest.yaml.j2), which
+    # tells Sunbeam exactly which subnet to use without relying on Juju's
+    # auto-detection.
+    - name: Reload Juju spaces (best-effort)
       ansible.builtin.command: juju reload-spaces
-      register: reload_spaces
       failed_when: false
-      changed_when: false
-
-    - name: Detect lxdbr0 IPv4 CIDR
-      ansible.builtin.shell: |
-        ip -4 addr show lxdbr0 | awk '/inet /{print $2}'
-      register: lxdbr0_cidr
-      changed_when: false
-      failed_when: lxdbr0_cidr.stdout | length == 0
-
-    - name: Check if lxdbr0 subnet is known to Juju
-      ansible.builtin.shell: |
-        juju subnets 2>/dev/null | grep -q "{{ lxdbr0_cidr.stdout | trim }}"
-      register: lxdbr0_subnet_known
-      failed_when: false
-      changed_when: false
-
-    - name: Register lxdbr0 subnet in Juju alpha space (if reload-spaces missed it)
-      ansible.builtin.shell: |
-        juju add-subnet "{{ lxdbr0_cidr.stdout | trim }}" alpha
-      when: lxdbr0_subnet_known.rc != 0
-      failed_when: false
-      changed_when: true
-
-    - name: Assert Juju has at least one subnet before Sunbeam bootstrap
-      ansible.builtin.shell: |
-        juju subnets 2>/dev/null | grep -q 'subnets:\|cidr:'
-      register: juju_subnets_check
-      failed_when: juju_subnets_check.rc != 0
       changed_when: false
 
     - name: Check if Sunbeam cluster is fully deployed
