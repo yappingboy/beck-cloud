@@ -1,8 +1,3 @@
-apiVersion: snapshot.storage.k8s.io/v1
-kind: VolumeSnapshotClass
-metadata:
-  name: csi-snapshot-class
-driver: rook-ceph.rbd.csi.ceph.com
-deletionPolicy: Delete
-parameters:
-  snapshotType: ceph
+# VolumeSnapshotClass intentionally empty: Rook/Ceph was removed from this deployment.
+# ZFS snapshots + Velero (if re-added) are used for data protection instead.
+# If a CSI driver is added in future, define a VolumeSnapshotClass here.

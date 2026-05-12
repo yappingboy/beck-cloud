@@ -68,10 +68,6 @@ spec:
       namespace: kube-system
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
-      name: nvidia-device-plugin
-      namespace: nvidia
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
       name: traefik
       namespace: traefik
     - apiVersion: helm.toolkit.fluxcd.io/v2
@@ -80,21 +76,9 @@ spec:
       namespace: cert-manager
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
-      name: rancher
-      namespace: cattle-system
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: velero
-      namespace: velero
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
       name: keycloak
       namespace: identity
     - apiVersion: helm.toolkit.fluxcd.io/v2
       kind: HelmRelease
       name: lldap
       namespace: identity
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: wazuh
-      namespace: security

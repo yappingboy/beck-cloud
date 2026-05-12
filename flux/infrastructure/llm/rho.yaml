@@ -37,7 +37,7 @@ data:
     ## Environment
     - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 24.04, 128GB RAM
     - Hypervisor layer: Sunbeam OpenStack (Nova/Neutron/Glance/Keystone)
-    - ZFS storage: `tank` pool (RAIDZ2×2, ~49TB) + `archive` pool (mirror, ~9TB)
+    - ZFS storage: `tank` pool (RAIDZ1×2, ~55TB) + `archive` pool (mirror, ~9TB)
     - NFS exports: /tank/k3s, /tank/media, /tank/torrent, /tank/backup, /tank/llm, /archive/longterm
     - K3s cluster: server 192.168.100.10, worker 192.168.100.11
     - GitOps: Flux CD → github.com/yappingboy/beck-cloud (branch: main)

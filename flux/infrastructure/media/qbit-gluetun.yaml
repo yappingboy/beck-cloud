@@ -21,8 +21,9 @@ spec:
         fsGroup: 1000
       initContainers:
         - name: wait-for-gluetun
-          image: busybox:latest
-          command: ['sh', '-c', 'until curl -sf http://localhost:8080/v1/vpnstatus; do echo "Waiting for VPN..."; sleep 5; done']
+          image: alpine:3.21
+          # gluetun control API is port 8000; port 8080 is the qBittorrent WebUI
+          command: ['sh', '-c', 'until wget -qO- http://localhost:8000/v1/vpnstatus; do echo "Waiting for VPN..."; sleep 5; done']
       containers:
         - name: gluetun
           image: qmcgaw/gluetun:v3.40.0
@@ -52,12 +53,10 @@ spec:
             - name: DOT
               value: "on"
           ports:
-            - containerPort: 8080
-              name: qbit
+            - containerPort: 8000
+              name: gluetun-ctrl
               protocol: TCP
           volumeMounts:
-            - name: config
-              mountPath: /downloads
             - name: gluetun-config
               mountPath: /etc/gluetun
           securityContext:
@@ -87,7 +86,7 @@ spec:
               name: qbit-webui
               protocol: TCP
           volumeMounts:
-            - name: config
+            - name: downloads
               mountPath: /downloads
             - name: qbit-config
               mountPath: /config
@@ -99,11 +98,25 @@ spec:
             periodSeconds: 10
             failureThreshold: 30
       volumes:
-        - name: config
+        - name: downloads
           persistentVolumeClaim:
-            claimName: media-downloads
+            claimName: torrent-downloads
         - name: gluetun-config
           emptyDir: {}
         - name: qbit-config
           persistentVolumeClaim:
             claimName: qbit-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbit-gluetun
+  namespace: torrent
+spec:
+  selector:
+    app: qbit-gluetun
+  ports:
+    - name: qbit-webui
+      port: 8080
+      targetPort: 8080
+      protocol: TCP

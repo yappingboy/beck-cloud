@@ -17,39 +17,19 @@ spec:
       - kind: ConfigMap
         name: beck-cloud-config
   healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cilium
-      namespace: kube-system
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: nvidia-device-plugin
-      namespace: nvidia
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: traefik
-      namespace: traefik
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cert-manager
-      namespace: cert-manager
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: rancher
-      namespace: cattle-system
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: velero
-      namespace: velero
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: keycloak
-      namespace: identity
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: lldap
-      namespace: identity
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: wazuh
-      namespace: security
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: jellyfin
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: sonarr
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: radarr
+      namespace: media
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: qbit-gluetun
+      namespace: torrent

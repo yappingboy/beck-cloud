@@ -28,6 +28,27 @@
           - jq
         state: present
 
+    # ── NFS pre-flight ──────────────────────────────────────────────────
+    # The NFS subdir external provisioner (deployed by Flux) mounts these
+    # exports dynamically. Fail fast here rather than letting provisioner
+    # pods CrashLoop with obscure mount errors.
+    - name: Verify NFS server is reachable and exports are visible
+      ansible.builtin.command: showmount -e {{ nfs_server_ip }}
+      register: nfs_showmount
+      changed_when: false
+      failed_when: nfs_showmount.rc != 0
+
+    - name: Assert required NFS exports exist on server
+      ansible.builtin.assert:
+        that:
+          - "'/tank/k3s' in nfs_showmount.stdout"
+          - "'/tank/media' in nfs_showmount.stdout"
+          - "'/tank/torrent' in nfs_showmount.stdout"
+        fail_msg: >-
+          NFS server {{ nfs_server_ip }} is missing required exports.
+          Run playbook 02-zfs.yml first (it creates the pools and configures
+          nfs-kernel-server). Exports seen: {{ nfs_showmount.stdout }}
+
     - name: Disable swap
       ansible.builtin.command: swapoff -a
       changed_when: true
@@ -70,7 +91,7 @@
           {% if k3s_token != '' %}K3S_TOKEN={{ k3s_token }} {% endif %}\
           sh -s - server \
           --write-kubeconfig-mode 644 \
-          --disable {{ k3s_disable | join(',') }} \
+          {% for item in k3s_disable %}--disable {{ item }} {% endfor %}\
           --disable-network-policy \
           --flannel-backend none \
           {% for arg in k3s_kubelet_args %}\
@@ -163,6 +184,14 @@
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
       changed_when: true
+
+    - name: Ensure .kube directory exists for ubuntu user
+      when: k3s_role == 'server'
+      ansible.builtin.file:
+        path: /home/ubuntu/.kube
+        state: directory
+        owner: ubuntu
+        mode: '0700'
 
     - name: Copy kubeconfig to ubuntu home
       when: k3s_role == 'server'

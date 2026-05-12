@@ -82,10 +82,9 @@ spec:
         LDAP_GROUP_INSTAGRAM_ATTR: instagramId
         LDAP_USER_FACEBOOK_ATTR: facebookId
         LDAP_GROUP_FACEBOOK_ATTR: facebookId
-        valueFrom:
-          secretKeyRef:
-            name: lldap-admin-password
-            key: admin-password
+      adminPasswordSecret:
+        existingSecret: lldap-admin-password
+        adminPasswordKey: admin-password
       database:
         existingSecret:
           name: lldap-database

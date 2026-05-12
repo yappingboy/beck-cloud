@@ -42,6 +42,12 @@
       when: snap_check.rc != 0
       changed_when: true
 
+    - name: Check if prepare-node-script has already run (microk8s installed by it)
+      ansible.builtin.command: snap list microk8s
+      register: microk8s_check
+      failed_when: false
+      changed_when: false
+
     - name: Run sunbeam prepare-node-script (handles groups, sysctls, juju, microk8s)
       become: true
       ansible.builtin.shell: |
@@ -49,6 +55,7 @@
         sunbeam prepare-node-script --bootstrap | bash -x
       args:
         executable: /bin/bash
+      when: microk8s_check.rc != 0
       changed_when: true
 
     - name: Ensure SSH keypair exists for ops_user
