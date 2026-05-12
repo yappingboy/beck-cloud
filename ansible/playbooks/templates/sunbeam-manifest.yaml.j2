@@ -1,11 +1,15 @@
 # Sunbeam single-node deployment manifest (Sunbeam 2024.1 / Ubuntu 24.04 noble)
 # Passed to: sunbeam cluster bootstrap --manifest <this-file>
 #
-# Only the fields required to drive a headless deploy are set here.
-# Everything else is left to --accept-defaults so Sunbeam auto-detects
-# (management_cidr, storage settings, etc.).
+# NOTE: 02-sunbeam.yml currently uses --accept-defaults without a manifest,
+# which matches the official install guide and works reliably. This file is
+# kept here in case a manifest is needed for customisation (e.g. non-default
+# provider network settings in a future re-run).
 
 deployment:
+  bootstrap:
+    management_cidr: "{{ management_cidr }}"
+
   user:
     run_demo_setup: false
 

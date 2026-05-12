@@ -3,38 +3,23 @@
 # Run AFTER 00-prereqs.yml + 01-zfs.yml, BEFORE 03-harden.yml.
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-sunbeam.yml
 #
-# Order rationale: this runs on a host that has packages + KVM + ZFS/NFS
-# installed but NO firewall yet. UFW with default DROP forward policy +
-# bridge-nf-call-iptables=1 kill LXD dnsmasq during juju bootstrap, so
-# hardening happens in 03-harden.yml *after* Sunbeam is up.
+# Follows the official Ubuntu OpenStack install guide exactly:
+#   https://ubuntu.com/openstack/install
 #
-# Prerequisites:
-#   - Ubuntu 24.04 LTS (noble) installed
-#   - VT-x/AMD-V enabled in BIOS
-#   - ops_user has passwordless sudo
-#   - Physical NIC is up with a routable IPv4 address
-#
-# What this does:
-#   1. Installs the openstack snap (Sunbeam)
-#   2. Runs `sunbeam prepare-node-script` — Sunbeam's own prep (groups, sysctls,
-#      kernel modules, microk8s/juju snaps). DO NOT pre-install juju/lxd ourselves.
-#   3. Bootstraps a single-node cluster (control + compute, no MicroCeph OSDs)
-#   4. Configures external networking for floating IPs
-#   5. Creates Nova flavors and uploads the SSH keypair
-#
-# Re-entrant: if bootstrap fails mid-way, re-running the playbook resumes
-# from the failure point. Use `sunbeam cluster status` to inspect state.
+# Steps:
+#   1. snap install openstack
+#   2. sunbeam prepare-node-script --bootstrap | bash -x && newgrp snap_daemon
+#   3. sunbeam cluster bootstrap --accept-defaults --role control,compute,storage
+#   4. sunbeam configure --accept-defaults --openrc demo-openrc
+#   5. sunbeam openrc > ~/admin-openrc  (admin credentials for 04-nova-vms.yml)
 
 - name: Install and bootstrap Sunbeam OpenStack
   hosts: hypervisor
   become: false
   gather_facts: true
 
-  vars:
-    openrc_path: "/home/{{ ops_user }}/openrc"
-    manifest_path: "/home/{{ ops_user }}/sunbeam-manifest.yaml"
-
   tasks:
+    # ── 1. Install snap ──────────────────────────────────────────────────────
     - name: Check if openstack snap already installed
       ansible.builtin.command: snap list openstack
       register: snap_check
@@ -47,430 +32,94 @@
       when: snap_check.rc != 0
       changed_when: true
 
+    # ── 2. Prepare node ──────────────────────────────────────────────────────
+    # --bootstrap adds juju bootstrap to the prepare script.
+    # newgrp snap_daemon refreshes group membership; in Ansible this is
+    # handled by resetting the SSH connection after the script runs.
     - name: Check if prepare-node-script has already run (microk8s installed by it)
       ansible.builtin.command: snap list microk8s
       register: microk8s_check
       failed_when: false
       changed_when: false
 
-    - name: Run sunbeam prepare-node-script (groups, sysctls, juju/microk8s snaps)
+    - name: Run sunbeam prepare-node-script --bootstrap
       ansible.builtin.shell: |
         set -o pipefail
-        sunbeam prepare-node-script | bash -x
+        sunbeam prepare-node-script --bootstrap | bash -x
       args:
         executable: /bin/bash
       when: microk8s_check.rc != 0
       changed_when: true
 
-    - name: Ensure SSH keypair exists for ops_user
-      ansible.builtin.user:
-        name: "{{ ops_user }}"
-        generate_ssh_key: true
-        ssh_key_type: ed25519
-        ssh_key_file: .ssh/id_ed25519
-
-    - name: Reset SSH connection to pick up group memberships added by prepare-node-script
+    - name: Reset SSH connection to pick up new group memberships (snap_daemon, lxd, etc.)
       ansible.builtin.meta: reset_connection
 
-    - name: Render Sunbeam deployment manifest
-      ansible.builtin.template:
-        src: templates/sunbeam-manifest.yaml.j2
-        dest: "{{ manifest_path }}"
-        mode: '0600'
-
-    - name: Connect required snap interfaces for openstack
-      become: true
-      ansible.builtin.command: snap connect openstack:{{ item }}
-      loop:
-        - ssh-keys
-        - dot-local-share-juju
-      failed_when: false
-      changed_when: true
-
-    - name: Check if lxd snap already installed
-      ansible.builtin.command: snap list lxd
-      register: lxd_check
-      failed_when: false
-      changed_when: false
-
-    - name: Install lxd snap
-      become: true
-      ansible.builtin.command: snap install lxd --channel="latest/stable"
-      when: lxd_check.rc != 0
-      changed_when: true
-
-    - name: Add ops_user to lxd group
-      become: true
-      ansible.builtin.user:
-        name: "{{ ops_user }}"
-        groups: lxd
-        append: true
-
-    - name: Reset SSH connection to pick up lxd group
-      ansible.builtin.meta: reset_connection
-
-    - name: Check if LXD is already initialized
-      ansible.builtin.command: lxc storage list
-      register: lxd_init_check
-      failed_when: false
-      changed_when: false
-
-    - name: Initialize LXD with auto config
-      ansible.builtin.command: lxd init --auto
-      when: lxd_init_check.rc != 0
-      changed_when: true
-
-    - name: Ensure lxdbr0 bridge exists
-      become: true
-      ansible.builtin.command: lxc network create lxdbr0
-      register: bridge_create
-      failed_when: false
-      changed_when: bridge_create.rc == 0
-
-    - name: Check if Sunbeam cluster is fully deployed (early check for cleanup gating)
-      ansible.builtin.shell: >
-        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
-      register: sunbeam_precheck
-      failed_when: false
-      changed_when: false
-
-    - name: Check if Juju controller already exists
-      ansible.builtin.command: juju controllers
-      register: juju_ctrl_check
-      failed_when: false
-      changed_when: false
-
-    # A controller can be registered but have no API addresses if a previous
-    # bootstrap crashed mid-flight (e.g. dnsmasq race left the controller LXD
-    # container without an IP). `juju show-controller` will return non-empty
-    # api-endpoints only when it's actually reachable.
-    - name: Check if Juju controller has working API endpoints
+    # ── 3. Bootstrap the cluster ─────────────────────────────────────────────
+    - name: Check if Sunbeam cluster is already bootstrapped
       ansible.builtin.shell: |
-        set -o pipefail
-        juju show-controller localhost-localhost 2>/dev/null \
-          | awk '/api-endpoints:/{flag=1;next}/^[^ ]/{flag=0}flag' \
-          | grep -E '[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+:[0-9]+' -q
+        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
+      register: sunbeam_status_check
+      failed_when: false
+      changed_when: false
+
+    - name: Bootstrap Sunbeam cluster (control + compute + storage)
+      ansible.builtin.shell: |
+        sunbeam cluster bootstrap --accept-defaults --role control,compute,storage
       args:
         executable: /bin/bash
-      register: juju_api_healthy
-      failed_when: false
-      changed_when: false
-
-    - name: Set fact — Juju controller is broken (registered but unreachable)
-      ansible.builtin.set_fact:
-        juju_controller_broken: >-
-          {{ ('localhost' in juju_ctrl_check.stdout) and (juju_api_healthy.rc != 0) }}
-        juju_needs_bootstrap: >-
-          {{ ('localhost' not in juju_ctrl_check.stdout) or (juju_api_healthy.rc != 0) }}
-
-    - name: Destroy broken Juju controller before re-bootstrap
-      when: juju_controller_broken and sunbeam_precheck.rc != 0
-      block:
-        # 30-second timeout: destroy-controller --force --no-wait can still
-        # block indefinitely when the controller process is wedged. If it times
-        # out we fall through to the brute-force LXD container delete below.
-        - name: Try graceful destroy-controller (timeout 30s)
-          ansible.builtin.shell: >
-            timeout 30
-            juju destroy-controller localhost-localhost
-            --no-prompt --destroy-all-models --force --no-wait 2>/dev/null
-          failed_when: false
-          changed_when: true
-
-        - name: Unregister controller from juju client state
-          ansible.builtin.shell: timeout 10 juju unregister localhost-localhost --no-prompt 2>/dev/null
-          failed_when: false
-          changed_when: true
-
-        - name: Remove juju client controller cache
-          ansible.builtin.file:
-            path: "/home/{{ ops_user }}/.local/share/juju/controllers.yaml"
-            state: absent
-
-        # Brute-force: kill every juju-* LXD container and every juju process.
-        # Runs unconditionally in the block so a hung destroy-controller above
-        # doesn't leave stale containers that block the next bootstrap attempt.
-        - name: Force-delete juju LXD containers
-          ansible.builtin.shell: |
-            lxc list --format csv -c n 2>/dev/null \
-              | grep -E '^juju-' \
-              | xargs -r -I{} lxc delete --force {}
-            exit 0
-          changed_when: true
-          failed_when: false
-
-        - name: Kill any lingering juju agent processes
-          ansible.builtin.shell: pkill -9 -f 'jujud\|juju-' 2>/dev/null || true
-          become: true
-          failed_when: false
-          changed_when: true
-
-    - name: Check for stale Juju machine agent services (persists across snap purge)
-      ansible.builtin.shell: >
-        systemctl list-units --all 'jujud-machine-*' --no-legend | grep -q jujud-machine
-      register: juju_machine_agent_check
-      failed_when: false
-      changed_when: false
-
-    - name: Remove stale Juju machine agent (causes 'machine is already provisioned')
-      become: true
-      when: sunbeam_precheck.rc != 0 and juju_machine_agent_check.rc == 0
-      block:
-        - name: Stop juju machine agent services
-          ansible.builtin.shell: >
-            systemctl list-units --all 'jujud-machine-*' --no-legend
-            | awk '{print $1}'
-            | xargs -r systemctl stop 2>/dev/null
-          ignore_errors: true
-
-        - name: Remove juju machine agent service files
-          ansible.builtin.shell: rm -f /etc/systemd/system/jujud-machine-*.service
-          changed_when: true
-
-        - name: Remove juju machine agent data directory
-          ansible.builtin.file:
-            path: /var/lib/juju
-            state: absent
-
-        - name: Reload systemd after removing machine agent
-          ansible.builtin.systemd:
-            daemon_reload: true
-
-    - name: Remove stale Juju LXD trust entries if controller is absent or broken
-      ansible.builtin.shell: |
-        lxc config trust list -f csv 2>/dev/null \
-          | grep -i juju \
-          | cut -d',' -f4 \
-          | xargs -r -I{} lxc config trust remove {} 2>/dev/null
-        exit 0
-      when: juju_needs_bootstrap
-      failed_when: false
-      changed_when: false
-
-    # Known intermittent: LXD's dnsmasq doesn't always serve lxdbr0 on first
-    # boot. `snap restart lxd` brings the bridge back but dnsmasq may not bind
-    # on port 67 before juju launches a container. Cycling ipv4.dhcp forces
-    # LXD to re-spawn dnsmasq cleanly, then we wait for the process before
-    # letting juju proceed.
-    - name: Restart LXD daemon
-      become: true
-      ansible.builtin.command: snap restart lxd
-      when: juju_needs_bootstrap
+      when: sunbeam_status_check.rc != 0
       changed_when: true
+      async: 7200
+      poll: 30
 
-    - name: Wait for LXD API to respond after restart
-      ansible.builtin.command: lxc list
-      register: lxd_ready
-      retries: 20
-      delay: 3
-      until: lxd_ready.rc == 0
-      when: juju_needs_bootstrap
-      changed_when: false
+    # ── 4. Configure the cloud ───────────────────────────────────────────────
+    - name: Check if demo-openrc already exists
+      ansible.builtin.stat:
+        path: "/home/{{ ops_user }}/demo-openrc"
+      register: demo_openrc_stat
 
-    - name: Cycle lxdbr0 DHCP to force dnsmasq re-spawn
+    - name: Configure cloud (demo project, default networks, images)
       ansible.builtin.shell: |
-        lxc network set lxdbr0 ipv4.dhcp false
-        sleep 2
-        lxc network set lxdbr0 ipv4.dhcp true
-      when: juju_needs_bootstrap
-      changed_when: true
-
-    - name: Wait for dnsmasq to bind on lxdbr0 (port 67)
-      ansible.builtin.shell: |
-        pgrep -a dnsmasq | grep -q lxdbr0
-      register: dnsmasq_ready
-      retries: 20
-      delay: 2
-      until: dnsmasq_ready.rc == 0
-      when: juju_needs_bootstrap
-      changed_when: false
-
-    - name: Wait for lxdbr0 to have an IPv4 address
-      ansible.builtin.shell: ip -4 addr show lxdbr0 | grep -q 'inet '
-      register: lxdbr0_ready
-      retries: 10
-      delay: 2
-      until: lxdbr0_ready.rc == 0
-      when: juju_needs_bootstrap
-      changed_when: false
-
-    # Bootstrap with retry: if the container doesn't get an address, delete it
-    # and try again rather than requiring a full playbook re-run.
-    - name: Bootstrap Juju controller on LXD (with retry on address failure)
-      ansible.builtin.shell: |
-        set -e
-        for attempt in 1 2 3; do
-          echo "Bootstrap attempt ${attempt}/3"
-          if juju bootstrap localhost 2>&1; then
-            echo "Bootstrap succeeded"
-            exit 0
-          fi
-          echo "Bootstrap failed, cleaning up before retry..."
-          juju destroy-controller localhost-localhost --no-prompt --destroy-all-models --force --no-wait 2>/dev/null || true
-          juju unregister localhost-localhost --no-prompt 2>/dev/null || true
-          lxc list --format csv -c n 2>/dev/null | grep -E '^juju-' | xargs -r -I{} lxc delete --force {} 2>/dev/null || true
-          lxc network set lxdbr0 ipv4.dhcp false && sleep 2 && lxc network set lxdbr0 ipv4.dhcp true
-          pgrep -a dnsmasq | grep -q lxdbr0 || sleep 5
-          sleep 10
-        done
-        echo "All bootstrap attempts failed"
-        exit 1
+        sunbeam configure --accept-defaults --openrc demo-openrc
       args:
         executable: /bin/bash
-      when: juju_needs_bootstrap
+      when: not demo_openrc_stat.stat.exists
       changed_when: true
-      async: 3600
-      poll: 30
+      async: 1800
+      poll: 15
 
-    - name: Wait for Juju controller API to be reachable
-      ansible.builtin.command: juju controllers
-      register: juju_ready
-      until: juju_ready.rc == 0
-      retries: 20
-      delay: 15
-      changed_when: false
+    # ── 5. Generate admin openrc ─────────────────────────────────────────────
+    - name: Check if admin-openrc already exists
+      ansible.builtin.stat:
+        path: "/home/{{ ops_user }}/admin-openrc"
+      register: admin_openrc_stat
 
-    # Juju must know about at least one subnet before Sunbeam's cluster
-    # bootstrap runs — it uses Juju internally to place OpenStack charms
-    # and fails with "No subnets available in any space" if none are registered.
-    # `juju reload-spaces` discovers subnets from the LXD substrate (lxdbr0).
-    - name: Reload Juju spaces so LXD bridge subnets are discovered
-      ansible.builtin.command: juju reload-spaces
-      register: reload_spaces
-      failed_when: false
-      changed_when: false
-
-    - name: Detect lxdbr0 IPv4 CIDR
+    - name: Generate admin openrc (used by 04-nova-vms.yml)
       ansible.builtin.shell: |
-        ip -4 addr show lxdbr0 | awk '/inet /{print $2}'
-      register: lxdbr0_cidr
-      changed_when: false
-      failed_when: lxdbr0_cidr.stdout | length == 0
-
-    - name: Check if lxdbr0 subnet is known to Juju
-      ansible.builtin.shell: |
-        juju subnets 2>/dev/null | grep -q "{{ lxdbr0_cidr.stdout | trim }}"
-      register: lxdbr0_subnet_known
-      failed_when: false
-      changed_when: false
-
-    - name: Register lxdbr0 subnet in Juju alpha space (if reload-spaces missed it)
-      ansible.builtin.shell: |
-        juju add-subnet "{{ lxdbr0_cidr.stdout | trim }}" alpha
-      when: lxdbr0_subnet_known.rc != 0
-      failed_when: false
-      changed_when: true
-
-    - name: Assert Juju has at least one subnet before Sunbeam bootstrap
-      ansible.builtin.shell: |
-        juju subnets 2>/dev/null | grep -q 'subnets:\|cidr:'
-      register: juju_subnets_check
-      failed_when: juju_subnets_check.rc != 0
-      changed_when: false
-
-    - name: Check if Sunbeam cluster is fully deployed
-      ansible.builtin.shell: >
-        sunbeam cluster status 2>/dev/null | grep -qi "active\|deployed\|ready"
-      register: sunbeam_deployed
-      failed_when: false
-      changed_when: false
-
-    - name: Bootstrap Sunbeam cluster (control + compute, no MicroCeph storage)
-      ansible.builtin.command: >
-        sunbeam cluster bootstrap
-        --role control
-        --role compute
-        --manifest {{ manifest_path }}
-        --accept-defaults
-      when: sunbeam_deployed.rc != 0
-      changed_when: true
-      async: 3600
-      poll: 30
-
-    - name: Check if openrc already valid
-      ansible.builtin.shell: grep -q OS_AUTH_URL {{ openrc_path }} 2>/dev/null
-      register: openrc_valid
-      failed_when: false
-      changed_when: false
-
-    - name: Run sunbeam configure (only if openrc missing/invalid)
-      ansible.builtin.command: >
-        sunbeam configure
-        --openrc {{ openrc_path }}
-        --manifest {{ manifest_path }}
-        --accept-defaults
-      when: openrc_valid.rc != 0
-      changed_when: true
-
-    - name: Generate openrc from sunbeam (authoritative source)
-      ansible.builtin.shell: sunbeam openrc > {{ openrc_path }}
-      changed_when: true
-
-    - name: Verify openrc has required auth-url
-      ansible.builtin.shell: grep -q OS_AUTH_URL {{ openrc_path }}
-      changed_when: false
-
-    - name: Secure openrc file
-      ansible.builtin.file:
-        path: "{{ openrc_path }}"
-        mode: '0600'
-
-    - name: Install OpenStack CLI client
-      become: true
-      ansible.builtin.apt:
-        name:
-          - python3-openstackclient
-          - python3-keystoneauth1
-        state: present
-        update_cache: true
-
-    - name: Wait for OpenStack API to respond
-      ansible.builtin.shell: |
-        set -e
-        . {{ openrc_path }}
-        openstack catalog list -f value -c Name
-      register: catalog_check
-      retries: 12
-      delay: 30
-      until: catalog_check.rc == 0
-      changed_when: false
-
-    - name: Create Nova flavors
-      ansible.builtin.shell: |
-        set -e
-        . {{ openrc_path }}
-        openstack flavor show {{ item.name }} > /dev/null 2>&1 || \
-        openstack flavor create \
-          --ram {{ item.ram }} \
-          --disk {{ item.disk }} \
-          --vcpus {{ item.vcpus }} \
-          --public \
-          {{ item.name }}
-      loop: "{{ nova_flavors }}"
-      changed_when: true
-
-    - name: Upload SSH keypair to Nova
-      ansible.builtin.shell: |
-        set -e
-        . {{ openrc_path }}
-        openstack keypair show {{ nova_k3s_keypair }} > /dev/null 2>&1 || \
-        openstack keypair create \
-          --public-key {{ nova_k3s_keypair_pub }} \
-          {{ nova_k3s_keypair }}
+        sunbeam openrc > ~/admin-openrc
+      args:
+        executable: /bin/bash
+      when: not admin_openrc_stat.stat.exists
       changed_when: true
 
   post_tasks:
-    - name: Display Sunbeam status
+    - name: Show Sunbeam cluster status
       ansible.builtin.command: sunbeam cluster status
+      register: cluster_status
       changed_when: false
-      register: sunbeam_status
+      failed_when: false
 
-    - name: Print status
+    - name: Show dashboard URL
+      ansible.builtin.command: sunbeam dashboard-url
+      register: dashboard_url
+      changed_when: false
+      failed_when: false
+
+    - name: Print summary
       ansible.builtin.debug:
-        msg: |
-          {{ sunbeam_status.stdout }}
-
-          Next steps:
-            1. Verify Horizon at http://{{ homelab_ip }} or via: sunbeam dashboard-url
-            2. Run: ansible-playbook playbooks/03-harden.yml
-            3. Run: ansible-playbook playbooks/04-nova-vms.yml
+        msg:
+          - "{{ cluster_status.stdout }}"
+          - "Dashboard: {{ dashboard_url.stdout }}"
+          - "Admin creds: ~/admin-openrc"
+          - "Demo creds:  ~/demo-openrc"
+          - "Next: ansible-playbook playbooks/03-harden.yml"

@@ -9,6 +9,11 @@ ops_user: stephen
 # ── Sunbeam / OpenStack ────────────────────────────────────────────────────────
 sunbeam_channel: "2024.1/stable"
 
+# Management CIDR — subnet containing the hypervisor's primary IP. Sunbeam
+# uses this as the OpenStack API/management plane. Passed explicitly in the
+# manifest to avoid "No subnets available in any space" auto-detect failures.
+management_cidr: "172.16.0.0/24"
+
 # Provider network — a slice of your physical LAN for OpenStack floating IPs
 provider_network_cidr: "172.16.0.0/24"
 provider_network_gateway: "172.16.0.1"
