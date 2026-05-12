@@ -243,7 +243,8 @@
     - name: Bootstrap Sunbeam cluster (control + compute, no MicroCeph storage)
       ansible.builtin.command: >
         sunbeam cluster bootstrap
-        --role control,compute
+        --role control
+        --role compute
         --manifest {{ manifest_path }}
         --accept-defaults
       when: sunbeam_deployed.rc != 0
