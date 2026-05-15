@@ -12,7 +12,7 @@
   gather_facts: false
 
   vars:
-    openrc_path: "/home/{{ ops_user }}/openrc"
+    openrc_path: "/home/{{ ops_user }}/admin-openrc"
 
   tasks:
     - name: Verify OpenStack API is reachable
