@@ -15,6 +15,7 @@
 #   • Disable swap (required by Kubernetes/MicroK8s inside Sunbeam)
 #   • Chrony NTP (snap store requires accurate time)
 #   • Enable libvirtd
+#   • Disable AppArmor (LXD containers used by Juju need profiles unloaded)
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/00-prereqs.yml
 
@@ -121,6 +122,20 @@
         name: libvirtd
         enabled: true
         state: started
+
+    # AppArmor interferes with LXD containers that Sunbeam/Juju bootstrap into.
+    # Stop the service and unload all profiles before 02-sunbeam.yml runs.
+    - name: Stop and disable AppArmor service
+      ansible.builtin.systemd:
+        name: apparmor
+        state: stopped
+        enabled: false
+      failed_when: false
+
+    - name: Unload all AppArmor profiles
+      ansible.builtin.command: aa-teardown
+      changed_when: true
+      failed_when: false
 
   handlers:
     - name: restart chrony
