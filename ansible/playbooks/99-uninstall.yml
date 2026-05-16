@@ -74,10 +74,10 @@
       changed_when: false
 
     - name: Terminate all OpenNebula VMs
-      become: true
-      become_user: oneadmin
       ansible.builtin.shell: |
         onevm terminate --all --hard 2>/dev/null || true
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       when: onevm_cli.rc == 0
       changed_when: true
       failed_when: false
@@ -89,22 +89,22 @@
 
     # ── 2. Remove OpenNebula hosts ──────────────────────────────────────────
     - name: Remove all OpenNebula KVM hosts
-      become: true
-      become_user: oneadmin
       ansible.builtin.shell: |
         onehost list --no-header | awk '{print $2}' | while read h; do
           onehost delete "$h" 2>/dev/null || true
         done
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       when: onevm_cli.rc == 0
       changed_when: true
       failed_when: false
 
     # ── 3. Network cleanup — remove k3s-net vnet ───────────────────────────
     - name: Remove k3s-net virtual network
-      become: true
-      become_user: oneadmin
       ansible.builtin.shell: |
         onevnet delete k3s-net 2>/dev/null || true
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       when: onevm_cli.rc == 0
       changed_when: true
       failed_when: false

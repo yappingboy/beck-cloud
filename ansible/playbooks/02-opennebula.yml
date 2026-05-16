@@ -165,24 +165,24 @@
 
     # ── Add KVM host (AIO: localhost) ──────────────────────────────────────
     - name: Check if KVM host already registered
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onehost show {{ homelab_hostname }}
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       register: onehost_check
       failed_when: false
       changed_when: false
 
     - name: Add localhost as KVM node
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onehost create {{ homelab_hostname }} -i kvm -v kvm
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       when: onehost_check.rc != 0
 
     - name: Wait for KVM host to reach MONITORED state (up to 120s)
-      become: true
-      become_user: oneadmin
       ansible.builtin.shell: |
         onehost list --no-header | grep {{ homelab_hostname }} | grep -w MONITORED
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       register: onehost_monitored
       retries: 12
       delay: 10
@@ -193,9 +193,9 @@
 
     # ── Virtual network k3s-net ────────────────────────────────────────────
     - name: Check if k3s-net vnet already exists
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onevnet show k3s-net
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       register: onevnet_check
       failed_when: false
       changed_when: false
@@ -219,16 +219,16 @@
       when: onevnet_check.rc != 0
 
     - name: Create k3s-net virtual network
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onevnet create /tmp/k3s-net.one
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       when: onevnet_check.rc != 0
 
   post_tasks:
     - name: List OpenNebula hosts
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onehost list
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       register: onehost_list
       changed_when: false
 
@@ -237,9 +237,9 @@
         var: onehost_list.stdout_lines
 
     - name: List OpenNebula virtual networks
-      become: true
-      become_user: oneadmin
       ansible.builtin.command: onevnet list
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
       register: onevnet_list
       changed_when: false
 
