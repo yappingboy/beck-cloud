@@ -44,8 +44,7 @@
 
     # ── Ubuntu cloud image ─────────────────────────────────────────────────
     - name: Check if Ubuntu image already exists in OpenNebula
-      ansible.builtin.shell: |
-        oneimage list --no-header | grep -q "{{ one_k3s_image }}"
+      ansible.builtin.command: oneimage show {{ one_k3s_image }}
       environment: "{{ one_auth }}"
       register: image_check
       failed_when: false
@@ -71,7 +70,7 @@
       when: image_check.rc != 0
 
     - name: Create image in OpenNebula datastore
-      ansible.builtin.command: oneimage create /tmp/one-image.tmpl --datastore default
+      ansible.builtin.command: oneimage create /var/tmp/one-image.tmpl --datastore default
       environment: "{{ one_auth }}"
       when: image_check.rc != 0
 
