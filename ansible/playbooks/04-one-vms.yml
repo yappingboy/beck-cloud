@@ -1,0 +1,220 @@
+---
+# 04-one-vms.yml — Provision K3s VMs via OpenNebula 7.2
+#
+# Prerequisites:
+#   - 02-opennebula.yml completed (ONE API running, k3s-net vnet exists)
+#
+# Steps:
+#   • Verify OpenNebula API reachable
+#   • Upload ops_user SSH public key to oneadmin user attribute
+#   • Upload Ubuntu 24.04 cloud image to OpenNebula datastore
+#   • Create VM templates for k3s-server and k3s-worker-1
+#   • Instantiate VMs and wait for RUNNING state
+#   • Report IPs
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/04-one-vms.yml
+
+- name: Provision K3s VMs on OpenNebula
+  hosts: hypervisor
+  become: false
+  gather_facts: true
+
+  tasks:
+    # ── Sanity check ───────────────────────────────────────────────────────
+    - name: Verify OpenNebula API is reachable
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onehost list
+      register: onehost_check
+      changed_when: false
+
+    - name: Print host list
+      ansible.builtin.debug:
+        var: onehost_check.stdout_lines
+
+    # ── SSH public key on oneadmin ─────────────────────────────────────────
+    - name: Slurp ops_user SSH public key
+      ansible.builtin.slurp:
+        src: "{{ one_k3s_keypair_pub | expanduser }}"
+      register: ops_pubkey
+
+    - name: Set SSH_PUBLIC_KEY on oneadmin user (uid 0)
+      become: true
+      become_user: oneadmin
+      ansible.builtin.shell: |
+        oneuser update 0 <<< 'SSH_PUBLIC_KEY = "{{ ops_pubkey.content | b64decode | trim }}"'
+      changed_when: true
+
+    # ── Ubuntu cloud image ─────────────────────────────────────────────────
+    - name: Check if Ubuntu image already exists in OpenNebula
+      become: true
+      become_user: oneadmin
+      ansible.builtin.shell: |
+        oneimage list --no-header | grep -q "{{ one_k3s_image }}"
+      register: image_check
+      failed_when: false
+      changed_when: false
+
+    - name: Download Ubuntu cloud image
+      become: true
+      ansible.builtin.get_url:
+        url: "{{ one_k3s_image_url }}"
+        dest: "/tmp/{{ one_k3s_image }}.img"
+        timeout: 600
+        mode: '0644'
+      when: image_check.rc != 0
+
+    - name: Write OpenNebula image template
+      become: true
+      ansible.builtin.copy:
+        content: |
+          NAME   = "{{ one_k3s_image }}"
+          PATH   = "/tmp/{{ one_k3s_image }}.img"
+          TYPE   = "OS"
+          FORMAT = "qcow2"
+        dest: /tmp/one-image.tmpl
+        mode: '0644'
+      when: image_check.rc != 0
+
+    - name: Create image in OpenNebula datastore
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: oneimage create /tmp/one-image.tmpl --datastore default
+      when: image_check.rc != 0
+
+    - name: Wait for image to reach READY state (up to 10 min)
+      become: true
+      become_user: oneadmin
+      ansible.builtin.shell: |
+        for i in $(seq 1 60); do
+          state=$(oneimage show "{{ one_k3s_image }}" --json \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['IMAGE']['STATE'])" 2>/dev/null)
+          # State 1 = READY
+          [ "$state" = "1" ] && exit 0
+          sleep 10
+        done
+        exit 1
+      changed_when: false
+
+    # ── VM templates ───────────────────────────────────────────────────────
+    - name: Check if VM template exists
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onetemplate show {{ item.name }}-tpl
+      register: template_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ one_k3s_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Write VM template file
+      become: true
+      ansible.builtin.copy:
+        content: |
+          NAME   = "{{ item.item.name }}-tpl"
+          MEMORY = "{{ item.item.ram }}"
+          CPU    = "{{ (item.item.vcpus / 4) | float }}"
+          VCPU   = "{{ item.item.vcpus }}"
+          OS     = [ ARCH = "x86_64", BOOT = "disk0" ]
+          DISK   = [
+            IMAGE       = "{{ one_k3s_image }}",
+            IMAGE_UNAME = "oneadmin",
+            SIZE        = "{{ item.item.disk * 1024 }}"
+          ]
+          NIC    = [ NETWORK = "k3s-net", NETWORK_UNAME = "oneadmin" ]
+          CONTEXT = [
+            NETWORK        = "YES",
+            SSH_PUBLIC_KEY  = "$USER[SSH_PUBLIC_KEY]",
+            GROW_ROOTFS    = "YES"
+          ]
+        dest: "/tmp/{{ item.item.name }}-tpl.tmpl"
+        mode: '0644'
+      when: item.rc != 0
+      loop: "{{ template_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    - name: Create VM template in OpenNebula
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onetemplate create /tmp/{{ item.item.name }}-tpl.tmpl
+      when: item.rc != 0
+      loop: "{{ template_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    # ── Instantiate VMs ────────────────────────────────────────────────────
+    - name: Check if VM already exists
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onevm show {{ item.name }}
+      register: vm_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ one_k3s_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Instantiate VM from template
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onetemplate instantiate {{ item.item.name }}-tpl --name {{ item.item.name }}
+      when: item.rc != 0
+      loop: "{{ vm_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    # ── Wait for VMs to be RUNNING ─────────────────────────────────────────
+    - name: Wait for VM to reach RUNNING state
+      become: true
+      become_user: oneadmin
+      ansible.builtin.shell: |
+        for i in $(seq 1 30); do
+          state=$(onevm show "{{ item.name }}" --json \
+            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['STATE'])" 2>/dev/null)
+          # State 3 = ACTIVE (running)
+          [ "$state" = "3" ] && exit 0
+          sleep 15
+        done
+        exit 1
+      changed_when: false
+      loop: "{{ one_k3s_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    # ── Gather IPs ─────────────────────────────────────────────────────────
+    - name: Get VM IP address
+      become: true
+      become_user: oneadmin
+      ansible.builtin.shell: |
+        onevm show {{ item.name }} --json \
+          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['TEMPLATE']['NIC']['IP'])"
+      register: vm_ips
+      changed_when: false
+      loop: "{{ one_k3s_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+  post_tasks:
+    - name: List all VMs
+      become: true
+      become_user: oneadmin
+      ansible.builtin.command: onevm list
+      register: vm_list
+      changed_when: false
+
+    - name: Print VM list
+      ansible.builtin.debug:
+        var: vm_list.stdout_lines
+
+    - name: Print VM IPs
+      ansible.builtin.debug:
+        msg: "{{ item.item.name }}: {{ item.stdout }}"
+      loop: "{{ vm_ips.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    - name: Remind to update inventory
+      ansible.builtin.debug:
+        msg: "Update inventory/hosts.yml k3s_nodes with the IPs above"

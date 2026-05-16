@@ -1,12 +1,12 @@
-# Media/Torrent PVCs backed by Ceph RBD (ceph-rbd StorageClass).
-# StorageClass created by 05-k3s.yml using MicroCeph as the backend.
+# Media/Torrent PVCs backed by local-path StorageClass (K3s built-in).
+# Provisioner: rancher.io/local-path — enabled by default when local-storage
+# is not in the K3s --disable list.
 #
 # All PVCs use ReadWriteOnce. On a single-worker K3s cluster all media
 # pods co-locate on k3s-worker-1, so multiple pods can mount the same
 # RWO volume simultaneously (K8s allows this when pods share a node).
-# If you add a second worker and need true RWX, enable CephFS via:
-#   sudo microceph.ceph fs new cephfs cephfs_meta cephfs_data
-# and add a ceph-csi-cephfs StorageClass.
+# If you add a second worker and need true RWX, consider adding Longhorn:
+#   helm install longhorn longhorn/longhorn -n longhorn-system
 
 ---
 apiVersion: v1
@@ -17,7 +17,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 60Ti
@@ -30,7 +30,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Ti
@@ -43,7 +43,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Ti
@@ -56,7 +56,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
@@ -69,7 +69,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -82,7 +82,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -95,7 +95,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -108,7 +108,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -121,7 +121,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -134,7 +134,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi

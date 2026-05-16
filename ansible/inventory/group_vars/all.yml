@@ -1,64 +1,44 @@
 ---
 # Beck Cloud — Ansible Variables
-# Ubuntu 24.04 + Sunbeam OpenStack + ZFS + K3s-on-Nova
 
 homelab_hostname: becklab
 homelab_ip: 172.16.0.7
 ops_user: stephen
 
-# ── Sunbeam / OpenStack ────────────────────────────────────────────────────────
-sunbeam_channel: "2024.1/stable"
+# ── OpenNebula 7.2 ────────────────────────────────────────────────────────────
+one_admin_password: "changeme"   # override with -e one_admin_password=<secret> or vault
 
-# Management CIDR — subnet containing the hypervisor's primary IP. Sunbeam
-# uses this as the OpenStack API/management plane. Passed explicitly in the
-# manifest to avoid "No subnets available in any space" auto-detect failures.
-management_cidr: "172.16.0.0/24"
-
-# Provider network — a slice of your physical LAN for OpenStack floating IPs
-provider_network_cidr: "172.16.0.0/24"
-provider_network_gateway: "172.16.0.1"
-provider_network_pool_start: "172.16.0.100"
-provider_network_pool_end: "172.16.0.150"
-
-# Tenant network — private network inside OpenStack for Nova VMs
-nova_network_cidr: "192.168.100.0/24"
-nova_network_gateway: "192.168.100.1"
-nova_dns_servers:
+# VM bridge network (created by 02-opennebula.yml)
+one_bridge: one0
+one_vm_cidr: "192.168.100.0/24"
+one_vm_gateway: "192.168.100.1"
+one_dns_servers:
   - "8.8.8.8"
   - "8.8.4.4"
 
-# Nova flavors
-nova_flavors:
-  - name: k3s.server
+# Ubuntu cloud image
+one_k3s_image: "ubuntu-24.04-server"
+one_k3s_image_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
+one_k3s_keypair_pub: "~/.ssh/id_ed25519.pub"
+
+# OpenNebula VM definitions for K3s
+one_k3s_vms:
+  - name: k3s-server
     vcpus: 8
     ram: 32768
     disk: 100
-  - name: k3s.worker
+    role: server
+  - name: k3s-worker-1
     vcpus: 12
     ram: 32768
     disk: 50
-
-# Nova VMs (K3s application cluster)
-nova_k3s_image: "ubuntu-24.04-server-cloudimg-amd64"
-nova_k3s_image_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-cloudimg-amd64.img"
-nova_k3s_keypair: "homelab-key"
-nova_k3s_keypair_pub: "~/.ssh/id_ed25519.pub"
-nova_k3s_vms:
-  - name: k3s-server
-    flavor: k3s.server
-    role: server
-  - name: k3s-worker-1
-    flavor: k3s.worker
     role: worker
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
-# Leave empty to auto-generate; 05-k3s.yml reads the generated token from
-# the server and passes it to workers automatically.
 k3s_token: ""
 k3s_disable:
   - traefik
-  - local-storage
   - servicelb
   - metrics-server
 k3s_kubelet_args:
@@ -69,13 +49,7 @@ k3s_kubelet_args:
 # Cilium
 cilium_version: 1.17.0
 
-# ── Ceph CSI (K3s storage via MicroCeph) ──────────────────────────────────────
-# MicroCeph is deployed by Sunbeam (--role storage). The K3s CSI driver is
-# installed by 05-k3s.yml which creates the k3s-rbd pool + client.k3s-rbd key.
-ceph_k3s_pool: k3s-rbd
-
 # ── NVIDIA ────────────────────────────────────────────────────────────────────
-# GPU passthrough disabled — Titan RTX stays on host, unused in this deployment
 install_nvidia: false
 
 # AI Sysadmin — Rho + Llamactl + Llama-server
@@ -95,17 +69,12 @@ ntp_servers:
 # UFW rules for the bare metal host
 firewall_allowed_ports:
   - { port: "22",   proto: tcp, comment: SSH }
-  - { port: "5000", proto: tcp, comment: "Keystone API" }
-  - { port: "8774", proto: tcp, comment: "Nova API" }
-  - { port: "9696", proto: tcp, comment: "Neutron API" }
-  - { port: "8776", proto: tcp, comment: "Cinder API" }
-  - { port: "9292", proto: tcp, comment: "Glance API" }
-  - { port: "80",   proto: tcp, comment: "Horizon HTTP" }
-  - { port: "443",  proto: tcp, comment: "Horizon HTTPS" }
-  - { port: "4789", proto: udp, comment: "VXLAN (Neutron)" }
-  - { port: "2049", proto: tcp, comment: NFS }
-  - { port: "111",  proto: tcp, comment: "NFS portmapper" }
-  - { port: "111",  proto: udp, comment: "NFS portmapper" }
+  - { port: "9869", proto: tcp, comment: "OpenNebula Sunstone" }
+  - { port: "2616", proto: tcp, comment: "OpenNebula FireEdge" }
+  - { port: "2633", proto: tcp, comment: "OpenNebula API (oned)" }
+  - { port: "29876", proto: tcp, comment: "OpenNebula Gate" }
+  - { port: "80",   proto: tcp, comment: HTTP }
+  - { port: "443",  proto: tcp, comment: HTTPS }
 
 # ── Domain / TLS ──────────────────────────────────────────────────────────────
 domain: becklab.cloud

@@ -1,22 +1,21 @@
 ---
-# 03-harden.yml — Apply host hardening AFTER Sunbeam is bootstrapped.
+# 03-harden.yml — Apply host hardening AFTER OpenNebula is bootstrapped.
 #
-# This runs after 02-sunbeam.yml deliberately: enabling UFW or turning on
-# bridge-nf-call during Sunbeam bootstrap breaks LXD's dnsmasq and hangs
-# juju with "Waiting for address". By the time we get here, juju has its
-# controller container running and Sunbeam's networking is established —
-# we just need to lock things down without killing the existing flows.
+# This runs after 02-opennebula.yml. OpenNebula's networking (one0 bridge,
+# NAT masquerade) is already established by then — we lock things down
+# without killing existing flows.
 #
 # What lives here:
 #   • Sysctl tuning (networking, memory, inotify, hugepages)
-#   • bridge-nf-call-iptables = 0 on the LXD host (K3s VMs override to 1)
+#   • bridge-nf-call-iptables = 0 on the host (K3s VMs inside ONE override to 1)
 #   • Optional NVIDIA driver install (install_nvidia=true)
 #   • SSH hardening
-#   • UFW with LXD-friendly forward policy + explicit lxdbr0 allow rules
+#   • UFW with ACCEPT forward policy (needed for OpenNebula VM traffic on one0)
+#   • UFW allow rule for 192.168.100.0/24 VM subnet via one0
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/03-harden.yml
 
-- name: Host hardening (post-Sunbeam)
+- name: Host hardening (post-OpenNebula)
   hosts: hypervisor
   become: true
   gather_facts: true
@@ -31,10 +30,9 @@
         reload: true
       loop:
         - { key: 'net.ipv4.ip_forward',                  value: '1' }
-        # bridge-nf-call-iptables must be 0 on the LXD host: when 1, UFW's
-        # default DROP filters DHCP packets between juju controller
-        # containers and dnsmasq on lxdbr0, causing "Waiting for address"
-        # bootstrap hangs. K3s nodes (Nova VMs) set this to 1 in 05-k3s.yml,
+        # bridge-nf-call-iptables = 0 on the OpenNebula host: when 1, UFW's
+        # default DROP can filter traffic on the one0 bridge used by VMs.
+        # K3s nodes (inside ONE VMs) set this to 1 in 05-k3s.yml,
         # which is the correct scope.
         - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
         - { key: 'net.bridge.bridge-nf-call-ip6tables',  value: '0' }
@@ -49,7 +47,7 @@
         - { key: 'vm.nr_hugepages',                       value: '4096' }
       failed_when: false
 
-    # ── NVIDIA drivers ───────────────────────────────────────────────────
+    # ── NVIDIA drivers ───────────────────────────────────────────────
     # Only runs when install_nvidia: true (group_vars/all.yml).
     # Titan RTX (TU102) has 24GB GDDR6 — stays on host for llama-server (08-ai-sysadmin.yml).
     - name: Install ubuntu-drivers utility and CUDA toolkit
@@ -101,33 +99,26 @@
         - { regexp: '^#?LoginGraceTime',         line: 'LoginGraceTime 60' }
       notify: restart sshd
 
-    # LXD containers need forward traffic allowed through the bridge. UFW's
-    # default DROP forward policy silently kills inter-container and
-    # container-to-host DHCP. The explicit "allow on lxdbr0" rules below
-    # aren't enough on their own — the underlying iptables FORWARD chain
-    # default must be ACCEPT.
-    - name: Set UFW DEFAULT_FORWARD_POLICY to ACCEPT (required for LXD)
+    # OpenNebula VMs need forward traffic allowed through the one0 bridge.
+    # UFW's default DROP forward policy silently kills VM→host and VM→internet
+    # traffic. Set to ACCEPT so OpenNebula's NAT masquerade works correctly.
+    - name: Set UFW DEFAULT_FORWARD_POLICY to ACCEPT (required for OpenNebula VM traffic)
       ansible.builtin.lineinfile:
         path: /etc/default/ufw
         regexp: '^DEFAULT_FORWARD_POLICY='
         line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
 
-    - name: Allow LXD bridge traffic through UFW (required for Juju/Sunbeam)
+    - name: Allow traffic to/from OpenNebula VM subnet (one0 bridge)
       community.general.ufw:
         rule: allow
-        interface: lxdbr0
-        direction: "{{ item }}"
-      loop:
-        - in
-        - out
+        src: "{{ one_vm_cidr }}"
+        comment: "OpenNebula VM subnet (one0)"
 
-    - name: Allow LXD bridge routing through UFW
-      ansible.builtin.command: "ufw route allow {{ item }} on lxdbr0"
-      loop:
-        - in
-        - out
-      changed_when: true
-      failed_when: false
+    - name: Allow traffic from OpenNebula VM subnet (one0 bridge — return path)
+      community.general.ufw:
+        rule: allow
+        dest: "{{ one_vm_cidr }}"
+        comment: "OpenNebula VM subnet return (one0)"
 
     - name: Configure UFW rules
       community.general.ufw:

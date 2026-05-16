@@ -3,22 +3,21 @@
 # rest of the stack runs.
 #
 # Intentionally minimal: NO firewall, NO sysctl tuning, NO SSH hardening.
-# Those land in 03-harden.yml after Sunbeam is up, because UFW + bridge-nf
-# settings break LXD's dnsmasq during juju bootstrap.
+# Those land in 03-harden.yml after OpenNebula is up.
 #
 # What lives here:
 #   • apt update + dist-upgrade
-#   • Packages needed by every later playbook (KVM, libvirt, ZFS, NFS, tools)
-#   • Remove docker.io (conflicts with Sunbeam's containerd)
+#   • Packages needed by every later playbook (KVM, libvirt, ZFS, NFS, tools,
+#     bridge-utils, iptables-persistent)
 #   • KVM hardware check
-#   • Kernel modules required by the *host* (NVMe, vhost_net, NFS server)
-#   • Disable swap (required by Kubernetes/MicroK8s inside Sunbeam)
+#   • Kernel modules required by the *host* (NVMe, vhost_net)
+#   • Disable swap (required by Kubernetes)
 #   • Chrony NTP (snap store requires accurate time)
 #   • Enable libvirtd
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/00-prereqs.yml
 
-- name: Host prerequisites (minimal — pre-Sunbeam)
+- name: Host prerequisites (minimal — pre-OpenNebula)
   hosts: hypervisor
   become: true
   gather_facts: true
@@ -46,25 +45,20 @@
           - net-tools
           - iproute2
           - chrony
-          # KVM/QEMU (Sunbeam/Nova hypervisor)
+          # KVM/QEMU (OpenNebula hypervisor)
           # qemu-kvm is a virtual package on Ubuntu 24.04; use the concrete provider
           - qemu-system-x86
           - libvirt-daemon-system
           - virtinst
           - cpu-checker
+          # Bridge and firewall tools (required by OpenNebula node + NAT)
+          - bridge-utils
+          - iptables-persistent
           # Misc tools
           - open-iscsi
           - cryptsetup
         state: present
         update_cache: true
-
-    - name: Remove packages that conflict with Sunbeam/containerd
-      ansible.builtin.apt:
-        name:
-          - docker.io
-          - docker-compose
-        state: absent
-        purge: true
 
     - name: Verify KVM hardware support
       ansible.builtin.command: kvm-ok
@@ -72,11 +66,9 @@
       changed_when: false
       failed_when: "'KVM acceleration can be used' not in kvm_ok.stdout"
 
-    # Only host-side modules: NVMe (storage), vhost_net (KVM), nfs/nfsd (server).
-    # overlay + br_netfilter are K8s requirements and belong on the K3s Nova VMs
-    # (loaded in 05-k3s.yml). Loading br_netfilter on the LXD host enables
-    # bridge-nf-call which interferes with juju bootstrap unless explicitly
-    # turned off — easier to just not load it here.
+    # Only host-side modules: NVMe (storage), vhost_net (KVM).
+    # overlay + br_netfilter are K8s requirements and belong on the K3s VMs
+    # (loaded in 05-k3s.yml).
     - name: Load required kernel modules
       community.general.modprobe:
         name: "{{ item }}"

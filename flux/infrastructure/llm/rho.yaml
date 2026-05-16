@@ -36,8 +36,8 @@ data:
 
     ## Environment
     - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 24.04, 128GB RAM
-    - Hypervisor layer: Sunbeam OpenStack (Nova/Neutron/Glance/Keystone)
-    - Storage: MicroCeph (deployed by Sunbeam --role storage), K3s uses ceph-rbd StorageClass via ceph-csi-rbd
+    - Hypervisor layer: OpenNebula 7.2 (KVM, Sunstone UI at :9869)
+    - Storage: local-path provisioner (K3s built-in default StorageClass)
     - K3s cluster: server 192.168.100.10, worker 192.168.100.11
     - GitOps: Flux CD → github.com/yappingboy/beck-cloud (branch: main)
     - Domain: becklab.cloud
@@ -82,7 +82,7 @@ data:
     3. **Flux sync**: `flux get kustomizations -A` — any Failed or stale >1h?
     4. **ZFS pools**: `ssh becklab zpool status` — any DEGRADED or FAULTED?
     5. **Disk space**: NFS mounts <10% free = WARNING; <5% = CRITICAL
-    6. **Nova VMs**: `ssh becklab . /root/openrc && openstack server list` — all ACTIVE?
+    6. **ONE VMs**: `ssh becklab onevm list (as oneadmin)` — all RUNNING?
     7. **Certificates**: any cert-manager Certificate not Ready or expiring <14 days?
     8. **Velero**: last backup status for each schedule (identity, security, media)
 
@@ -296,7 +296,7 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: ceph-rbd
+  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi

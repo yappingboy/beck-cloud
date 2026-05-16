@@ -7,8 +7,8 @@ Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 | Layer | Component | Status |
 |-------|-----------|--------|
 | L1 | OS & Bootstrap (Ansible) | ✅ Playbooks ready |
-| L2 | Sunbeam OpenStack (hypervisor) | ✅ Playbook ready |
-| L3 | ZFS Storage + NFS exports | ✅ Pool plan + datasets + StorageClasses |
+| L2 | OpenNebula 7.2 (hypervisor) | ✅ Playbook ready |
+| L3 | local-path provisioner (K3s built-in) | ✅ Pool plan + datasets + StorageClasses |
 | L4 | K3s + Cilium (on Nova VMs) | ✅ Playbook ready |
 | L5 | GitOps (Flux CD) | ✅ Bootstrap + Sources + Controllers + Configs |
 | L6 | Traefik + cert-manager | ✅ HelmReleases + SSO middlewares |
@@ -30,11 +30,11 @@ Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 │   ├── inventory/hosts.yml       # hypervisor + k3s_nodes groups
 │   ├── templates/                # Jinja2 templates
 │   └── playbooks/
-│       ├── 00-prereqs.yml       # Minimal pre-Sunbeam prep (packages, KVM, swap, NTP)
-│       ├── 02-sunbeam.yml       # Sunbeam OpenStack bootstrap (MicroCeph storage)
+│       ├── 00-prereqs.yml       # Minimal pre-OpenNebula prep (packages, KVM, swap, NTP)
+│       ├── 02-opennebula.yml    # OpenNebula 7.2 AIO install (frontend + KVM node, bridge, NAT)
 │       ├── 03-harden.yml        # UFW, sysctls, SSH hardening, NVIDIA
-│       ├── 04-nova-vms.yml      # Provision K3s Nova instances
-│       ├── 05-k3s.yml           # K3s + Cilium + Ceph CSI on Nova VMs
+│       ├── 04-one-vms.yml       # Provision K3s VMs via OpenNebula
+│       ├── 05-k3s.yml           # K3s + Cilium on OpenNebula VMs (local-path StorageClass)
 │       ├── 06-flux.yml          # Flux CLI + GitOps bootstrap
 │       ├── 07-snapshotter.yml   # CSI snapshot CRDs
 │       ├── 08-ai-sysadmin.yml   # Llamactl + llama-server on host GPU
@@ -69,17 +69,17 @@ ansible-galaxy collection install -r ansible/requirements.yml
 # 0. Minimal prereqs: packages, KVM, swap off, kernel modules, NTP
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-prereqs.yml
 
-# 1. Bootstrap Sunbeam OpenStack (includes MicroCeph storage) — run BEFORE hardening
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-sunbeam.yml
+# 1. Install OpenNebula 7.2 AIO (frontend + KVM node, bridge networking, NAT)
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-opennebula.yml
 
 # 2. Apply host hardening (UFW, sysctls, SSH, optional NVIDIA install)
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-harden.yml
 
-# 3. Provision Nova VM instances
-ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-nova-vms.yml
+# 3. Provision K3s VM instances via OpenNebula
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-one-vms.yml
 # → Update inventory k3s_nodes IPs then continue
 
-# 4. Install K3s + Cilium + Ceph CSI on Nova VMs
+# 4. Install K3s + Cilium on OpenNebula VMs
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-k3s.yml
 
 # 5. Bootstrap Flux
@@ -129,10 +129,9 @@ flux-system (bootstrap)
 
 ## Design Decisions
 
-- **Sunbeam OpenStack**: KVM hypervisor layer; K3s runs on Nova VMs for isolation and snapshot support
+- **OpenNebula 7.2**: AIO KVM hypervisor layer; K3s runs on ONE VMs (k3s-server + k3s-worker-1) for isolation; Sunstone UI at :9869; single-node deployment (frontend + KVM node on becklab)
+- **local-path over Ceph/NFS**: K3s built-in local-path provisioner avoids Ceph/NFS complexity on a single-node deployment; data lives on the VM disk; add Longhorn for HA storage when needed
 - **ZFS RAIDZ2×2**: ~49.5TB usable from 13×5.5TB spinning disks + 9.1TB archive mirror; NVMe SLOG for write acceleration
-- **NFS bridge**: ZFS datasets exported via NFS to Nova VMs; NFS subdir provisioner handles K8s PV lifecycle
-- **No MicroCeph**: ZFS+NFS avoids Ceph complexity on a single node
 - **Cilium over Flannel**: eBPF NetworkPolicy for torrent VPN isolation
 - **Flux (pull)**: No external CI with cluster credentials
 - **lldap**: Simpler than OpenLDAP, compatible with Keycloak
