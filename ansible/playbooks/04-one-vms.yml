@@ -54,7 +54,7 @@
     - name: Download Ubuntu cloud image
       ansible.builtin.get_url:
         url: "{{ one_k3s_image_url }}"
-        dest: "/tmp/{{ one_k3s_image }}.img"
+        dest: "/var/tmp/{{ one_k3s_image }}.img"
         timeout: 600
         mode: '0644'
       when: image_check.rc != 0
@@ -63,10 +63,10 @@
       ansible.builtin.copy:
         content: |
           NAME   = "{{ one_k3s_image }}"
-          PATH   = "/tmp/{{ one_k3s_image }}.img"
+          PATH   = "/var/tmp/{{ one_k3s_image }}.img"
           TYPE   = "OS"
           FORMAT = "qcow2"
-        dest: /tmp/one-image.tmpl
+        dest: /var/tmp/one-image.tmpl
         mode: '0644'
       when: image_check.rc != 0
 
