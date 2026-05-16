@@ -3,7 +3,7 @@
 
 homelab_hostname: becklab
 homelab_ip: 172.16.0.7
-ops_user: stephen
+ops_user: root
 
 # ── OpenNebula 7.2 ────────────────────────────────────────────────────────────
 one_admin_password: "changeme"   # override with -e one_admin_password=<secret> or vault

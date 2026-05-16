@@ -1,5 +1,5 @@
 ---
-# 03-harden.yml — Apply host hardening AFTER OpenNebula is bootstrapped.
+# 03-harden.yml — Post-OpenNebula hardening for AlmaLinux 9
 #
 # This runs after 02-opennebula.yml. OpenNebula's networking (one0 bridge,
 # NAT masquerade) is already established by then — we lock things down
@@ -10,8 +10,7 @@
 #   • bridge-nf-call-iptables = 0 on the host (K3s VMs inside ONE override to 1)
 #   • Optional NVIDIA driver install (install_nvidia=true)
 #   • SSH hardening
-#   • UFW with ACCEPT forward policy (needed for OpenNebula VM traffic on one0)
-#   • UFW allow rule for 192.168.100.0/24 VM subnet via one0
+#   • firewalld: open required ports, allow VM subnet in trusted zone, masquerade
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/03-harden.yml
 
@@ -30,8 +29,7 @@
         reload: true
       loop:
         - { key: 'net.ipv4.ip_forward',                  value: '1' }
-        # bridge-nf-call-iptables = 0 on the OpenNebula host: when 1, UFW's
-        # default DROP can filter traffic on the one0 bridge used by VMs.
+        # OpenNebula manages bridging; keep bridge-nf-call at 0 on the host.
         # K3s nodes (inside ONE VMs) set this to 1 in 05-k3s.yml,
         # which is the correct scope.
         - { key: 'net.bridge.bridge-nf-call-iptables',   value: '0' }
@@ -50,10 +48,9 @@
     # ── NVIDIA drivers ───────────────────────────────────────────────
     # Only runs when install_nvidia: true (group_vars/all.yml).
     # Titan RTX (TU102) has 24GB GDDR6 — stays on host for llama-server (08-ai-sysadmin.yml).
-    - name: Install ubuntu-drivers utility and CUDA toolkit
-      ansible.builtin.apt:
+    - name: Install NVIDIA CUDA toolkit
+      ansible.builtin.dnf:
         name:
-          - ubuntu-drivers-common
           - nvidia-cuda-toolkit
         state: present
       when: install_nvidia | bool
@@ -66,7 +63,7 @@
       when: install_nvidia | bool
 
     - name: Install recommended NVIDIA driver
-      ansible.builtin.shell: ubuntu-drivers autoinstall
+      ansible.builtin.shell: nvidia-driver install --accept-license
       args:
         executable: /bin/bash
       when: install_nvidia | bool and nvidia_check.rc != 0
@@ -85,6 +82,7 @@
       failed_when: nvidia_verify.rc != 0
       when: install_nvidia | bool
 
+    # ── SSH hardening ───────────────────────────────────────────────────────
     - name: Harden SSH configuration
       ansible.builtin.lineinfile:
         path: /etc/ssh/sshd_config
@@ -99,43 +97,39 @@
         - { regexp: '^#?LoginGraceTime',         line: 'LoginGraceTime 60' }
       notify: restart sshd
 
-    # OpenNebula VMs need forward traffic allowed through the one0 bridge.
-    # UFW's default DROP forward policy silently kills VM→host and VM→internet
-    # traffic. Set to ACCEPT so OpenNebula's NAT masquerade works correctly.
-    - name: Set UFW DEFAULT_FORWARD_POLICY to ACCEPT (required for OpenNebula VM traffic)
-      ansible.builtin.lineinfile:
-        path: /etc/default/ufw
-        regexp: '^DEFAULT_FORWARD_POLICY='
-        line: 'DEFAULT_FORWARD_POLICY="ACCEPT"'
+    # ── firewalld ───────────────────────────────────────────────────────────
+    - name: Ensure firewalld is enabled and running
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: true
+        state: started
 
-    - name: Allow traffic to/from OpenNebula VM subnet (one0 bridge)
-      community.general.ufw:
-        rule: allow
-        src: "{{ one_vm_cidr }}"
-        comment: "OpenNebula VM subnet (one0)"
-
-    - name: Allow traffic from OpenNebula VM subnet (one0 bridge — return path)
-      community.general.ufw:
-        rule: allow
-        dest: "{{ one_vm_cidr }}"
-        comment: "OpenNebula VM subnet return (one0)"
-
-    - name: Configure UFW rules
-      community.general.ufw:
-        rule: allow
-        port: "{{ item.port }}"
-        proto: "{{ item.proto | default('tcp') }}"
-        comment: "{{ item.comment }}"
+    - name: Open required ports in firewalld
+      ansible.posix.firewalld:
+        port: "{{ item.port }}/{{ item.proto | default('tcp') }}"
+        permanent: true
+        state: enabled
+        immediate: true
       loop: "{{ firewall_allowed_ports }}"
 
-    # Enable UFW last, after every allow rule is in place.
-    - name: Enable UFW with deny default
-      community.general.ufw:
+    - name: Allow VM subnet (192.168.100.0/24) in trusted zone
+      ansible.posix.firewalld:
+        source: "{{ one_vm_cidr }}"
+        zone: trusted
+        permanent: true
         state: enabled
-        policy: deny
+        immediate: true
+
+    - name: Enable masquerade for VM outbound traffic
+      ansible.posix.firewalld:
+        masquerade: true
+        zone: public
+        permanent: true
+        state: enabled
+        immediate: true
 
   handlers:
     - name: restart sshd
       ansible.builtin.systemd:
-        name: ssh
+        name: sshd
         state: restarted

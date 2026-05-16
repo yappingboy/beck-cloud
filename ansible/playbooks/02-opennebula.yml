@@ -1,62 +1,28 @@
 ---
-# 02-opennebula.yml — Install OpenNebula 7.2 AIO (frontend + KVM node)
+# 02-opennebula.yml — Configure OpenNebula 7.2 AIO (frontend + KVM node)
+#
+# AlmaLinux 9 — OpenNebula CE 7.2 packages are PRE-INSTALLED by the CE ISO.
+# oned, Sunstone, and FireEdge are already running.
 #
 # What lives here:
-#   • Add OpenNebula 7.2 apt repo + GPG key
-#   • Install frontend packages + opennebula-node-kvm + iptables-persistent + bridge-utils
-#   • Configure oneadmin credentials + SSH keypair (AIO passwordless SSH to itself)
-#   • Create Linux bridge one0 (192.168.100.1/24) via netplan
-#   • Enable IP forwarding + NAT masquerade for VM subnet 192.168.100.0/24
-#   • Start OpenNebula services (opennebula, sunstone, fireedge)
+#   • Set oneadmin API credentials (/var/lib/one/.one/one_auth)
+#   • Set up oneadmin SSH keypair (AIO passwordless SSH to itself)
+#   • Add oneadmin to kvm and qemu groups
+#   • Create NetworkManager bridge one0 (192.168.100.1/24) via nmcli
+#   • Enable IP forwarding + firewalld masquerade for VM subnet
+#   • Ensure OpenNebula services are started
 #   • Add localhost as KVM host; create k3s-net virtual network
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/02-opennebula.yml
 
-- name: Install OpenNebula 7.2 AIO
+- name: Configure OpenNebula 7.2 AIO
   hosts: hypervisor
-  become: false
+  become: true
   gather_facts: true
 
   tasks:
-    # ── Repo + packages ────────────────────────────────────────────────────
-    - name: Download OpenNebula GPG key
-      become: true
-      ansible.builtin.get_url:
-        url: https://downloads.opennebula.io/repo/repo2.key
-        dest: /tmp/opennebula-repo2.key
-        mode: '0644'
-
-    - name: Add OpenNebula GPG key to apt
-      become: true
-      ansible.builtin.apt_key:
-        file: /tmp/opennebula-repo2.key
-        state: present
-
-    - name: Add OpenNebula apt repository
-      become: true
-      ansible.builtin.copy:
-        content: "deb https://downloads.opennebula.io/repo/7.2/Ubuntu/24.04 stable opennebula\n"
-        dest: /etc/apt/sources.list.d/opennebula.list
-        mode: '0644'
-
-    - name: Install OpenNebula packages
-      become: true
-      ansible.builtin.apt:
-        name:
-          - opennebula
-          - opennebula-sunstone
-          - opennebula-fireedge
-          - opennebula-gate
-          - opennebula-flow
-          - opennebula-node-kvm
-          - iptables-persistent
-          - bridge-utils
-        state: present
-        update_cache: true
-
     # ── oneadmin credentials ───────────────────────────────────────────────
     - name: Ensure oneadmin .one directory exists
-      become: true
       ansible.builtin.file:
         path: /var/lib/one/.one
         state: directory
@@ -65,7 +31,6 @@
         mode: '0700'
 
     - name: Write oneadmin API auth file
-      become: true
       ansible.builtin.copy:
         content: "oneadmin:{{ one_admin_password }}"
         dest: /var/lib/one/.one/one_auth
@@ -73,83 +38,70 @@
         group: oneadmin
         mode: '0600'
 
-    - name: Add oneadmin to kvm group
-      become: true
-      ansible.builtin.user:
-        name: oneadmin
-        groups: kvm
-        append: true
-
-    - name: Add oneadmin to libvirt group
-      become: true
-      ansible.builtin.user:
-        name: oneadmin
-        groups: libvirt
-        append: true
-
     # ── oneadmin SSH keypair (AIO: frontend SSHes to itself) ───────────────
     - name: Check if oneadmin SSH keypair exists
-      become: true
       ansible.builtin.stat:
         path: /var/lib/one/.ssh/id_rsa
       register: oneadmin_ssh_key
 
     - name: Generate oneadmin SSH keypair
-      become: true
-      become_user: oneadmin
-      ansible.builtin.command: >
-        ssh-keygen -t rsa -b 4096 -N "" -f /var/lib/one/.ssh/id_rsa
+      ansible.builtin.shell: |
+        su oneadmin -s /bin/bash -c "ssh-keygen -t rsa -N '' -f /var/lib/one/.ssh/id_rsa"
       when: not oneadmin_ssh_key.stat.exists
       args:
         creates: /var/lib/one/.ssh/id_rsa
 
-    - name: Read oneadmin public key
-      become: true
-      ansible.builtin.slurp:
-        src: /var/lib/one/.ssh/id_rsa.pub
-      register: oneadmin_pubkey
-
-    - name: Add oneadmin public key to authorized_keys
-      become: true
-      ansible.posix.authorized_key:
-        user: oneadmin
-        key: "{{ oneadmin_pubkey.content | b64decode | trim }}"
-        state: present
-
-    - name: Keyscan localhost and 127.0.0.1 into oneadmin known_hosts
-      become: true
-      become_user: oneadmin
+    - name: Append oneadmin public key to authorized_keys
       ansible.builtin.shell: |
-        set -e
-        mkdir -p /var/lib/one/.ssh
-        ssh-keyscan -H localhost 127.0.0.1 {{ homelab_hostname }} >> /var/lib/one/.ssh/known_hosts 2>/dev/null
-        sort -u /var/lib/one/.ssh/known_hosts -o /var/lib/one/.ssh/known_hosts
+        cat /var/lib/one/.ssh/id_rsa.pub >> /var/lib/one/.ssh/authorized_keys
+        chmod 600 /var/lib/one/.ssh/authorized_keys
+        chown oneadmin:oneadmin /var/lib/one/.ssh/authorized_keys
+      when: not oneadmin_ssh_key.stat.exists
       changed_when: true
 
-    # ── Bridge network (one0) via netplan ──────────────────────────────────
-    - name: Create netplan bridge config for one0
-      become: true
-      ansible.builtin.copy:
-        content: |
-          network:
-            version: 2
-            bridges:
-              one0:
-                addresses: [192.168.100.1/24]
-                parameters:
-                  stp: false
-                dhcp4: false
-        dest: /etc/netplan/60-opennebula.yaml
-        mode: '0600'
-
-    - name: Apply netplan configuration
-      become: true
-      ansible.builtin.command: netplan apply
+    - name: Add localhost and 127.0.0.1 to oneadmin known_hosts
+      ansible.builtin.shell: |
+        su oneadmin -s /bin/bash -c "ssh-keyscan -H localhost >> /var/lib/one/.ssh/known_hosts && ssh-keyscan -H 127.0.0.1 >> /var/lib/one/.ssh/known_hosts"
+      when: not oneadmin_ssh_key.stat.exists
       changed_when: true
 
-    # ── IP forwarding + NAT masquerade ─────────────────────────────────────
+    # ── oneadmin group membership ──────────────────────────────────────────
+    - name: Add oneadmin to kvm and qemu groups
+      ansible.builtin.user:
+        name: oneadmin
+        groups: kvm,qemu
+        append: true
+
+    # ── Bridge network (one0) via NetworkManager / nmcli ──────────────────
+    - name: Check if one0 NetworkManager connection already exists
+      ansible.builtin.command: nmcli con show one0
+      register: nmcli_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create one0 bridge connection
+      ansible.builtin.command: nmcli con add type bridge con-name one0 ifname one0 autoconnect yes
+      when: nmcli_check.rc != 0
+
+    - name: Set static IP on one0 bridge
+      ansible.builtin.command: >
+        nmcli con modify one0
+        ipv4.method manual
+        ipv4.addresses "{{ one_vm_gateway }}/24"
+        ipv4.gateway ""
+        ipv4.dns ""
+      when: nmcli_check.rc != 0
+
+    - name: Disable STP on one0 bridge
+      ansible.builtin.command: nmcli con modify one0 bridge.stp no
+      when: nmcli_check.rc != 0
+
+    - name: Bring up one0 bridge
+      ansible.builtin.command: nmcli con up one0
+      when: nmcli_check.rc != 0
+
+    # ── IP forwarding + firewalld masquerade ──────────────────────────────
     - name: Enable IP forwarding via sysctl
-      become: true
       ansible.posix.sysctl:
         name: net.ipv4.ip_forward
         value: '1'
@@ -157,23 +109,33 @@
         state: present
         reload: true
 
-    - name: Add iptables NAT masquerade for VM subnet
-      become: true
-      ansible.builtin.iptables:
-        table: nat
-        chain: POSTROUTING
-        source: "{{ one_vm_cidr }}"
-        jump: MASQUERADE
-        comment: "OpenNebula VM NAT"
-      notify: save iptables rules
+    - name: Enable masquerade in public zone (permanent)
+      ansible.builtin.command: firewall-cmd --permanent --zone=public --add-masquerade
+      changed_when: true
+      failed_when: false
+
+    - name: Allow FORWARD traffic in from one0
+      ansible.builtin.command: >
+        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i one0 -j ACCEPT
+      changed_when: true
+      failed_when: false
+
+    - name: Allow FORWARD traffic out to one0
+      ansible.builtin.command: >
+        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -o one0 -j ACCEPT
+      changed_when: true
+      failed_when: false
+
+    - name: Reload firewalld to apply rules
+      ansible.builtin.command: firewall-cmd --reload
+      changed_when: true
 
     # ── OpenNebula services ────────────────────────────────────────────────
-    - name: Enable and start OpenNebula services
-      become: true
+    - name: Ensure OpenNebula services are started
       ansible.builtin.systemd:
         name: "{{ item }}"
-        enabled: true
         state: started
+        enabled: true
       loop:
         - opennebula
         - opennebula-sunstone
@@ -184,7 +146,7 @@
         host: localhost
         port: 2633
         delay: 5
-        timeout: 120
+        timeout: 60
 
     # ── Add KVM host (AIO: localhost) ──────────────────────────────────────
     - name: Check if KVM host already registered
@@ -205,15 +167,13 @@
       become: true
       become_user: oneadmin
       ansible.builtin.shell: |
-        for i in $(seq 1 24); do
-          state=$(onehost show {{ homelab_hostname }} --json \
-            | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['HOST']['STATE'])" 2>/dev/null)
-          # State 2 = MONITORED
-          [ "$state" = "2" ] && exit 0
-          sleep 5
-        done
-        exit 1
+        onehost list --no-header | grep {{ homelab_hostname }} | grep -w MONITORED
+      register: onehost_monitored
+      retries: 12
+      delay: 10
+      until: onehost_monitored.rc == 0
       changed_when: false
+      failed_when: false
       when: onehost_check.rc != 0
 
     # ── Virtual network k3s-net ────────────────────────────────────────────
@@ -226,37 +186,28 @@
       changed_when: false
 
     - name: Write k3s-net vnet template
-      become: true
       ansible.builtin.copy:
         content: |
-          NAME = "k3s-net"
-          VN_MAD = "bridge"
-          BRIDGE = "one0"
-          DNS = "8.8.8.8 8.8.4.4"
-          GATEWAY = "192.168.100.1"
-          NETWORK_MASK = "255.255.255.0"
+          NAME          = "k3s-net"
+          VN_MAD        = "bridge"
+          BRIDGE        = "one0"
+          DNS           = "{{ one_dns_servers | join(' ') }}"
+          GATEWAY       = "{{ one_vm_gateway }}"
+          NETWORK_MASK  = "255.255.255.0"
           AR = [
-            TYPE  = "IP4",
-            IP    = "192.168.100.10",
-            SIZE  = "20"
+            TYPE = "IP4",
+            IP   = "192.168.100.10",
+            SIZE = "20"
           ]
-        dest: /tmp/k3s-net.tmpl
+        dest: /tmp/k3s-net.one
         mode: '0644'
       when: onevnet_check.rc != 0
 
     - name: Create k3s-net virtual network
       become: true
       become_user: oneadmin
-      ansible.builtin.command: onevnet create /tmp/k3s-net.tmpl
+      ansible.builtin.command: onevnet create /tmp/k3s-net.one
       when: onevnet_check.rc != 0
-
-  handlers:
-    - name: save iptables rules
-      become: true
-      ansible.builtin.shell: |
-        iptables-save > /etc/iptables/rules.v4
-        ip6tables-save > /etc/iptables/rules.v6
-      changed_when: true
 
   post_tasks:
     - name: List OpenNebula hosts
