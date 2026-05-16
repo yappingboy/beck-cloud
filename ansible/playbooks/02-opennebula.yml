@@ -30,13 +30,23 @@
         group: oneadmin
         mode: '0700'
 
-    - name: Write oneadmin API auth file
+    - name: Check if oneadmin API auth file already exists
+      ansible.builtin.stat:
+        path: /var/lib/one/.one/one_auth
+      register: one_auth_stat
+
+    # The CE ISO sets its own oneadmin password during install.
+    # Only write this file if it doesn't exist yet — never overwrite
+    # a CE-provisioned password (it won't match the DB and breaks CLI auth).
+    # To change the password post-install, use: oneuser passwd 0 <newpass>
+    - name: Write oneadmin API auth file (only if not set by CE ISO)
       ansible.builtin.copy:
         content: "oneadmin:{{ one_admin_password }}"
         dest: /var/lib/one/.one/one_auth
         owner: oneadmin
         group: oneadmin
         mode: '0600'
+      when: not one_auth_stat.stat.exists
 
     # ── oneadmin SSH keypair (AIO: frontend SSHes to itself) ───────────────
     - name: Check if oneadmin SSH keypair exists
