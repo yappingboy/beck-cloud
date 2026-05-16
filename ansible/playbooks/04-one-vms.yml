@@ -179,7 +179,7 @@
     - name: Get VM IP address
       ansible.builtin.shell: |
         onevm show {{ item.name }} --json \
-          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['TEMPLATE']['NIC']['IP'])"
+          | python3 -c "import sys,json; d=json.load(sys.stdin); n=d['VM']['TEMPLATE']['NIC']; print(n['IP'] if isinstance(n,dict) else n[0]['IP'])"
       environment: "{{ one_auth }}"
       register: vm_ips
       changed_when: false
