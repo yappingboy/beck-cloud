@@ -116,7 +116,6 @@
         state: stopped
       loop:
         - opennebula-fireedge
-        - opennebula-sunstone
         - opennebula
       failed_when: false
 
@@ -126,7 +125,6 @@
         enabled: false
       loop:
         - opennebula-fireedge
-        - opennebula-sunstone
         - opennebula
       failed_when: false
 
@@ -134,7 +132,6 @@
       ansible.builtin.dnf:
         name:
           - opennebula
-          - opennebula-sunstone
           - opennebula-fireedge
           - opennebula-gate
           - opennebula-flow
