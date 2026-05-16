@@ -1,7 +1,10 @@
 ---
 # 01-zfs.yml — Install OpenZFS and build the 'tank' RAIDZ1 pool
 #
-# AlmaLinux 9 — ZFS via the OpenZFS project EPEL repo (DKMS build).
+# AlmaLinux 9 — Built from OpenZFS source via DKMS.
+# Pre-built packages only support up to kernel ~6.17; elrepo mainline (6.19+)
+# requires a source build. We clone the latest release tag and let DKMS
+# compile it against the running kernel.
 # Run this BEFORE 02-opennebula.yml so the datastores dataset is mounted
 # before OpenNebula starts.
 #
@@ -40,44 +43,89 @@
         group: root
 
   tasks:
-    # ── Install OpenZFS ───────────────────────────────────────────────────────
+    # ── Build dependencies ────────────────────────────────────────────────────
     - name: Install EPEL release
       ansible.builtin.dnf:
         name: epel-release
         state: present
 
-    - name: Add OpenZFS project repository
-      ansible.builtin.dnf:
-        name: "https://zfsonlinux.org/epel/zfs-release-2-3.el9.noarch.rpm"
-        state: present
-        disable_gpg_check: true
-
-    - name: Install kernel-devel and kernel-headers matching running kernel
-      ansible.builtin.shell: |
-        KVER="$(uname -r)"
-        # elrepo kernels ship kernel-devel in elrepo-kernel repo; try that first.
-        # Fall back to unversioned install from standard repos (stock EL9 kernel).
-        dnf install -y --enablerepo=elrepo-kernel \
-          "kernel-devel-${KVER}" "kernel-headers-${KVER}" 2>/dev/null \
-        || dnf install -y kernel-devel kernel-headers
-      changed_when: true
-
-    - name: Install ZFS utilities and DKMS module
+    - name: Install OpenZFS build dependencies
       ansible.builtin.dnf:
         name:
-          - zfs
-          - zfs-dkms
+          - dkms
+          - git
+          - autoconf
+          - automake
+          - libtool
+          - rpm-build
+          - libuuid-devel
+          - libblkid-devel
+          - libudev-devel
+          - openssl-devel
+          - zlib-devel
+          - libtirpc-devel
+          - python3
+          - python3-devel
+          - python3-setuptools
+          - ncompress
         state: present
-        enablerepo: zfs
 
-    - name: Wait for DKMS to build the ZFS module (up to 5 min)
+    - name: Install kernel-devel matching running kernel
       ansible.builtin.shell: |
-        for i in $(seq 1 30); do
-          dkms status zfs 2>/dev/null | grep -q "installed" && exit 0
-          sleep 10
-        done
-        exit 1
+        KVER="$(uname -r)"
+        # elrepo mainline kernels ship kernel-ml-devel in elrepo-kernel repo
+        dnf install -y --enablerepo=elrepo-kernel \
+          "kernel-ml-devel-${KVER}" 2>/dev/null \
+        || dnf install -y --enablerepo=elrepo-kernel \
+          "kernel-devel-${KVER}" 2>/dev/null \
+        || dnf install -y kernel-devel
+      changed_when: true
+
+    # ── Clone and build OpenZFS from source ───────────────────────────────────
+    - name: Get latest OpenZFS release tag
+      ansible.builtin.shell: |
+        git ls-remote --tags --sort='-v:refname' \
+          https://github.com/openzfs/zfs.git 'zfs-2.*' \
+          | grep -v '\^{}' | head -1 | awk '{print $2}' | sed 's|refs/tags/||'
+      register: zfs_latest_tag
       changed_when: false
+
+    - name: Show ZFS version being built
+      ansible.builtin.debug:
+        msg: "Building OpenZFS {{ zfs_latest_tag.stdout }}"
+
+    - name: Check if ZFS is already installed at this version
+      ansible.builtin.shell: |
+        zfs --version 2>/dev/null | grep -q "{{ zfs_latest_tag.stdout | replace('zfs-', '') }}" && echo yes || echo no
+      register: zfs_installed_check
+      changed_when: false
+      failed_when: false
+
+    - name: Clone OpenZFS source
+      ansible.builtin.git:
+        repo: https://github.com/openzfs/zfs.git
+        dest: /usr/local/src/zfs
+        version: "{{ zfs_latest_tag.stdout }}"
+        depth: 1
+        force: true
+      when: zfs_installed_check.stdout == 'no'
+
+    - name: Build and install OpenZFS (takes 5–15 min)
+      ansible.builtin.shell: |
+        set -e
+        cd /usr/local/src/zfs
+        ./autogen.sh
+        ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var \
+          --with-linux=/usr/src/kernels/$(uname -r) \
+          --with-linux-obj=/usr/src/kernels/$(uname -r)
+        make -j$(nproc)
+        make install
+        ldconfig
+        depmod -a
+      changed_when: true
+      when: zfs_installed_check.stdout == 'no'
+      async: 1200
+      poll: 30
 
     - name: Load ZFS kernel module
       community.general.modprobe:
@@ -89,6 +137,11 @@
         path: /etc/modules-load.d/beck-cloud.conf
         line: zfs
         create: false
+
+    - name: Install ZFS systemd unit files
+      ansible.builtin.command: zfs-mount-generator
+      failed_when: false
+      changed_when: false
 
     - name: Enable ZFS systemd services
       ansible.builtin.systemd:
