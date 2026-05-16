@@ -144,7 +144,6 @@
         enabled: true
       loop:
         - opennebula
-        - opennebula-sunstone
         - opennebula-fireedge
 
     - name: Wait for OpenNebula API (port 2633) to be open
