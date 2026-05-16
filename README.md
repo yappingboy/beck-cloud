@@ -129,7 +129,7 @@ flux-system (bootstrap)
 
 ## Design Decisions
 
-- **OpenNebula 7.2**: AIO KVM hypervisor layer; K3s runs on ONE VMs (k3s-server + k3s-worker-1) for isolation; Sunstone UI at :9869; single-node deployment (frontend + KVM node on becklab)
+- **OpenNebula 7.2**: AIO KVM hypervisor layer; K3s runs on ONE VMs (k3s-server + k3s-worker-1) for isolation; FireEdge UI at :2616; single-node deployment (frontend + KVM node on becklab)
 - **local-path over Ceph/NFS**: K3s built-in local-path provisioner avoids Ceph/NFS complexity on a single-node deployment; data lives on the VM disk; add Longhorn for HA storage when needed
 - **ZFS RAIDZ2×2**: ~49.5TB usable from 13×5.5TB spinning disks + 9.1TB archive mirror; NVMe SLOG for write acceleration
 - **Cilium over Flannel**: eBPF NetworkPolicy for torrent VPN isolation

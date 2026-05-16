@@ -238,6 +238,6 @@
       ansible.builtin.debug:
         var: onevnet_list.stdout_lines
 
-    - name: Print Sunstone URL
+    - name: Print FireEdge URL
       ansible.builtin.debug:
-        msg: "OpenNebula Sunstone UI: http://{{ homelab_ip }}:9869"
+        msg: "OpenNebula FireEdge UI: http://{{ homelab_ip }}:2616"
