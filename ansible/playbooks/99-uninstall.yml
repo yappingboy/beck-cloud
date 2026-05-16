@@ -272,7 +272,22 @@
           changed_when: false
           failed_when: false
 
-    # ── 10. libvirt ─────────────────────────────────────────────────────────
+    # ── 10. ZFS pool and packages ───────────────────────────────────────────
+    - name: Export (unmount) ZFS pool
+      ansible.builtin.command: zpool export -f {{ zfs_pool_name }}
+      failed_when: false
+      changed_when: true
+
+    - name: Remove ZFS packages
+      ansible.builtin.dnf:
+        name:
+          - zfs
+          - zfs-dkms
+        state: absent
+        autoremove: true
+      failed_when: false
+
+    # ── 11. libvirt ─────────────────────────────────────────────────────────
     - name: Stop and disable libvirtd
       ansible.builtin.systemd:
         name: libvirtd
@@ -280,7 +295,7 @@
         enabled: false
       failed_when: false
 
-    # ── 11. firewalld reset ─────────────────────────────────────────────────
+    # ── 12. firewalld reset ─────────────────────────────────────────────────
     - name: Reset firewalld to defaults
       ansible.builtin.shell: |
         firewall-cmd --reload
@@ -289,7 +304,7 @@
       failed_when: false
       changed_when: true
 
-    # ── 12. Sysctls and kernel modules (revert 03-harden.yml + 00-prereqs.yml) ─
+    # ── 13. Sysctls and kernel modules (revert 03-harden.yml + 00-prereqs.yml) ─
     - name: Remove kernel modules persistence file
       ansible.builtin.file:
         path: /etc/modules-load.d/beck-cloud.conf
@@ -316,7 +331,7 @@
       failed_when: false
 
 
-    # ── 12b. SSH hardening + swap revert (opt-in via revert_hardening=true) ──
+    # ── 13b. SSH hardening + swap revert (opt-in via revert_hardening=true) ──
     # SSH config and swap removal are kept by default because reverting them
     # mid-session can either lock you out (SSH) or leave the host in a
     # K8s-incompatible state if you redeploy. Flip the flag when you really
@@ -360,7 +375,7 @@
           failed_when: false
           when: swapfile_stat.stat.exists
 
-    # ── 13. dnf packages (optional) ─────────────────────────────────────────
+    # ── 14. dnf packages (optional) ─────────────────────────────────────────
     - name: Remove host packages installed by 00-prereqs.yml
       when: remove_packages | bool
       ansible.builtin.dnf:

@@ -1,0 +1,232 @@
+---
+# 01-zfs.yml — Install OpenZFS and build the 'tank' RAIDZ1 pool
+#
+# AlmaLinux 9 — ZFS via the OpenZFS project EPEL repo (DKMS build).
+# Run this BEFORE 02-opennebula.yml so the datastores dataset is mounted
+# before OpenNebula starts.
+#
+# Discovery: all /dev/nvme*n1 devices except the one hosting root (/).
+# Topology:  RAIDZ1 — requires >= 3 data drives.
+#
+# Datasets created:
+#   tank/datastores  →  /var/lib/one/datastores   (OpenNebula VM images)
+#   tank/media       →  /mnt/tank/media            (bulk media library)
+#   tank/downloads   →  /mnt/tank/downloads        (torrent staging area)
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-zfs.yml
+
+- name: Install ZFS and build tank pool
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    zfs_pool_name: tank
+    zfs_datasets:
+      - name: datastores
+        mountpoint: /var/lib/one/datastores
+        recordsize: "64K"     # optimal for VM disk images
+        owner: oneadmin
+        group: oneadmin
+      - name: media
+        mountpoint: /mnt/tank/media
+        recordsize: "1M"      # optimal for large media files
+        owner: root
+        group: root
+      - name: downloads
+        mountpoint: /mnt/tank/downloads
+        recordsize: "1M"
+        owner: root
+        group: root
+
+  tasks:
+    # ── Install OpenZFS ───────────────────────────────────────────────────────
+    - name: Install EPEL release
+      ansible.builtin.dnf:
+        name: epel-release
+        state: present
+
+    - name: Add OpenZFS project repository
+      ansible.builtin.dnf:
+        name: "https://zfsonlinux.org/epel/zfs-release-2-3.el9.noarch.rpm"
+        state: present
+        disable_gpg_check: true
+
+    - name: Install kernel-devel and kernel-headers (required by DKMS)
+      ansible.builtin.dnf:
+        name:
+          - "kernel-devel-{{ ansible_kernel }}"
+          - "kernel-headers-{{ ansible_kernel }}"
+        state: present
+
+    - name: Install ZFS utilities and DKMS module
+      ansible.builtin.dnf:
+        name:
+          - zfs
+          - zfs-dkms
+        state: present
+        enablerepo: zfs
+
+    - name: Wait for DKMS to build the ZFS module (up to 5 min)
+      ansible.builtin.shell: |
+        for i in $(seq 1 30); do
+          dkms status zfs 2>/dev/null | grep -q "installed" && exit 0
+          sleep 10
+        done
+        exit 1
+      changed_when: false
+
+    - name: Load ZFS kernel module
+      community.general.modprobe:
+        name: zfs
+        state: present
+
+    - name: Persist ZFS module across reboots
+      ansible.builtin.lineinfile:
+        path: /etc/modules-load.d/beck-cloud.conf
+        line: zfs
+        create: false
+
+    - name: Enable ZFS systemd services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        enabled: true
+        state: started
+        daemon_reload: true
+      loop:
+        - zfs-import-cache.service
+        - zfs-mount.service
+      failed_when: false
+
+    # ── Discover data drives ──────────────────────────────────────────────────
+    - name: Determine OS root block device
+      ansible.builtin.shell: |
+        lsblk -no pkname "$(findmnt -n -o SOURCE /)" | head -1
+      register: os_disk_raw
+      changed_when: false
+
+    - name: List all NVMe namespace devices
+      ansible.builtin.shell: |
+        ls /dev/nvme*n1 2>/dev/null | sort
+      register: all_nvme_raw
+      changed_when: false
+      failed_when: false
+
+    - name: Build data drive list (all NVMe except OS drive)
+      ansible.builtin.set_fact:
+        zfs_data_drives: >-
+          {{ all_nvme_raw.stdout_lines
+             | reject('search', os_disk_raw.stdout | trim)
+             | list }}
+
+    - name: Show selected data drives
+      ansible.builtin.debug:
+        msg: >-
+          OS drive: /dev/{{ os_disk_raw.stdout | trim }} (excluded).
+          Data drives for {{ zfs_pool_name }}: {{ zfs_data_drives }}
+
+    - name: Assert RAIDZ1 requires at least 3 data drives
+      ansible.builtin.assert:
+        that: zfs_data_drives | length >= 3
+        fail_msg: >-
+          RAIDZ1 needs >= 3 data drives; found {{ zfs_data_drives | length }}
+          ({{ zfs_data_drives }}). Check that non-OS NVMe drives are present
+          and visible to the OS.
+
+    # ── Create pool ───────────────────────────────────────────────────────────
+    - name: Check if pool already exists
+      ansible.builtin.command: zpool status {{ zfs_pool_name }}
+      register: pool_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create RAIDZ1 pool
+      ansible.builtin.command: >
+        zpool create -f
+        -o ashift=12
+        -O compression=lz4
+        -O atime=off
+        -O xattr=sa
+        -O dnodesize=auto
+        -O mountpoint=/{{ zfs_pool_name }}
+        {{ zfs_pool_name }} raidz {{ zfs_data_drives | join(' ') }}
+      when: pool_check.rc != 0
+
+    # ── Create datasets ───────────────────────────────────────────────────────
+    - name: Check dataset existence
+      ansible.builtin.command: zfs list {{ zfs_pool_name }}/{{ item.name }}
+      register: dataset_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ zfs_datasets }}"
+      loop_control:
+        label: "{{ zfs_pool_name }}/{{ item.name }}"
+
+    # Stop ONE before mounting over /var/lib/one/datastores so open file
+    # handles don't block the mount.
+    - name: Stop OpenNebula services before mounting datastores dataset
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - opennebula
+        - opennebula-fireedge
+      failed_when: false
+
+    - name: Create ZFS dataset
+      ansible.builtin.command: >
+        zfs create
+        -o mountpoint={{ item.item.mountpoint }}
+        -o recordsize={{ item.item.recordsize }}
+        {{ zfs_pool_name }}/{{ item.item.name }}
+      when: item.rc != 0
+      loop: "{{ dataset_check.results }}"
+      loop_control:
+        label: "{{ zfs_pool_name }}/{{ item.item.name }}"
+
+    - name: Set dataset mountpoint ownership
+      ansible.builtin.file:
+        path: "{{ item.mountpoint }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        state: directory
+        mode: '0755'
+      loop: "{{ zfs_datasets }}"
+      loop_control:
+        label: "{{ item.mountpoint }}"
+
+    - name: Restart OpenNebula services after mount
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - opennebula
+        - opennebula-fireedge
+      failed_when: false
+
+  post_tasks:
+    - name: Print pool status
+      ansible.builtin.command: zpool status
+      register: pool_status
+      changed_when: false
+
+    - name: Print pool status output
+      ansible.builtin.debug:
+        var: pool_status.stdout_lines
+
+    - name: Print dataset list
+      ansible.builtin.command: zfs list
+      register: zfs_list
+      changed_when: false
+
+    - name: Print dataset list output
+      ansible.builtin.debug:
+        var: zfs_list.stdout_lines
+
+    - name: Print mount summary
+      ansible.builtin.debug:
+        msg:
+          - "tank/datastores → /var/lib/one/datastores (OpenNebula VM images, 64K records)"
+          - "tank/media      → /mnt/tank/media (bulk media, 1M records)"
+          - "tank/downloads  → /mnt/tank/downloads (torrent staging, 1M records)"
