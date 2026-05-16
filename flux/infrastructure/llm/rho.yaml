@@ -36,7 +36,7 @@ data:
 
     ## Environment
     - Bare metal hypervisor: becklab (172.16.0.7), Ubuntu 24.04, 128GB RAM
-    - Hypervisor layer: OpenNebula 7.2 (KVM, Sunstone UI at :9869)
+    - Hypervisor layer: OpenNebula 7.2 (KVM, FireEdge UI at :2616)
     - Storage: local-path provisioner (K3s built-in default StorageClass)
     - K3s cluster: server 192.168.100.10, worker 192.168.100.11
     - GitOps: Flux CD → github.com/yappingboy/beck-cloud (branch: main)
