@@ -52,12 +52,15 @@
         state: present
         disable_gpg_check: true
 
-    - name: Install kernel-devel and kernel-headers (required by DKMS)
-      ansible.builtin.dnf:
-        name:
-          - "kernel-devel-{{ ansible_kernel }}"
-          - "kernel-headers-{{ ansible_kernel }}"
-        state: present
+    - name: Install kernel-devel and kernel-headers matching running kernel
+      ansible.builtin.shell: |
+        KVER="$(uname -r)"
+        # elrepo kernels ship kernel-devel in elrepo-kernel repo; try that first.
+        # Fall back to unversioned install from standard repos (stock EL9 kernel).
+        dnf install -y --enablerepo=elrepo-kernel \
+          "kernel-devel-${KVER}" "kernel-headers-${KVER}" 2>/dev/null \
+        || dnf install -y kernel-devel kernel-headers
+      changed_when: true
 
     - name: Install ZFS utilities and DKMS module
       ansible.builtin.dnf:
