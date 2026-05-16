@@ -22,6 +22,8 @@ one_k3s_image_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-c
 one_k3s_keypair_pub: "~/.ssh/id_ed25519.pub"
 
 # OpenNebula VM definitions for K3s
+one_k3s_server_ip: "192.168.100.10"   # k3s-server VM IP (for firewalld port-forwards)
+
 one_k3s_vms:
   - name: k3s-server
     vcpus: 8

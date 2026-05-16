@@ -128,6 +128,36 @@
         state: enabled
         immediate: true
 
+    # ── Port-forward hypervisor public IP → K3s VMs ────────────────────────
+    # Lets kubectl and web browsers reach the cluster without a VPN.
+    # 6443  → k3s-server  (Kubernetes API)
+    # 80    → k3s-server  (HTTP ingress / Cilium Gateway)
+    # 443   → k3s-server  (HTTPS ingress / Cilium Gateway)
+    - name: Forward K3s API (6443) from hypervisor to k3s-server
+      ansible.builtin.command: >
+        firewall-cmd --permanent --zone=public
+        --add-forward-port=port=6443:proto=tcp:toport=6443:toaddr={{ one_k3s_server_ip }}
+      changed_when: true
+      failed_when: false
+
+    - name: Forward HTTP (80) from hypervisor to k3s-server
+      ansible.builtin.command: >
+        firewall-cmd --permanent --zone=public
+        --add-forward-port=port=80:proto=tcp:toport=80:toaddr={{ one_k3s_server_ip }}
+      changed_when: true
+      failed_when: false
+
+    - name: Forward HTTPS (443) from hypervisor to k3s-server
+      ansible.builtin.command: >
+        firewall-cmd --permanent --zone=public
+        --add-forward-port=port=443:proto=tcp:toport=443:toaddr={{ one_k3s_server_ip }}
+      changed_when: true
+      failed_when: false
+
+    - name: Reload firewalld to apply port forwards
+      ansible.builtin.command: firewall-cmd --reload
+      changed_when: true
+
   handlers:
     - name: restart sshd
       ansible.builtin.systemd:
