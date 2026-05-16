@@ -36,14 +36,9 @@
         var: onehost_check.stdout_lines
 
     # ── SSH public key on oneadmin ─────────────────────────────────────────
-    - name: Slurp ops_user SSH public key
-      ansible.builtin.slurp:
-        src: "{{ one_k3s_keypair_pub | expanduser }}"
-      register: ops_pubkey
-
     - name: Set SSH_PUBLIC_KEY on oneadmin user (uid 0)
       ansible.builtin.shell: |
-        oneuser update 0 <<< 'SSH_PUBLIC_KEY = "{{ ops_pubkey.content | b64decode | trim }}"'
+        oneuser update 0 <<< 'SSH_PUBLIC_KEY = "{{ lookup("file", one_k3s_keypair_pub | expanduser) }}"'
       environment: "{{ one_auth }}"
       changed_when: true
 
