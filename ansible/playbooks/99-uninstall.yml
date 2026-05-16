@@ -1,21 +1,21 @@
 ---
 # 99-uninstall.yml — Tear down the entire Beck Cloud deployment
 #
-# Reverses 00-prereqs.yml through 08-ai-sysadmin.yml. Designed to be safe by
-# default: only removes services/configuration. Destructive steps
-# (zero-filling disks, removing apt packages, reverting SSH hardening)
-# are opt-in via flags below.
+# AlmaLinux 9 — reverses 00-prereqs.yml through 08-ai-sysadmin.yml.
+# Designed to be safe by default: only removes services/configuration.
+# Destructive steps (zero-filling disks, removing dnf packages, reverting
+# SSH hardening) are opt-in via flags below.
 #
 # Tiers (least → most destructive):
 #   Default              Stop services, destroy OpenNebula VMs/hosts/networks,
 #                        uninstall OpenNebula packages, tear down LVM volumes,
-#                        loop devices, and overlay mounts. Resets UFW and
+#                        loop devices, and overlay mounts. Resets firewalld and
 #                        sysctls. Leaves SSH hardening and fstab swap alone.
 #   -e wipe_disks=true   After cleanup, runs `wipefs -a` + 100MB zero-fill on
 #                        every non-OS block device. Required if you want to
 #                        repurpose drives for a fresh install.
 #   -e remove_packages=true
-#                        apt-remove the packages installed by 00-prereqs.yml
+#                        dnf-remove the packages installed by 00-prereqs.yml
 #                        (KVM, libvirt, etc.). Leaves the base OS intact.
 #   -e revert_hardening=true
 #                        Also revert SSH config and re-add /swapfile to fstab.
@@ -48,7 +48,7 @@
           This playbook will destroy the Beck Cloud deployment.
           Re-run with -e confirm_uninstall=true to proceed.
           Add -e wipe_disks=true to zero-fill non-OS disks.
-          Add -e remove_packages=true to apt-remove KVM packages.
+          Add -e remove_packages=true to dnf-remove KVM packages.
 
     - name: Show what will be destroyed
       ansible.builtin.debug:
@@ -58,11 +58,11 @@
           - "Remove OpenNebula hosts and virtual networks:    YES"
           - "Stop + uninstall OpenNebula packages:            YES"
           - "Remove OpenNebula state dirs:                    YES"
-          - "Remove netplan bridge config (one0):             YES"
+          - "Remove nmcli bridge (one0):                      YES"
           - "Tear down LVM volumes, loop devices, overlays:   YES"
-          - "Revert sysctls, disable UFW:                     YES"
+          - "Revert sysctls, reset firewalld:                 YES"
           - "Zero-fill non-OS disks:                          {{ wipe_disks | bool }}"
-          - "apt-remove host packages:                        {{ remove_packages | bool }}"
+          - "dnf-remove host packages:                        {{ remove_packages | bool }}"
           - "Revert SSH hardening + restore swap:             {{ revert_hardening | bool }}"
 
   tasks:
@@ -131,7 +131,7 @@
       failed_when: false
 
     - name: Remove OpenNebula packages
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name:
           - opennebula
           - opennebula-sunstone
@@ -140,7 +140,6 @@
           - opennebula-flow
           - opennebula-node-kvm
         state: absent
-        purge: true
         autoremove: true
       failed_when: false
 
@@ -161,14 +160,9 @@
         remove: true
       failed_when: false
 
-    # ── 6. Remove netplan bridge config + one0 interface ───────────────────
-    - name: Remove OpenNebula netplan bridge config
-      ansible.builtin.file:
-        path: /etc/netplan/60-opennebula.yaml
-        state: absent
-
-    - name: Apply netplan to remove one0 bridge
-      ansible.builtin.command: netplan apply
+    # ── 6. Remove one0 NetworkManager bridge ──────────────────────────────
+    - name: Delete one0 NetworkManager connection (nmcli)
+      ansible.builtin.shell: nmcli con delete one0 2>/dev/null || true
       changed_when: true
       failed_when: false
 
@@ -289,16 +283,14 @@
         enabled: false
       failed_when: false
 
-    # ── 11. UFW reset ───────────────────────────────────────────────────────
-    - name: Reset UFW to defaults
-      community.general.ufw:
-        state: reset
+    # ── 11. firewalld reset ─────────────────────────────────────────────────
+    - name: Reset firewalld to defaults
+      ansible.builtin.shell: |
+        firewall-cmd --reload
+        systemctl stop firewalld
+        systemctl disable firewalld
       failed_when: false
-
-    - name: Disable UFW
-      community.general.ufw:
-        state: disabled
-      failed_when: false
+      changed_when: true
 
     # ── 12. Sysctls and kernel modules (revert 03-harden.yml + 00-prereqs.yml) ─
     - name: Remove kernel modules persistence file
@@ -326,12 +318,6 @@
         - { key: 'vm.nr_hugepages',                       value: '0' }
       failed_when: false
 
-    - name: Restore UFW DEFAULT_FORWARD_POLICY to DROP (UFW default)
-      ansible.builtin.lineinfile:
-        path: /etc/default/ufw
-        regexp: '^DEFAULT_FORWARD_POLICY='
-        line: 'DEFAULT_FORWARD_POLICY="DROP"'
-      failed_when: false
 
     # ── 12b. SSH hardening + swap revert (opt-in via revert_hardening=true) ──
     # SSH config and swap removal are kept by default because reverting them
@@ -356,7 +342,7 @@
 
         - name: Restart sshd
           ansible.builtin.systemd:
-            name: ssh
+            name: sshd
             state: restarted
 
         - name: Check if a /swapfile exists on disk
@@ -377,21 +363,19 @@
           failed_when: false
           when: swapfile_stat.stat.exists
 
-    # ── 13. Apt packages (optional) ─────────────────────────────────────────
+    # ── 13. dnf packages (optional) ─────────────────────────────────────────
     - name: Remove host packages installed by 00-prereqs.yml
       when: remove_packages | bool
-      ansible.builtin.apt:
+      ansible.builtin.dnf:
         name:
-          - qemu-system-x86
-          - libvirt-daemon-system
+          - qemu-kvm
+          - libvirt
           - virtinst
-          - cpu-checker
-          - open-iscsi
+          - iscsi-initiator-utils
           - cryptsetup
           - bridge-utils
-          - iptables-persistent
+          - iptables-services
         state: absent
-        purge: true
         autoremove: true
 
   post_tasks:
@@ -406,6 +390,6 @@
           - "  losetup -l               # should be empty"
           - "  grep overlay /proc/mounts # should be empty"
           - "  systemctl status libvirtd # stopped"
-          - "  sudo ufw status           # inactive"
+          - "  firewall-cmd --state       # not running"
           - "  ip a show one0            # should not exist"
           - "If you plan to redeploy: reboot before re-running 00-prereqs.yml."

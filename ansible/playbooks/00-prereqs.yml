@@ -2,17 +2,17 @@
 # 00-prereqs.yml — Minimal prerequisites that must exist before any of the
 # rest of the stack runs.
 #
+# AlmaLinux 9 / OpenNebula CE 7.2 — packages already installed by CE ISO.
 # Intentionally minimal: NO firewall, NO sysctl tuning, NO SSH hardening.
 # Those land in 03-harden.yml after OpenNebula is up.
 #
 # What lives here:
-#   • apt update + dist-upgrade
-#   • Packages needed by every later playbook (KVM, libvirt, ZFS, NFS, tools,
-#     bridge-utils, iptables-persistent)
-#   • KVM hardware check
+#   • dnf update
+#   • Extra tooling packages (KVM/libvirt/qemu already provided by CE ISO)
+#   • KVM hardware check (virt-host-validate)
 #   • Kernel modules required by the *host* (NVMe, vhost_net)
 #   • Disable swap (required by Kubernetes)
-#   • Chrony NTP (snap store requires accurate time)
+#   • Chrony NTP
 #   • Enable libvirtd
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/00-prereqs.yml
@@ -23,48 +23,33 @@
   gather_facts: true
 
   tasks:
-    - name: Update apt cache and upgrade packages
-      ansible.builtin.apt:
+    - name: Update all packages via dnf
+      ansible.builtin.dnf:
+        name: '*'
+        state: latest
         update_cache: true
-        upgrade: dist
-        autoremove: true
-        autoclean: true
-        cache_valid_time: 3600
 
-    - name: Install system packages
-      ansible.builtin.apt:
+    - name: Install supplementary system packages
+      ansible.builtin.dnf:
         name:
-          - curl
-          - wget
-          - gnupg
-          - ca-certificates
           - jq
           - htop
           - nvme-cli
           - smartmontools
           - net-tools
-          - iproute2
+          - iproute
           - chrony
-          # KVM/QEMU (OpenNebula hypervisor)
-          # qemu-kvm is a virtual package on Ubuntu 24.04; use the concrete provider
-          - qemu-system-x86
-          - libvirt-daemon-system
-          - virtinst
-          - cpu-checker
-          # Bridge and firewall tools (required by OpenNebula node + NAT)
+          - curl
+          - wget
           - bridge-utils
-          - iptables-persistent
-          # Misc tools
-          - open-iscsi
-          - cryptsetup
+          - iptables-services
         state: present
-        update_cache: true
 
     - name: Verify KVM hardware support
-      ansible.builtin.command: kvm-ok
+      ansible.builtin.command: virt-host-validate qemu
       register: kvm_ok
       changed_when: false
-      failed_when: "'KVM acceleration can be used' not in kvm_ok.stdout"
+      failed_when: "'FAIL' in kvm_ok.stdout and 'WARN' not in kvm_ok.stdout"
 
     # Only host-side modules: NVMe (storage), vhost_net (KVM).
     # overlay + br_netfilter are K8s requirements and belong on the K3s VMs
@@ -104,9 +89,15 @@
           driftfile /var/lib/chrony/drift
           makestep 1.0 3
           rtcsync
-        dest: /etc/chrony/chrony.conf
+        dest: /etc/chrony.conf
         mode: '0644'
-      notify: restart chrony
+      notify: restart chronyd
+
+    - name: Enable and start chronyd
+      ansible.builtin.systemd:
+        name: chronyd
+        enabled: true
+        state: started
 
     - name: Enable and start libvirtd
       ansible.builtin.systemd:
@@ -115,7 +106,7 @@
         state: started
 
   handlers:
-    - name: restart chrony
+    - name: restart chronyd
       ansible.builtin.systemd:
-        name: chrony
+        name: chronyd
         state: restarted
