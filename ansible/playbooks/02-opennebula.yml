@@ -101,6 +101,12 @@
       when: nmcli_check.rc != 0
 
     # ── IP forwarding + firewalld masquerade ──────────────────────────────
+    - name: Enable and start firewalld
+      ansible.builtin.systemd:
+        name: firewalld
+        enabled: true
+        state: started
+
     - name: Enable IP forwarding via sysctl
       ansible.posix.sysctl:
         name: net.ipv4.ip_forward
