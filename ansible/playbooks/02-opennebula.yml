@@ -69,10 +69,16 @@
       when: not oneadmin_ssh_key.stat.exists
       changed_when: true
 
-    - name: Add localhost and 127.0.0.1 to oneadmin known_hosts
+    - name: Populate oneadmin known_hosts (localhost, IP, and AIO hostname)
       ansible.builtin.shell: |
-        su oneadmin -s /bin/bash -c "ssh-keyscan -H localhost >> /var/lib/one/.ssh/known_hosts && ssh-keyscan -H 127.0.0.1 >> /var/lib/one/.ssh/known_hosts"
-      when: not oneadmin_ssh_key.stat.exists
+        set -e
+        KNOWN=/var/lib/one/.ssh/known_hosts
+        for target in localhost 127.0.0.1 "{{ homelab_hostname }}" "{{ homelab_ip }}"; do
+          ssh-keyscan -H "$target" >> "$KNOWN" 2>/dev/null || true
+        done
+        sort -u "$KNOWN" -o "$KNOWN"
+        chown oneadmin:oneadmin "$KNOWN"
+        chmod 600 "$KNOWN"
       changed_when: true
 
     # ── oneadmin group membership ──────────────────────────────────────────
