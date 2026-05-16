@@ -1,18 +1,16 @@
-# StorageClasses are managed by 05-k3s.yml, not Flux.
-# The ceph-rbd StorageClass requires the MicroCeph cluster FSID at creation
-# time, which is a runtime value not available in Git.
+# Storage backend note
+# StorageClass: local-path (K3s built-in default)
+# Provisioner: rancher.io/local-path
+# Managed by: K3s (enabled by default when local-storage is not in --disable list)
 #
-# Created by the playbook:
-#   ceph-rbd  (default) — Ceph RBD block storage via ceph-csi-rbd
-#                         pool: k3s-rbd, reclaimPolicy: Retain
-#
-# This ConfigMap exists so the configs/ kustomization has a valid resource.
+# For distributed storage, consider adding Longhorn:
+#   helm install longhorn longhorn/longhorn -n longhorn-system
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: storage-config
   namespace: kube-system
 data:
-  backend: ceph-rbd
-  provisioner: rbd.csi.ceph.com
-  managed-by: ansible-05-k3s.yml
+  backend: local-path
+  provisioner: rancher.io/local-path
+  managed-by: k3s-built-in
