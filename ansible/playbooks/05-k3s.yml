@@ -213,6 +213,7 @@
             --set hubble.ui.enabled=true \
             --set operator.replicas=1 \
             --set l2announcements.enabled=true \
+            --set cni.confPath=/var/lib/rancher/k3s/agent/etc/cni/net.d \
             && exit 0
 
           echo "Helm failed, waiting 30s before retry..."
