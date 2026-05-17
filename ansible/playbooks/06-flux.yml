@@ -65,6 +65,45 @@
       register: age_public_key
       changed_when: false
 
+    - name: Wait for all cluster nodes to be Ready before bootstrap (up to 5 min)
+      ansible.builtin.shell: |
+        for i in $(seq 1 30); do
+          total=$(kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes \
+            --no-headers 2>/dev/null | wc -l)
+          not_ready=$(kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes \
+            --no-headers 2>/dev/null | grep -vc ' Ready' || true)
+          [ "$total" -gt 0 ] && [ "$not_ready" -eq 0 ] && exit 0
+          echo "Nodes: ${total} total, ${not_ready} not ready — waiting..."
+          sleep 10
+        done
+        echo "Nodes still not all Ready after 5 min:"
+        kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>&1 || true
+        exit 1
+      changed_when: false
+
+    - name: Check if Flux is already bootstrapped and healthy
+      ansible.builtin.command: flux check
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: flux_already_healthy
+      failed_when: false
+      changed_when: false
+
+    - name: Bootstrap Flux to GitHub
+      when: flux_already_healthy.rc != 0
+      ansible.builtin.shell: |
+        flux bootstrap github \
+          --owner=yappingboy \
+          --repository=beck-cloud \
+          --branch={{ flux_repo_branch }} \
+          --path=flux \
+          --personal \
+          --timeout=20m
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+        GITHUB_TOKEN: "{{ github_token }}"
+      changed_when: true
+
     - name: Create sops-age K8s secret for Flux
       ansible.builtin.shell: |
         kubectl create secret generic sops-age \
@@ -73,19 +112,6 @@
           --dry-run=client -o yaml | kubectl apply -f -
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      changed_when: true
-
-    - name: Bootstrap Flux to GitHub
-      ansible.builtin.shell: |
-        flux bootstrap github \
-          --owner=yappingboy \
-          --repository=beck-cloud \
-          --branch={{ flux_repo_branch }} \
-          --path=flux \
-          --personal
-      environment:
-        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-        GITHUB_TOKEN: "{{ github_token }}"
       changed_when: true
 
   post_tasks:

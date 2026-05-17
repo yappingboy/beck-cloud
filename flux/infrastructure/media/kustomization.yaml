@@ -4,6 +4,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvcs.yaml
+  - secret-gluetun.yaml
+  - secret-recyclarr.yaml
   - jellyfin.yaml
   - jellyseerr.yaml
   - sonarr.yaml

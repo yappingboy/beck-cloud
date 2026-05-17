@@ -5,6 +5,9 @@ namespace: identity
 
 resources:
   - namespace.yaml
+  - secret-lldap.yaml
+  - secret-keycloak.yaml
+  - secret-oauth2-proxy.yaml
   - lldap.yaml
   - keycloak.yaml
   - oauth2-proxy.yaml

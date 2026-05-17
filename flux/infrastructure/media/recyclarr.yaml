@@ -23,6 +23,16 @@ spec:
               env:
                 - name: RECYCLARR_CONFIG_FILE
                   value: /recyclarr/config/recyclarr.yml
+                - name: SONARR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: recyclarr-secrets
+                      key: sonarr-api-key
+                - name: RADARR_API_KEY
+                  valueFrom:
+                    secretKeyRef:
+                      name: recyclarr-secrets
+                      key: radarr-api-key
           restartPolicy: Never
           volumes:
             - name: config
@@ -42,7 +52,7 @@ data:
     sonarr:
       sonarr:
         base_url: http://sonarr.media:8989
-        api_key: ${SONARR_API_KEY}
+        api_key: !env_var SONARR_API_KEY
         delete_old_custom_formats: true
         replace_existing_custom_formats: true
         include:
@@ -56,7 +66,7 @@ data:
     radarr:
       radarr:
         base_url: http://radarr.media:7878
-        api_key: ${RADARR_API_KEY}
+        api_key: !env_var RADARR_API_KEY
         delete_old_custom_formats: true
         replace_existing_custom_formats: true
         include:

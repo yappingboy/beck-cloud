@@ -100,8 +100,10 @@
       failed_when: false
 
     # ── 3. Network cleanup — remove k3s-net vnet ───────────────────────────
-    - name: Remove k3s-net virtual network
+    - name: Remove k3s virtual networks
       ansible.builtin.shell: |
+        onevnet delete k3s-int 2>/dev/null || true
+        onevnet delete k3s-ext 2>/dev/null || true
         onevnet delete k3s-net 2>/dev/null || true
       environment:
         ONE_AUTH: /var/lib/one/.one/one_auth
@@ -158,8 +160,16 @@
       failed_when: false
 
     # ── 6. Remove one0 NetworkManager bridge ──────────────────────────────
-    - name: Delete one0 NetworkManager connection (nmcli)
-      ansible.builtin.shell: nmcli con delete one0 2>/dev/null || true
+    - name: Remove br0 bridge and restore physical NIC connection
+      ansible.builtin.shell: |
+        # Re-enable the original NIC connection before deleting the bridge
+        # so the hypervisor keeps network access
+        NIC_CONN=$(nmcli -t -f NAME,DEVICE,TYPE con show | awk -F: '$3=="ethernet" {print $1; exit}')
+        nmcli con modify "$NIC_CONN" autoconnect yes 2>/dev/null || true
+        nmcli con up "$NIC_CONN" 2>/dev/null || true
+        nmcli con delete br0-slave 2>/dev/null || true
+        nmcli con delete br0       2>/dev/null || true
+        nmcli con delete one0      2>/dev/null || true
       changed_when: true
       failed_when: false
 
@@ -278,13 +288,14 @@
       failed_when: false
       changed_when: true
 
-    - name: Remove ZFS packages
-      ansible.builtin.dnf:
-        name:
-          - zfs
-          - zfs-dkms
-        state: absent
-        autoremove: true
+    - name: Uninstall ZFS built from source
+      ansible.builtin.shell: |
+        if [ -f /usr/local/src/zfs/Makefile ]; then
+          cd /usr/local/src/zfs && make uninstall 2>/dev/null || true
+        fi
+        rmmod zfs 2>/dev/null || true
+        rm -rf /usr/local/src/zfs
+      changed_when: true
       failed_when: false
 
     # ── 11. libvirt ─────────────────────────────────────────────────────────

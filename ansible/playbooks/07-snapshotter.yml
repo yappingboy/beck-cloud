@@ -9,7 +9,7 @@
   run_once: true
 
   vars:
-    snapshotter_version: "release-8.0.0"
+    snapshotter_version: "v8.0.0"
     crd_base: "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/{{ snapshotter_version }}/client/config/crd"
 
   tasks:

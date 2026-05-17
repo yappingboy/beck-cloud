@@ -88,35 +88,80 @@
         groups: kvm,qemu
         append: true
 
-    # ── Bridge network (one0) via NetworkManager / nmcli ──────────────────
-    - name: Check if one0 NetworkManager connection already exists
+    # ── Internal bridge (one0) — isolated, NAT masqueraded ────────────────
+    # All VMs get a NIC here. Workers use this for kubelet / control-plane
+    # traffic. The hypervisor masquerades this subnet to the internet so
+    # workers can reach package repos and container registries.
+    - name: Check if one0 bridge already exists
       ansible.builtin.command: nmcli con show one0
-      register: nmcli_check
+      register: one0_check
       failed_when: false
       changed_when: false
 
-    - name: Create one0 bridge connection
-      ansible.builtin.command: nmcli con add type bridge con-name one0 ifname one0 autoconnect yes
-      when: nmcli_check.rc != 0
+    - name: Create one0 internal bridge
+      ansible.builtin.command: >
+        nmcli con add type bridge con-name one0 ifname one0
+        bridge.stp no autoconnect yes
+      when: one0_check.rc != 0
 
-    - name: Set static IP on one0 bridge
+    - name: Set static IP on one0
       ansible.builtin.command: >
         nmcli con modify one0
         ipv4.method manual
-        ipv4.addresses "{{ one_vm_gateway }}/24"
+        ipv4.addresses "{{ one_int_gateway }}/24"
         ipv4.gateway ""
         ipv4.dns ""
-      when: nmcli_check.rc != 0
+      when: one0_check.rc != 0
 
-    - name: Disable STP on one0 bridge
-      ansible.builtin.command: nmcli con modify one0 bridge.stp no
-      when: nmcli_check.rc != 0
-
-    - name: Bring up one0 bridge
+    - name: Bring up one0
       ansible.builtin.command: nmcli con up one0
-      when: nmcli_check.rc != 0
+      when: one0_check.rc != 0
 
-    # ── IP forwarding + firewalld masquerade ──────────────────────────────
+    # ── External bridge (br0) — bridged over physical NIC, direct LAN ─────
+    # Only the k3s-server gets a NIC here. Workers reach the internet via
+    # the hypervisor's masquerade on one0 instead.
+    #
+    # WARNING: reconfigures the active NIC. Atomically executed via nmcli;
+    # expect a 1-3s blip. Override the detected NIC with:
+    #   -e one_physical_nic_override=ens3
+    - name: Detect physical NIC from default route
+      ansible.builtin.shell: |
+        ip route show default | awk '/default/ {print $5; exit}'
+      register: physical_nic_detected
+      changed_when: false
+
+    - name: Set physical NIC fact
+      ansible.builtin.set_fact:
+        one_physical_nic: "{{ one_physical_nic_override | default(physical_nic_detected.stdout | trim) }}"
+
+    - name: Check if br0 external bridge already exists
+      ansible.builtin.command: nmcli con show br0
+      register: br0_check
+      failed_when: false
+      changed_when: false
+
+    - name: Create br0 external bridge over physical NIC
+      ansible.builtin.shell: |
+        set -e
+        NIC="{{ one_physical_nic }}"
+        NIC_CONN=$(nmcli -t -f NAME,DEVICE con show --active | awk -F: -v d="$NIC" '$2==d {print $1; exit}')
+        NIC_ADDR=$(nmcli -t -f IP4.ADDRESS con show "$NIC_CONN" | cut -d: -f2 | head -1)
+        NIC_GW=$(nmcli   -t -f IP4.GATEWAY con show "$NIC_CONN" | cut -d: -f2 | head -1)
+        NIC_DNS=$(nmcli  -t -f IP4.DNS     con show "$NIC_CONN" | cut -d: -f2 | tr '\n' ' ')
+        nmcli con add type bridge       con-name br0       ifname br0 \
+          bridge.stp no autoconnect yes \
+          ipv4.method manual \
+          ipv4.addresses "$NIC_ADDR" \
+          ipv4.gateway   "$NIC_GW" \
+          ipv4.dns       "${NIC_DNS:-8.8.8.8}"
+        nmcli con add type bridge-slave con-name br0-slave ifname "$NIC" \
+          master br0 autoconnect yes
+        nmcli con down "$NIC_CONN" || true
+        nmcli con up   br0-slave
+        nmcli con up   br0
+      when: br0_check.rc != 0
+
+    # ── IP forwarding + NAT for internal VMs ──────────────────────────────
     - name: Enable and start firewalld
       ansible.builtin.systemd:
         name: firewalld
@@ -131,24 +176,26 @@
         state: present
         reload: true
 
-    - name: Enable masquerade in public zone (permanent)
+    - name: Masquerade one0 traffic so workers reach the internet
       ansible.builtin.command: firewall-cmd --permanent --zone=public --add-masquerade
       changed_when: true
       failed_when: false
 
-    - name: Allow FORWARD traffic in from one0
+    - name: Allow FORWARD from one0 (worker outbound)
       ansible.builtin.command: >
-        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i one0 -j ACCEPT
+        firewall-cmd --permanent --direct
+        --add-rule ipv4 filter FORWARD 0 -i one0 -j ACCEPT
       changed_when: true
       failed_when: false
 
-    - name: Allow FORWARD traffic out to one0
+    - name: Allow FORWARD to one0 (return traffic)
       ansible.builtin.command: >
-        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -o one0 -j ACCEPT
+        firewall-cmd --permanent --direct
+        --add-rule ipv4 filter FORWARD 0 -o one0 -j ACCEPT
       changed_when: true
       failed_when: false
 
-    - name: Reload firewalld to apply rules
+    - name: Reload firewalld
       ansible.builtin.command: firewall-cmd --reload
       changed_when: true
 
@@ -197,38 +244,70 @@
       failed_when: false
       when: onehost_check.rc != 0
 
-    # ── Virtual network k3s-net ────────────────────────────────────────────
-    - name: Check if k3s-net vnet already exists
-      ansible.builtin.command: onevnet show k3s-net
+    # ── Virtual networks ───────────────────────────────────────────────────
+    - name: Check if k3s-int vnet already exists
+      ansible.builtin.command: onevnet show k3s-int
       environment:
         ONE_AUTH: /var/lib/one/.one/one_auth
-      register: onevnet_check
+      register: k3s_int_check
       failed_when: false
       changed_when: false
 
-    - name: Write k3s-net vnet template
+    - name: Write k3s-int vnet template (internal, isolated, NAT)
       ansible.builtin.copy:
         content: |
-          NAME          = "k3s-net"
+          NAME          = "k3s-int"
           VN_MAD        = "bridge"
-          BRIDGE        = "one0"
+          BRIDGE        = "{{ one_int_bridge }}"
           DNS           = "{{ one_dns_servers | join(' ') }}"
-          GATEWAY       = "{{ one_vm_gateway }}"
+          GATEWAY       = "{{ one_int_gateway }}"
           NETWORK_MASK  = "255.255.255.0"
           AR = [
             TYPE = "IP4",
-            IP   = "192.168.100.10",
+            IP   = "{{ one_int_ar_start }}",
             SIZE = "20"
           ]
-        dest: /tmp/k3s-net.one
+        dest: /tmp/k3s-int.one
         mode: '0644'
-      when: onevnet_check.rc != 0
+      when: k3s_int_check.rc != 0
 
-    - name: Create k3s-net virtual network
-      ansible.builtin.command: onevnet create /tmp/k3s-net.one
+    - name: Create k3s-int virtual network
+      ansible.builtin.command: onevnet create /tmp/k3s-int.one
       environment:
         ONE_AUTH: /var/lib/one/.one/one_auth
-      when: onevnet_check.rc != 0
+      when: k3s_int_check.rc != 0
+
+    - name: Check if k3s-ext vnet already exists
+      ansible.builtin.command: onevnet show k3s-ext
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      register: k3s_ext_check
+      failed_when: false
+      changed_when: false
+
+    - name: Write k3s-ext vnet template (external, LAN bridge)
+      ansible.builtin.copy:
+        content: |
+          NAME          = "k3s-ext"
+          VN_MAD        = "bridge"
+          BRIDGE        = "{{ one_ext_bridge }}"
+          DNS           = "{{ one_dns_servers | join(' ') }}"
+          GATEWAY       = "{{ one_ext_gateway }}"
+          NETWORK_MASK  = "255.255.0.0"
+          AR = [
+            TYPE = "IP4",
+            IP   = "{{ one_ext_ar_start }}",
+            SIZE = "10"
+          ]
+        dest: /tmp/k3s-ext.one
+        mode: '0644'
+      when: k3s_ext_check.rc != 0
+
+    - name: Create k3s-ext virtual network
+      ansible.builtin.command: onevnet create /tmp/k3s-ext.one
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      when: k3s_ext_check.rc != 0
 
   post_tasks:
     - name: List OpenNebula hosts
