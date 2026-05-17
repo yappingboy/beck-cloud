@@ -65,16 +65,6 @@
       register: age_public_key
       changed_when: false
 
-    - name: Create sops-age K8s secret for Flux
-      ansible.builtin.shell: |
-        kubectl create secret generic sops-age \
-          --namespace=flux-system \
-          --from-file=age.agekey={{ age_key_path }} \
-          --dry-run=client -o yaml | kubectl apply -f -
-      environment:
-        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
-      changed_when: true
-
     - name: Bootstrap Flux to GitHub
       ansible.builtin.shell: |
         flux bootstrap github \
@@ -86,6 +76,16 @@
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         GITHUB_TOKEN: "{{ github_token }}"
+      changed_when: true
+
+    - name: Create sops-age K8s secret for Flux
+      ansible.builtin.shell: |
+        kubectl create secret generic sops-age \
+          --namespace=flux-system \
+          --from-file=age.agekey={{ age_key_path }} \
+          --dry-run=client -o yaml | kubectl apply -f -
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
       changed_when: true
 
   post_tasks:
