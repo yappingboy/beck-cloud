@@ -46,6 +46,14 @@ spec:
               value: America/New_York
             - name: DOT
               value: "on"
+            # Allow the kubelet to reach qbit's WebUI through gluetun's firewall
+            # for startup/readiness probes, and to let qbit respond back to the
+            # cluster/node networks (K3s defaults: pods 10.42/16, services 10.43/16,
+            # nodes 192.168.100/24).
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080"
+            - name: FIREWALL_OUTBOUND_SUBNETS
+              value: "10.42.0.0/16,10.43.0.0/16,192.168.100.0/24"
           ports:
             - containerPort: 8000
               name: gluetun-ctrl
