@@ -1,0 +1,140 @@
+---
+# 09-backup-media-nfs.yml — Mount external backup drive + export via NFS
+#
+# Prerequisites:
+#   - External drive physically attached to the hypervisor
+#   - Drive UUID known (find it: blkid /dev/sdX)
+#
+# What this does:
+#   • Installs nfs-utils on the hypervisor
+#   • Mounts the external drive at /mnt/backup-media (by UUID, persistent)
+#   • Exports /mnt/backup-media to the K3s VM network via NFS
+#   • Opens firewalld NFS ports
+#
+# Run:
+#   ansible-playbook -i inventory/hosts.yml playbooks/09-backup-media-nfs.yml \
+#     -e backup_drive_uuid=<UUID> \
+#     -e backup_drive_fstype=<ext4|xfs|ntfs-3g>
+#
+# The UUID and fstype are REQUIRED. Get them on the hypervisor with:
+#   lsblk -f
+#   blkid /dev/sdX
+
+- name: Mount backup media drive and export via NFS
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    backup_mount_path: /mnt/backup-media
+    # NFS clients: K3s VMs on both networks
+    nfs_allowed_networks:
+      - "192.168.100.0/24"   # k3s internal VM network
+      - "172.16.0.0/16"      # k3s external (LAN) VM network
+    nfs_export_opts: "rw,sync,no_subtree_check,no_root_squash"
+
+  pre_tasks:
+    - name: Require backup_drive_uuid
+      ansible.builtin.fail:
+        msg: "Pass -e backup_drive_uuid=<UUID> (get it with: blkid /dev/sdX)"
+      when: backup_drive_uuid is not defined
+
+    - name: Require backup_drive_fstype
+      ansible.builtin.fail:
+        msg: "Pass -e backup_drive_fstype=<ext4|xfs|ntfs-3g>"
+      when: backup_drive_fstype is not defined
+
+  tasks:
+    # ── Dependencies ──────────────────────────────────────────────────────────
+    - name: Install nfs-utils
+      ansible.builtin.dnf:
+        name:
+          - nfs-utils
+          - "{{ 'ntfs-3g' if backup_drive_fstype == 'ntfs-3g' else [] }}"
+        state: present
+      when: backup_drive_fstype != 'ntfs-3g'
+
+    - name: Install nfs-utils + ntfs-3g
+      ansible.builtin.dnf:
+        name:
+          - nfs-utils
+          - ntfs-3g
+        state: present
+      when: backup_drive_fstype == 'ntfs-3g'
+
+    # ── Mount point ───────────────────────────────────────────────────────────
+    - name: Create mount point
+      ansible.builtin.file:
+        path: "{{ backup_mount_path }}"
+        state: directory
+        mode: '0755'
+
+    - name: Mount backup drive (fstab entry for persistence)
+      ansible.posix.mount:
+        path: "{{ backup_mount_path }}"
+        src: "UUID={{ backup_drive_uuid }}"
+        fstype: "{{ backup_drive_fstype }}"
+        opts: defaults,nofail
+        state: mounted
+
+    - name: Confirm mount is accessible
+      ansible.builtin.command: df -h {{ backup_mount_path }}
+      changed_when: false
+      register: mount_info
+
+    - name: Show mount info
+      ansible.builtin.debug:
+        var: mount_info.stdout_lines
+
+    # ── NFS export ────────────────────────────────────────────────────────────
+    - name: Enable and start nfs-server
+      ansible.builtin.systemd:
+        name: nfs-server
+        enabled: true
+        state: started
+
+    - name: Write /etc/exports entries
+      ansible.builtin.blockinfile:
+        path: /etc/exports
+        marker: "# {mark} beck-cloud backup-media"
+        block: |
+          {% for net in nfs_allowed_networks %}
+          {{ backup_mount_path }} {{ net }}({{ nfs_export_opts }})
+          {% endfor %}
+
+    - name: Re-export all NFS shares
+      ansible.builtin.command: exportfs -ra
+      changed_when: true
+
+    - name: Show active exports
+      ansible.builtin.command: exportfs -v
+      changed_when: false
+      register: exports_info
+
+    - name: Print exports
+      ansible.builtin.debug:
+        var: exports_info.stdout_lines
+
+    # ── Firewall ──────────────────────────────────────────────────────────────
+    - name: Allow NFS through firewalld (if active)
+      ansible.posix.firewalld:
+        service: nfs
+        permanent: true
+        state: enabled
+        zone: public
+      when: ansible_facts.services['firewalld.service'] is defined
+      ignore_errors: true
+
+    - name: Reload firewalld
+      ansible.builtin.command: firewall-cmd --reload
+      changed_when: true
+      ignore_errors: true
+
+  post_tasks:
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "Drive UUID {{ backup_drive_uuid }} mounted at {{ backup_mount_path }}"
+          - "NFS export active — K3s PV should use:"
+          - "  server: {{ homelab_ip }}"
+          - "  path: {{ backup_mount_path }}"
