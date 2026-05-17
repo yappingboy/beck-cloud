@@ -7,5 +7,3 @@ resources:
   - configmap.yaml
   - infrastructure.yaml
   - apps.yaml
-  - cert-manager.yaml
-  - cert-manager-config.yaml

@@ -9,8 +9,6 @@ spec:
   prune: true
   dependsOn:
     - name: flux-system
-    - name: cert-manager
-    - name: cert-manager-config
   sourceRef:
     kind: GitRepository
     name: flux-system
