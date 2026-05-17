@@ -10,6 +10,7 @@ spec:
   dependsOn:
     - name: infrastructure
     - name: traefik-config
+    - name: cert-manager-config
   sourceRef:
     kind: GitRepository
     name: flux-system

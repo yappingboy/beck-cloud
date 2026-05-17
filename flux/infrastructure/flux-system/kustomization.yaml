@@ -7,4 +7,5 @@ resources:
   - configmap.yaml
   - infrastructure.yaml
   - traefik-config.yaml
+  - cert-manager-config.yaml
   - apps.yaml

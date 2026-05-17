@@ -6,6 +6,7 @@ resources:
   - controllers
   - configs
   - csi-snapshotter
+  - cert-manager
   - traefik
   - identity
   - security
