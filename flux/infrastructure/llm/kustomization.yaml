@@ -4,4 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - llamactl-service.yaml
-  - rho.yaml
+  # rho: disabled — @rhobot-dev/rho npm package not yet published; init container
+  # crashes trying to install it. Re-enable once the package exists or the image is
+  # replaced with a pre-built one.
+  # - rho.yaml
