@@ -65,14 +65,33 @@
       register: age_public_key
       changed_when: false
 
+    - name: Wait for kube-system pods to be ready before bootstrap (up to 5 min)
+      ansible.builtin.shell: |
+        kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml wait pod \
+          --namespace kube-system \
+          --for=condition=Ready \
+          --all \
+          --timeout=300s
+      changed_when: false
+
+    - name: Check if Flux is already bootstrapped and healthy
+      ansible.builtin.command: flux check
+      environment:
+        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
+      register: flux_already_healthy
+      failed_when: false
+      changed_when: false
+
     - name: Bootstrap Flux to GitHub
+      when: flux_already_healthy.rc != 0
       ansible.builtin.shell: |
         flux bootstrap github \
           --owner=yappingboy \
           --repository=beck-cloud \
           --branch={{ flux_repo_branch }} \
           --path=flux \
-          --personal
+          --personal \
+          --timeout=20m
       environment:
         KUBECONFIG: /etc/rancher/k3s/k3s.yaml
         GITHUB_TOKEN: "{{ github_token }}"
