@@ -13,7 +13,7 @@ spec:
     - name: cert-manager-config
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
   healthChecks:
     - kind: Kustomization
       name: infrastructure

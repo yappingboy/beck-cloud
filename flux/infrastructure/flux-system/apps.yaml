@@ -11,11 +11,11 @@ spec:
     - name: infrastructure-apps
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
   postBuild:
     substituteFrom:
       - kind: ConfigMap
-        name: beck-cloud-config
+        name: flux-system-config
   healthChecks:
     - apiVersion: apps/v1
       kind: Deployment

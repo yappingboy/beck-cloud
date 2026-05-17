@@ -11,4 +11,4 @@ spec:
     - name: cert-manager
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
