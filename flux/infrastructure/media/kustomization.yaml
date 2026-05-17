@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvcs.yaml
+  - backup-media-nfs.yaml
   - secret-gluetun.yaml
   - secret-recyclarr.yaml
   - jellyfin.yaml
