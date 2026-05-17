@@ -18,6 +18,11 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
+    # cert-manager v1.15+ ships CRDs behind crds.enabled. Without this, no
+    # Issuer/Certificate/etc. CRDs are installed and dependent Kustomizations
+    # fail with "no matches for kind ClusterIssuer".
+    crds:
+      enabled: true
     # startupapicheck runs `cmctl check api` as a post-install Helm hook to
     # verify the webhook responds. In Cilium kube-proxy-replacement environments
     # it tends to crash-loop, which prevents the HelmRelease from going Ready
