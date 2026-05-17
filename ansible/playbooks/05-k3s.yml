@@ -94,12 +94,15 @@
       args:
         creates: /usr/local/bin/k3s
 
-    - name: Wait for K3s API to be ready
+    - name: Wait for K3s API to be ready (poll kubectl, up to 3 min)
       when: k3s_role == 'server'
-      ansible.builtin.wait_for:
-        port: 6443
-        delay: 10
-        timeout: 120
+      ansible.builtin.shell: |
+        for i in $(seq 1 18); do
+          kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>/dev/null && exit 0
+          sleep 10
+        done
+        exit 1
+      changed_when: false
 
     - name: Read K3s node-token from server
       when: k3s_role == 'server'
