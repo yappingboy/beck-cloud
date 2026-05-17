@@ -38,7 +38,7 @@ spec:
       enabled: true
       className: traefik
       hosts:
-        - host: oauth2.becklab.cloud
-          paths:
-            - path: /oauth2/
-              pathType: Prefix
+        - oauth2.becklab.cloud
+      paths:
+        - /oauth2/
+      pathType: Prefix
