@@ -40,8 +40,8 @@ spec:
                 secretKeyRef:
                   name: gluetun-vpn-secret
                   key: pia-password
-            - name: SERVER_COUNTRIES
-              value: US
+            - name: SERVER_REGIONS
+              value: US East
             - name: TZ
               value: America/New_York
             - name: DOT
