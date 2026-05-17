@@ -7,6 +7,7 @@ spec:
   interval: 1m
   path: ./flux/infrastructure
   prune: true
+  force: true
   dependsOn:
     - name: flux-system
   sourceRef:
