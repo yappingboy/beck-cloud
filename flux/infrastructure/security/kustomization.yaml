@@ -5,7 +5,8 @@ namespace: security
 
 resources:
   - namespace.yaml
-  - wazuh.yaml
+  # wazuh: disabled — helm repo unavailable and resource requirements (4GB+) exceed homelab capacity
+  # re-enable once a dedicated node or separate namespace with higher limits is available
   - falco.yaml
 
 

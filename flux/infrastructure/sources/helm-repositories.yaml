@@ -46,15 +46,16 @@ spec:
   interval: 12h
   url: https://wazuh.github.io/helm-charts
 ---
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
+apiVersion: source.toolkit.fluxcd.io/v1beta2
+kind: OCIRepository
 metadata:
-  name: bitnami
+  name: bitnami-keycloak
   namespace: flux-system
 spec:
   interval: 12h
-  type: oci
-  url: oci://registry-1.docker.io/bitnamicharts
+  url: oci://registry-1.docker.io/bitnamicharts/keycloak
+  ref:
+    tag: 25.2.0
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
@@ -73,15 +74,6 @@ metadata:
 spec:
   interval: 12h
   url: https://vmware-tanzu.github.io/helm-charts
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
-  name: lldap
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://lldap.github.io/helm-charts
 ---
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository

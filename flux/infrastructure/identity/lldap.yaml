@@ -1,33 +1,112 @@
-apiVersion: helm.toolkit.fluxcd.io/v2
-kind: HelmRelease
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: lldap
+  namespace: identity
+  labels:
+    app: lldap
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: lldap
+  template:
+    metadata:
+      labels:
+        app: lldap
+    spec:
+      containers:
+        - name: lldap
+          image: lldap/lldap:stable
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+            - name: LLDAP_LDAP_BASE_DN
+              value: dc=becklab,dc=cloud
+            - name: LLDAP_LDAP_USER_DN
+              value: admin
+            - name: LLDAP_LDAP_USER_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: lldap-admin-password
+                  key: admin-password
+            - name: LLDAP_DATABASE_URL
+              value: sqlite:///data/users.db?mode=rwc
+            - name: LLDAP_HTTP_URL
+              value: https://lldap.becklab.cloud
+          ports:
+            - containerPort: 3890
+              name: ldap
+              protocol: TCP
+            - containerPort: 17170
+              name: web
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: lldap-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: lldap-data
+  namespace: identity
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Service
 metadata:
   name: lldap
   namespace: identity
 spec:
-  interval: 1m
-  chart:
-    spec:
-      chart: lldap
-      version: 0.4.0
-      sourceRef:
-        kind: HelmRepository
-        name: lldap
-        namespace: flux-system
-  values:
-    fullnameOverride: lldap
-    env:
-      LLDAP_LDAP_BASE_DN: dc=becklab,dc=cloud
-    existingSecret: lldap-admin-password
-    adminPasswordKey: admin-password
-    database:
-      existingSecret: lldap-database
-      usernameKey: username
-      passwordKey: password
-    ingress:
-      enabled: true
-      className: traefik
-      hosts:
-        - host: lldap.becklab.cloud
-          paths:
-            - path: /
-              pathType: Prefix
+  selector:
+    app: lldap
+  ports:
+    - name: ldap
+      port: 389
+      targetPort: 3890
+      protocol: TCP
+    - name: web
+      port: 17170
+      targetPort: 17170
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: lldap
+  namespace: identity
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - lldap.becklab.cloud
+      secretName: lldap-tls
+  rules:
+    - host: lldap.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: lldap
+                port:
+                  number: 17170

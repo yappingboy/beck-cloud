@@ -19,11 +19,6 @@ spec:
         runAsUser: 1000
         runAsGroup: 1000
         fsGroup: 1000
-      initContainers:
-        - name: wait-for-gluetun
-          image: alpine:3.21
-          # gluetun control API is port 8000; port 8080 is the qBittorrent WebUI
-          command: ['sh', '-c', 'until wget -qO- http://localhost:8000/v1/vpnstatus; do echo "Waiting for VPN..."; sleep 5; done']
       containers:
         - name: gluetun
           image: qmcgaw/gluetun:v3.40.0

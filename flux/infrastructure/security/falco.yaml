@@ -17,7 +17,7 @@ spec:
     fullnameOverride: falco
     falco:
       driver:
-        kind: ebpf
+        kind: modern_ebpf
       priority: warning
       jsonOutput: true
       syslogOutput:
