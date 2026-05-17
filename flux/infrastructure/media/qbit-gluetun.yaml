@@ -39,13 +39,16 @@ spec:
               value: pia
             - name: VPN_TYPE
               value: wireguard
-            - name: WIREGUARD_PRIVATE_KEY
+            - name: PRIVATE_INTERNET_ACCESS_USER
               valueFrom:
                 secretKeyRef:
                   name: gluetun-vpn-secret
-                  key: wireguard-private-key
-            - name: WIREGUARD_ADDRESSES
-              value: 10.5.0.2/32
+                  key: pia-username
+            - name: PRIVATE_INTERNET_ACCESS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-vpn-secret
+                  key: pia-password
             - name: SERVER_COUNTRIES
               value: US
             - name: TZ
