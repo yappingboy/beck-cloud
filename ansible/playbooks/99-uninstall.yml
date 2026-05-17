@@ -100,8 +100,10 @@
       failed_when: false
 
     # ── 3. Network cleanup — remove k3s-net vnet ───────────────────────────
-    - name: Remove k3s-net virtual network
+    - name: Remove k3s virtual networks
       ansible.builtin.shell: |
+        onevnet delete k3s-int 2>/dev/null || true
+        onevnet delete k3s-ext 2>/dev/null || true
         onevnet delete k3s-net 2>/dev/null || true
       environment:
         ONE_AUTH: /var/lib/one/.one/one_auth

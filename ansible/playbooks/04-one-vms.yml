@@ -111,7 +111,10 @@
             IMAGE_UNAME = "oneadmin",
             SIZE        = "{{ item.item.disk * 1024 }}"
           ]
-          NIC    = [ NETWORK = "k3s-net", NETWORK_UNAME = "oneadmin" ]
+          {% if item.item.role == 'server' %}
+          NIC    = [ NETWORK = "k3s-ext", NETWORK_UNAME = "oneadmin" ]
+          {% endif %}
+          NIC    = [ NETWORK = "k3s-int", NETWORK_UNAME = "oneadmin" ]
           CONTEXT = [
             NETWORK        = "YES",
             SSH_PUBLIC_KEY  = "$USER[SSH_PUBLIC_KEY]",

@@ -8,13 +8,20 @@ ops_user: root
 # ── OpenNebula 7.2 ────────────────────────────────────────────────────────────
 one_admin_password: "changeme"   # override with -e one_admin_password=<secret> or vault
 
-# External bridge — br0 is created over the physical NIC so VMs land directly
-# on the LAN (172.16.0.0/16) without NAT.
-# one_physical_nic: auto-detected from default route; override if needed.
-one_bridge: br0
-one_vm_cidr: "172.16.0.0/16"
-one_vm_gateway: "172.16.0.1"    # LAN router — override if yours differs
-one_vm_ar_start: "172.16.0.20"  # first IP assigned to VMs (sequential from here)
+# Internal VM network — isolated bridge (one0), NAT masqueraded to internet.
+# Used for kubelet / control-plane traffic between server and workers.
+one_int_bridge: one0
+one_int_cidr: "192.168.100.0/24"
+one_int_gateway: "192.168.100.1"    # hypervisor's one0 IP (acts as NAT gateway)
+one_int_ar_start: "192.168.100.10"
+
+# External VM network — br0 bridged over physical NIC, direct LAN access.
+# Only the k3s-server gets this NIC (ingress + kubectl access).
+one_ext_bridge: br0
+one_ext_cidr: "172.16.0.0/16"
+one_ext_gateway: "172.16.0.1"       # LAN router — override if yours differs
+one_ext_ar_start: "172.16.0.20"
+
 one_dns_servers:
   - "8.8.8.8"
   - "8.8.4.4"
@@ -25,7 +32,8 @@ one_k3s_image_url: "https://cloud-images.ubuntu.com/noble/current/noble-server-c
 one_k3s_keypair_pub: "~/.ssh/id_ed25519.pub"
 
 # OpenNebula VM definitions for K3s
-one_k3s_server_ip: "172.16.0.20"   # first VM IP (k3s-server)
+one_k3s_server_ext_ip: "172.16.0.20"   # k3s-server external (LAN) IP
+one_k3s_server_int_ip: "192.168.100.10" # k3s-server internal IP (workers join here)
 
 one_k3s_vms:
   - name: k3s-server
