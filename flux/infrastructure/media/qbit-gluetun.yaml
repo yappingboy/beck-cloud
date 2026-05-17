@@ -54,6 +54,7 @@ spec:
             - name: gluetun-config
               mountPath: /etc/gluetun
           securityContext:
+            privileged: true
             runAsUser: 0
             runAsNonRoot: false
             capabilities:
