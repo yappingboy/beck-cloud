@@ -35,6 +35,13 @@ spec:
                 secretKeyRef:
                   name: lldap-admin-password
                   key: admin-password
+            # Required in lldap v0.6+. Derives JWT signing key and other crypto material.
+            # TODO: rotate by adding 'key-seed' to the SOPS-encrypted lldap-admin-password
+            # secret, then change this to valueFrom: secretKeyRef.
+            - name: LLDAP_KEY_SEED
+              value: "becklab-homelab-lldap-key-seed-change-me-please"
+            - name: LLDAP_JWT_SECRET
+              value: "becklab-homelab-lldap-jwt-secret-change-me-please"
             - name: LLDAP_DATABASE_URL
               value: sqlite:///data/users.db?mode=rwc
             - name: LLDAP_HTTP_URL

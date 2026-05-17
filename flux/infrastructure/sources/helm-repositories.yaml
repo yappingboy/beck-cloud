@@ -46,17 +46,6 @@ spec:
   interval: 12h
   url: https://wazuh.github.io/helm-charts
 ---
-apiVersion: source.toolkit.fluxcd.io/v1beta2
-kind: OCIRepository
-metadata:
-  name: bitnami-keycloak
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: oci://registry-1.docker.io/bitnamicharts/keycloak
-  ref:
-    tag: 25.2.0
----
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
