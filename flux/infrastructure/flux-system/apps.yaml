@@ -16,21 +16,4 @@ spec:
   postBuild:
     substituteFrom:
       - kind: ConfigMap
-        name: flux-system-config
-  healthChecks:
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: jellyfin
-      namespace: media
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: sonarr
-      namespace: media
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: radarr
-      namespace: media
-    - apiVersion: apps/v1
-      kind: Deployment
-      name: qbit-gluetun
-      namespace: torrent
+        name: beck-cloud-config
