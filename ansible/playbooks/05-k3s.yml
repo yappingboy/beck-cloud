@@ -12,8 +12,18 @@
 - name: Install K3s server
   hosts: k3s_nodes
   become: true
-  gather_facts: true
+  gather_facts: false   # done after wait_for_connection
   serial: 1  # server must be fully up before workers attempt to join
+
+  pre_tasks:
+    - name: Wait for SSH to become available (VM may still be booting)
+      ansible.builtin.wait_for_connection:
+        delay: 5
+        sleep: 10
+        timeout: 300
+
+    - name: Gather facts
+      ansible.builtin.setup:
 
   tasks:
     - name: Update apt cache
