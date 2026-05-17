@@ -15,10 +15,6 @@ spec:
       labels:
         app: qbit-gluetun
     spec:
-      securityContext:
-        runAsUser: 1000
-        runAsGroup: 1000
-        fsGroup: 1000
       containers:
         - name: gluetun
           image: qmcgaw/gluetun:v3.40.0
@@ -58,6 +54,8 @@ spec:
             - name: gluetun-config
               mountPath: /etc/gluetun
           securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
             capabilities:
               add:
                 - NET_ADMIN

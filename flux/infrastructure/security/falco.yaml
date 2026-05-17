@@ -20,6 +20,5 @@ spec:
         kind: modern_ebpf
       priority: warning
       jsonOutput: true
-      syslogOutput:
-        enabled: true
-        endpoint: wazuh-manager.security.svc.cluster.local:514
+      # syslogOutput disabled — wazuh-manager not deployed in this cluster.
+      # Re-enable once Wazuh is provisioned (separate node recommended).
