@@ -17,3 +17,11 @@ spec:
     crds: CreateReplace
   upgrade:
     crds: CreateReplace
+  values:
+    # startupapicheck runs `cmctl check api` as a post-install Helm hook to
+    # verify the webhook responds. In Cilium kube-proxy-replacement environments
+    # it tends to crash-loop, which prevents the HelmRelease from going Ready
+    # and blocks every downstream Kustomization. cert-manager itself is healthy
+    # without it.
+    startupapicheck:
+      enabled: false
