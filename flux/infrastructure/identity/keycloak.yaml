@@ -33,6 +33,5 @@ spec:
         value: "local"
     ingress:
       enabled: true
-      className: traefik
-      hosts:
-        - keycloak.becklab.cloud
+      ingressClassName: traefik
+      hostname: keycloak.becklab.cloud

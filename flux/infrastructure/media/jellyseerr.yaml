@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: jellyseerr
-          image: ghcr.io/appsthatcare/jellyseerr:latest
+          image: ghcr.io/fallenbagel/jellyseerr:latest
           resources:
             limits:
               cpu: "1"
