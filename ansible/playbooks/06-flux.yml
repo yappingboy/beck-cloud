@@ -65,13 +65,20 @@
       register: age_public_key
       changed_when: false
 
-    - name: Wait for kube-system pods to be ready before bootstrap (up to 5 min)
+    - name: Wait for all cluster nodes to be Ready before bootstrap (up to 5 min)
       ansible.builtin.shell: |
-        kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml wait pod \
-          --namespace kube-system \
-          --for=condition=Ready \
-          --all \
-          --timeout=300s
+        for i in $(seq 1 30); do
+          total=$(kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes \
+            --no-headers 2>/dev/null | wc -l)
+          not_ready=$(kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes \
+            --no-headers 2>/dev/null | grep -vc ' Ready' || true)
+          [ "$total" -gt 0 ] && [ "$not_ready" -eq 0 ] && exit 0
+          echo "Nodes: ${total} total, ${not_ready} not ready — waiting..."
+          sleep 10
+        done
+        echo "Nodes still not all Ready after 5 min:"
+        kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>&1 || true
+        exit 1
       changed_when: false
 
     - name: Check if Flux is already bootstrapped and healthy
