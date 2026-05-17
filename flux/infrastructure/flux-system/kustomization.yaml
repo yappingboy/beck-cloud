@@ -6,4 +6,5 @@ namespace: flux-system
 resources:
   - configmap.yaml
   - infrastructure.yaml
+  - traefik-config.yaml
   - apps.yaml

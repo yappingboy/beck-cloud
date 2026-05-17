@@ -9,6 +9,7 @@ spec:
   prune: true
   dependsOn:
     - name: infrastructure
+    - name: traefik-config
   sourceRef:
     kind: GitRepository
     name: flux-system
