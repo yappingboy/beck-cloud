@@ -94,11 +94,19 @@
       args:
         creates: /usr/local/bin/k3s
 
+    - name: Ensure k3s service is started and enabled
+      when: k3s_role == 'server'
+      ansible.builtin.systemd:
+        name: k3s
+        state: started
+        enabled: true
+
     - name: Wait for K3s API to be ready (poll kubectl, up to 3 min)
       when: k3s_role == 'server'
       ansible.builtin.shell: |
+        KCF=/etc/rancher/k3s/k3s.yaml
         for i in $(seq 1 18); do
-          kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>/dev/null && exit 0
+          [ -f "$KCF" ] && kubectl --kubeconfig "$KCF" get nodes 2>/dev/null && exit 0
           sleep 10
         done
         exit 1
@@ -156,13 +164,15 @@
     - name: Install Cilium CNI
       when: k3s_role == 'server'
       ansible.builtin.shell: |
+        export KUBECONFIG=/etc/rancher/k3s/k3s.yaml
         helm repo add cilium https://helm.cilium.io
         helm repo update
         helm upgrade --install cilium cilium/cilium \
+          --kubeconfig /etc/rancher/k3s/k3s.yaml \
           --namespace kube-system \
           --version {{ cilium_version }} \
           --set kubeProxyReplacement=true \
-          --set k8sServiceHost=127.0.0.1 \
+          --set k8sServiceHost={{ one_k3s_server_int_ip }} \
           --set k8sServicePort=6443 \
           --set ipam.mode=kubernetes \
           --set loadBalancer.algorithm=maglev \
@@ -172,8 +182,6 @@
           --set routingMode=native \
           --set autoDirectNodeRoutes=true \
           --set l2announcements.enabled=true
-      environment:
-        KUBECONFIG: /etc/rancher/k3s/k3s.yaml
       changed_when: true
 
     - name: Ensure .kube directory exists for ubuntu user
