@@ -1,34 +1,10 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: traefik-dashboard
-  namespace: traefik
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-spec:
-  tls:
-    - hosts:
-        - traefik.becklab.cloud
-      secretName: traefik-dashboard-tls
-  rules:
-    - host: traefik.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: traefik
-                port:
-                  number: 9000
----
 apiVersion: traefik.containo.us/v1alpha1
 kind: IngressRoute
 metadata:
   name: traefik-dashboard-https
   namespace: traefik
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   entryPoints:
     - websecure
@@ -38,10 +14,10 @@ spec:
     - match: Host(`traefik.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: keycloak-forwardauth
-          namespace: traefik
         - name: security-headers
           namespace: traefik
+      # SSO via keycloak-forwardauth: re-add once Keycloak homelab realm
+      # and oauth2-proxy client are configured.
       services:
         - name: api@internal
           kind: TraefikService

@@ -47,9 +47,7 @@ spec:
         externalTrafficPolicy: Cluster
     ingressRoute:
       dashboard:
-        enabled: true
-        entryPoints:
-          - web
+        enabled: false
     persistence:
       enabled: true
       mountPath: /var/log/traefik
