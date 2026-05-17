@@ -5,8 +5,6 @@ namespace: flux-system
 
 resources:
   - configmap.yaml
-  - gitrepo.yaml
   - infrastructure.yaml
+  - traefik-config.yaml
   - apps.yaml
-  - cert-manager.yaml
-  - cert-manager-config.yaml
