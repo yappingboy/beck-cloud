@@ -29,13 +29,13 @@ spec:
             - name: VPN_SERVICE_PROVIDER
               value: pia
             - name: VPN_TYPE
-              value: wireguard
-            - name: PRIVATE_INTERNET_ACCESS_USER
+              value: openvpn
+            - name: OPENVPN_USER
               valueFrom:
                 secretKeyRef:
                   name: gluetun-vpn-secret
                   key: pia-username
-            - name: PRIVATE_INTERNET_ACCESS_PASSWORD
+            - name: OPENVPN_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: gluetun-vpn-secret
