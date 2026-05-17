@@ -220,6 +220,16 @@
         mode: '0600'
 
   post_tasks:
+    - name: Wait for K3s API to stabilise after Cilium install (up to 3 min)
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        for i in $(seq 1 18); do
+          kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes 2>/dev/null && exit 0
+          sleep 10
+        done
+        exit 1
+      changed_when: false
+
     - name: Verify cluster nodes (server only)
       when: k3s_role == 'server'
       ansible.builtin.command: kubectl get nodes -o wide
