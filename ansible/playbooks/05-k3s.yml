@@ -73,6 +73,31 @@
         - { key: 'vm.max_map_count',                    value: '262144' }
 
     # ── K3s server ──────────────────────────────────────────────────────
+    # Detect stale state: binary exists but no node registered within 30s
+    # (previous install used different --node-ip, certs/db are inconsistent).
+    - name: Check if K3s server node is registered
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        [ -f /usr/local/bin/k3s ] || exit 1
+        for i in $(seq 1 3); do
+          count=$(kubectl --kubeconfig /etc/rancher/k3s/k3s.yaml get nodes \
+            --no-headers 2>/dev/null | wc -l)
+          [ "$count" -gt 0 ] && exit 0
+          sleep 10
+        done
+        exit 1
+      register: k3s_node_check
+      changed_when: false
+      failed_when: false
+
+    - name: Wipe stale K3s state (binary exists but node never registered)
+      when: k3s_role == 'server' and k3s_node_check.rc != 0
+      ansible.builtin.shell: |
+        /usr/local/bin/k3s-uninstall.sh 2>/dev/null || true
+        rm -rf /etc/rancher/k3s /var/lib/rancher/k3s
+      changed_when: true
+      failed_when: false
+
     - name: Install K3s server
       when: k3s_role == 'server'
       ansible.builtin.shell: |
