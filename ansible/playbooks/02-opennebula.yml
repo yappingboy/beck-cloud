@@ -88,35 +88,66 @@
         groups: kvm,qemu
         append: true
 
-    # ── Bridge network (one0) via NetworkManager / nmcli ──────────────────
-    - name: Check if one0 NetworkManager connection already exists
-      ansible.builtin.command: nmcli con show one0
-      register: nmcli_check
+    # ── External bridge (br0) over physical NIC ───────────────────────────
+    # VMs land directly on the 172.16.0.0/16 LAN — no NAT required.
+    # We detect the NIC carrying the default route, then bridge it so KVM
+    # guests share the same L2 segment as the hypervisor.
+    #
+    # WARNING: this reconfigures the active NIC. The script is written to
+    # complete atomically (nmcli applies both sides before activating) but
+    # there will be a 1-3s network blip as the bridge comes up.
+    - name: Detect physical NIC used for default route
+      ansible.builtin.shell: |
+        ip route show default | awk '/default/ {print $5; exit}'
+      register: physical_nic_detected
+      changed_when: false
+
+    - name: Set physical NIC fact
+      ansible.builtin.set_fact:
+        one_physical_nic: "{{ one_physical_nic_override | default(physical_nic_detected.stdout | trim) }}"
+
+    - name: Show bridge plan
+      ansible.builtin.debug:
+        msg: "Bridging {{ one_physical_nic }} → {{ one_bridge }} for VM external access"
+
+    - name: Check if external bridge already exists
+      ansible.builtin.command: nmcli con show {{ one_bridge }}
+      register: bridge_check
       failed_when: false
       changed_when: false
 
-    - name: Create one0 bridge connection
-      ansible.builtin.command: nmcli con add type bridge con-name one0 ifname one0 autoconnect yes
-      when: nmcli_check.rc != 0
+    - name: Create external bridge over physical NIC
+      ansible.builtin.shell: |
+        set -e
+        NIC="{{ one_physical_nic }}"
+        BR="{{ one_bridge }}"
 
-    - name: Set static IP on one0 bridge
-      ansible.builtin.command: >
-        nmcli con modify one0
-        ipv4.method manual
-        ipv4.addresses "{{ one_vm_gateway }}/24"
-        ipv4.gateway ""
-        ipv4.dns ""
-      when: nmcli_check.rc != 0
+        # Find the active connection on the NIC
+        NIC_CONN=$(nmcli -t -f NAME,DEVICE con show --active | awk -F: -v dev="$NIC" '$2==dev {print $1; exit}')
 
-    - name: Disable STP on one0 bridge
-      ansible.builtin.command: nmcli con modify one0 bridge.stp no
-      when: nmcli_check.rc != 0
+        # Read current IP/gateway from that connection
+        NIC_ADDR=$(nmcli -t -f IP4.ADDRESS  con show "$NIC_CONN" | cut -d: -f2 | head -1)
+        NIC_GW=$(nmcli   -t -f IP4.GATEWAY  con show "$NIC_CONN" | cut -d: -f2 | head -1)
+        NIC_DNS=$(nmcli  -t -f IP4.DNS      con show "$NIC_CONN" | cut -d: -f2 | tr '\n' ' ')
 
-    - name: Bring up one0 bridge
-      ansible.builtin.command: nmcli con up one0
-      when: nmcli_check.rc != 0
+        # Create bridge and slave — both inactive until we switch over
+        nmcli con add type bridge       con-name "$BR"          ifname "$BR" \
+          bridge.stp no autoconnect yes \
+          ipv4.method manual \
+          ipv4.addresses "$NIC_ADDR" \
+          ipv4.gateway   "$NIC_GW" \
+          ipv4.dns       "${NIC_DNS:-8.8.8.8}"
 
-    # ── IP forwarding + firewalld masquerade ──────────────────────────────
+        nmcli con add type bridge-slave con-name "${BR}-slave"  ifname "$NIC" \
+          master "$BR" autoconnect yes
+
+        # Atomically switch: down NIC connection, up slave + bridge
+        nmcli con down "$NIC_CONN"   || true
+        nmcli con up   "${BR}-slave"
+        nmcli con up   "$BR"
+      when: bridge_check.rc != 0
+
+    # ── IP forwarding ──────────────────────────────────────────────────────
     - name: Enable and start firewalld
       ansible.builtin.systemd:
         name: firewalld
@@ -130,27 +161,6 @@
         sysctl_set: true
         state: present
         reload: true
-
-    - name: Enable masquerade in public zone (permanent)
-      ansible.builtin.command: firewall-cmd --permanent --zone=public --add-masquerade
-      changed_when: true
-      failed_when: false
-
-    - name: Allow FORWARD traffic in from one0
-      ansible.builtin.command: >
-        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -i one0 -j ACCEPT
-      changed_when: true
-      failed_when: false
-
-    - name: Allow FORWARD traffic out to one0
-      ansible.builtin.command: >
-        firewall-cmd --permanent --direct --add-rule ipv4 filter FORWARD 0 -o one0 -j ACCEPT
-      changed_when: true
-      failed_when: false
-
-    - name: Reload firewalld to apply rules
-      ansible.builtin.command: firewall-cmd --reload
-      changed_when: true
 
     # ── OpenNebula services ────────────────────────────────────────────────
     - name: Ensure OpenNebula services are started
@@ -211,13 +221,13 @@
         content: |
           NAME          = "k3s-net"
           VN_MAD        = "bridge"
-          BRIDGE        = "one0"
+          BRIDGE        = "{{ one_bridge }}"
           DNS           = "{{ one_dns_servers | join(' ') }}"
           GATEWAY       = "{{ one_vm_gateway }}"
-          NETWORK_MASK  = "255.255.255.0"
+          NETWORK_MASK  = "255.255.0.0"
           AR = [
             TYPE = "IP4",
-            IP   = "192.168.100.10",
+            IP   = "{{ one_vm_ar_start }}",
             SIZE = "20"
           ]
         dest: /tmp/k3s-net.one

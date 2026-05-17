@@ -158,8 +158,16 @@
       failed_when: false
 
     # ── 6. Remove one0 NetworkManager bridge ──────────────────────────────
-    - name: Delete one0 NetworkManager connection (nmcli)
-      ansible.builtin.shell: nmcli con delete one0 2>/dev/null || true
+    - name: Remove br0 bridge and restore physical NIC connection
+      ansible.builtin.shell: |
+        # Re-enable the original NIC connection before deleting the bridge
+        # so the hypervisor keeps network access
+        NIC_CONN=$(nmcli -t -f NAME,DEVICE,TYPE con show | awk -F: '$3=="ethernet" {print $1; exit}')
+        nmcli con modify "$NIC_CONN" autoconnect yes 2>/dev/null || true
+        nmcli con up "$NIC_CONN" 2>/dev/null || true
+        nmcli con delete br0-slave 2>/dev/null || true
+        nmcli con delete br0       2>/dev/null || true
+        nmcli con delete one0      2>/dev/null || true
       changed_when: true
       failed_when: false
 
