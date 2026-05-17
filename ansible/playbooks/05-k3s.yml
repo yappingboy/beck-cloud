@@ -106,7 +106,7 @@
           {% if k3s_token != '' %}K3S_TOKEN={{ k3s_token }} {% endif %}\
           sh -s - server \
           --write-kubeconfig-mode 644 \
-          --node-ip {{ one_k3s_server_ext_ip }},{{ one_k3s_server_int_ip }} \
+          --node-ip {{ one_k3s_server_int_ip }} \
           --tls-san {{ one_k3s_server_ext_ip }} \
           --tls-san {{ one_k3s_server_int_ip }} \
           {% for item in k3s_disable %}--disable {{ item }} {% endfor %}\
