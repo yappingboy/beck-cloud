@@ -54,4 +54,4 @@ spec:
     persistence:
       enabled: false
     additionalArguments:
-      - "--providers.kubernetesIngress.allowCrossNamespaceMiddlewares=true"
+      - "--providers.kubernetesingress.allowCrossNamespaceMiddleware=true"
