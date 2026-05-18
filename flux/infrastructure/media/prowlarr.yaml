@@ -67,8 +67,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # SSO middleware removed until Keycloak realm is configured
-    # traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
 spec:
   tls:
     - hosts:

@@ -1,15 +1,32 @@
 ---
-# SSO chain (keycloak-forwardauth + keycloak-errors + sso-chain) is disabled
-# until the homelab Keycloak realm and oauth2-proxy client-secret are
-# configured. The previous keycloak-errors spec was invalid (the errors
-# middleware requires a `service:` field) which caused sso-chain to fail
-# resolution, breaking every Ingress that referenced it.
-#
-# To re-enable once Keycloak is set up:
-#   1. Restore keycloak-forwardauth + keycloak-errors (add `service:` to errors)
-#   2. Restore sso-chain
-#   3. Uncomment the middleware annotations on the *arr Ingresses and the
-#      Traefik dashboard IngressRoute
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-forwardauth
+  namespace: traefik
+spec:
+  forwardAuth:
+    address: http://oauth2-proxy.identity.svc.cluster.local:4180/oauth2/auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Access-Token
+      - Authorization
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-chain
+  namespace: traefik
+spec:
+  chain:
+    middlewares:
+      - name: keycloak-forwardauth
+        namespace: traefik
+      - name: security-headers
+        namespace: traefik
+---
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
