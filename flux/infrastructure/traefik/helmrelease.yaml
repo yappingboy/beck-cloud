@@ -29,6 +29,7 @@ spec:
       kubernetesIngress:
         publishedService:
           enabled: true
+        allowCrossNamespaceMiddleware: true
       kubernetesGateway:
         enabled: true
     ports:
