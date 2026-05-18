@@ -2,6 +2,21 @@
 apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
+  name: oauth2-redirect
+  namespace: traefik
+spec:
+  errors:
+    status:
+      - "401"
+    service:
+      name: oauth2-proxy
+      namespace: identity
+      port: 80
+    query: "/oauth2/sign_in?rd={url}"
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
   name: keycloak-forwardauth
   namespace: traefik
 spec:
@@ -22,6 +37,8 @@ metadata:
 spec:
   chain:
     middlewares:
+      - name: oauth2-redirect
+        namespace: traefik
       - name: keycloak-forwardauth
         namespace: traefik
       - name: security-headers
