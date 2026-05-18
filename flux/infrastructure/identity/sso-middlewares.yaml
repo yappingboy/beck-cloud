@@ -1,4 +1,4 @@
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: oauth2-redirect
@@ -11,8 +11,10 @@ spec:
       name: oauth2-proxy
       port: 80
     query: "/oauth2/sign_in?rd={url}"
+    statusRewrites:
+      "401": 302
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: keycloak-forwardauth
@@ -27,7 +29,7 @@ spec:
       - X-Auth-Request-Access-Token
       - Authorization
 ---
-apiVersion: traefik.containo.us/v1alpha1
+apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
   name: sso-chain
