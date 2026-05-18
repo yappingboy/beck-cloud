@@ -25,11 +25,14 @@ spec:
       content: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
+        oidc_issuer_url = "https://keycloak.becklab.cloud/realms/homelab"
         email_domains = ["*"]
         redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
         cookie_secure = true
         cookie_httponly = true
         cookie_samesite = "Lax"
+        cookie_domain = ".becklab.cloud"
+        skip_provider_button = true
         login_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/auth"
         redeem_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token"
         validate_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/userinfo"

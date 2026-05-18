@@ -14,10 +14,8 @@ spec:
     - match: Host(`traefik.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: security-headers
+        - name: sso-chain
           namespace: traefik
-      # SSO via keycloak-forwardauth: re-add once Keycloak homelab realm
-      # and oauth2-proxy client are configured.
       services:
         - name: api@internal
           kind: TraefikService
