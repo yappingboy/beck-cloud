@@ -26,7 +26,7 @@ spec:
       className: traefik
       annotations:
         cert-manager.io/cluster-issuer: letsencrypt-prod
-        traefik.ingress.kubernetes.io/router.middlewares: traefik-sso-chain@kubernetescrd
+        traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
     tls:
       source: letsencrypt
     letsencrypt:
