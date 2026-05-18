@@ -2,14 +2,13 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: oauth2-redirect
-  namespace: media
+  namespace: identity
 spec:
   errors:
     status:
       - "401"
     service:
       name: oauth2-proxy
-      namespace: identity
       port: 80
     query: "/oauth2/sign_in?rd={url}"
 ---
@@ -17,7 +16,7 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: keycloak-forwardauth
-  namespace: media
+  namespace: identity
 spec:
   forwardAuth:
     address: http://oauth2-proxy.identity.svc.cluster.local/oauth2/auth
@@ -32,11 +31,11 @@ apiVersion: traefik.containo.us/v1alpha1
 kind: Middleware
 metadata:
   name: sso-chain
-  namespace: media
+  namespace: identity
 spec:
   chain:
     middlewares:
       - name: oauth2-redirect
-        namespace: media
+        namespace: identity
       - name: keycloak-forwardauth
-        namespace: media
+        namespace: identity
