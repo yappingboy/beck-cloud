@@ -14,15 +14,11 @@ spec:
         name: oauth2-proxy
         namespace: flux-system
   values:
-    # Secrets are read from Kubernetes secrets via configuration.existingSecret.
-    # Create before deploying:
-    #   kubectl -n identity create secret generic oauth2-proxy-secrets \
-    #     --from-literal=client-secret=<keycloak-client-secret> \
-    #     --from-literal=cookie-secret=$(openssl rand -base64 32)
-    configuration:
-      clientID: "oauth2-proxy"
+    # Secrets are read from Kubernetes secrets via config.existingSecret.
+    # The secret must contain keys: client-id, client-secret, cookie-secret
+    config:
       existingSecret: oauth2-proxy-secrets
-      content: |
+      configFile: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
         oidc_issuer_url = "https://keycloak.becklab.cloud/realms/homelab"
@@ -30,13 +26,12 @@ spec:
         redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
         cookie_secure = true
         cookie_httponly = true
-        cookie_samesite = "Lax"
-        cookie_domain = ".becklab.cloud"
+        cookie_samesite = "lax"
+        cookie_domains = [".becklab.cloud"]
+        whitelist_domains = [".becklab.cloud"]
         skip_provider_button = true
-        login_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/auth"
-        redeem_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token"
-        validate_url = "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/userinfo"
-        upstream = "http://localhost:80"
+        reverse_proxy = true
+        upstream = "static://202"
     ingress:
       enabled: true
       className: traefik
