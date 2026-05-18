@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - middlewares.yaml
   - pvs-lvm.yaml
   - pvcs.yaml
   - secret-gluetun.yaml
