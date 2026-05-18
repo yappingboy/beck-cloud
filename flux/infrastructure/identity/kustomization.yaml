@@ -11,5 +11,6 @@ resources:
   - lldap.yaml
   - keycloak.yaml
   - oauth2-proxy.yaml
+  - sso-middlewares.yaml
 
 

@@ -15,7 +15,7 @@ spec:
       kind: Rule
       middlewares:
         - name: sso-chain
-          namespace: traefik
+          namespace: identity
       services:
         - name: api@internal
           kind: TraefikService
