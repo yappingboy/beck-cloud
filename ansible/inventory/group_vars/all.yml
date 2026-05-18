@@ -47,8 +47,30 @@ one_k3s_vms:
     disk: 50
     role: worker
 
-# ── ZFS ───────────────────────────────────────────────────────────────────────
-zfs_pool_name: tank
+# ── LVM storage (replaces ZFS — built on top of software RAID md0-md3) ───────
+lvm_vg_name: vg_one_tank        # Volume Group built from /dev/md0-md3
+lvm_lvs:
+  # OpenNebula system/image datastore (VM disk images)
+  - name: lv_one_datastores
+    size: 500G
+    mountpoint: /var/lib/one/datastores
+    fstype: xfs
+    owner: oneadmin
+    group: oneadmin
+  # Bulk media library — large block, mounted inside k3s-worker-1 via OpenNebula
+  - name: lv_media
+    size: 80%FREE              # consume most of the VG
+    mountpoint: /mnt/lvm/media
+    fstype: xfs
+    owner: root
+    group: root
+  # Torrent/download staging area
+  - name: lv_downloads
+    size: 2T
+    mountpoint: /mnt/lvm/downloads
+    fstype: xfs
+    owner: root
+    group: root
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
