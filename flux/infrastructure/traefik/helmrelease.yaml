@@ -20,15 +20,15 @@ spec:
   values:
     logs:
       general:
-        level: INFO
+        level: DEBUG
       access:
         enabled: true
-        filePath: /var/log/traefik/access.log
         format: json
     providers:
       kubernetesIngress:
         publishedService:
           enabled: true
+        allowCrossNamespaceMiddlewares: true
       kubernetesGateway:
         enabled: true
     ports:
