@@ -31,7 +31,7 @@ spec:
         whitelist_domains = [".becklab.cloud"]
         skip_provider_button = true
         reverse_proxy = true
-        upstream = "static://202"
+        upstreams = ["static://202"]
     ingress:
       enabled: true
       className: traefik
