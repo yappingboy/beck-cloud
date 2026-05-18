@@ -8,12 +8,12 @@
 #   1. Creates an OpenNebula IMAGE datastore (fs driver) with
 #      BASE_PATH = /mnt/lvm/media
 #   2. Creates a DATABLOCK image in that datastore (thin raw file)
-#   3. Attaches the image to k3s-worker-1 as a second disk (/dev/vdb)
+#   3. Attaches the image to k3s-worker-1 as a disk (appeared as /dev/vda)
 #
 # After running this playbook, SSH into k3s-worker-1 and:
-#   mkfs.xfs /dev/vdb
-#   mkdir -p /mnt/media
-#   echo '/dev/vdb /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab
+#   mkfs.xfs /dev/vda
+#   mkdir -p /mnt/media/library /mnt/media/downloads
+#   echo '/dev/vda /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab
 #   mount -a
 #
 # Then Flux will automatically reconcile the K3s PV/PVCs pointing to /mnt/media.
@@ -181,12 +181,12 @@
     - name: Next steps
       ansible.builtin.debug:
         msg:
-          - "Media disk attached to {{ media_vm_name }} as /dev/vdb (or next available vd*)."
+          - "Media disk attached to {{ media_vm_name }} (appeared as /dev/vda)."
           - ""
           - "SSH into {{ media_vm_name }} and run:"
-          - "  mkfs.xfs /dev/vdb"
-          - "  mkdir -p /mnt/media"
-          - "  echo '/dev/vdb /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab"
+          - "  mkfs.xfs /dev/vda"
+          - "  mkdir -p /mnt/media/library /mnt/media/downloads"
+          - "  echo '/dev/vda /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab"
           - "  mount -a"
           - ""
           - "Flux will reconcile K3s PVs automatically once /mnt/media is available."
