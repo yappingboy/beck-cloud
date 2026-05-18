@@ -1,0 +1,165 @@
+---
+# 01-lvm-storage.yml — Create LVs from vg_one_tank and mount them
+#
+# Replaces 01-zfs.yml. Run BEFORE 02-opennebula.yml so that
+# /var/lib/one/datastores is mounted before OpenNebula starts.
+#
+# Prerequisites (already done manually):
+#   - mdadm arrays /dev/md0-md3 assembled
+#   - Volume Group vg_one_tank created over those arrays:
+#       vgcreate vg_one_tank /dev/md0 /dev/md1 /dev/md2 /dev/md3
+#
+# What this creates (sizes in group_vars/all.yml lvm_lvs):
+#   lv_one_datastores → /var/lib/one/datastores   (OpenNebula VM images)
+#   lv_media          → /mnt/lvm/media             (bulk media library)
+#   lv_downloads      → /mnt/lvm/downloads         (torrent staging area)
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-lvm-storage.yml
+
+- name: Create and mount LVM logical volumes from vg_one_tank
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  tasks:
+    # ── Sanity check ──────────────────────────────────────────────────────────
+    - name: Verify Volume Group exists
+      ansible.builtin.command: vgdisplay {{ lvm_vg_name }}
+      register: vg_check
+      changed_when: false
+      failed_when: vg_check.rc != 0
+
+    - name: Show VG summary
+      ansible.builtin.debug:
+        msg: "{{ vg_check.stdout_lines | select('match', '.*VG Name.*|.*VG Size.*|.*Free.*') | list }}"
+
+    # ── Stop OpenNebula so we can safely mount over /var/lib/one/datastores ──
+    - name: Stop OpenNebula before mounting datastores LV
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: stopped
+      loop:
+        - opennebula
+        - opennebula-fireedge
+      failed_when: false
+
+    # ── Create logical volumes ────────────────────────────────────────────────
+    - name: Check if LV already exists
+      ansible.builtin.command: lvdisplay /dev/{{ lvm_vg_name }}/{{ item.name }}
+      register: lv_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ lvm_lvs }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Create logical volume
+      community.general.lvol:
+        vg: "{{ item.item.name | regex_replace('.*', lvm_vg_name) }}"
+        lv: "{{ item.item.name }}"
+        size: "{{ item.item.size }}"
+        state: present
+        shrink: false
+      when: item.rc != 0
+      loop: "{{ lv_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      vars:
+        # community.general.lvol needs the VG name, not available in loop item directly
+        ansible_loop_var: item
+
+    # Simpler alternative if the module has issues:
+    - name: Create logical volumes (fallback via lvcreate)
+      ansible.builtin.shell: |
+        lvcreate -y -L {{ item.item.size }} -n {{ item.item.name }} {{ lvm_vg_name }} \
+          2>&1 | grep -v "already exists" || true
+      when: item.rc != 0
+      loop: "{{ lv_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+      changed_when: item.rc != 0
+      # Use lvcreate directly for %FREE syntax support
+      tags: [lvcreate]
+
+    # ── Format logical volumes (skip if already formatted) ────────────────────
+    - name: Check if LV already has a filesystem
+      ansible.builtin.command: blkid /dev/{{ lvm_vg_name }}/{{ item.name }}
+      register: blkid_check
+      failed_when: false
+      changed_when: false
+      loop: "{{ lvm_lvs }}"
+      loop_control:
+        label: "{{ item.name }}"
+
+    - name: Format LV with XFS
+      ansible.builtin.filesystem:
+        fstype: "{{ item.item.fstype }}"
+        dev: "/dev/{{ lvm_vg_name }}/{{ item.item.name }}"
+        force: false
+      when: item.rc != 0
+      loop: "{{ blkid_check.results }}"
+      loop_control:
+        label: "{{ item.item.name }}"
+
+    # ── Create mount points ───────────────────────────────────────────────────
+    - name: Create mount point directories
+      ansible.builtin.file:
+        path: "{{ item.mountpoint }}"
+        state: directory
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        mode: '0755'
+      loop: "{{ lvm_lvs }}"
+      loop_control:
+        label: "{{ item.mountpoint }}"
+
+    # ── Mount and persist via fstab ───────────────────────────────────────────
+    - name: Mount LV and add to fstab
+      ansible.posix.mount:
+        path: "{{ item.mountpoint }}"
+        src: "/dev/{{ lvm_vg_name }}/{{ item.name }}"
+        fstype: "{{ item.fstype }}"
+        opts: defaults,nofail
+        state: mounted
+      loop: "{{ lvm_lvs }}"
+      loop_control:
+        label: "{{ item.mountpoint }}"
+
+    # ── Fix ownership on datastores mount after mounting ─────────────────────
+    - name: Set ownership on mounted volumes
+      ansible.builtin.file:
+        path: "{{ item.mountpoint }}"
+        owner: "{{ item.owner }}"
+        group: "{{ item.group }}"
+        state: directory
+      loop: "{{ lvm_lvs }}"
+      loop_control:
+        label: "{{ item.mountpoint }}"
+
+    # ── Restart OpenNebula ────────────────────────────────────────────────────
+    - name: Start OpenNebula services
+      ansible.builtin.systemd:
+        name: "{{ item }}"
+        state: started
+        enabled: true
+      loop:
+        - opennebula
+        - opennebula-fireedge
+      failed_when: false
+
+  post_tasks:
+    - name: Show mounted volumes
+      ansible.builtin.command: df -h {{ lvm_lvs | map(attribute='mountpoint') | join(' ') }}
+      register: df_out
+      changed_when: false
+
+    - name: Print mount summary
+      ansible.builtin.debug:
+        var: df_out.stdout_lines
+
+    - name: Summary
+      ansible.builtin.debug:
+        msg:
+          - "lv_one_datastores → /var/lib/one/datastores (OpenNebula VM image store)"
+          - "lv_media          → /mnt/lvm/media (bulk media — next: run 10-media-datastore.yml)"
+          - "lv_downloads      → /mnt/lvm/downloads (torrent staging)"

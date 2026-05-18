@@ -1,12 +1,11 @@
-# Media/Torrent PVCs backed by local-path StorageClass (K3s built-in).
-# Provisioner: rancher.io/local-path — enabled by default when local-storage
-# is not in the K3s --disable list.
+# Media/Torrent PVCs.
 #
-# All PVCs use ReadWriteOnce. On a single-worker K3s cluster all media
-# pods co-locate on k3s-worker-1, so multiple pods can mount the same
-# RWO volume simultaneously (K8s allows this when pods share a node).
-# If you add a second worker and need true RWX, consider adding Longhorn:
-#   helm install longhorn longhorn/longhorn -n longhorn-system
+# media-library and media-downloads bind statically to LVM-backed PVs defined
+# in pvs-lvm.yaml (local volume on k3s-worker-1 at /mnt/media, provisioned by
+# 10-media-datastore.yml via OpenNebula).
+#
+# Config volumes (jellyfin-config, sonarr-config, etc.) remain on local-path
+# (small, on the VM root disk) — no change needed there.
 
 ---
 apiVersion: v1
@@ -17,10 +16,11 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
+  storageClassName: ""       # static binding — matches media-library-lvm PV
+  volumeName: media-library-lvm
   resources:
     requests:
-      storage: 60Ti
+      storage: 45Ti
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -30,10 +30,11 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
+  storageClassName: ""       # static binding — matches media-downloads-lvm PV
+  volumeName: media-downloads-lvm
   resources:
     requests:
-      storage: 10Ti
+      storage: 5Ti
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim

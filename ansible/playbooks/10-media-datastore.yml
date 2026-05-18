@@ -1,0 +1,192 @@
+---
+# 10-media-datastore.yml — OpenNebula media IMAGE datastore + attach to k3s VM
+#
+# Prerequisite: 01-lvm-storage.yml must have run first (lv_media mounted at
+# /mnt/lvm/media, OpenNebula running).
+#
+# What this does:
+#   1. Creates an OpenNebula IMAGE datastore (fs driver) with
+#      BASE_PATH = /mnt/lvm/media
+#   2. Creates a DATABLOCK image in that datastore (thin raw file)
+#   3. Attaches the image to k3s-worker-1 as a disk (appeared as /dev/vda)
+#
+# After running this playbook, SSH into k3s-worker-1 and:
+#   mkfs.xfs /dev/vda
+#   mkdir -p /mnt/media/library /mnt/media/downloads
+#   echo '/dev/vda /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab
+#   mount -a
+#
+# Then Flux will automatically reconcile the K3s PV/PVCs pointing to /mnt/media.
+#
+# Run:
+#   ansible-playbook -i inventory/hosts.yml playbooks/10-media-datastore.yml
+#   # Optional overrides:
+#   #   -e media_image_size_mb=<size in MB>   (default: 50TB = 52428800)
+#   #   -e media_vm_name=k3s-worker-1
+
+- name: Create OpenNebula media datastore and attach to k3s VM
+  hosts: hypervisor
+  become: true
+  gather_facts: false
+
+  vars:
+    one_auth_env:
+      ONE_AUTH: /var/lib/one/.one/one_auth
+    media_ds_name: media-images
+    media_image_name: media-disk
+    media_image_size_mb: 52428800    # 50 TB in MB — adjust to match lv_media size
+    media_vm_name: k3s-worker-1
+    media_ds_base_path: /mnt/lvm/media
+
+  tasks:
+    # ── Verify prerequisites ──────────────────────────────────────────────────
+    - name: Verify lv_media is mounted
+      ansible.builtin.command: mountpoint -q {{ media_ds_base_path }}
+      changed_when: false
+      failed_when: false
+      register: mount_check
+
+    - name: Fail if lv_media not mounted
+      ansible.builtin.fail:
+        msg: "{{ media_ds_base_path }} is not mounted. Run 01-lvm-storage.yml first."
+      when: mount_check.rc != 0
+
+    - name: Verify OpenNebula API is up
+      ansible.builtin.wait_for:
+        host: localhost
+        port: 2633
+        timeout: 30
+
+    # ── Create IMAGE datastore ────────────────────────────────────────────────
+    - name: Check if media datastore already exists
+      ansible.builtin.command: onedatastore show {{ media_ds_name }}
+      environment: "{{ one_auth_env }}"
+      register: ds_check
+      failed_when: false
+      changed_when: false
+
+    - name: Write media datastore template
+      ansible.builtin.copy:
+        dest: /tmp/media-ds.one
+        mode: '0644'
+        content: |
+          NAME      = "{{ media_ds_name }}"
+          TYPE      = IMAGE_DS
+          DS_MAD    = fs
+          TM_MAD    = ssh
+          DISK_TYPE = FILE
+          BASE_PATH = "{{ media_ds_base_path }}"
+          SAFE_DIRS = "{{ media_ds_base_path }}"
+      when: ds_check.rc != 0
+
+    - name: Create media IMAGE datastore
+      ansible.builtin.command: onedatastore create /tmp/media-ds.one
+      environment: "{{ one_auth_env }}"
+      when: ds_check.rc != 0
+      register: ds_create
+
+    - name: Get datastore ID
+      ansible.builtin.shell: |
+        onedatastore show {{ media_ds_name }} | grep '^\s*ID\s*:' | awk '{print $NF}'
+      environment: "{{ one_auth_env }}"
+      register: ds_id
+      changed_when: false
+
+    - name: Show datastore ID
+      ansible.builtin.debug:
+        msg: "Media datastore ID: {{ ds_id.stdout | trim }}"
+
+    # ── Create DATABLOCK image ────────────────────────────────────────────────
+    - name: Check if media image already exists
+      ansible.builtin.command: oneimage show {{ media_image_name }}
+      environment: "{{ one_auth_env }}"
+      register: img_check
+      failed_when: false
+      changed_when: false
+
+    - name: Write media image template
+      ansible.builtin.copy:
+        dest: /tmp/media-image.one
+        mode: '0644'
+        content: |
+          NAME       = "{{ media_image_name }}"
+          TYPE       = DATABLOCK
+          SIZE       = {{ media_image_size_mb }}
+          FORMAT     = raw
+          PERSISTENT = YES
+          DEV_PREFIX = vd
+      when: img_check.rc != 0
+
+    - name: Create media DATABLOCK image in media datastore
+      ansible.builtin.command: >
+        oneimage create /tmp/media-image.one
+        --datastore {{ ds_id.stdout | trim }}
+      environment: "{{ one_auth_env }}"
+      when: img_check.rc != 0
+
+    - name: Wait for image to reach READY state (sparse allocation is fast)
+      ansible.builtin.shell: |
+        oneimage show {{ media_image_name }} | grep '^\s*STATE\s*:' | awk '{print $NF}'
+      environment: "{{ one_auth_env }}"
+      register: img_state
+      retries: 20
+      delay: 10
+      until: img_state.stdout | trim == 'rdy'
+      changed_when: false
+
+    - name: Show image state
+      ansible.builtin.debug:
+        msg: "Media image state: {{ img_state.stdout | trim }}"
+
+    # ── Attach image to k3s-worker-1 ─────────────────────────────────────────
+    - name: Get VM ID for {{ media_vm_name }}
+      ansible.builtin.shell: |
+        onevm list --no-header | awk '$4 == "{{ media_vm_name }}" {print $1; exit}'
+      environment: "{{ one_auth_env }}"
+      register: vm_id
+      changed_when: false
+
+    - name: Fail if VM not found
+      ansible.builtin.fail:
+        msg: "VM '{{ media_vm_name }}' not found. Deploy K3s VMs with 04-one-vms.yml first."
+      when: vm_id.stdout | trim == ''
+
+    - name: Check if media disk already attached to VM
+      ansible.builtin.shell: |
+        onevm show {{ vm_id.stdout | trim }} | grep -c '{{ media_image_name }}'
+      environment: "{{ one_auth_env }}"
+      register: disk_attached
+      failed_when: false
+      changed_when: false
+
+    - name: Attach media disk to {{ media_vm_name }}
+      ansible.builtin.command: >
+        onevm disk-attach {{ vm_id.stdout | trim }}
+        --image {{ media_image_name }}
+      environment: "{{ one_auth_env }}"
+      when: disk_attached.stdout | int == 0
+
+    - name: Verify disk appears in VM
+      ansible.builtin.shell: |
+        onevm show {{ vm_id.stdout | trim }} | grep -A5 'DISK_ID\|IMAGE'
+      environment: "{{ one_auth_env }}"
+      register: disk_verify
+      changed_when: false
+
+    - name: Show attached disk info
+      ansible.builtin.debug:
+        var: disk_verify.stdout_lines
+
+  post_tasks:
+    - name: Next steps
+      ansible.builtin.debug:
+        msg:
+          - "Media disk attached to {{ media_vm_name }} (appeared as /dev/vda)."
+          - ""
+          - "SSH into {{ media_vm_name }} and run:"
+          - "  mkfs.xfs /dev/vda"
+          - "  mkdir -p /mnt/media/library /mnt/media/downloads"
+          - "  echo '/dev/vda /mnt/media xfs defaults,nofail 0 0' >> /etc/fstab"
+          - "  mount -a"
+          - ""
+          - "Flux will reconcile K3s PVs automatically once /mnt/media is available."

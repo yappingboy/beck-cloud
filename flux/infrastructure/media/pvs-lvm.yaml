@@ -1,0 +1,55 @@
+---
+# Static PersistentVolumes backed by the LVM disk (/mnt/media on k3s-worker-1).
+# Provisioned by 10-media-datastore.yml — the disk is attached to the VM by
+# OpenNebula and formatted/mounted at /mnt/media inside the VM.
+#
+# Uses the 'local' volume type (not hostPath) so K8s enforces node affinity
+# and won't schedule pods elsewhere if the disk is missing.
+#
+# Directory layout on /dev/vdb inside k3s-worker-1:
+#   /mnt/media/library    →  media-library PVC
+#   /mnt/media/downloads  →  media-downloads PVC (shared with torrent namespace)
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-library-lvm
+spec:
+  capacity:
+    storage: 45Ti
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/library
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k3s-worker-1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-downloads-lvm
+spec:
+  capacity:
+    storage: 5Ti
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/downloads
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k3s-worker-1

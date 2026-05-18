@@ -43,8 +43,6 @@ spec:
               mountPath: /data/movies
             - name: media-downloads
               mountPath: /downloads
-            - name: backup-media
-              mountPath: /backup
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -55,9 +53,6 @@ spec:
         - name: media-downloads
           persistentVolumeClaim:
             claimName: media-downloads
-        - name: backup-media
-          persistentVolumeClaim:
-            claimName: backup-media
 ---
 apiVersion: v1
 kind: Service
