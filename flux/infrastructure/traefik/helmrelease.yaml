@@ -52,7 +52,6 @@ spec:
       dashboard:
         enabled: false
     persistence:
-      enabled: true
-      mountPath: /var/log/traefik
-      size: 10Gi
-      storageClass: local-path
+      enabled: false
+    additionalArguments:
+      - "--providers.kubernetesIngress.allowCrossNamespaceMiddlewares=true"
