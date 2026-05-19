@@ -17,6 +17,8 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: bazarr
           image: lscr.io/linuxserver/bazarr:latest
