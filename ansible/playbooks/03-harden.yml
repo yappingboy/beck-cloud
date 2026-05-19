@@ -120,6 +120,17 @@
         state: enabled
         immediate: true
 
+    - name: Add OpenNebula bridge interfaces to trusted zone
+      ansible.posix.firewalld:
+        interface: "{{ item }}"
+        zone: trusted
+        permanent: true
+        state: enabled
+        immediate: true
+      loop:
+        - "{{ one_int_bridge }}"
+        - "{{ one_ext_bridge }}"
+
     # VMs are on the real LAN (172.16.0.0/16) via br0 — no port-forwards needed.
     # kubectl reaches k3s-server at 172.16.0.20:6443 directly.
 
