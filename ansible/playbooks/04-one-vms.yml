@@ -22,21 +22,29 @@
   vars:
     one_auth:
       ONE_AUTH: /var/lib/one/.one/one_auth
-    # Executed by one-context on first boot of k3s-worker-1. Formats /dev/vdb
-    # (the BecklabMedia disk) with xfs if it's blank, mounts at /mnt/media, and
-    # creates the subdirectories that back the K8s media PVs.
+    # Executed by one-context on first boot of k3s-worker-1. Finds the
+    # BecklabMedia disk by size (>=1TB, unmounted), formats it xfs with
+    # LABEL=media if blank, mounts at /mnt/media (by label so the device name
+    # can vary between boots — virt may assign vda/vdb/sdb depending on bus),
+    # and creates the subdirectories that back the K8s media PVs.
     media_bootstrap_script: |
       #!/bin/bash
       set -e
-      DISK=/dev/vdb
       MOUNT=/mnt/media
-      for i in $(seq 1 30); do [ -b "$DISK" ] && break; sleep 1; done
+      DISK=""
+      for i in $(seq 1 60); do
+        DISK=$(lsblk -bndo NAME,SIZE,TYPE,MOUNTPOINT | \
+          awk '$3=="disk" && $4=="" && $2>=1099511627776 {print "/dev/"$1; exit}')
+        [ -n "$DISK" ] && break
+        sleep 2
+      done
+      [ -n "$DISK" ] || { echo "no >=1TB unmounted disk found" >&2; exit 1; }
       if ! blkid "$DISK" >/dev/null 2>&1; then
         mkfs.xfs -L media "$DISK"
       fi
       mkdir -p "$MOUNT"
-      grep -q "^$DISK $MOUNT" /etc/fstab || \
-        echo "$DISK $MOUNT xfs defaults,nofail 0 0" >> /etc/fstab
+      grep -q " $MOUNT " /etc/fstab || \
+        echo "LABEL=media $MOUNT xfs defaults,nofail 0 0" >> /etc/fstab
       mount -a
       mkdir -p "$MOUNT/movies" "$MOUNT/shows" "$MOUNT/downloads"
       chown -R 1000:1000 "$MOUNT"
