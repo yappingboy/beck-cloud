@@ -39,15 +39,20 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: media-library
-              mountPath: /data
+            - name: media-movies
+              mountPath: /data/movies
+            - name: media-shows
+              mountPath: /data/shows
       volumes:
         - name: config
           persistentVolumeClaim:
             claimName: bazarr-config
-        - name: media-library
+        - name: media-movies
           persistentVolumeClaim:
-            claimName: media-library
+            claimName: media-movies
+        - name: media-shows
+          persistentVolumeClaim:
+            claimName: media-shows
 ---
 apiVersion: v1
 kind: Service

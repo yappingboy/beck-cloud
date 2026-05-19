@@ -39,17 +39,22 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: media-library
-              mountPath: /data
+            - name: media-movies
+              mountPath: /data/movies
+            - name: media-shows
+              mountPath: /data/shows
             - name: media-downloads
               mountPath: /downloads
       volumes:
         - name: config
           persistentVolumeClaim:
             claimName: jellyfin-config
-        - name: media-library
+        - name: media-movies
           persistentVolumeClaim:
-            claimName: media-library
+            claimName: media-movies
+        - name: media-shows
+          persistentVolumeClaim:
+            claimName: media-shows
         - name: media-downloads
           persistentVolumeClaim:
             claimName: media-downloads

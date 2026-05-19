@@ -1,8 +1,8 @@
 # Media/Torrent PVCs.
 #
-# media-library and media-downloads bind statically to LVM-backed PVs defined
-# in pvs-lvm.yaml (local volume on k3s-worker-1 at /mnt/media, provisioned by
-# 10-media-datastore.yml via OpenNebula).
+# media-movies, media-shows and media-downloads bind statically to LVM-backed
+# PVs defined in pvs-lvm.yaml (local volume on k3s-worker-1 at /mnt/media,
+# provisioned by 10-media-datastore.yml via OpenNebula).
 #
 # Config volumes (jellyfin-config, sonarr-config, etc.) remain on local-path
 # (small, on the VM root disk) — no change needed there.
@@ -11,13 +11,27 @@
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: media-library
+  name: media-movies
   namespace: media
 spec:
   accessModes:
-    - ReadWriteOnce
-  storageClassName: ""       # static binding — matches media-library-lvm PV
-  volumeName: media-library-lvm
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-movies-lvm PV
+  volumeName: media-movies-lvm
+  resources:
+    requests:
+      storage: 45Ti
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-shows
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-shows-lvm PV
+  volumeName: media-shows-lvm
   resources:
     requests:
       storage: 45Ti
