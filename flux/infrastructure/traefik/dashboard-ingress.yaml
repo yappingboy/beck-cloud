@@ -14,7 +14,7 @@ spec:
     - match: Host(`traefik.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: sso-chain
+        - name: sso-admin-chain
           namespace: identity
       services:
         - name: api@internal

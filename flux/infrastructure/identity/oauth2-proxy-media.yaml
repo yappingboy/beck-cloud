@@ -1,7 +1,7 @@
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
-  name: oauth2-proxy
+  name: oauth2-proxy-media
   namespace: identity
 spec:
   interval: 1m
@@ -14,8 +14,6 @@ spec:
         name: oauth2-proxy
         namespace: flux-system
   values:
-    # Secrets are read from Kubernetes secrets via config.existingSecret.
-    # The secret must contain keys: client-id, client-secret, cookie-secret
     config:
       existingSecret: oauth2-proxy-secrets
       configFile: |
@@ -24,9 +22,9 @@ spec:
         oidc_issuer_url = "https://keycloak.becklab.cloud/realms/homelab"
         oidc_groups_claim = "groups"
         email_domains = ["*"]
-        allowed_groups = ["/admins"]
-        redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
-        cookie_name = "_oauth2_admin"
+        allowed_groups = ["/admins", "/media"]
+        redirect_url = "https://oauth2-media.becklab.cloud/oauth2/callback"
+        cookie_name = "_oauth2_media"
         cookie_secure = true
         cookie_httponly = true
         cookie_samesite = "lax"
@@ -42,11 +40,11 @@ spec:
         cert-manager.io/cluster-issuer: letsencrypt-prod
         traefik.ingress.kubernetes.io/router.entrypoints: websecure
       hosts:
-        - oauth2.becklab.cloud
+        - oauth2-media.becklab.cloud
       paths:
         - /oauth2/
       pathType: Prefix
       tls:
         - hosts:
-            - oauth2.becklab.cloud
-          secretName: oauth2-proxy-tls
+            - oauth2-media.becklab.cloud
+          secretName: oauth2-proxy-media-tls

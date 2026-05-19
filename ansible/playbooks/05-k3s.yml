@@ -119,6 +119,20 @@
       args:
         creates: /usr/local/bin/k3s
 
+    - name: Configure K3s OIDC for Keycloak
+      when: k3s_role == 'server'
+      ansible.builtin.copy:
+        dest: /etc/rancher/k3s/config.yaml
+        content: |
+          kube-apiserver-arg:
+            - "oidc-issuer-url=https://keycloak.becklab.cloud/realms/homelab"
+            - "oidc-client-id=oauth2-proxy"
+            - "oidc-username-claim=preferred_username"
+            - "oidc-groups-claim=groups"
+            - "oidc-groups-prefix=keycloak:"
+        mode: '0644'
+      notify: restart k3s
+
     - name: Ensure k3s service is started and enabled
       when: k3s_role == 'server'
       ansible.builtin.systemd:
@@ -264,3 +278,10 @@
       when: k3s_role == 'server'
       ansible.builtin.debug:
         var: nodes.stdout_lines
+
+
+  handlers:
+    - name: restart k3s
+      ansible.builtin.systemd:
+        name: k3s
+        state: restarted
