@@ -17,7 +17,10 @@ spec:
     image:
       repository: ghcr.io/gethomepage/homepage
       tag: latest
-
+    
+    env:
+      - name: HOMEPAGE_ALLOWED_HOSTS
+        value: home.becklab.cloud
     serviceAccount:
       create: true
       name: homepage
