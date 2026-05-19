@@ -11,6 +11,8 @@ spec:
       name: oauth2-proxy
       port: 80
     query: "/oauth2/sign_in?rd={url}"
+    statusRewrites:
+      "401": 302
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
