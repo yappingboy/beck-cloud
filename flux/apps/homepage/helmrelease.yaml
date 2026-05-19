@@ -42,96 +42,103 @@ spec:
               - home.becklab.cloud
             secretName: homepage-tls
 
-    config:
-      settings.yaml: |
-        title: Becklab
-        theme: dark
-        color: slate
-        headerStyle: clean
-        layout:
-          Media:
-            style: row
-            columns: 4
-          Requests:
-            style: row
-            columns: 2
-          Subtitles & Indexers:
-            style: row
-            columns: 2
-          Monitoring:
-            style: row
-            columns: 3
-          Identity:
-            style: row
-            columns: 2
-
-      widgets.yaml: |
-        - resources:
-            cpu: true
-            memory: true
-            label: cluster
-        - datetime:
-            text_size: xl
-            format:
-              timeStyle: short
-              dateStyle: short
-
-      services.yaml: |
-        - Media:
-            - Jellyfin:
-                href: https://jellyfin.becklab.cloud
-                description: Media server
-                icon: jellyfin.png
-            - Sonarr:
-                href: https://sonarr.becklab.cloud
-                description: TV show management
-                icon: sonarr.png
-            - Radarr:
-                href: https://radarr.becklab.cloud
-                description: Movie management
-                icon: radarr.png
-            - Prowlarr:
-                href: https://prowlarr.becklab.cloud
-                description: Indexer manager
-                icon: prowlarr.png
-        - Requests:
-            - Jellyseerr:
-                href: https://requests.becklab.cloud
-                description: Media requests
-                icon: jellyseerr.png
-        - Subtitles & Indexers:
-            - Bazarr:
-                href: https://bazarr.becklab.cloud
-                description: Subtitle management
-                icon: bazarr.png
-        - Monitoring:
-            - Grafana:
-                href: https://grafana.becklab.cloud
-                description: Dashboards
-                icon: grafana.png
-            - Prometheus:
-                href: https://prometheus.becklab.cloud
-                description: Metrics
-                icon: prometheus.png
-            - Alertmanager:
-                href: https://alertmanager.becklab.cloud
-                description: Alerts
-                icon: alertmanager.png
-        - Identity:
-            - Keycloak:
-                href: https://keycloak.becklab.cloud
-                description: SSO / Identity
-                icon: keycloak.png
-            - Traefik:
-                href: https://traefik.becklab.cloud
-                description: Ingress dashboard
-                icon: traefik.png
-
-      bookmarks.yaml: |
-        []
-
-      kubernetes.yaml: |
-        mode: cluster
-
-      docker.yaml: |
-        {}
+  postRenderers:
+    - kustomize:
+        patches:
+          - target:
+              version: v1
+              kind: ConfigMap
+              name: homepage
+            patch: |-
+              apiVersion: v1
+              kind: ConfigMap
+              metadata:
+                name: homepage
+              data:
+                settings.yaml: |
+                  title: Becklab
+                  theme: dark
+                  color: slate
+                  headerStyle: clean
+                  layout:
+                    Media:
+                      style: row
+                      columns: 4
+                    Requests:
+                      style: row
+                      columns: 2
+                    Subtitles & Indexers:
+                      style: row
+                      columns: 2
+                    Monitoring:
+                      style: row
+                      columns: 3
+                    Identity:
+                      style: row
+                      columns: 2
+                widgets.yaml: |
+                  - resources:
+                      cpu: true
+                      memory: true
+                      label: cluster
+                  - datetime:
+                      text_size: xl
+                      format:
+                        timeStyle: short
+                        dateStyle: short
+                services.yaml: |
+                  - Media:
+                      - Jellyfin:
+                          href: https://jellyfin.becklab.cloud
+                          description: Media server
+                          icon: jellyfin.png
+                      - Sonarr:
+                          href: https://sonarr.becklab.cloud
+                          description: TV show management
+                          icon: sonarr.png
+                      - Radarr:
+                          href: https://radarr.becklab.cloud
+                          description: Movie management
+                          icon: radarr.png
+                      - Prowlarr:
+                          href: https://prowlarr.becklab.cloud
+                          description: Indexer manager
+                          icon: prowlarr.png
+                  - Requests:
+                      - Jellyseerr:
+                          href: https://requests.becklab.cloud
+                          description: Media requests
+                          icon: jellyseerr.png
+                  - Subtitles & Indexers:
+                      - Bazarr:
+                          href: https://bazarr.becklab.cloud
+                          description: Subtitle management
+                          icon: bazarr.png
+                  - Monitoring:
+                      - Grafana:
+                          href: https://grafana.becklab.cloud
+                          description: Dashboards
+                          icon: grafana.png
+                      - Prometheus:
+                          href: https://prometheus.becklab.cloud
+                          description: Metrics
+                          icon: prometheus.png
+                      - Alertmanager:
+                          href: https://alertmanager.becklab.cloud
+                          description: Alerts
+                          icon: alertmanager.png
+                  - Identity:
+                      - Keycloak:
+                          href: https://keycloak.becklab.cloud
+                          description: SSO / Identity
+                          icon: keycloak.png
+                      - Traefik:
+                          href: https://traefik.becklab.cloud
+                          description: Ingress dashboard
+                          icon: traefik.png
+                bookmarks.yaml: |
+                  []
+                kubernetes.yaml: |
+                  mode: cluster
+                docker.yaml: |
+                  {}
