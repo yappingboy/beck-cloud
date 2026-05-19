@@ -35,8 +35,15 @@ spec:
     ingress:
       enabled: true
       className: traefik
+      annotations:
+        cert-manager.io/cluster-issuer: letsencrypt-prod
+        traefik.ingress.kubernetes.io/router.entrypoints: websecure
       hosts:
         - oauth2.becklab.cloud
       paths:
         - /oauth2/
       pathType: Prefix
+      tls:
+        - hosts:
+            - oauth2.becklab.cloud
+          secretName: oauth2-proxy-tls
