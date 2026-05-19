@@ -309,6 +309,84 @@
         ONE_AUTH: /var/lib/one/.one/one_auth
       when: k3s_ext_check.rc != 0
 
+    # ── Tank IMAGE datastore (backs BecklabMedia) ────────────────────────
+    # Must be the first custom datastore created so it lands on ID 101,
+    # matching the /var/lib/one/datastores/101 mount from 01-lvm-storage.yml.
+    - name: Check if Tank datastore already exists
+      ansible.builtin.command: onedatastore show {{ one_media_datastore_name }}
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      register: tank_ds_check
+      failed_when: false
+      changed_when: false
+
+    - name: Write Tank datastore template
+      ansible.builtin.copy:
+        dest: /tmp/tank-ds.one
+        mode: '0644'
+        content: |
+          NAME      = "{{ one_media_datastore_name }}"
+          TYPE      = IMAGE_DS
+          DS_MAD    = fs
+          TM_MAD    = ssh
+          DISK_TYPE = FILE
+      when: tank_ds_check.rc != 0
+
+    - name: Create Tank IMAGE datastore
+      ansible.builtin.command: onedatastore create /tmp/tank-ds.one
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      when: tank_ds_check.rc != 0
+
+    - name: Get Tank datastore ID
+      ansible.builtin.shell: |
+        onedatastore show {{ one_media_datastore_name }} | awk '/^ID[[:space:]]*:/{print $NF; exit}'
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      register: tank_ds_id
+      changed_when: false
+
+    # ── BecklabMedia DATABLOCK image (sparse, persistent) ────────────────
+    - name: Check if BecklabMedia image already exists
+      ansible.builtin.command: oneimage show {{ one_media_image_name }}
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      register: media_img_check
+      failed_when: false
+      changed_when: false
+
+    - name: Write BecklabMedia image template
+      ansible.builtin.copy:
+        dest: /tmp/becklab-media.one
+        mode: '0644'
+        content: |
+          NAME       = "{{ one_media_image_name }}"
+          TYPE       = DATABLOCK
+          SIZE       = {{ one_media_image_size_mb }}
+          FORMAT     = raw
+          PERSISTENT = YES
+          DEV_PREFIX = vd
+      when: media_img_check.rc != 0
+
+    - name: Create BecklabMedia DATABLOCK image
+      ansible.builtin.command: >
+        oneimage create /tmp/becklab-media.one
+        --datastore {{ tank_ds_id.stdout | trim }}
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      when: media_img_check.rc != 0
+
+    - name: Wait for BecklabMedia image to be READY
+      ansible.builtin.shell: |
+        oneimage show {{ one_media_image_name }} | awk '/^STATE[[:space:]]*:/{print $NF; exit}'
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      register: media_img_state
+      retries: 30
+      delay: 10
+      until: media_img_state.stdout | trim == 'rdy'
+      changed_when: false
+
   post_tasks:
     - name: List OpenNebula hosts
       ansible.builtin.command: onehost list

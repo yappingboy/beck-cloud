@@ -47,30 +47,24 @@ one_k3s_vms:
     disk: 50
     role: worker
 
-# ── LVM storage (replaces ZFS — built on top of software RAID md0-md3) ───────
-lvm_vg_name: vg_one_tank        # Volume Group built from /dev/md0-md3
+# ── LVM storage backing the OpenNebula Tank datastore ────────────────────────
+# Single LV on /dev/md0 → /var/lib/one/datastores/101 (DS ID 101 = Tank).
+# Holds the BecklabMedia DATABLOCK image attached to k3s-worker-1. Inside the
+# VM, /dev/vdb is formatted xfs and mounted at /mnt/media (movies/shows/downloads).
+# System DS 0 / default DS 1 are unmanaged here — they live on the root FS.
+lvm_vg_name: vg_tank            # vgcreate vg_tank /dev/md0
 lvm_lvs:
-  # OpenNebula system/image datastore (VM disk images)
-  - name: lv_one_datastores
-    size: 500G
-    mountpoint: /var/lib/one/datastores
+  - name: lv_tank
+    size: 100%FREE
+    mountpoint: /var/lib/one/datastores/101
     fstype: xfs
     owner: oneadmin
     group: oneadmin
-  # Bulk media library — large block, mounted inside k3s-worker-1 via OpenNebula
-  - name: lv_media
-    size: 80%FREE              # consume most of the VG
-    mountpoint: /mnt/lvm/media
-    fstype: xfs
-    owner: root
-    group: root
-  # Torrent/download staging area
-  - name: lv_downloads
-    size: 2T
-    mountpoint: /mnt/lvm/downloads
-    fstype: xfs
-    owner: root
-    group: root
+
+# ── OpenNebula media datastore / image ───────────────────────────────────────
+one_media_datastore_name: Tank
+one_media_image_name: BecklabMedia
+one_media_image_size_mb: 41943040    # 40 TiB (40 * 1024 * 1024 MB)
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1

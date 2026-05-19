@@ -22,6 +22,24 @@
   vars:
     one_auth:
       ONE_AUTH: /var/lib/one/.one/one_auth
+    # Executed by one-context on first boot of k3s-worker-1. Formats /dev/vdb
+    # (the BecklabMedia disk) with xfs if it's blank, mounts at /mnt/media, and
+    # creates the subdirectories that back the K8s media PVs.
+    media_bootstrap_script: |
+      #!/bin/bash
+      set -e
+      DISK=/dev/vdb
+      MOUNT=/mnt/media
+      for i in $(seq 1 30); do [ -b "$DISK" ] && break; sleep 1; done
+      if ! blkid "$DISK" >/dev/null 2>&1; then
+        mkfs.xfs -L media "$DISK"
+      fi
+      mkdir -p "$MOUNT"
+      grep -q "^$DISK $MOUNT" /etc/fstab || \
+        echo "$DISK $MOUNT xfs defaults,nofail 0 0" >> /etc/fstab
+      mount -a
+      mkdir -p "$MOUNT/movies" "$MOUNT/shows" "$MOUNT/downloads"
+      chown -R 1000:1000 "$MOUNT"
 
   tasks:
     # ── Sanity check ───────────────────────────────────────────────────────
@@ -116,6 +134,12 @@
             IMAGE_UNAME = "oneadmin",
             SIZE        = "{{ item.item.disk * 1024 }}"
           ]
+          {% if item.item.role == 'worker' %}
+          DISK   = [
+            IMAGE       = "{{ one_media_image_name }}",
+            IMAGE_UNAME = "oneadmin"
+          ]
+          {% endif %}
           {% if item.item.role == 'server' %}
           NIC    = [ NETWORK = "k3s-ext", NETWORK_UNAME = "oneadmin" ]
           {% endif %}
@@ -123,7 +147,8 @@
           CONTEXT = [
             NETWORK        = "YES",
             SSH_PUBLIC_KEY  = "$USER[SSH_PUBLIC_KEY]",
-            GROW_ROOTFS    = "YES"
+            GROW_ROOTFS    = "YES"{% if item.item.role == 'worker' %},
+            START_SCRIPT_BASE64 = "{{ media_bootstrap_script | b64encode }}"{% endif %}
           ]
           GRAPHICS = [
             LISTEN = "0.0.0.0",
