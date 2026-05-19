@@ -23,6 +23,7 @@ spec:
         provider_display_name = "Keycloak"
         oidc_issuer_url = "https://keycloak.becklab.cloud/realms/homelab"
         oidc_groups_claim = "groups"
+        scope = "openid email profile"
         email_domains = ["*"]
         allowed_groups = ["/admins"]
         redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
