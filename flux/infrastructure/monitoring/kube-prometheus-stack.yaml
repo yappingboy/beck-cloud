@@ -41,7 +41,7 @@ spec:
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
         hosts:
           - alertmanager.becklab.cloud
         paths:
@@ -76,7 +76,7 @@ spec:
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
         hosts:
           - prometheus.becklab.cloud
         paths:
@@ -117,7 +117,7 @@ spec:
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-prod
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
-          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
         hosts:
           - grafana.becklab.cloud
         path: /
