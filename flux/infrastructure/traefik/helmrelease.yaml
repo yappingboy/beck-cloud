@@ -20,7 +20,7 @@ spec:
   values:
     logs:
       general:
-        level: DEBUG
+        level: INFO
       access:
         enabled: true
         format: json
