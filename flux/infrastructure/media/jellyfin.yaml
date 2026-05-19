@@ -15,6 +15,8 @@ spec:
       labels:
         app: jellyfin
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: jellyfin
           image: lscr.io/linuxserver/jellyfin:latest
@@ -43,8 +45,6 @@ spec:
               mountPath: /data/movies
             - name: media-shows
               mountPath: /data/shows
-            - name: media-downloads
-              mountPath: /downloads
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -55,9 +55,6 @@ spec:
         - name: media-shows
           persistentVolumeClaim:
             claimName: media-shows
-        - name: media-downloads
-          persistentVolumeClaim:
-            claimName: media-downloads
 ---
 apiVersion: v1
 kind: Service

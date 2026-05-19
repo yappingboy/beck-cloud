@@ -15,6 +15,8 @@ spec:
       labels:
         app: prowlarr
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: prowlarr
           image: lscr.io/linuxserver/prowlarr:latest

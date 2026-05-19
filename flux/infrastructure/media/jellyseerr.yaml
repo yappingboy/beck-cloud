@@ -15,6 +15,8 @@ spec:
       labels:
         app: jellyseerr
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: jellyseerr
           image: ghcr.io/fallenbagel/jellyseerr:latest

@@ -15,6 +15,8 @@ spec:
       labels:
         app: sonarr
     spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: sonarr
           image: lscr.io/linuxserver/sonarr:latest
