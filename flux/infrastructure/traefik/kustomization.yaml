@@ -6,6 +6,3 @@ namespace: traefik
 resources:
   - namespace.yaml
   - helmrelease.yaml
-  - dashboard-ingress.yaml
-  - dashboard-certificate.yaml
-  - middlewares.yaml
