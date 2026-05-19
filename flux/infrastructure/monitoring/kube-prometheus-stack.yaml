@@ -1,0 +1,128 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: kube-prometheus-stack
+  namespace: monitoring
+spec:
+  interval: 1h
+  timeout: 15m
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  chart:
+    spec:
+      chart: kube-prometheus-stack
+      version: 65.5.0
+      sourceRef:
+        kind: HelmRepository
+        name: prometheus-community
+        namespace: flux-system
+  values:
+    fullnameOverride: kps
+
+    crds:
+      enabled: true
+
+    alertmanager:
+      alertmanagerSpec:
+        storage:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 5Gi
+        retention: 240h
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+        hosts:
+          - alertmanager.becklab.cloud
+        paths:
+          - /
+        pathType: Prefix
+        tls:
+          - hosts:
+              - alertmanager.becklab.cloud
+            secretName: alertmanager-tls
+
+    prometheus:
+      prometheusSpec:
+        retention: 15d
+        retentionSize: 45GB
+        storageSpec:
+          volumeClaimTemplate:
+            spec:
+              storageClassName: local-path
+              accessModes: ["ReadWriteOnce"]
+              resources:
+                requests:
+                  storage: 50Gi
+        # Pick up ServiceMonitors/PodMonitors/PrometheusRules from any namespace.
+        serviceMonitorSelectorNilUsesHelmValues: false
+        podMonitorSelectorNilUsesHelmValues: false
+        ruleSelectorNilUsesHelmValues: false
+        probeSelectorNilUsesHelmValues: false
+        scrapeConfigSelectorNilUsesHelmValues: false
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+        hosts:
+          - prometheus.becklab.cloud
+        paths:
+          - /
+        pathType: Prefix
+        tls:
+          - hosts:
+              - prometheus.becklab.cloud
+            secretName: prometheus-tls
+
+    grafana:
+      defaultDashboardsTimezone: America/New_York
+      persistence:
+        enabled: true
+        storageClassName: local-path
+        size: 10Gi
+        accessModes: ["ReadWriteOnce"]
+      # Disable the built-in login form; trust the oauth2-proxy auth header.
+      grafana.ini:
+        server:
+          root_url: https://grafana.becklab.cloud/
+        auth:
+          disable_login_form: true
+          signout_redirect_url: https://oauth2.becklab.cloud/oauth2/sign_out
+        auth.basic:
+          enabled: false
+        auth.proxy:
+          enabled: true
+          header_name: X-Auth-Request-Email
+          header_property: email
+          auto_sign_up: true
+        users:
+          auto_assign_org: true
+          auto_assign_org_role: Admin
+      ingress:
+        enabled: true
+        ingressClassName: traefik
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          traefik.ingress.kubernetes.io/router.entrypoints: websecure
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-chain@kubernetescrd
+        hosts:
+          - grafana.becklab.cloud
+        path: /
+        pathType: Prefix
+        tls:
+          - hosts:
+              - grafana.becklab.cloud
+            secretName: grafana-tls
