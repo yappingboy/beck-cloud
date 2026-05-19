@@ -7,22 +7,48 @@
 # and won't schedule pods elsewhere if the disk is missing.
 #
 # Directory layout on /dev/vdb inside k3s-worker-1:
-#   /mnt/media/library    →  media-library PVC
-#   /mnt/media/downloads  →  media-downloads PVC (shared with torrent namespace)
+#   /mnt/media/movies     →  media-movies PVC   (radarr writes; jellyfin reads)
+#   /mnt/media/shows      →  media-shows PVC    (sonarr writes; jellyfin reads)
+#   /mnt/media/downloads  →  media-downloads PVC (shared with torrent ns)
+#
+# The 'capacity' field on local PVs is informational only — both library PVs
+# back to the same 45Ti disk; consumed space is shared.
 
 apiVersion: v1
 kind: PersistentVolume
 metadata:
-  name: media-library-lvm
+  name: media-movies-lvm
 spec:
   capacity:
     storage: 45Ti
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   persistentVolumeReclaimPolicy: Retain
   storageClassName: ""
   local:
-    path: /mnt/media/library
+    path: /mnt/media/movies
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - k3s-worker-1
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-shows-lvm
+spec:
+  capacity:
+    storage: 45Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/shows
   nodeAffinity:
     required:
       nodeSelectorTerms:
