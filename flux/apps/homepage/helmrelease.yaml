@@ -86,25 +86,17 @@ spec:
                 href: https://sonarr.becklab.cloud
                 description: TV show management
                 icon: sonarr.png
-                widget:
-                  type: sonarr
-                  url: http://sonarr.media.svc.cluster.local:8989
-                  key: ""
             - Radarr:
                 href: https://radarr.becklab.cloud
                 description: Movie management
                 icon: radarr.png
-                widget:
-                  type: radarr
-                  url: http://radarr.media.svc.cluster.local:7878
-                  key: ""
             - Prowlarr:
                 href: https://prowlarr.becklab.cloud
                 description: Indexer manager
                 icon: prowlarr.png
         - Requests:
             - Jellyseerr:
-                href: https://jellyseerr.becklab.cloud
+                href: https://requests.becklab.cloud
                 description: Media requests
                 icon: jellyseerr.png
         - Subtitles & Indexers:
