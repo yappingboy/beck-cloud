@@ -37,11 +37,11 @@ spec:
       web:
         nodePort: 30080
         exposed: true
-        port: 80
+        exposedPort: 80
       websecure:
         nodePort: 30443
         exposed: true
-        port: 443
+        exposedPort: 443
         tls:
           enabled: true
     service:
