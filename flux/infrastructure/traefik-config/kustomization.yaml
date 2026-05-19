@@ -6,3 +6,5 @@ namespace: traefik
 resources:
   - ../traefik/middlewares.yaml
   - ../traefik/dashboard-ingress.yaml
+  - ../traefik/dashboard-certificate.yaml
+  - ../identity/sso-middlewares.yaml

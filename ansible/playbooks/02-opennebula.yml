@@ -387,6 +387,15 @@
       until: media_img_state.stdout | trim == 'rdy'
       changed_when: false
 
+    # Persistent images are symlinked from system DS to image DS at deploy time
+    # (LN_TARGET). Non-persistent would clone the full 40TiB into DS 0 and blow
+    # out system datastore capacity → "not enough capacity on datastores".
+    - name: Ensure BecklabMedia image is persistent
+      ansible.builtin.command: oneimage persistent {{ one_media_image_name }}
+      environment:
+        ONE_AUTH: /var/lib/one/.one/one_auth
+      changed_when: false
+
   post_tasks:
     - name: List OpenNebula hosts
       ansible.builtin.command: onehost list
