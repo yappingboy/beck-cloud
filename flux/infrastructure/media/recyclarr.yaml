@@ -11,6 +11,8 @@ spec:
     spec:
       template:
         spec:
+          nodeSelector:
+            kubernetes.io/hostname: ip-192-168-100-11
           containers:
             - name: recyclarr
               image: ghcr.io/recyclarr/recyclarr:latest
