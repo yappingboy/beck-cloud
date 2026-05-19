@@ -125,6 +125,10 @@
             SSH_PUBLIC_KEY  = "$USER[SSH_PUBLIC_KEY]",
             GROW_ROOTFS    = "YES"
           ]
+          GRAPHICS = [
+            LISTEN = "0.0.0.0",
+            TYPE   = "VNC"
+          ]
         dest: "/tmp/{{ item.item.name }}-tpl.tmpl"
         mode: '0644'
       loop: "{{ template_check.results }}"
