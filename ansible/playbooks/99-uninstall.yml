@@ -173,6 +173,17 @@
       changed_when: true
       failed_when: false
 
+    # ── 6.5. Stop RAID arrays ─────────────────────────────────────────────
+    - name: Stop all RAID arrays
+      ansible.builtin.shell: |
+        set +e
+        for md in $(ls /dev/md* 2>/dev/null);
+          mdadm --stop "$md" 2>/dev/null || true
+        done
+        exit 0
+      changed_when: true
+      failed_when: false
+
     # ── 7. LVM volumes ──────────────────────────────────────────────────────
     - name: Remove all LVM logical volumes
       ansible.builtin.shell: |
