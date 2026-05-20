@@ -36,6 +36,7 @@
           - htop
           - nvme-cli
           - smartmontools
+          - mdadm
           - net-tools
           - iproute
           - chrony
