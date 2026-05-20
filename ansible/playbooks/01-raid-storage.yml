@@ -1,0 +1,218 @@
+---
+# 01-raid-storage.yml — Build md0 RAID6, vg_tank, lv_tank, mount as OpenNebula Tank datastore
+#
+# Storage topology:
+#   14x 6TB HGST SAS → /dev/md0 (RAID6, ~78TB usable, tolerates 2 disk failures)
+#   /dev/md0 → vg_tank → lv_tank → /var/lib/one/datastores/101 (DS 101 = Tank)
+#   Tank holds the BecklabMedia DATABLOCK image attached to k3s-worker-1.
+#
+# Excluded drives:
+#   sdf (10TB Seagate) — dead, I/O errors
+#   sdh (10TB Seagate) — no matching partner, reserved for future use
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/01-raid-storage.yml
+
+- name: Build RAID6 storage and mount as Tank datastore
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    # Disks to include in RAID6 — all 6TB HGST drives
+    raid_disks: "{{ raid_data_disks | default([]) }}"
+    raid_level: raid6
+    raid_name: md0
+    vg_name: vg_tank
+    lv_name: lv_tank
+    lv_size: 100%FREE
+    mountpoint: /var/lib/one/datastores/101
+    fstype: xfs
+    ds_owner: oneadmin
+    ds_group: oneadmin
+
+  pre_tasks:
+    - name: Validate disk list
+      ansible.builtin.assert:
+        that:
+          - raid_disks | length >= 4
+        fail_msg: >-
+          RAID6 requires at least 4 disks. Found {{ raid_disks | length }}.
+          Set raid_data_disks in group_vars or via -e.
+          Default discovery: all /dev/sd[bd-hj-lno] excluding sdf and sdh.
+
+  tasks:
+    # ── Install mdadm ──────────────────────────────────────────────────────────
+    - name: Install mdadm
+      ansible.builtin.dnf:
+        name: mdadm
+        state: present
+
+    - name: Enable mdmonitor service
+      ansible.builtin.systemd:
+        name: mdmonitor
+        enabled: true
+        state: started
+      failed_when: false
+
+    # ── Discover drives if not provided ───────────────────────────────────────
+    - name: Discover data disks (if raid_data_disks not set)
+      when: raid_disks | length == 0
+      block:
+        - name: List all SATA/SAS data disks (exclude OS nvme and excluded drives)
+          ansible.builtin.shell: |
+            lsblk -d -n -o NAME,TYPE,TRAN | awk '$2=="disk" && $3=="sata" {print "/dev/"$1}'
+          register: data_disks_raw
+          changed_when: false
+
+        - name: Set discovered disks (exclude sdf, sdh)
+          ansible.builtin.set_fact:
+            raid_disks: "{{ data_disks_raw.stdout_lines | difference(['/dev/sdf', '/dev/sdh']) }}"
+
+        - name: Show discovered disks
+          ansible.builtin.debug:
+            msg: "Discovered {{ raid_disks | length }} disks for RAID6: {{ raid_disks | join(', ') }}"
+
+    # ── Wipe existing signatures ─────────────────────────────────────────────
+    - name: Wipe existing signatures on data disks
+      ansible.builtin.command:
+        cmd: wipefs -a {{ item }}
+      loop: "{{ raid_disks }}"
+      loop_control:
+        label: "{{ item | basename }}"
+      changed_when: true
+      failed_when: false
+
+    # ── Check if RAID array already exists ────────────────────────────────────
+    - name: Check existing RAID array
+      ansible.builtin.command:
+        cmd: mdadm --detail /dev/{{ raid_name }}
+      register: raid_exists
+      changed_when: false
+      failed_when: false
+
+    # ── Build RAID6 array ────────────────────────────────────────────────────
+    - name: Create RAID6 array
+      when: raid_exists.rc != 0
+      ansible.builtin.command: >
+        mdadm --create /dev/{{ raid_name }}
+        --level={{ raid_level }}
+        --raid-devices={{ raid_disks | length }}
+        --chunk=512K
+        --layout=left-symmetric
+        --name=onepoc:0
+        --homehost=anyhost
+        {{ raid_disks | join(' ') }}
+      changed_when: true
+
+    - name: Wait for RAID to become active
+      when: raid_exists.rc != 0
+      ansible.builtin.command:
+        cmd: mdadm --detail /dev/{{ raid_name }}
+      register: raid_status
+      until: "raid_status.rc == 0 and 'active' in raid_status.stdout"
+      retries: 30
+      delay: 10
+      changed_when: false
+
+    - name: Record RAID array configuration
+      ansible.builtin.command:
+        cmd: mdadm --detail --scan /dev/{{ raid_name }}
+      register: raid_scan
+      changed_when: false
+
+    - name: Write mdadm.conf entry
+      ansible.builtin.lineinfile:
+        path: /etc/mdadm.conf
+        line: "{{ raid_scan.stdout | default('') }}"
+        create: true
+        mode: '0644'
+      when: raid_scan.stdout | default('') | length > 0
+
+    # ── Create Volume Group ──────────────────────────────────────────────────
+    - name: Check if VG exists
+      ansible.builtin.command:
+        cmd: vgdisplay {{ vg_name }}
+      register: vg_exists
+      changed_when: false
+      failed_when: false
+
+    - name: Create VG on RAID array
+      when: vg_exists.rc != 0
+      ansible.builtin.command:
+        cmd: vgcreate {{ vg_name }} /dev/{{ raid_name }}
+      changed_when: true
+
+    # ── Create Logical Volume ────────────────────────────────────────────────
+    - name: Check if LV exists
+      ansible.builtin.command:
+        cmd: lvdisplay /dev/{{ vg_name }}/{{ lv_name }}
+      register: lv_exists
+      changed_when: false
+      failed_when: false
+
+    - name: Create LV
+      when: lv_exists.rc != 0
+      ansible.builtin.command:
+        cmd: lvcreate -y -l {{ lv_size }} -n {{ lv_name }} {{ vg_name }}
+      changed_when: true
+
+    # ── Format filesystem ────────────────────────────────────────────────────
+    - name: Check filesystem on LV
+      ansible.builtin.command:
+        cmd: blkid /dev/{{ vg_name }}/{{ lv_name }}
+      register: fs_check
+      changed_when: false
+      failed_when: false
+
+    - name: Format LV with XFS
+      when: "'TYPE=\"xfs\"' not in fs_check.stdout"
+      ansible.builtin.filesystem:
+        fstype: "{{ fstype }}"
+        dev: "/dev/{{ vg_name }}/{{ lv_name }}"
+      changed_when: true
+
+    # ── Mount datastore ──────────────────────────────────────────────────────
+    - name: Ensure mount point exists
+      ansible.builtin.file:
+        path: "{{ mountpoint }}"
+        state: directory
+        owner: "{{ ds_owner }}"
+        group: "{{ ds_group }}"
+        mode: '0755'
+
+    - name: Mount LV and persist in fstab
+      ansible.posix.mount:
+        path: "{{ mountpoint }}"
+        src: "/dev/{{ vg_name }}/{{ lv_name }}"
+        fstype: "{{ fstype }}"
+        opts: defaults,nofail
+        state: mounted
+
+    # xfs format wipes original directory ownership; reapply after mount
+    - name: Fix ownership on mounted volume
+      ansible.builtin.file:
+        path: "{{ mountpoint }}"
+        owner: "{{ ds_owner }}"
+        group: "{{ ds_group }}"
+        state: directory
+
+  post_tasks:
+    - name: Show RAID status
+      ansible.builtin.command:
+        cmd: cat /proc/mdstat
+      register: mdstat_out
+      changed_when: false
+
+    - name: Print RAID status
+      ansible.builtin.debug:
+        var: mdstat_out.stdout_lines
+
+    - name: Show mount summary
+      ansible.builtin.command:
+        cmd: df -h {{ mountpoint }}
+      register: df_out
+      changed_when: false
+
+    - name: Print mount summary
+      ansible.builtin.debug:
+        var: df_out.stdout_lines
