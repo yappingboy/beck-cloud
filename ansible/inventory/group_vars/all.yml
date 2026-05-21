@@ -1,7 +1,7 @@
 ---
 # Beck Cloud — Ansible Variables
 
-homelab_hostname: becklab
+homelab_hostname: onepoc
 homelab_ip: 172.16.0.7
 ops_user: root
 
@@ -102,7 +102,9 @@ llm_llamactl_port: 8088
 llm_context_size: 32768
 llm_threads: 16
 
-# ── Network / NTP ─────────────────────────────────────────────────────────────
+# ── Network / NTP ──────────────────────────────────────────────────────────────
+one_vm_cidr: "192.168.100.0/24"
+
 ntp_servers:
   - 0.pool.ntp.org
   - 1.pool.ntp.org

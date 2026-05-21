@@ -39,6 +39,7 @@
           RAID6 requires at least 4 disks. Found {{ raid_disks | length }}.
           Set raid_data_disks in group_vars or via -e.
           Default discovery: all /dev/sd[bd-hj-lno] excluding sdf and sdh.
+      when: raid_disks | length > 0
 
   tasks:
     # ── Install mdadm ──────────────────────────────────────────────────────────
@@ -72,7 +73,15 @@
           ansible.builtin.debug:
             msg: "Discovered {{ raid_disks | length }} disks for RAID6: {{ raid_disks | join(', ') }}"
 
-    # ── Wipe existing signatures ─────────────────────────────────────────────
+    # ── Check if RAID array already exists ────────────────────────────────────
+    - name: Check existing RAID array
+      ansible.builtin.command:
+        cmd: mdadm --detail /dev/{{ raid_name }}
+      register: raid_exists
+      changed_when: false
+      failed_when: false
+
+    # ── Wipe existing signatures (only when building NEW array) ─────────────
     - name: Wipe existing signatures on data disks
       ansible.builtin.command:
         cmd: wipefs -a {{ item }}
@@ -81,14 +90,7 @@
         label: "{{ item | basename }}"
       changed_when: true
       failed_when: false
-
-    # ── Check if RAID array already exists ────────────────────────────────────
-    - name: Check existing RAID array
-      ansible.builtin.command:
-        cmd: mdadm --detail /dev/{{ raid_name }}
-      register: raid_exists
-      changed_when: false
-      failed_when: false
+      when: raid_exists.rc != 0
 
     # ── Build RAID6 array ────────────────────────────────────────────────────
     - name: Create RAID6 array

@@ -199,7 +199,7 @@
       ansible.builtin.command: firewall-cmd --reload
       changed_when: true
 
-    # ── OpenNebula services ────────────────────────────────────────────────
+ # ── OpenNebula services ────────────────────────────────────────────────
     - name: Ensure OpenNebula services are started
       ansible.builtin.systemd:
         name: "{{ item }}"
@@ -208,6 +208,7 @@
       loop:
         - opennebula
         - opennebula-fireedge
+      failed_when: false
 
     - name: Wait for OpenNebula API (port 2633) to be open
       ansible.builtin.wait_for:

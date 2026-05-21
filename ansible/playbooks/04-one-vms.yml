@@ -100,18 +100,19 @@
       environment: "{{ one_auth }}"
       when: image_check.rc != 0
 
-    - name: Wait for image to reach READY state (up to 10 min)
+    - name: Wait for image to reach READY or USED state (up to 10 min)
       ansible.builtin.shell: |
         for i in $(seq 1 60); do
           state=$(oneimage show "{{ one_k3s_image }}" --json \
             | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['IMAGE']['STATE'])" 2>/dev/null)
-          # State 1 = READY
-          [ "$state" = "1" ] && exit 0
+          # State 1 = READY, 2 = USED, 3 = USED_ALT (all acceptable)
+          [ "$state" = "1" ] || [ "$state" = "2" ] || [ "$state" = "3" ] && exit 0
           sleep 10
         done
         exit 1
       environment: "{{ one_auth }}"
       changed_when: false
+      when: image_check.rc == 0
 
     # ── VM templates ───────────────────────────────────────────────────────
     - name: Check if VM template exists
