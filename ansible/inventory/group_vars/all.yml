@@ -1,7 +1,7 @@
 ---
 # Beck Cloud — Ansible Variables
 
-homelab_hostname: onepoc
+homelab_hostname: becklab
 homelab_ip: 172.16.0.7
 ops_user: root
 
