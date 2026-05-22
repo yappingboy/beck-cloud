@@ -131,6 +131,7 @@ flux-system (bootstrap)
 - Age key: `~/.config/sops/age/homelab.agekey`
 - `.sops.yaml` rules defined for `flux/` and `tofu/` paths
 - Kubernetes secrets created via `sops-age` controller
+- **Key rotation**: see [ansible/docs/SOPS-ROTATION.md](ansible/docs/SOPS-ROTATION.md) — run playbook `10-sops-rotate.yml` before `06-flux.yml`
 
 ## Design Decisions
 
