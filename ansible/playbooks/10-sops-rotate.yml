@@ -45,8 +45,9 @@
   gather_facts: true
 
   vars:
-    # Git repo on the hypervisor
-    repo_path: "{{ playbook_dir }}/../../"
+    # Git repo root — playbook_dir is ansible/playbooks/, so ../.. reaches repo root
+    # Allow override: ansible-playbook ... -e "repo_path=/absolute/path"
+    repo_path: "{{ playbook_dir | realpath | dirname | dirname }}"
     sops_yaml: "{{ repo_path }}/.sops.yaml"
     flux_dir: "{{ repo_path }}/flux"
 
