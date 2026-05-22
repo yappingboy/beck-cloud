@@ -204,6 +204,41 @@
       loop_control:
         label: "{{ item.item.name }}"
 
+    # ── Fix scheduler issue with multi-datastore VMs ──────────────────────
+    # OpenNebula 7.2 auto-generates AUTOMATIC_DS_REQUIREMENTS with quoted
+    # attribute names ("CLUSTERS/ID" @> 0) that the scheduler can't evaluate
+    # when a VM needs multiple datastores (e.g. default + Tank). This causes
+    # the VM to stay in PENDING state forever. Workaround: manually deploy
+    # any VM stuck in PENDING after a brief grace period.
+    - name: Wait briefly for scheduler to place VMs
+      ansible.builtin.pause:
+        seconds: 30
+      changed_when: false
+
+    - name: Manually deploy VMs stuck in PENDING (multi-datastore scheduler bug)
+      ansible.builtin.shell: |
+        state=$(onevm show "{{ item.name }}" --json \
+          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['STATE'])" 2>/dev/null)
+        if [ "$state" = "1" ]; then
+          # State 1 = PENDING — try manual deploy to first available host
+          host_id=$(onehost list --numeric \
+            | awk '$5=="on" && $3=="1" {print $1; exit}')
+          if [ -n "$host_id" ]; then
+            onevm deploy "{{ item.name }}" "$host_id"
+            echo "deployed to host $host_id"
+          else
+            echo "no suitable host found"
+            exit 1
+          fi
+        else
+          echo "VM state is $state, no deploy needed"
+        fi
+      environment: "{{ one_auth }}"
+      changed_when: true
+      loop: "{{ one_k3s_vms }}"
+      loop_control:
+        label: "{{ item.name }}"
+
     # ── Wait for VMs to be RUNNING ─────────────────────────────────────────
     - name: Wait for VM to reach RUNNING state
       ansible.builtin.shell: |

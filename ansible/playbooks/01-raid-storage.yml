@@ -73,6 +73,15 @@
           ansible.builtin.debug:
             msg: "Discovered {{ raid_disks | length }} disks for RAID6: {{ raid_disks | join(', ') }}"
 
+        - name: Validate discovered disk count
+          ansible.builtin.assert:
+            that:
+              - raid_disks | length >= 4
+            fail_msg: >-
+              RAID6 requires at least 4 disks. Found {{ raid_disks | length }}.
+              Set raid_data_disks in group_vars or via -e.
+              Discovered: {{ raid_disks | join(', ') }}
+
     # ── Check if RAID array already exists ────────────────────────────────────
     - name: Check existing RAID array
       ansible.builtin.command:
@@ -101,8 +110,7 @@
         --raid-devices={{ raid_disks | length }}
         --chunk=512K
         --layout=left-symmetric
-        --name=onepoc:0
-        --homehost=anyhost
+        --name=onepoc_0
         {{ raid_disks | join(' ') }}
       changed_when: true
 

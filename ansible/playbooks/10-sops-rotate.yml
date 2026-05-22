@@ -1,0 +1,356 @@
+---
+# 10-sops-rotate.yml — Rotate SOPS age keypair and re-encrypt secrets
+#
+# PURPOSE
+#   Rotate the age keypair used by SOPS to encrypt Kubernetes secrets.
+#   Run this on the hypervisor (frontend) BEFORE playbook 06-flux.yml
+#   to ensure Flux has the matching private key for decryption.
+#
+# PREREQUISITES
+#   1. Old age private key at old_key_path (to decrypt existing secrets)
+#      If absent, secrets must be re-entered manually after rotation.
+#      Copy from your workstation:
+#        scp ~/.config/sops/age/homelab.agekey becklab:/root/beck-cloud/.sops-old.agekey
+#   2. Git user configured (git config user.name / user.email)
+#   3. origin remote configured with push access
+#
+# USAGE
+#   cd /root/beck-cloud/ansible
+#
+#   # Option 1: Full rotation (generates new key, re-encrypts, commits, pushes)
+#   ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml
+#
+#   # Option 2: Preview without committing/pushing
+#   ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml \
+#     --extra-var "rotate_dry_run=true"
+#
+#   # Option 3: Keep old key after rotation (don't delete)
+#   ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml \
+#     --extra-var "rotate_keep_old_key=true"
+#
+# FLOW
+#   1. Generate new age keypair at {{ repo_path }}/.sops.agekey
+#   2. Update .sops.yaml with new public key
+#   3. Re-encrypt all secrets using old key to decrypt + new key to encrypt
+#   4. Commit and push to git
+#   5. Copy new key to k3s-server for Flux bootstrap
+#
+# AFTER ROTATION
+#   Playbook 06-flux.yml will automatically detect and use the pre-rotated key.
+#   No manual steps needed — just run 06-flux.yml normally.
+
+- name: Rotate SOPS age keypair
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    # Git repo on the hypervisor
+    repo_path: "{{ playbook_dir }}/../"
+    sops_yaml: "{{ repo_path }}/.sops.yaml"
+    flux_dir: "{{ repo_path }}/flux"
+
+    # Old key — used to decrypt existing secrets before re-encrypting with new key
+    old_key_path: "{{ repo_path }}/.sops-old.agekey"
+
+    # New key output locations
+    new_key_local: "{{ repo_path }}/.sops.agekey"
+    new_key_backup: "{{ repo_path }}/.sops.agekey.bak"
+
+    # SOPS binary
+    sops_version: "3.13.1"
+    sops_bin: /usr/local/bin/sops
+
+    # Age binary
+    age_keygen_bin: /usr/bin/age-keygen
+
+    # Rotation options
+    rotate_keep_old_key: false
+    rotate_dry_run: false
+
+  tasks:
+    # ── Prerequisites ──────────────────────────────────────────────────────
+    - name: Verify .sops.yaml exists
+      ansible.builtin.stat:
+        path: "{{ sops_yaml }}"
+      register: sops_yaml_stat
+
+    - name: Fail if .sops.yaml missing
+      ansible.builtin.fail:
+        msg: ".sops.yaml not found at {{ sops_yaml }}. Cannot rotate keys without it."
+      when: not sops_yaml_stat.stat.exists
+
+    - name: Verify flux directory exists
+      ansible.builtin.stat:
+        path: "{{ flux_dir }}"
+      register: flux_dir_stat
+
+    - name: Fail if flux directory missing
+      ansible.builtin.fail:
+        msg: "flux/ directory not found at {{ flux_dir }}."
+      when: not flux_dir_stat.stat.exists
+
+    # ── Install tools ──────────────────────────────────────────────────────
+    - name: Install age (AlmaLinux/RHEL)
+      ansible.builtin.dnf:
+        name: age
+        state: present
+      when: ansible_os_family == 'RedHat'
+
+    - name: Install age (Debian/Ubuntu)
+      ansible.builtin.apt:
+        name: age
+        state: present
+        update_cache: false
+      when: ansible_os_family == 'Debian'
+
+    - name: Check SOPS installation
+      ansible.builtin.stat:
+        path: "{{ sops_bin }}"
+      register: sops_bin_stat
+
+    - name: Download and install SOPS
+      when: not sops_bin_stat.stat.exists
+      block:
+        - name: Download SOPS
+          ansible.builtin.get_url:
+            url: "https://github.com/getsops/sops/releases/download/v{{ sops_version }}/sops-v{{ sops_version }}.linux.amd64"
+            dest: "{{ sops_bin }}"
+            mode: '0755'
+
+        - name: Verify SOPS binary
+          ansible.builtin.command: "{{ sops_bin }} --version"
+          changed_when: false
+
+    # ── Find encrypted secrets ─────────────────────────────────────────────
+    - name: Find all encrypted secret files
+      ansible.builtin.find:
+        paths: "{{ flux_dir }}"
+        patterns: "*.yaml"
+        contains: "ENC\\\\[AES256_GCM\\\\]"
+      register: encrypted_files
+
+    - name: List encrypted files
+      ansible.builtin.debug:
+        msg: "{{ encrypted_files.files | map(attribute='path') | list }}"
+      when: encrypted_files.matched > 0
+
+    # ── Backup old .sops.yaml ──────────────────────────────────────────────
+    - name: Backup current .sops.yaml
+      ansible.builtin.copy:
+        src: "{{ sops_yaml }}"
+        dest: "{{ sops_yaml }}.bak"
+        remote_src: true
+        mode: '0600'
+
+    # ── Backup existing key (if present) ───────────────────────────────────
+    - name: Check for existing key at new_key_path
+      ansible.builtin.stat:
+        path: "{{ new_key_local }}"
+      register: existing_key_stat
+
+    - name: Backup existing key
+      ansible.builtin.command:
+        cmd: "cp {{ new_key_local }} {{ new_key_backup }}"
+        creates: "{{ new_key_backup }}"
+      when: existing_key_stat.stat.exists
+
+    # ── Generate new age keypair ───────────────────────────────────────────
+    - name: Generate new age keypair
+      ansible.builtin.command:
+        cmd: "{{ age_keygen_bin }} -o {{ new_key_local }}"
+      register: keygen_output
+      changed_when: true
+
+    - name: Ensure key file permissions
+      ansible.builtin.file:
+        path: "{{ new_key_local }}"
+        mode: '0600'
+        owner: root
+        group: root
+
+    - name: Extract new age public key
+      ansible.builtin.shell: |
+        grep '^public key: ' {{ new_key_local }} | awk '{print $3}'
+      register: new_public_key
+      changed_when: false
+
+    - name: Display new public key
+      ansible.builtin.debug:
+        msg: |
+          New age public key: {{ new_public_key.stdout }}
+          Key file: {{ new_key_local }}
+
+    # ── Update .sops.yaml with new public key ──────────────────────────────
+    - name: Update .sops.yaml with new public key
+      ansible.builtin.template:
+        src: templates/sops.yaml.j2
+        dest: "{{ sops_yaml }}"
+        mode: '0644'
+      vars:
+        new_age_recipient: "{{ new_public_key.stdout }}"
+
+    # ── Re-encrypt secrets ─────────────────────────────────────────────────
+    # sops updatekeys reads .sops.yaml (new public key) and re-encrypts the
+    # data key. It needs the OLD private key to decrypt the current data key
+    # before re-encrypting with the new public key.
+    - name: Check if old key exists for re-encryption
+      ansible.builtin.stat:
+        path: "{{ old_key_path }}"
+      register: old_key_stat
+
+    - name: Re-encrypt secrets with new key
+      when:
+        - encrypted_files.matched > 0
+        - old_key_stat.stat.exists
+      block:
+        - name: Re-encrypt each secret file
+          ansible.builtin.command:
+            cmd: "{{ sops_bin }} updatekeys --yes {{ item }}"
+          args:
+            chdir: "{{ repo_path }}"
+          loop: "{{ encrypted_files.files | map(attribute='path') | list }}"
+          loop_control:
+            label: "{{ item | basename }}"
+          environment:
+            SOPS_AGE_KEY_FILE: "{{ old_key_path }}"
+          register: reencrypt_results
+          changed_when: true
+
+        - name: Re-encryption complete
+          ansible.builtin.debug:
+            msg: "Re-encrypted {{ reencrypt_results.results | length }} files"
+
+    - name: Warn if old key not found
+      ansible.builtin.debug:
+        msg: >
+          Old key not found at {{ old_key_path }}.
+          Existing encrypted secrets cannot be re-encrypted automatically.
+          Either place the old private key at {{ old_key_path }} and re-run,
+          or decrypt and re-encrypt manually with the new key.
+      when:
+        - encrypted_files.matched > 0
+        - not old_key_stat.stat.exists
+
+    # ── Git commit and push ────────────────────────────────────────────────
+    - name: Configure git user name
+      ansible.builtin.command:
+        cmd: git config user.name "beck-cloud-automation"
+      args:
+        chdir: "{{ repo_path }}"
+      changed_when: true
+      failed_when: false
+
+    - name: Configure git user email
+      ansible.builtin.command:
+        cmd: git config user.email "automation@becklab.local"
+      args:
+        chdir: "{{ repo_path }}"
+      changed_when: true
+      failed_when: false
+
+    - name: Stage rotated files
+      ansible.builtin.command:
+        cmd: git add .sops.yaml
+      args:
+        chdir: "{{ repo_path }}"
+      changed_when: true
+
+    - name: Stage re-encrypted secret files
+      ansible.builtin.command:
+        cmd: "git add {{ item }}"
+      args:
+        chdir: "{{ repo_path }}"
+      loop: "{{ encrypted_files.files | map(attribute='path') | list }}"
+      when: encrypted_files.matched > 0
+      changed_when: true
+
+    - name: Check git status for changes
+      ansible.builtin.command:
+        cmd: git diff --cached --name-only
+      args:
+        chdir: "{{ repo_path }}"
+      register: git_staged_files
+      changed_when: false
+
+    - name: Commit key rotation
+      ansible.builtin.command:
+        cmd: 'git commit -m "security: rotate SOPS age key"'
+      args:
+        chdir: "{{ repo_path }}"
+      when: git_staged_files.stdout | length > 0
+      register: git_commit
+      changed_when: git_commit.rc == 0
+
+    - name: Push to remote
+      ansible.builtin.command:
+        cmd: git push origin HEAD
+      args:
+        chdir: "{{ repo_path }}"
+      when:
+        - git_commit.changed | default(false)
+        - not rotate_dry_run
+      register: git_push
+      changed_when: git_push.rc == 0
+
+    - name: Dry run notice
+      ansible.builtin.debug:
+        msg: "Dry run — files staged but not committed or pushed."
+      when: rotate_dry_run
+
+    # ── Copy new key to k3s-server for Flux bootstrap ──────────────────────
+    # Skip if k3s-server is not reachable yet (can copy later)
+    - name: Ensure SOPS directory exists on k3s-server
+      ansible.builtin.file:
+        path: /root/.config/sops/age
+        state: directory
+        mode: '0700'
+        owner: root
+        group: root
+      delegate_to: k3s-server
+      become: true
+      become_user: root
+      ignore_errors: true
+
+    - name: Copy new key to k3s-server
+      ansible.builtin.copy:
+        src: "{{ new_key_local }}"
+        dest: /root/.config/sops/age/pre-rotated.agekey
+        mode: '0600'
+        owner: root
+        group: root
+      delegate_to: k3s-server
+      become: true
+      become_user: root
+      ignore_errors: true
+
+    - name: Note if k3s-server was unreachable
+      ansible.builtin.debug:
+        msg: >
+          k3s-server was unreachable. Copy {{ new_key_local }} to
+          k3s-server:/root/.config/sops/age/pre-rotated.agekey manually.
+      when: ansible_failed_result is defined
+
+    # ── Cleanup ────────────────────────────────────────────────────────────
+    - name: Remove old key (unless keep_old_key is true)
+      ansible.builtin.file:
+        path: "{{ old_key_path }}"
+        state: absent
+      when:
+        - old_key_stat.stat.exists
+        - not rotate_keep_old_key
+
+  post_tasks:
+    - name: Rotation summary
+      ansible.builtin.debug:
+        msg: |
+          ╔═══════════════════════════════════════════════════╗
+          ║          SOPS Key Rotation Complete              ║
+          ╠═══════════════════════════════════════════════════╣
+          ║ New public key: {{ new_public_key.stdout }}      ║
+          ║ New private key: {{ new_key_local }}              ║
+          ║                                                   ║
+          ║ Key copied to k3s-server for Flux bootstrap.     ║
+          ║ Playbook 06 will use it automatically.           ║
+          ╚═══════════════════════════════════════════════════╝
+      changed_when: false
