@@ -31,6 +31,10 @@ ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml \
 # Keep old key after rotation (don't delete)
 ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml \
   --extra-var "rotate_keep_old_key=true"
+
+# Override repo root (if playbook cannot auto-detect)
+ansible-playbook -i inventory/hosts.yml playbooks/10-sops-rotate.yml \
+  --extra-var "repo_path=/home/stephen/beck-cloud"
 ```
 
 ## What It Does
@@ -60,3 +64,24 @@ sops -d flux/infrastructure/identity/secret-keycloak.yaml | \
 ```
 
 Replace the age recipient with your new public key from `.sops.yaml`.
+
+## Troubleshooting
+
+### ".sops.yaml not found"
+
+The playbook auto-detects the repo root from `playbook_dir | realpath | dirname | dirname`.
+If it resolves to the wrong path, override it explicitly:
+
+```bash
+ansible-playbook ... -e "repo_path=/absolute/path/to/beck-cloud"
+```
+
+Check with: `ls /absolute/path/to/beck-cloud/.sops.yaml`
+
+### "k3s-server was unreachable"
+
+Copy the new key manually:
+
+```bash
+scp /root/beck-cloud/.sops.agekey k3s-server:/root/.config/sops/age/pre-rotated.agekey
+```
