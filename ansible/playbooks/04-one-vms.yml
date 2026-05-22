@@ -10,6 +10,8 @@
 #   • Upload Ubuntu 24.04 cloud image to OpenNebula datastore
 #   • Create VM templates for k3s-server and k3s-worker-1
 #   • Instantiate VMs and wait for RUNNING state
+#   • Attach BecklabMedia disk to k3s-worker-1 post-boot (avoids ONe multi-DS scheduler bug)
+#   • Run media mount script on k3s-worker-1
 #   • Report IPs
 #
 # Run: ansible-playbook -i inventory/hosts.yml playbooks/04-one-vms.yml
@@ -22,11 +24,9 @@
   vars:
     one_auth:
       ONE_AUTH: /var/lib/one/.one/one_auth
-    # Executed by one-context on first boot of k3s-worker-1. Finds the
-    # BecklabMedia disk by size (>=1TB, unmounted), formats it xfs with
-    # LABEL=media if blank, mounts at /mnt/media (by label so the device name
-    # can vary between boots — virt may assign vda/vdb/sdb depending on bus),
-    # and creates the subdirectories that back the K8s media PVs.
+    # Media mount script — runs on k3s-worker-1 after BecklabMedia disk is attached.
+    # Finds the disk by size (>=1TB, unmounted), formats xfs with LABEL=media if blank,
+    # mounts at /mnt/media, and creates subdirectories for media PVs.
     media_bootstrap_script: |
       #!/bin/bash
       set -e
@@ -255,6 +255,13 @@
     # ONe 7.2 scheduler cannot place VMs needing multiple datastores
     # (default + Tank). Workaround: deploy with OS disk only, then attach
     # the media disk once the VM is running on the host.
+    - name: Wait for k3s-worker-1 SSH to become available
+      ansible.builtin.wait_for_connection:
+        delay: 30
+        sleep: 10
+        timeout: 300
+      delegate_to: k3s-worker-1
+
     - name: Attach BecklabMedia disk to k3s-worker-1
       ansible.builtin.shell: |
         vm_id=$(onevm show k3s-worker-1 --json \
