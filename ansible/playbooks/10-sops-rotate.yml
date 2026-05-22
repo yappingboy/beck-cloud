@@ -46,7 +46,7 @@
 
   vars:
     # Git repo on the hypervisor
-    repo_path: "{{ playbook_dir }}/../"
+    repo_path: "{{ playbook_dir }}/../../"
     sops_yaml: "{{ repo_path }}/.sops.yaml"
     flux_dir: "{{ repo_path }}/flux"
 
@@ -184,7 +184,7 @@
     # ── Update .sops.yaml with new public key ──────────────────────────────
     - name: Update .sops.yaml with new public key
       ansible.builtin.template:
-        src: templates/sops.yaml.j2
+        src: ../templates/sops.yaml.j2
         dest: "{{ sops_yaml }}"
         mode: '0644'
       vars:
