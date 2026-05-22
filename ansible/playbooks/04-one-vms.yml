@@ -143,12 +143,8 @@
             IMAGE_UNAME = "oneadmin",
             SIZE        = "{{ item.item.disk * 1024 }}"
           ]
-          {% if item.item.role == 'worker' %}
-          DISK   = [
-            IMAGE       = "{{ one_media_image_name }}",
-            IMAGE_UNAME = "oneadmin"
-          ]
-          {% endif %}
+          # Media disk NOT in template — attached post-boot via onevm attach to
+          # avoid ONe 7.2 multi-datastore scheduler bug (quoted AUTOMATIC_DS_REQUIREMENTS).
           {% if item.item.role == 'server' %}
           NIC    = [ NETWORK = "k3s-ext", NETWORK_UNAME = "oneadmin" ]
           {% endif %}
@@ -156,8 +152,7 @@
           CONTEXT = [
             NETWORK        = "YES",
             SSH_PUBLIC_KEY  = "$USER[SSH_PUBLIC_KEY]",
-            GROW_ROOTFS    = "YES"{% if item.item.role == 'worker' %},
-            START_SCRIPT_BASE64 = "{{ media_bootstrap_script | b64encode }}"{% endif %}
+            GROW_ROOTFS    = "YES"
           ]
           GRAPHICS = [
             LISTEN = "0.0.0.0",
@@ -255,6 +250,32 @@
       loop: "{{ one_k3s_vms }}"
       loop_control:
         label: "{{ item.name }}"
+
+    # ── Attach media disk to k3s-worker-1 post-boot ──────────────────────
+    # ONe 7.2 scheduler cannot place VMs needing multiple datastores
+    # (default + Tank). Workaround: deploy with OS disk only, then attach
+    # the media disk once the VM is running on the host.
+    - name: Attach BecklabMedia disk to k3s-worker-1
+      ansible.builtin.shell: |
+        vm_id=$(onevm show k3s-worker-1 --json \
+          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['ID'])" 2>/dev/null)
+        image_id=$(oneimage show BecklabMedia --json \
+          | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['IMAGE']['ID'])" 2>/dev/null)
+        onevm attach "$vm_id" "$image_id"
+      environment: "{{ one_auth }}"
+      changed_when: true
+
+    - name: Wait for media disk to appear inside k3s-worker-1
+      ansible.builtin.pause:
+        seconds: 30
+      changed_when: false
+
+    - name: Run media mount script on k3s-worker-1
+      ansible.builtin.shell: |
+        {{ media_bootstrap_script }}
+      delegate_to: k3s-worker-1
+      become: true
+      changed_when: true
 
     # ── Gather IPs ─────────────────────────────────────────────────────────
     - name: Get VM IP address
