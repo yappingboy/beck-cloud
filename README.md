@@ -127,6 +127,12 @@ flux-system (bootstrap)
 - `.sops.yaml` rules defined for `flux/` and `tofu/` paths
 - Kubernetes secrets created via `sops-age` controller
 
+## Post-Deploy Configuration
+
+Some components require one-time manual setup after Flux bootstraps the cluster:
+
+- **[Keycloak + LLDAP setup](docs/keycloak-setup.md)** — create realm, LDAP federation, oauth2-proxy client, and groups scope
+
 ## Design Decisions
 
 - **OpenNebula 7.2**: AIO KVM hypervisor layer; K3s runs on ONE VMs (k3s-server + k3s-worker-1) for isolation; FireEdge UI at :2616; single-node deployment (frontend + KVM node on becklab)
