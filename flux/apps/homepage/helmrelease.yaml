@@ -139,6 +139,23 @@ spec:
                           href: https://traefik.becklab.cloud
                           description: Ingress dashboard
                           icon: traefik.png
+                  - Infrastructure:
+                      - OpenNebula:
+                          href: https://one.becklab.cloud
+                          description: VM Management
+                          icon: server.png
+                      - qBittorrent:
+                          href: https://qbit.becklab.cloud
+                          description: Torrent Client
+                          icon: qbittorrent.png
+                      - Landing CMS:
+                          href: https://cms.becklab.cloud
+                          description: Edit Public Page
+                          icon: edit.png
+                      - Tasks:
+                          href: https://tasks.becklab.cloud
+                          description: Ticketing Board
+                          icon: list.png
                 bookmarks.yaml: |
                   []
                 kubernetes.yaml: |

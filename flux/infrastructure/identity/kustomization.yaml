@@ -12,5 +12,6 @@ resources:
   - keycloak.yaml
   - oauth2-proxy.yaml
   - oauth2-proxy-media.yaml
+  - logout-page.yaml
 
 

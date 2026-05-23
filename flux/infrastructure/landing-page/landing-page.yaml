@@ -1,0 +1,136 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-default
+  namespace: landing
+data:
+  index.html: |
+    <!doctype html>
+    <html><head>
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1">
+      <title>Becklab</title>
+      <style>
+        body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}
+        .hero{text-align:center;padding:6rem 2rem}
+        h1{font-size:3rem;margin-bottom:1rem}
+        p{font-size:1.2rem;color:#94a3b8}
+        a{color:#38bdf8;text-decoration:none}
+        a:hover{text-decoration:underline}
+      </style>
+    </head><body>
+      <div class="hero">
+        <h1>Becklab</h1>
+        <p>Home automation, media, and infrastructure.</p>
+      </div>
+    </body></html>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-admin-panel
+  namespace: landing
+data:
+  index.html: |
+    <!doctype html>
+    <html><head>
+      <title>Landing Page Editor</title>
+      <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
+      <style>
+        body{font-family:system-ui;margin:2rem;background:#0f172a;color:#e2e8f0}
+        textarea{width:100%;height:300px;background:#1e293b;color:#e2e8f0;border:1px solid #334155}
+        button{padding:0.5rem 1rem;background:#38bdf8;color:#0f172a;border:none;cursor:pointer;font-weight:bold}
+      </style>
+    </head><body>
+      <h1>Edit Landing Page</h1>
+      <textarea id="editor">&lt;h1&gt;Welcome to Becklab&lt;/h1&gt;</textarea>
+      <br><br>
+      <button onclick="save()">Save</button>
+      <p id="status"></p>
+      <script>
+        tinymce.init({
+          selector: '#editor',
+          height: 500,
+          plugins: 'lists link image code table',
+          menubar: false,
+          statusbar: false
+        });
+        function save() {
+          const html = tinymce.activeEditor.getContent();
+          fetch('/save', { method: 'POST', body: html })
+            .then(r => r.ok ? document.getElementById('status').textContent = 'Saved!' : document.getElementById('status').textContent = 'Error')
+            .catch(e => document.getElementById('status').textContent = 'Error: ' + e);
+        }
+      </script>
+    </body></html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-page
+  namespace: landing
+  labels:
+    app: landing-page
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-page
+  template:
+    metadata:
+      labels:
+        app: landing-page
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          resources:
+            limits:
+              memory: 128Mi
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: content
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: content
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-page
+  namespace: landing
+spec:
+  selector:
+    app: landing-page
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing-page
+  namespace: landing
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - becklab.cloud
+      secretName: landing-tls
+  rules:
+    - host: becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: landing-page
+                port:
+                  number: 80

@@ -1,0 +1,103 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: logout-page
+  namespace: identity
+  labels:
+    app: logout-page
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: logout-page
+  template:
+    metadata:
+      labels:
+        app: logout-page
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:alpine
+          resources:
+            limits:
+              memory: 64Mi
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          configMap:
+            defaultMode: 0644
+            name: logout-page-html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logout-page-html
+  namespace: identity
+data:
+  index.html: |
+    <!doctype html>
+    <html><head><meta http-equiv="refresh" content="0;url=https://home.becklab.cloud"></head>
+    <body>Redirecting...</body></html>
+  logout.html: |
+    <!doctype html>
+    <html><head>
+      <title>Logged Out</title>
+      <style>
+        body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}
+        a{color:#38bdf8}
+      </style>
+    </head><body>
+      <div>
+        <h1>Logged Out</h1>
+        <p>You have been signed out of all Becklab services.</p>
+        <br><a href="https://home.becklab.cloud">Return to Home</a>
+      </div>
+    </body></html>
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: logout-page
+  namespace: identity
+spec:
+  selector:
+    app: logout-page
+  ports:
+    - port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logout-page
+  namespace: identity
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - logout.becklab.cloud
+      secretName: logout-tls
+  rules:
+    - host: logout.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: logout-page
+                port:
+                  number: 80
+          - path: /logout
+            pathType: Prefix
+            backend:
+              service:
+                name: logout-page
+                port:
+                  number: 80
