@@ -1,7 +1,3 @@
 creation_rules:
   - path_regex: flux/.*\.yaml$
-    # Replace with the output of: sudo age-keygen -y /root/.config/sops/age/homelab.agekey
-    # (run on k3s-server, then commit this file)
-    age: >-
-      age19dxutevuglwy4lc056qhc6errhgd2fwhxfc8lxlkkn2utyhdqepqr9gcc3
-    encrypted_regex: "^(data|stringData)$"
+    age: age1yhl457qt9vxad0zvwuyweqz4vdhfm372y9cypkvrsqnx028cyqvqrq4u8w

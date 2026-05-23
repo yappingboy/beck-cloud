@@ -1,13 +1,14 @@
 # Beck Cloud — Private Cloud Platform
 
-Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
+Production-grade private cloud on K3s + RAID6, managed via Flux CD GitOps.
 
 ## Architecture
 
 | Layer | Component | Status |
 |-------|-----------|--------|
 | L1 | OS & Bootstrap (Ansible) | ✅ Playbooks ready |
-| L2 | OpenNebula 7.2 (hypervisor) | ✅ Playbook ready |
+| L2 | RAID6 + LVM Storage (Ansible) | ✅ Playbook ready |
+| L3 | OpenNebula 7.2 (hypervisor) | ✅ Playbook ready |
 | L3 | local-path provisioner (K3s built-in) | ✅ Pool plan + datasets + StorageClasses |
 | L4 | K3s + Cilium (on Nova VMs) | ✅ Playbook ready |
 | L5 | GitOps (Flux CD) | ✅ Bootstrap + Sources + Controllers + Configs |
@@ -31,6 +32,7 @@ Production-grade private cloud on K3s + ZFS, managed via Flux CD GitOps.
 │   ├── templates/                # Jinja2 templates
 │   └── playbooks/
 │       ├── 00-prereqs.yml       # Minimal pre-OpenNebula prep (packages, KVM, swap, NTP)
+│       ├── 01-raid-storage.yml  # RAID6 (md0) + LVM (vg_tank/lv_tank) → Tank datastore
 │       ├── 02-opennebula.yml    # OpenNebula 7.2 AIO install (frontend + KVM node, bridge, NAT)
 │       ├── 03-harden.yml        # UFW, sysctls, SSH hardening, NVIDIA
 │       ├── 04-one-vms.yml       # Provision K3s VMs via OpenNebula
@@ -69,26 +71,29 @@ ansible-galaxy collection install -r ansible/requirements.yml
 # 0. Minimal prereqs: packages, KVM, swap off, kernel modules, NTP
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/00-prereqs.yml
 
-# 1. Install OpenNebula 7.2 AIO (frontend + KVM node, bridge networking, NAT)
+# 1. Build RAID6 array (md0) + LVM (vg_tank/lv_tank) → Tank datastore
+ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/01-raid-storage.yml
+
+# 2. Install OpenNebula 7.2 AIO (frontend + KVM node, bridge networking, NAT)
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/02-opennebula.yml
 
-# 2. Apply host hardening (UFW, sysctls, SSH, optional NVIDIA install)
+# 3. Apply host hardening (UFW, sysctls, SSH, optional NVIDIA install)
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/03-harden.yml
 
-# 3. Provision K3s VM instances via OpenNebula
+# 4. Provision K3s VM instances via OpenNebula
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/04-one-vms.yml
 # → Update inventory k3s_nodes IPs then continue
 
-# 4. Install K3s + Cilium on OpenNebula VMs
+# 5. Install K3s + Cilium on OpenNebula VMs
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/05-k3s.yml
 
-# 5. Bootstrap Flux
+# 6. Bootstrap Flux
 GITHUB_TOKEN=<token> ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/06-flux.yml
 
-# 6. Install CSI snapshot CRDs
+# 7. Install CSI snapshot CRDs
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/07-snapshotter.yml
 
-# 8. (Optional) AI sysadmin stack on host GPU
+# 9. (Optional) AI sysadmin stack on host GPU
 ansible-playbook -i ansible/inventory/hosts.yml ansible/playbooks/08-ai-sysadmin.yml
 ```
 
@@ -126,6 +131,7 @@ flux-system (bootstrap)
 - Age key: `~/.config/sops/age/homelab.agekey`
 - `.sops.yaml` rules defined for `flux/` and `tofu/` paths
 - Kubernetes secrets created via `sops-age` controller
+- **Key rotation**: see [ansible/docs/SOPS-ROTATION.md](ansible/docs/SOPS-ROTATION.md) — run playbook `10-sops-rotate.yml` before `06-flux.yml`
 
 ## Post-Deploy Configuration
 
@@ -137,7 +143,8 @@ Some components require one-time manual setup after Flux bootstraps the cluster:
 
 - **OpenNebula 7.2**: AIO KVM hypervisor layer; K3s runs on ONE VMs (k3s-server + k3s-worker-1) for isolation; FireEdge UI at :2616; single-node deployment (frontend + KVM node on becklab)
 - **local-path over Ceph/NFS**: K3s built-in local-path provisioner avoids Ceph/NFS complexity on a single-node deployment; data lives on the VM disk; add Longhorn for HA storage when needed
-- **ZFS RAIDZ2×2**: ~49.5TB usable from 13×5.5TB spinning disks + 9.1TB archive mirror; NVMe SLOG for write acceleration
+- **ZFS RAIDZ2×2**: REMOVED — replaced with md0 RAID6 (14x 6TB HGST, ~78TB usable, 2 disk fault tolerance)
+- **md0 RAID6 + LVM**: ~78TB usable from 14x 6TB HGST SAS drives (left-symmetric, 512K chunk). vg_tank → lv_tank → Tank datastore (DS 101). sdf (10TB) dead, sdh (10TB) reserved.
 - **Cilium over Flannel**: eBPF NetworkPolicy for torrent VPN isolation
 - **Flux (pull)**: No external CI with cluster credentials
 - **lldap**: Simpler than OpenLDAP, compatible with Keycloak

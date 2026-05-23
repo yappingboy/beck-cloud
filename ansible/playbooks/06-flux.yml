@@ -13,6 +13,8 @@
   vars:
     flux_version: "2.4.0"
     flux_repo_branch: "main"
+    # Check for pre-rotated key first (from 10-sops-rotate.yml), fall back to local
+    pre_rotated_key: "/root/.config/sops/age/pre-rotated.agekey"
     age_key_path: "/root/.config/sops/age/homelab.agekey"
 
   tasks:
@@ -34,10 +36,8 @@
 
     - name: Download Flux CLI
       when: flux_version_check.rc != 0
-      ansible.builtin.get_url:
-        url: "https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz"
-        dest: /tmp/flux.tar.gz
-        mode: '0644'
+      ansible.builtin.command: "curl -fsSL https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz -o /tmp/flux.tar.gz"
+      changed_when: true
 
     - name: Install Flux binary
       when: flux_version_check.rc != 0
@@ -55,10 +55,24 @@
         state: directory
         mode: '0700'
 
-    - name: Generate SOPS age key
+    - name: Check for pre-rotated key (from 10-sops-rotate.yml)
+      ansible.builtin.stat:
+        path: "{{ pre_rotated_key }}"
+      register: pre_rotated_key_stat
+
+    - name: Use pre-rotated key if available
+      ansible.builtin.copy:
+        src: "{{ pre_rotated_key }}"
+        dest: "{{ age_key_path }}"
+        remote_src: true
+        mode: '0600'
+      when: pre_rotated_key_stat.stat.exists
+
+    - name: Generate SOPS age key (only if no pre-rotated key)
       ansible.builtin.command: age-keygen -o {{ age_key_path }}
       args:
         creates: "{{ age_key_path }}"
+      when: not pre_rotated_key_stat.stat.exists
 
     - name: Read age public key
       ansible.builtin.shell: age-keygen -y {{ age_key_path }}
@@ -127,8 +141,5 @@
         msg: |
           Flux version: {{ flux_version }}
           SOPS age public key: {{ age_public_key.stdout }}
-
-          Add this public key to .sops.yaml age recipients, then
-          re-encrypt secrets: sops updatekeys flux/**/*.yaml
-
           {{ flux_check.stdout }}
+      changed_when: false

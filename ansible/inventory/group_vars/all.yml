@@ -47,12 +47,22 @@ one_k3s_vms:
     disk: 50
     role: worker
 
-# ── LVM storage backing the OpenNebula Tank datastore ────────────────────────
-# Single LV on /dev/md0 → /var/lib/one/datastores/101 (DS ID 101 = Tank).
+# ── RAID + LVM storage backing the OpenNebula Tank datastore ─────────────────
+# 14x 6TB HGST SAS → /dev/md0 (RAID6, ~78TB usable) → vg_tank → lv_tank
+# → /var/lib/one/datastores/101 (DS ID 101 = Tank).
 # Holds the BecklabMedia DATABLOCK image attached to k3s-worker-1. Inside the
-# VM, /dev/vdb is formatted xfs and mounted at /mnt/media (movies/shows/downloads).
+# VM, /dev/vdb is formatted xfs and mounted at /mnt/media.
 # System DS 0 / default DS 1 are unmanaged here — they live on the root FS.
-lvm_vg_name: vg_tank            # vgcreate vg_tank /dev/md0
+#
+# Excluded drives:
+#   sdf (10TB Seagate) — dead, I/O errors, removed from service
+#   sdh (10TB Seagate) — no matching partner, reserved for future use
+raid_data_disks: []  # auto-discovered; override with -e raid_data_disks=[...]
+raid_level: raid6
+raid_chunk: 512K
+raid_layout: left-symmetric
+
+lvm_vg_name: vg_tank
 lvm_lvs:
   - name: lv_tank
     size: 100%FREE
@@ -92,7 +102,9 @@ llm_llamactl_port: 8088
 llm_context_size: 32768
 llm_threads: 16
 
-# ── Network / NTP ─────────────────────────────────────────────────────────────
+# ── Network / NTP ──────────────────────────────────────────────────────────────
+one_vm_cidr: "192.168.100.0/24"
+
 ntp_servers:
   - 0.pool.ntp.org
   - 1.pool.ntp.org

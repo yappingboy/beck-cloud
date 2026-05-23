@@ -28,6 +28,7 @@
         name: '*'
         state: latest
         update_cache: true
+      failed_when: false
 
     - name: Install supplementary system packages
       ansible.builtin.dnf:
@@ -36,6 +37,7 @@
           - htop
           - nvme-cli
           - smartmontools
+          - mdadm
           - net-tools
           - iproute
           - chrony
