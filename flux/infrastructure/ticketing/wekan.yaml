@@ -68,6 +68,8 @@ spec:
           image: wekanteam/wekan:latest
           resources:
             limits:
+              memory: 4Gi
+            requests:
               memory: 2Gi
           env:
             - name: MONGO_URL
@@ -77,7 +79,7 @@ spec:
             - name: MAIL_URL
               value: smtp://localhost:25
             - name: NODE_OPTIONS
-              value: --max-old-space-size=1536
+              value: --max-old-space-size=3072
           ports:
             - containerPort: 8080
 ---
