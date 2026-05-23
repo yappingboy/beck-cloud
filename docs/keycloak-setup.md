@@ -70,7 +70,7 @@ This tells Keycloak to use LLDAP as its user directory.
 | Username LDAP attribute | `uid` |
 | RDN LDAP attribute | `uid` |
 | UUID LDAP attribute | `entryUUID` |
-| User Object Classes | `inetOrgPerson,organizationalPerson` |
+| User Object Classes | `inetOrgPerson` |
 | Edit Mode | READ_ONLY |
 
 3. Click **Test connection** and **Test authentication** — both should pass.
