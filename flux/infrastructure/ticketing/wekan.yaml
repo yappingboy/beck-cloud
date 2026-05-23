@@ -74,6 +74,8 @@ spec:
               value: mongodb://wekan-mongodb:27017/wekan
             - name: ROOT_URL
               value: https://tasks.becklab.cloud
+            - name: MAIL_URL
+              value: smtp://localhost:25
             - name: NODE_OPTIONS
               value: --max-old-space-size=1536
           ports:
