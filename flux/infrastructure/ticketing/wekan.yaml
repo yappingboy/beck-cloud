@@ -14,9 +14,19 @@ spec:
       labels:
         app: wekan-mongodb
     spec:
+      initContainers:
+        - name: init-rs
+          image: mongo:7
+          command:
+            [
+              "sh",
+              "-c",
+              "until mongosh --host wekan-mongodb-0.wekan-mongodb.ticketing.svc.cluster.local:27017 --eval 'rs.initiate({_id:\"rs0\",members:[{_id:0,host:\"wekan-mongodb-0.wekan-mongodb.ticketing.svc.cluster.local:27017\"}]})' 2>/dev/null; do sleep 5; done",
+            ]
       containers:
         - name: mongodb
           image: mongo:7
+          args: ["--replSet", "rs0", "--bind_ip_all"]
           resources:
             limits:
               memory: 2Gi
