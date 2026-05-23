@@ -65,7 +65,7 @@ spec:
     spec:
       containers:
         - name: wekan
-          image: wekanteam/wekan:6.10
+          image: wekanteam/wekan:latest
           resources:
             limits:
               memory: 1Gi
