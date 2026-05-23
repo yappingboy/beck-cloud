@@ -17,6 +17,7 @@ resources:
   #         replace it. Re-add if off-cluster DR becomes a requirement.
   - llm
   - opennebula
+  - cms
   - landing-page
   - ticketing
   # rancher: removed — K3s + Flux replaces Rancher's management role;

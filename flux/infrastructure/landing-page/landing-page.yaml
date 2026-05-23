@@ -1,29 +1,59 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: landing-default
+  name: landing-app
   namespace: landing
 data:
-  index.html: |
-    <!doctype html>
-    <html><head>
-      <meta charset="utf-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1">
-      <title>Becklab</title>
-      <style>
-        body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}
-        .hero{text-align:center;padding:6rem 2rem}
-        h1{font-size:3rem;margin-bottom:1rem}
-        p{font-size:1.2rem;color:#94a3b8}
-        a{color:#38bdf8;text-decoration:none}
-        a:hover{text-decoration:underline}
-      </style>
-    </head><body>
-      <div class="hero">
-        <h1>Becklab</h1>
-        <p>Home automation, media, and infrastructure.</p>
-      </div>
-    </body></html>
+  server.js: |
+    const http = require('http');
+
+    const DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://directus.cms:8055';
+    const DIRECTUS_TOKEN = process.env.DIRECTUS_TOKEN || '';
+    const CACHE_TTL = 60000;
+
+    let cachedHtml = null;
+    let cacheTime = 0;
+
+    function fetchContent() {
+      return new Promise((resolve) => {
+        const url = DIRECTUS_URL + '/items/pages/home';
+        const opts = { timeout: 5000 };
+        if (DIRECTUS_TOKEN) opts.headers = { Authorization: 'Bearer ' + DIRECTUS_TOKEN };
+        const req = http.get(url, opts, (res) => {
+          let data = '';
+          res.on('data', (chunk) => data += chunk);
+          res.on('end', () => {
+            try {
+              const json = JSON.parse(data);
+              if (json.data && json.data[0]) { resolve(renderPage(json.data[0])); }
+              else { resolve(defaultPage()); }
+            } catch (e) { resolve(defaultPage()); }
+          });
+        });
+        req.on('error', () => resolve(defaultPage()));
+        req.on('timeout', () => { req.destroy(); resolve(defaultPage()); });
+      });
+    }
+
+    const S = 'body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}.hero{text-align:center;padding:6rem 2rem}h1{font-size:3rem;margin-bottom:1rem}.content{max-width:800px;margin:0 auto;padding:2rem}a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}p{color:#94a3b8;line-height:1.6}';
+
+    function renderPage(page) {
+      var t = page.title || 'Becklab';
+      var b = page.body || '<p>Home automation, media, and infrastructure.</p>';
+      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + '</title><style>' + S + '</style></head><body><div class="hero"><h1>' + t + '</h1></div><div class="content">' + b + '</div></body></html>';
+    }
+
+    function defaultPage() {
+      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Becklab</title><style>' + S + '</style></head><body><div class="hero"><h1>Becklab</h1><p>Home automation, media, and infrastructure.</p></div></body></html>';
+    }
+
+    http.createServer((req, res) => {
+      if (!cachedHtml || Date.now() - cacheTime > CACHE_TTL) {
+        fetchContent().then(function(html) { cachedHtml = html; cacheTime = Date.now(); });
+      }
+      res.writeHead(200, { 'Content-Type': 'text/html' });
+      res.end(cachedHtml || defaultPage());
+    }).listen(80, function() { console.log('Landing page on :80'); });
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -43,21 +73,30 @@ spec:
         app: landing-page
     spec:
       containers:
-        - name: nginx
-          image: nginx:alpine
+        - name: node
+          image: node:22-alpine
           resources:
             limits:
-              memory: 128Mi
+              memory: 256Mi
+          command: ["node", "/app/server.js"]
+          env:
+            - name: DIRECTUS_URL
+              value: "http://directus.cms:8055"
+            - name: DIRECTUS_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: cms-token
+                  key: token
+                  optional: true
           ports:
             - containerPort: 80
-              name: http
           volumeMounts:
-            - name: content
-              mountPath: /usr/share/nginx/html
+            - name: app
+              mountPath: /app
       volumes:
-        - name: content
+        - name: app
           configMap:
-            name: landing-default
+            name: landing-app
 ---
 apiVersion: v1
 kind: Service
