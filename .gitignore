@@ -1,1 +1,4 @@
 .sops-old.agekey
+.hermes/
+.sops.agekey
+.sops.yaml.bak
