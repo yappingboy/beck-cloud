@@ -7,8 +7,8 @@ spec:
   type: ExternalName
   externalName: 172.16.0.7
   ports:
-    - port: 5030
-      targetPort: 5030
+    - port: 2616
+      targetPort: 2616
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
@@ -35,4 +35,4 @@ spec:
               service:
                 name: opennebula-sunstone
                 port:
-                  number: 5030
+                  number: 2616

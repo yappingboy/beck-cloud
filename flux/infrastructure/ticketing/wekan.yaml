@@ -19,7 +19,7 @@ spec:
           image: mongo:7
           resources:
             limits:
-              memory: 1Gi
+              memory: 2Gi
           ports:
             - containerPort: 27017
           volumeMounts:
@@ -68,12 +68,14 @@ spec:
           image: wekanteam/wekan:latest
           resources:
             limits:
-              memory: 1Gi
+              memory: 2Gi
           env:
             - name: MONGO_URL
               value: mongodb://wekan-mongodb:27017/wekan
             - name: ROOT_URL
               value: https://tasks.becklab.cloud
+            - name: NODE_OPTIONS
+              value: --max-old-space-size=1536
           ports:
             - containerPort: 8080
 ---

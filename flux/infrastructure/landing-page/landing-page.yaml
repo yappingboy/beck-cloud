@@ -25,45 +25,6 @@ data:
       </div>
     </body></html>
 ---
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: landing-admin-panel
-  namespace: landing
-data:
-  index.html: |
-    <!doctype html>
-    <html><head>
-      <title>Landing Page Editor</title>
-      <script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-      <style>
-        body{font-family:system-ui;margin:2rem;background:#0f172a;color:#e2e8f0}
-        textarea{width:100%;height:300px;background:#1e293b;color:#e2e8f0;border:1px solid #334155}
-        button{padding:0.5rem 1rem;background:#38bdf8;color:#0f172a;border:none;cursor:pointer;font-weight:bold}
-      </style>
-    </head><body>
-      <h1>Edit Landing Page</h1>
-      <textarea id="editor">&lt;h1&gt;Welcome to Becklab&lt;/h1&gt;</textarea>
-      <br><br>
-      <button onclick="save()">Save</button>
-      <p id="status"></p>
-      <script>
-        tinymce.init({
-          selector: '#editor',
-          height: 500,
-          plugins: 'lists link image code table',
-          menubar: false,
-          statusbar: false
-        });
-        function save() {
-          const html = tinymce.activeEditor.getContent();
-          fetch('/save', { method: 'POST', body: html })
-            .then(r => r.ok ? document.getElementById('status').textContent = 'Saved!' : document.getElementById('status').textContent = 'Error')
-            .catch(e => document.getElementById('status').textContent = 'Error: ' + e);
-        }
-      </script>
-    </body></html>
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -95,7 +56,8 @@ spec:
               mountPath: /usr/share/nginx/html
       volumes:
         - name: content
-          emptyDir: {}
+          configMap:
+            name: landing-default
 ---
 apiVersion: v1
 kind: Service
