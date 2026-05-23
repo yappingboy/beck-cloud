@@ -4,22 +4,14 @@ metadata:
   name: opennebula-sunstone
   namespace: opennebula
 spec:
-  type: ExternalName
-  externalName: 172.16.0.7
+  type: ClusterIP
+  externalTrafficPolicy: Local
+  externalIPs:
+    - 172.16.0.7
   ports:
-    - port: 2616
-      targetPort: 2616
+    - port: 5030
+      targetPort: 5030
       protocol: TCP
----
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: opennebula-path-strip
-  namespace: opennebula
-spec:
-  replacePathRegex:
-    regex: ^/(.*)
-    replacement: /fireedge/sunstone/$1
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -30,14 +22,21 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`one.becklab.cloud`) && PathPrefix(`/`)
+    - match: Host(`one.becklab.cloud`) && PathPrefix(`/fireedge/`)
       kind: Rule
       middlewares:
-        - name: opennebula-path-strip
         - name: identity-sso-admin-chain
           namespace: identity
       services:
         - name: opennebula-sunstone
-          port: 2616
+          port: 5030
+    - match: Host(`one.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: identity-sso-admin-chain
+          namespace: identity
+      services:
+        - name: opennebula-sunstone
+          port: 5030
   tls:
     secretName: one-tls
