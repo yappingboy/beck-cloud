@@ -5,6 +5,12 @@ metadata:
   namespace: identity
 spec:
   interval: 1m
+  install:
+    timeout: 300s
+    crails: true
+  upgrade:
+    timeout: 300s
+    crails: true
   chart:
     spec:
       chart: oauth2-proxy

@@ -5,6 +5,12 @@ metadata:
   namespace: identity
 spec:
   interval: 1m
+  install:
+    timeout: 300s
+    crails: true  # pods crash until Keycloak realm exists; don't block install
+  upgrade:
+    timeout: 300s
+    crails: true
   chart:
     spec:
       chart: oauth2-proxy
