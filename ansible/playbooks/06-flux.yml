@@ -36,10 +36,8 @@
 
     - name: Download Flux CLI
       when: flux_version_check.rc != 0
-      ansible.builtin.get_url:
-        url: "https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz"
-        dest: /tmp/flux.tar.gz
-        mode: '0644'
+      ansible.builtin.command: "curl -fsSL https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz -o /tmp/flux.tar.gz"
+      changed_when: true
 
     - name: Install Flux binary
       when: flux_version_check.rc != 0
