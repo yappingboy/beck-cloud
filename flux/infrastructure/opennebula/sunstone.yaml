@@ -25,7 +25,7 @@ spec:
     - match: Host(`one.becklab.cloud`) && PathPrefix(`/fireedge/`)
       kind: Rule
       middlewares:
-        - name: identity-sso-admin-chain
+        - name: sso-admin-chain
           namespace: identity
       services:
         - name: opennebula-sunstone
@@ -33,7 +33,7 @@ spec:
     - match: Host(`one.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: identity-sso-admin-chain
+        - name: sso-admin-chain
           namespace: identity
       services:
         - name: opennebula-sunstone
