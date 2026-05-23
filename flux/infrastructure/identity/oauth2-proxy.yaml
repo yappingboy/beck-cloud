@@ -6,11 +6,9 @@ metadata:
 spec:
   interval: 1m
   install:
-    timeout: 300s
-    crails: true  # pods crash until Keycloak realm exists; don't block install
+    timeout: 60s
   upgrade:
-    timeout: 300s
-    crails: true
+    timeout: 60s
   chart:
     spec:
       chart: oauth2-proxy
