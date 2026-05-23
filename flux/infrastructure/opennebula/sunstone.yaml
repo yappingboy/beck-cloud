@@ -1,17 +1,29 @@
+# Service pointing to Sunstone on hypervisor
+# Sunstone runs on 172.16.0.7:5030 (outside K8s) — Endpoints object provides the backing
 apiVersion: v1
 kind: Service
 metadata:
   name: opennebula-sunstone
   namespace: opennebula
+  annotations:
+    service.cilium.io/no-health-check: "true"
 spec:
   type: ClusterIP
-  externalTrafficPolicy: Local
-  externalIPs:
-    - 172.16.0.7
   ports:
     - port: 5030
       targetPort: 5030
       protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: opennebula-sunstone
+  namespace: opennebula
+subsets:
+  - addresses:
+      - ip: 172.16.0.7
+    ports:
+      - port: 5030
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
