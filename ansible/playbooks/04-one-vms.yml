@@ -24,9 +24,11 @@
   vars:
     one_auth:
       ONE_AUTH: /var/lib/one/.one/one_auth
-    # Media mount script — runs on k3s-worker-1 after BecklabMedia disk is attached.
-    # Finds the disk by size (>=1TB, unmounted), formats xfs with LABEL=media if blank,
-    # mounts at /mnt/media, and creates subdirectories for media PVs.
+    # Executed by one-context on first boot of k3s-worker-1. Finds the
+    # BecklabMedia disk by size (>=1TB, unmounted), formats it xfs with
+    # LABEL=media if blank, mounts at /mnt/media (by label so the device name
+    # can vary between boots — virt may assign vda/vdb/sdb depending on bus),
+    # and creates the subdirectories that back the K8s media PVs.
     media_bootstrap_script: |
       #!/bin/bash
       set -e
