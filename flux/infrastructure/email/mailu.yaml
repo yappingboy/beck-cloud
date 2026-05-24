@@ -28,6 +28,8 @@ spec:
       labels:
         app: mailu
     spec:
+      hostname: mail
+      subdomain: becklab.cloud
       containers:
         - name: mailu
           image: mailserver/docker-mailserver
@@ -39,8 +41,6 @@ spec:
           env:
             - name: TZ
               value: America/New_York
-            - name: HOSTNAME
-              value: mail.becklab.cloud
             - name: DOMAIN
               value: becklab.cloud
             - name: ENABLE_FAIL2BAN
