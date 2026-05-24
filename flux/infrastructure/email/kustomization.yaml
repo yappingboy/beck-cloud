@@ -5,5 +5,3 @@ namespace: email
 
 resources:
   - namespace.yaml
-  - secret-mailu.yaml
-  - mailu.yaml
