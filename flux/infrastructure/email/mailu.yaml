@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: mailu
-          image: lscr.io/linuxserver/mailserver:latest
+          image: mailserver/docker-mailserver
           resources:
             limits:
               memory: 2Gi
