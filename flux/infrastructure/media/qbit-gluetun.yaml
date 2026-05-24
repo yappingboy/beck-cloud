@@ -42,7 +42,7 @@ spec:
                   name: gluetun-vpn-secret
                   key: pia-password
             - name: SERVER_REGIONS
-              value: Netherlands
+              value: Sweden
             - name: TZ
               value: America/New_York
             - name: DOT
