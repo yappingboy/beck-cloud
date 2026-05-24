@@ -5,6 +5,4 @@ namespace: gaming
 
 resources:
   - namespace.yaml
-  - secret-pufferpanel.yaml
-  - postgres.yaml
-  - pufferpanel.yaml
+  - minecraft-server.yaml
