@@ -45,6 +45,8 @@ spec:
               mountPath: /config
             - name: media-shows
               mountPath: /data/shows
+            - name: media-anime
+              mountPath: /data/anime
             - name: media-downloads
               mountPath: /downloads
       volumes:
@@ -54,7 +56,10 @@ spec:
         - name: media-shows
           persistentVolumeClaim:
             claimName: media-shows
-        - name: media-downloads
+         - name: media-anime
+          persistentVolumeClaim:
+            claimName: media-anime
+       - name: media-downloads
           persistentVolumeClaim:
             claimName: media-downloads
 ---
