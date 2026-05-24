@@ -1,0 +1,111 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silex-data
+  namespace: cms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silex
+  namespace: cms
+  labels:
+    app: silex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silex
+  template:
+    metadata:
+      labels:
+        app: silex
+    spec:
+      containers:
+        - name: silex
+          image: linuxserver/silex:latest
+          resources:
+            limits:
+              memory: 512Mi
+            requests:
+              memory: 128Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/New_York
+            - name: SERVER_ADMIN
+              value: "admin@becklab.cloud"
+            - name: SERVER_NAME
+              value: "silex.becklab.cloud"
+            - name: VHOST
+              value: "silex"
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /config
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: silex-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: silex
+  namespace: cms
+  labels:
+    app: silex
+spec:
+  selector:
+    app: silex
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: silex
+  namespace: cms
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`silex.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: silex
+          port: 80
+  tls:
+    secretName: silex-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: silex
+  namespace: cms
+spec:
+  secretName: silex-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - silex.becklab.cloud

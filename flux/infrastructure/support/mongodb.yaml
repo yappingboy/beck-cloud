@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: trudesk-mongodb
+  namespace: support
+  labels:
+    app: trudesk-mongodb
+spec:
+  serviceName: trudesk-mongodb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trudesk-mongodb
+  template:
+    metadata:
+      labels:
+        app: trudesk-mongodb
+    spec:
+      containers:
+        - name: mongodb
+          image: mongo:7
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 512Mi
+          ports:
+            - containerPort: 27017
+          env:
+            - name: MONGO_INITDB_ROOT_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: mongo_password
+            - name: MONGO_INITDB_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: mongo_password
+          volumeMounts:
+            - name: data
+              mountPath: /data/db
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trudesk-mongodb
+  namespace: support
+  labels:
+    app: trudesk-mongodb
+spec:
+  selector:
+    app: trudesk-mongodb
+  ports:
+    - port: 27017
+      targetPort: 27017
+  type: ClusterIP

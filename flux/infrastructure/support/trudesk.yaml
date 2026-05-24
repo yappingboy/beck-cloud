@@ -1,0 +1,96 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: trudesk
+  namespace: support
+  labels:
+    app: trudesk
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: trudesk
+  template:
+    metadata:
+      labels:
+        app: trudesk
+    spec:
+      containers:
+        - name: trudesk
+          image: thecontrolgroup/trudesk:latest
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 256Mi
+          env:
+            - name: PORT
+              value: "8118"
+            - name: MONGO_URI
+              value: "mongodb://trudesk-mongodb.support.svc.cluster.local:27017/trudesk"
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: session_secret
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: jwt_secret
+            - name: NODE_ENV
+              value: production
+          ports:
+            - containerPort: 8118
+              name: http
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: trudesk
+  namespace: support
+  labels:
+    app: trudesk
+spec:
+  selector:
+    app: trudesk
+  ports:
+    - name: http
+      port: 8118
+      targetPort: 8118
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: trudesk
+  namespace: support
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`support.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: trudesk
+          port: 8118
+  tls:
+    secretName: support-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: support
+  namespace: support
+spec:
+  secretName: support-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - support.becklab.cloud

@@ -1,0 +1,100 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pufferpanel
+  namespace: gaming
+  labels:
+    app: pufferpanel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pufferpanel
+  template:
+    metadata:
+      labels:
+        app: pufferpanel
+    spec:
+      containers:
+        - name: pufferpanel
+          image: pufferpanel/pufferpanel:latest
+          resources:
+            limits:
+              memory: 1Gi
+            requests:
+              memory: 256Mi
+          env:
+            - name: PUFFER_PANEL__LISTEN_ADDR
+              value: "0.0.0.0:3080"
+            - name: PUFFER_PANEL__DATABASE_HOST
+              value: "postgres.gaming.svc.cluster.local"
+            - name: PUFFER_PANEL__DATABASE_PORT
+              value: "5432"
+            - name: PUFFER_PANEL__DATABASE_USERNAME
+              value: "pufferpanel"
+            - name: PUFFER_PANEL__DATABASE_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: pufferpanel-secrets
+                  key: db_password
+            - name: PUFFER_PANEL__DATABASE_SCHEMA
+              value: "pufferpanel"
+            - name: PUFFER_PANEL__DATABASE_SSLMODE
+              value: "disable"
+            - name: PUFFER_PANEL__SECURITY__SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: pufferpanel-secrets
+                  key: security_secret
+            - name: PUFFER_PANEL__SECURITY__FORCE_HTTPS
+              value: "true"
+          ports:
+            - containerPort: 3080
+              name: http
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pufferpanel
+  namespace: gaming
+  labels:
+    app: pufferpanel
+spec:
+  selector:
+    app: pufferpanel
+  ports:
+    - name: http
+      port: 3080
+      targetPort: 3080
+  type: ClusterIP
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pufferpanel
+  namespace: gaming
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`games.becklab.cloud`)
+      services:
+        - name: pufferpanel
+          port: 3080
+  tls:
+    secretName: gaming-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: gaming
+  namespace: gaming
+spec:
+  secretName: gaming-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - games.becklab.cloud

@@ -20,5 +20,8 @@ resources:
   - cms
   - landing-page
   - ticketing
+  - support
+  - gaming
+  - email
   # rancher: removed — K3s + Flux replaces Rancher's management role;
   #          files kept in flux/infrastructure/rancher/ for reference
