@@ -73,8 +73,8 @@ spec:
         app: postfix-relay
     spec:
       containers:
-        - name: postfix
-          image: mwader/postfix:3.8
+        name: postfix
+          image: mwader/postfix-relay:latest
           resources:
             limits:
               memory: 256Mi
