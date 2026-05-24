@@ -31,6 +31,8 @@ spec:
       containers:
         - name: silex
           image: silexlabs/silex-platform
+          securityContext:
+            runAsUser: 0
           resources:
             limits:
               memory: 512Mi
