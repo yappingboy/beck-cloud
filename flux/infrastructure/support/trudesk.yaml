@@ -78,20 +78,20 @@ spec:
                 secretKeyRef:
                   name: trudesk-secrets
                   key: mongo_password
-          volumeMounts:
-            - name: data
-              mountPath: /data/db
+                    #          volumeMounts:
+                    #            - name: data
+                    #              mountPath: /data/db
                 
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: local-path
-        resources:
-          requests:
-            storage: 5Gi
+                    #  volumeClaimTemplates:
+                    #    - metadata:
+                    #        name: data
+                    #      spec:
+                    #        accessModes:
+                    #          - ReadWriteOnce
+                    #        storageClassName: local-path
+                    #        resources:
+                    #          requests:
+                    #            storage: 5Gi
 ---
 apiVersion: v1
 kind: Service
