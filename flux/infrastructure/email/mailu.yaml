@@ -39,7 +39,7 @@ spec:
           env:
             - name: TZ
               value: America/New_York
-            - name: HOSTNAME
+            - name: DOMAIN
               value: mail.becklab.cloud
             - name: ENABLE_FAIL2BAN
               value: "true"
