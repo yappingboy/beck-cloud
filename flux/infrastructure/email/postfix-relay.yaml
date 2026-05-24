@@ -1,0 +1,140 @@
+# Simple Postfix outbound relay for cluster services
+# Accepts mail from pods on port 25, sends directly to destination MX servers.
+# Domain: becklab.cloud
+# No inbound mail, no IMAP, no webmail.
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postfix-main
+  namespace: email
+data:
+  main.cf: |
+    # Network settings
+    inet_interfaces = all
+    inet_protocols = ipv4
+    myhostname = mail.becklab.cloud
+    mydomain = becklab.cloud
+    myorigin = $mydomain
+    mydestination = $myhostname, localhost.$mydomain, localhost
+
+    # Trusted networks — allow cluster pods to relay
+    # K3s pod CIDR ranges + node IPs
+    mynetworks = 10.42.0.0/16 10.43.0.0/16 172.16.0.0/16 192.168.100.0/24 127.0.0.0/8
+
+    # Outbound relay — send directly to destination MX servers
+    # Set to a smarthost if preferred: [smtp.gmail.com]:587
+    relayhost =
+
+    # SMTP authentication for outbound (optional — set via secret if using smarthost)
+    smtp_sasl_auth_enable = no
+    smtp_sasl_password_maps =
+    smtp_sasl_security_options = noanonymous
+
+    # TLS for outbound connections
+    smtp_tls_security_level = may
+    smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+
+    # Message size limits
+    message_size_limit = 10485760
+    mailbox_size_limit = 0
+
+    # Rate limiting to avoid abuse flags
+    smtpd_client_message_rate_limit = 100
+
+    # Logging
+    smtpd_banner = $myhostname ESMTP
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: postfix-sasl
+  namespace: email
+data:
+  # Outbound SMTP credentials — fill in if using a smarthost relay
+  # Format: [smtp.example.com]:587 user:pass
+  sasl_passwd: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postfix-relay
+  namespace: email
+  labels:
+    app: postfix-relay
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: postfix-relay
+  template:
+    metadata:
+      labels:
+        app: postfix-relay
+    spec:
+      containers:
+        - name: postfix
+          image: mwader/postfix:3.8
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          ports:
+            - containerPort: 25
+              name: smtp
+              protocol: TCP
+          env:
+            - name: TZ
+              value: America/New_York
+          volumeMounts:
+            - name: config
+              mountPath: /etc/postfix
+              subPath: main.cf
+              readOnly: true
+            - name: sasl
+              mountPath: /etc/postfix/sasl_passwd
+              subPath: sasl_passwd
+              readOnly: true
+            - name: mail-queue
+              mountPath: /var/spool/postfix
+            - name: mail-logs
+              mountPath: /var/log/postfix
+      volumes:
+        - name: config
+          configMap:
+            name: postfix-main
+            items:
+              - key: main.cf
+                path: main.cf
+            defaultMode: 0644
+        - name: sasl
+          configMap:
+            name: postfix-sasl
+            items:
+              - key: sasl_passwd
+                path: sasl_passwd
+            defaultMode: 0640
+        - name: mail-queue
+          emptyDir: {}
+        - name: mail-logs
+          emptyDir: {}
+---
+# Internal service for cluster services to send mail
+apiVersion: v1
+kind: Service
+metadata:
+  name: smtp-relay
+  namespace: email
+  labels:
+    app: postfix-relay
+spec:
+  selector:
+    app: postfix-relay
+  ports:
+    - name: smtp
+      port: 25
+      targetPort: 25
+      protocol: TCP
+  type: ClusterIP
