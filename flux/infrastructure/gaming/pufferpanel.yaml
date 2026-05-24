@@ -18,6 +18,8 @@ spec:
       containers:
         - name: pufferpanel
           image: pufferpanel/pufferpanel:latest
+          securityContext:
+            privileged: true
           resources:
             limits:
               memory: 1Gi
