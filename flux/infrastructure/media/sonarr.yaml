@@ -60,7 +60,7 @@ spec:
           persistentVolumeClaim:
             claimName: media-anime
         - name: media-downloads
-         persistentVolumeClaim:
+          persistentVolumeClaim:
             claimName: media-downloads
 ---
 apiVersion: v1
