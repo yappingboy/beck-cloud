@@ -30,30 +30,30 @@ spec:
               value: "true"
             - name: TD_MONGODB_SERVER
               value: mongodb
-            - name: TD_MONGODB_DATABASE
-              value: trudesk
-            - name: TD_MONGODB_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: mongo_password
-            - name: TD_MONGODB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: mongo_password
+                # - name: TD_MONGODB_DATABASE
+                #  value: trudesk
+                # - name: TD_MONGODB_USERNAME
+                # valueFrom:
+                # secretKeyRef:
+                #   name: trudesk-secrets
+                #   key: mongo_password
+                # - name: TD_MONGODB_PASSWORD
+                #   valueFrom:
+                # secretKeyRef:
+                #  name: trudesk-secrets
+                #  key: mongo_password
             - name: USE_XFORWARDIP
               value: "true"
-            - name: SESSION_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: session_secret
-            - name: JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: jwt_secret
+                #  - name: SESSION_SECRET
+                # valueFrom:
+                # secretKeyRef:
+                #   name: trudesk-secrets
+                #  key: session_secret
+                # - name: JWT_SECRET
+                #   valueFrom:
+                # secretKeyRef:
+                #   name: trudesk-secrets
+                #  key: jwt_secret
           ports:
             - containerPort: 8118
               name: http
@@ -68,16 +68,16 @@ spec:
           ports:
             - containerPort: 27017
           env:
-            - name: MONGO_INITDB_ROOT_USERNAME
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: mongo_password
-            - name: MONGO_INITDB_ROOT_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: trudesk-secrets
-                  key: mongo_password
+            #            - name: MONGO_INITDB_ROOT_USERNAME
+            #  valueFrom:
+            #    secretKeyRef:
+            #      name: trudesk-secrets
+            #      key: mongo_password
+            #- name: MONGO_INITDB_ROOT_PASSWORD
+            #  valueFrom:
+            #    secretKeyRef:
+            #      name: trudesk-secrets
+            #      key: mongo_password
                     #          volumeMounts:
                     #            - name: data
                     #              mountPath: /data/db
