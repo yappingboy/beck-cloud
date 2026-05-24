@@ -30,19 +30,17 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex:latest
+          image: ghcr.io/linuxserver/silex:latest
           securityContext:
             runAsUser: 0
             runAsGroup: 0
           env:
-            - name: PORT
-              value: "8080"
             - name: TZ
               value: America/New_York
-            - name: SERVER_ADMIN
-              value: "admin@becklab.cloud"
-            - name: SERVER_NAME
-              value: "silex.becklab.cloud"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
           ports:
             - containerPort: 8080
               name: http
