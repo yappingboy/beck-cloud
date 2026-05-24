@@ -48,10 +48,17 @@ spec:
                   key: security_secret
             - name: PUFFER_PANEL__SECURITY__FORCE_HTTPS
               value: "true"
+          volumeMounts:
+            - name: containerd-socket
+              mountPath: /var/run/docker.sock
           ports:
             - containerPort: 3080
               name: http
               protocol: TCP
+      volumes:
+        - name: containerd-socket
+          hostPath:
+            path: /run/containerd/containerd.sock
 ---
 apiVersion: v1
 kind: Service
