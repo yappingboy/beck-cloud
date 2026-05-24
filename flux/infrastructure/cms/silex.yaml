@@ -30,7 +30,7 @@ spec:
     spec:
       containers:
         - name: silex
-          image: linuxserver/silex:latest
+          image: silexlabs/silex-platform
           resources:
             limits:
               memory: 512Mi
