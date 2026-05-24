@@ -27,7 +27,7 @@ spec:
               memory: 256Mi
           env:
             - name: VPN_SERVICE_PROVIDER
-              value: pia
+              value: private internet access
             - name: VPN_TYPE
               value: openvpn
             - name: OPENVPN_USER
@@ -41,7 +41,7 @@ spec:
                   name: gluetun-vpn-secret
                   key: pia-password
             - name: SERVER_REGIONS
-              value: US East
+              value: Netherlands
             - name: TZ
               value: America/New_York
             - name: DOT
@@ -83,7 +83,7 @@ spec:
             - name: PGID
               value: "1000"
             - name: TZ
-              value: America/New_York
+              value: America/Los_Angeles
             - name: WEBUI_PORT
               value: "8080"
           ports:
