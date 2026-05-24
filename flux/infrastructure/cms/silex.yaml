@@ -30,29 +30,16 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex-platform
-          securityContext:
-            capabilities:
-              add:
-                - NET_BIND_SERVICE
-          resources:
-            limits:
-              memory: 512Mi
-            requests:
-              memory: 128Mi
+          image: silexlabs/silex:latest
           env:
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
+            - name: PORT
+              value: "80"
             - name: TZ
               value: America/New_York
             - name: SERVER_ADMIN
               value: "admin@becklab.cloud"
             - name: SERVER_NAME
               value: "silex.becklab.cloud"
-            - name: VHOST
-              value: "silex"
           ports:
             - containerPort: 80
               name: http
