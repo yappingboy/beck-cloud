@@ -17,15 +17,13 @@ spec:
     spec:
       containers:
         - name: trudesk
-          image: polonel/trudesk:1
+          image: polonel/trudesk:latest
           resources:
             limits:
               memory: 1Gi
             requests:
               memory: 256Mi
           env:
-            - name: PORT
-              value: "32772"
             - name: NODE_ENV
               value: production
             - name: TRUDESK_DOCKER
@@ -47,7 +45,7 @@ spec:
                   name: trudesk-secrets
                   key: jwt_secret
           ports:
-            - containerPort: 32772
+            - containerPort: 8118
               name: http
               protocol: TCP
 ---
@@ -63,8 +61,8 @@ spec:
     app: trudesk
   ports:
     - name: http
-      port: 32772
-      targetPort: 32772
+      port: 8118
+      targetPort: 8118
       protocol: TCP
   type: ClusterIP
 ---
@@ -84,7 +82,7 @@ spec:
           namespace: identity
       services:
         - name: trudesk
-          port: 32772
+          port: 8118
   tls:
     secretName: support-tls
 ---
