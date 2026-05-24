@@ -37,18 +37,10 @@ spec:
             requests:
               memory: 512Mi
           env:
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
             - name: TZ
               value: America/New_York
-            - name: OSTYPE
-              value: "alpine"
-            - name: OS
-              value: "alpine"
-            - name: ENABLE_CLAMAV
-              value: "false"
+            - name: HOSTNAME
+              value: mail.becklab.cloud
             - name: ENABLE_FAIL2BAN
               value: "true"
             - name: ENABLE_SPOOF_PROTECTION
