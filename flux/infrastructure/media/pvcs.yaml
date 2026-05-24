@@ -39,6 +39,20 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: media-anime
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-shows-lvm PV
+  volumeName: media-anime-lvm
+  resources:
+    requests:
+      storage: 45Ti
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
   name: media-downloads
   namespace: media
 spec:
