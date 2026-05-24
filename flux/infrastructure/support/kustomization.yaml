@@ -6,5 +6,5 @@ namespace: support
 resources:
   - namespace.yaml
   - secret-trudesk.yaml
-  - mongodb.yaml
+    #  - mongodb.yaml
   - trudesk.yaml
