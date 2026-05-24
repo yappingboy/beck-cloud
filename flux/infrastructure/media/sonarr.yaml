@@ -51,16 +51,16 @@ spec:
               mountPath: /downloads
       volumes:
         - name: config
-        - persistentVolumeClaim:
+          persistentVolumeClaim:
             claimName: sonarr-config
         - name: media-shows
           persistentVolumeClaim:
             claimName: media-shows
-         - name: media-anime
+        - name: media-anime
           persistentVolumeClaim:
             claimName: media-anime
-       - name: media-downloads
-          persistentVolumeClaim:
+        - name: media-downloads
+         persistentVolumeClaim:
             claimName: media-downloads
 ---
 apiVersion: v1
