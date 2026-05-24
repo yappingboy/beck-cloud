@@ -1,4 +1,4 @@
-# Simple Postfix outbound relay for cluster services
+# Simple Postfix outbound relay for cluster services.
 # Accepts mail from pods on port 25, sends directly to destination MX servers.
 # Domain: becklab.cloud
 # No inbound mail, no IMAP, no webmail.
