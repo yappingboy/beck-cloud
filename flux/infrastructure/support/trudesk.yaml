@@ -63,7 +63,7 @@ spec:
     app: trudesk
   ports:
     - name: http
-      port: 8118
+      port: 32772
       targetPort: 32772
       protocol: TCP
   type: ClusterIP
