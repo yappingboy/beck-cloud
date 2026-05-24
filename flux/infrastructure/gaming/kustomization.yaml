@@ -5,4 +5,4 @@ namespace: gaming
 
 resources:
   - namespace.yaml
-  - minecraft-server.yaml
+  # - minecraft-server.yaml
