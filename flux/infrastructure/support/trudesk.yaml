@@ -47,7 +47,7 @@ spec:
                   name: trudesk-secrets
                   key: jwt_secret
           ports:
-            - containerPort: 8118
+            - containerPort: 32772
               name: http
               protocol: TCP
 ---
@@ -64,7 +64,7 @@ spec:
   ports:
     - name: http
       port: 8118
-      targetPort: 8118
+      targetPort: 32772
       protocol: TCP
   type: ClusterIP
 ---
