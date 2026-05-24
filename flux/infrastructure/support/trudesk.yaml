@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: trudesk
-          image: polonel/trudesk
+          image: polonel/trudesk:1
           resources:
             limits:
               memory: 1Gi
@@ -26,8 +26,16 @@ spec:
           env:
             - name: PORT
               value: "8118"
-            - name: MONGO_URI
-              value: "mongodb://trudesk-mongodb.support.svc.cluster.local:27017/trudesk"
+            - name: NODE_ENV
+              value: production
+            - name: TRUDESK_DOCKER
+              value: "true"
+            - name: TD_MONGODB_SERVER
+              value: trudesk-mongodb.support.svc.cluster.local
+            - name: TD_MONGODB_DATABASE
+              value: trudesk
+            - name: USE_XFORWARDIP
+              value: "true"
             - name: SESSION_SECRET
               valueFrom:
                 secretKeyRef:
@@ -38,8 +46,6 @@ spec:
                 secretKeyRef:
                   name: trudesk-secrets
                   key: jwt_secret
-            - name: NODE_ENV
-              value: production
           ports:
             - containerPort: 8118
               name: http
