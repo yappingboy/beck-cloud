@@ -19,8 +19,8 @@ resources:
   - opennebula
   - cms
   - landing-page
-  - ticketing
-  - support
+  #- ticketing
+  #  - support
   - gaming
   - email
   # rancher: removed — K3s + Flux replaces Rancher's management role;
