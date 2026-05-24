@@ -32,7 +32,8 @@ spec:
         - name: silex
           image: silexlabs/silex:latest
           securityContext:
-            privileged: true
+            runAsUser: 0
+            runAsGroup: 0
           env:
             - name: PORT
               value: "8080"
