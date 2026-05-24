@@ -1,40 +1,18 @@
-apiVersion: gameserver.kubegs.io/v1alpha1
+apiVersion: "agones.dev/v1"
 kind: GameServer
 metadata:
-  name: minecraft
-  namespace: gaming
+  generateName: "simple-game-server-"
 spec:
-  # Container image
-  image: kubegs/minecraft-server:latest
-  
-  container:
-    env:
-      - name: EULA
-        value: "TRUE"
-      - name: TYPE
-        value: "VANILLA"
-      - name: MAX_PLAYERS
-        value: "20"
-    
-    resources:
-      requests:
-        cpu: "500m"
-        memory: "2Gi"
-      limits:
-        cpu: "2000m"
-        memory: "4Gi"
-  
   ports:
-    - name: game
-      port: 25565
-      protocol: TCP
-  
-  service:
-    type: LoadBalancer
-    dedicatedIP: false
-  
-  storage:
-    size: 5Gi
+  - name: default
+    containerPort: 7654
+  template:
+    spec:
+      serviceAccountName: my-special-service-account # a custom service account
+      containers:
+      - name: simple-game-server
+        image: us-docker.pkg.dev/agones-images/examples/simple-game-server:0.43
+
 ---
 apiVersion: v1
 kind: Service
