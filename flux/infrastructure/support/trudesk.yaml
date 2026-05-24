@@ -25,7 +25,7 @@ spec:
               memory: 256Mi
           env:
             - name: PORT
-              value: "8118"
+              value: "32772"
             - name: NODE_ENV
               value: production
             - name: TRUDESK_DOCKER
@@ -84,7 +84,7 @@ spec:
           namespace: identity
       services:
         - name: trudesk
-          port: 8118
+          port: 32772
   tls:
     secretName: support-tls
 ---
