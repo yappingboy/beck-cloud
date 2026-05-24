@@ -29,7 +29,7 @@ spec:
             - name: TRUDESK_DOCKER
               value: "true"
             - name: TD_MONGODB_SERVER
-              value: trudesk-mongodb
+              value: mongodb
             - name: TD_MONGODB_DATABASE
               value: trudesk
             - name: TD_MONGODB_USERNAME
