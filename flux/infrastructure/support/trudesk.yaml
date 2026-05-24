@@ -32,6 +32,16 @@ spec:
               value: trudesk-mongodb.support.svc.cluster.local
             - name: TD_MONGODB_DATABASE
               value: trudesk
+            - name: TD_MONGODB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: mongo_password
+            - name: TD_MONGODB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: trudesk-secrets
+                  key: mongo_password
             - name: USE_XFORWARDIP
               value: "true"
             - name: SESSION_SECRET
