@@ -47,6 +47,8 @@ spec:
               mountPath: /data/movies
             - name: media-shows
               mountPath: /data/shows
+            - name: media-anime
+              mountPath: /data/anime
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -57,6 +59,9 @@ spec:
         - name: media-shows
           persistentVolumeClaim:
             claimName: media-shows
+        - name: media-anime
+          persistentVolumeClaim:
+            claimName: media-anime
 ---
 apiVersion: v1
 kind: Service
