@@ -30,17 +30,16 @@ spec:
     spec:
       containers:
         - name: silex
-          image: ghcr.io/linuxserver/silex:latest
+          image: silexlabs/silex:latest
           securityContext:
             runAsUser: 0
             runAsGroup: 0
+            runAsNonRoot: false
           env:
+            - name: PORT
+              value: "8080"
             - name: TZ
               value: America/New_York
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
           ports:
             - containerPort: 8080
               name: http
