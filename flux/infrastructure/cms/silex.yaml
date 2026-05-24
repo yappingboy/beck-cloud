@@ -33,7 +33,7 @@ spec:
           image: silexlabs/silex:latest
           env:
             - name: PORT
-              value: "80"
+              value: "8080"
             - name: TZ
               value: America/New_York
             - name: SERVER_ADMIN
@@ -41,7 +41,7 @@ spec:
             - name: SERVER_NAME
               value: "silex.becklab.cloud"
           ports:
-            - containerPort: 80
+            - containerPort: 8080
               name: http
               protocol: TCP
           volumeMounts:
@@ -65,7 +65,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: 80
+      targetPort: 8080
   type: ClusterIP
 ---
 apiVersion: traefik.io/v1alpha1
