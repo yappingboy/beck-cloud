@@ -15,8 +15,9 @@ spec:
       labels:
         app: qbit-gluetun
     spec:
-      containers:
+      initContainers:
         - name: gluetun
+          restartPolicy: Always
           image: qmcgaw/gluetun:v3.40.0
           resources:
             limits:
@@ -68,6 +69,7 @@ spec:
             capabilities:
               add:
                 - NET_ADMIN
+      containers:
         - name: qbit
           image: lscr.io/linuxserver/qbittorrent:latest
           resources:
@@ -102,7 +104,6 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 30
-      network_mode: "service:gluetun"
       volumes:
         - name: downloads
           persistentVolumeClaim:
