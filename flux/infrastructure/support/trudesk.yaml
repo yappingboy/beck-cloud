@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
         - name: trudesk
-          image: polonel/trudesk:latest
+          image: polonel/trudesk:1
           resources:
             limits:
               memory: 1Gi
