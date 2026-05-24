@@ -29,7 +29,6 @@ spec:
         app: mailu
     spec:
       hostname: mail
-      subdomain: becklab.cloud
       containers:
         - name: mailu
           image: mailserver/docker-mailserver
