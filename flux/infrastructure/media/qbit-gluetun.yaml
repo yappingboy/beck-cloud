@@ -102,6 +102,7 @@ spec:
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 30
+      network_mode: "service:gluetun"
       volumes:
         - name: downloads
           persistentVolumeClaim:
