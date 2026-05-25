@@ -26,7 +26,7 @@ spec:
             - name: SILEX_PORT
               value: "8888"
           ports:
-            - containerPort: 6805
+            - containerPort: 8888
 ---
 apiVersion: v1
 kind: Service
@@ -38,8 +38,8 @@ spec:
     app: silex
   ports:
     - name: http
-      port: 6805
-      targetPort: 6805
+      port: 8888
+      targetPort: 8888
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -57,7 +57,7 @@ spec:
           namespace: identity
       services:
         - name: silex
-          port: 6805
+          port: 8888
   tls:
     secretName: cms-tls
 ---
