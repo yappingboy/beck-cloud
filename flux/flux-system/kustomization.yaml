@@ -3,3 +3,20 @@ kind: Kustomization
 resources:
 - gotk-components.yaml
 - gotk-sync.yaml
+
+# Pin all Flux controllers to the server node, which has internet access.
+# The worker node is on an internal-only network and cannot reach GitHub or Helm repos.
+patches:
+  - patch: |
+      apiVersion: apps/v1
+      kind: Deployment
+      metadata:
+        name: not-used
+      spec:
+        template:
+          spec:
+            nodeSelector:
+              node-role.kubernetes.io/master: "true"
+    target:
+      kind: Deployment
+      namespace: flux-system
