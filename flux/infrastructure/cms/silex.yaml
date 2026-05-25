@@ -58,15 +58,15 @@ spec:
           ports:
             - containerPort: 8888
           volumeMounts:
-            - name: silex_root
+            - name: root
               mountPath: /silex/storage
-            - name: silex_hosting
+            - name: hosting
               mountPath: /silex/hosting
       volumes:
-        - name: silex_root
+        - name: root
           persistentVolumeClaim:
             claimName: silex-root
-        - name: silex_hosting
+        - name: hosting
           persistentVolumeClain:
             claimName: silex-hosting
 
