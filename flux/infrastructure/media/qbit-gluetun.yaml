@@ -97,9 +97,11 @@ spec:
             - name: qbit-config
               mountPath: /config
           startupProbe:
-            httpGet:
-              path: /
-              port: 8080
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - nc -z localhost 8080
             initialDelaySeconds: 30
             periodSeconds: 10
             failureThreshold: 30
