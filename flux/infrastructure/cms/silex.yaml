@@ -22,6 +22,9 @@ spec:
           resources:
             limits:
               memory: 512Mi
+          env:
+            - name: SILEX_PORT
+              value: 8888
           ports:
             - containerPort: 6805
 ---
