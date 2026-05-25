@@ -50,6 +50,8 @@ spec:
          # Allow kubelet to reach qbit WebUI through Cilium (no gluetun firewall)
             - name: FIREWALL
               value: "off"
+            - name: FIREWALL_WORKING
+              value: "off"
             # FIREWALL_INPUT_PORTS / FIREWALL_OUTBOUND_SUBNETS removed —
             # Cilium handles network policy, gluetun iptables conflicts with it
           ports:
