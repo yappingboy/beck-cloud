@@ -1,4 +1,30 @@
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silex-root
+  namespace: cms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 4Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silex-hosting
+  namespace: cms
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 4Gi
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -25,8 +51,25 @@ spec:
           env:
             - name: SILEX_PORT
               value: "8888"
+            - name: SILEX_FS_ROOT
+              value: "/silex/storage/"
+            - name: SILEX_FS_HOSTING_ROOT
+              value: "/silex/hosting/"
           ports:
             - containerPort: 8888
+          volumeMounts:
+            - name: silex_root
+              mountPath: /silex/storage
+            - name: silex_hosting
+              mountPath: /silex/hosting
+      volumes:
+        - name: silex_root
+          persistentVolumeClaim:
+            claimName: silex-root
+        - name: silex_hosting
+          persistentVolumeClain:
+            claimName: silex-hosting
+
 ---
 apiVersion: v1
 kind: Service
