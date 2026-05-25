@@ -4,6 +4,6 @@ kind: Kustomization
 namespace: email
 
 resources:
-  - namespace.yaml
-  - postfix-relay.yaml
+  # - namespace.yaml
+  # - postfix-relay.yaml
   # secret-mailu.yaml — saved for future Mailu full-stack deployment
