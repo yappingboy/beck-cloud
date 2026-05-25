@@ -28,11 +28,11 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: silux
+  name: silex
   namespace: cms
 spec:
   selector:
-    app: silux
+    app: silex
   ports:
     - name: http
       port: 6805
@@ -53,7 +53,7 @@ spec:
         - name: sso-admin-chain
           namespace: identity
       services:
-        - name: directus
+        - name: silex
           port: 6805
   tls:
     secretName: cms-tls
