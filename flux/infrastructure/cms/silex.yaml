@@ -2,10 +2,10 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: directus
+  name: silex
   namespace: cms
   labels:
-    app: directus
+    app: silex
 spec:
   replicas: 1
   selector:
