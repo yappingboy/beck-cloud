@@ -24,7 +24,7 @@ spec:
               memory: 512Mi
           env:
             - name: SILEX_PORT
-              value: 8888
+              value: "8888"
           ports:
             - containerPort: 6805
 ---
