@@ -59,7 +59,7 @@ spec:
         - name: silex
           port: 8888
   tls:
-    secretName: cms-tls
+    secretName: silex-tls
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
