@@ -69,7 +69,7 @@ spec:
           persistentVolumeClaim:
             claimName: silex-root
         - name: hosting
-          persistentVolumeClain:
+          persistentVolumeClaim:
             claimName: silex-hosting
 
 ---
