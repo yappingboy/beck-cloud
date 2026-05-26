@@ -20,19 +20,10 @@ spec:
   entryPoints:
     - websecure
   routes:
-    # Static assets - no auth required
-    - match: Host(`grafana.becklab.cloud`) && PathPrefix(`/public/`)
-      kind: Rule
-      services:
-        - name: kube-prometheus-stack-grafana
-          port: 80
-    # API/measurement endpoints - no auth required
-    - match: Host(`grafana.becklab.cloud`) && PathPrefix(`/api/graphql`)
-      kind: Rule
-      services:
-        - name: kube-prometheus-stack-grafana
-          port: 80
-    # Everything else - SSO auth required
+    # All requests go through SSO. oauth2-proxy forward_auth validates cookie,
+    # adds X-Auth-Request-Email header, Grafana reads it via auth.proxy.
+    # No separate static-asset routes — Grafana's auth.proxy requires the header
+    # on every request, and bypassing it causes 302 redirect loops.
     - match: Host(`grafana.becklab.cloud`)
       kind: Rule
       middlewares:
