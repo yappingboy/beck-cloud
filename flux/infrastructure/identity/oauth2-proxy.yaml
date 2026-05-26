@@ -37,7 +37,6 @@ spec:
         cookie_samesite = "lax"
         cookie_domains = [".becklab.cloud"]
         whitelist_domains = [".becklab.cloud"]
-        allowed_origins = ["https://silex.becklab.cloud", "https://*.becklab.cloud"]
         skip_provider_button = true
         reverse_proxy = true
         upstreams = ["static://202"]
