@@ -3,7 +3,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: silex-root
-  namespace: cms
+  namespace: landing
 spec:
   accessModes:
     - ReadWriteOnce
@@ -16,7 +16,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: silex-hosting
-  namespace: cms
+  namespace: landing
 spec:
   accessModes:
     - ReadWriteOnce
@@ -29,7 +29,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: silex
-  namespace: cms
+  namespace: landing
   labels:
     app: silex
 spec:
@@ -79,7 +79,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: silex
-  namespace: cms
+  namespace: landing
 spec:
   selector:
     app: silex
@@ -92,7 +92,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: silex
-  namespace: cms
+  namespace: landing
 spec:
   entryPoints:
     - websecure
@@ -112,7 +112,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: silex
-  namespace: cms
+  namespace: landing
 spec:
   secretName: silex-tls
   issuerRef:

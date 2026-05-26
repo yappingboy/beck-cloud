@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - landing-page.yaml
+  - silex.yaml
