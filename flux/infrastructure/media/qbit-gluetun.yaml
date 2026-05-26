@@ -18,7 +18,7 @@ spec:
       initContainers:
         - name: gluetun
           restartPolicy: Always
-          image: qmcgaw/gluetun:v3.40.0
+          image: qmcgaw/gluetun:latest
           resources:
             limits:
               cpu: "1"
