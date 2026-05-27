@@ -13,12 +13,12 @@ apiVersion: gateway.networking.k8s.io/v1beta1
 kind: ReferenceGrant
 metadata:
   name: allow-app-access
-  namespace: data-source
+  namespace: media
 spec:
   from:
   - group:  ""
     kind: PersistentVolumeClaim
-    namespace: media
+    namespace: torrent
   to:
   - group: ""
     kind: PersistentVolumeClaim
