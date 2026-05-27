@@ -71,11 +71,12 @@ metadata:
   namespace: torrent
 spec:
   accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
+    - ReadWritemany
+  storageClassName: ""
+  volumeName: media-downloads-lvm
   resources:
     requests:
-      storage: 10Ti
+      storage: 5Ti
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
