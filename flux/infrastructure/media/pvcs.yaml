@@ -71,7 +71,7 @@ metadata:
   namespace: torrent
 spec:
   accessModes:
-    - ReadWritemany
+    - ReadWriteMany
   storageClassName: ""
   volumeName: media-downloads-lvm
   resources:
