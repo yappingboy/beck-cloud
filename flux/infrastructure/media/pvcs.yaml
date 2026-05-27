@@ -7,6 +7,21 @@
 # Config volumes (jellyfin-config, sonarr-config, etc.) remain on local-path
 # (small, on the VM root disk) — no change needed there.
 
+
+---
+apiVersion: gateway.networking.k8s.io/v1beta1
+kind: ReferenceGrant
+metadata:
+  name: allow-app-access
+  namespace: data-source
+spec:
+  from:
+  - group:  ""
+    kind: PersistentVolumeClaim
+    namespace: media
+  to:
+  - group: ""
+    kind: PersistentVolumeClaim
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -72,11 +87,14 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
-  storageClassName: ""
-  volumeName: media-downloads-lvm
   resources:
     requests:
       storage: 5Ti
+  storageClassName: ""
+  dataSourceRef: 
+    kind: PersistentVolumeClaim
+    name: media-downloads
+    namespace: media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
