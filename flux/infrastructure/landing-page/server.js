@@ -69,7 +69,7 @@ function defaultPage() {
     '<html><head>',
     '<meta charset="utf-8">',
     '<meta name="viewport" content="width=device-width, initial-scale=1">',
-    '<title>Becklab</title>',
+    '<title>Becklab-cloud</title>',
     `<style>${DEFAULT_STYLE}</style>`,
     '</head><body>',
     '<div class="hero">',
