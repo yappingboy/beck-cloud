@@ -87,14 +87,11 @@ metadata:
 spec:
   accessModes:
     - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-downloads-lvm PV
+  volumeName: torrent-downloads-lvm
   resources:
     requests:
       storage: 5Ti
-  storageClassName: ""
-  dataSourceRef: 
-    kind: PersistentVolumeClaim
-    name: media-downloads
-    namespace: media
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
