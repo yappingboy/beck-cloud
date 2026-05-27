@@ -128,7 +128,7 @@ spec:
       volumes:
         - name: downloads
           persistentVolumeClaim:
-            claimName: media-downloads
+            claimName: torrent-downloads
         - name: gluetun-config
           emptyDir: {}
         - name: qbit-config
