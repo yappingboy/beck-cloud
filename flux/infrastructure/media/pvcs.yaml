@@ -57,7 +57,7 @@ metadata:
   namespace: media
 spec:
   accessModes:
-    - ReadWriteOnce
+    - ReadWriteMany
   storageClassName: ""       # static binding — matches media-downloads-lvm PV
   volumeName: media-downloads-lvm
   resources:

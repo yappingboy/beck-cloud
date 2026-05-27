@@ -25,8 +25,8 @@ spec:
           image: qmcgaw/gluetun:latest
           resources:
             limits:
-              cpu: "1"
-              memory: 1Gi
+              cpu: "2"
+              memory: 4Gi
             requests:
               cpu: 100m
               memory: 256Mi
