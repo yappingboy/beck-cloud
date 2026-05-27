@@ -15,6 +15,10 @@ spec:
       labels:
         app: qbit-gluetun
     spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: 1
       initContainers:
         - name: gluetun
           restartPolicy: Always
@@ -47,6 +51,9 @@ spec:
               value: America/New_York
             - name: DOT
               value: "on"
+            - name: DISABLE_UPDNGX
+              value: "on"
+
          # Allow kubelet to reach qbit WebUI through Cilium (no gluetun firewall)
             - name: FIREWALL
               value: "off"
