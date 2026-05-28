@@ -19,32 +19,6 @@ spec:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
         fsGroup: 1000
-      initContainers:
-        - name: prepare-config
-          image: alpine:latest
-          command:
-            - sh
-            - -c
-            - |
-              mkdir -p /config
-              {
-              echo 'ControlUsername='
-              echo 'ControlPassword='
-              echo 'ControlPort=6789'
-              echo 'ControlIP=0.0.0.0'
-              echo 'MainDir=/config'
-              echo 'DestDir=/downloads/completed'
-              echo 'InterDir=/downloads/intermediate'
-              echo 'NzbDir=${MainDir}/nzb'
-              echo 'LogFile=${MainDir}/nzbget.log'
-              echo 'ParOption=Default'
-              echo 'RepairOption=Default'
-              echo 'UnpackOption=Default'
-              echo 'SpacePolicy=1'
-              } > /config/nzbget.conf
-          volumeMounts:
-            - name: config
-              mountPath: /config
       containers:
         - name: nzbget
           image: lscr.io/linuxserver/nzbget:latest
@@ -62,11 +36,6 @@ spec:
               value: "1000"
             - name: TZ
               value: America/New_York
-            # Entrypoint creates fresh config with these values
-            - name: NZBGET__ControlUsername
-              value: ""
-            - name: NZBGET__ControlPassword
-              value: ""
           ports:
             - containerPort: 6789
               name: http
