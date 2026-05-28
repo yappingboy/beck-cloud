@@ -27,8 +27,21 @@ spec:
             - -c
             - |
               mkdir -p /config
-              # Remove existing config so entrypoint creates fresh one with env vars
-              rm -f /config/nzbget.conf
+              {
+              echo 'ControlUsername='
+              echo 'ControlPassword='
+              echo 'ControlPort=6789'
+              echo 'ControlIP=0.0.0.0'
+              echo 'MainDir=/config'
+              echo 'DestDir=/downloads/completed'
+              echo 'InterDir=/downloads/intermediate'
+              echo 'NzbDir=${MainDir}/nzb'
+              echo 'LogFile=${MainDir}/nzbget.log'
+              echo 'ParOption=Default'
+              echo 'RepairOption=Default'
+              echo 'UnpackOption=Default'
+              echo 'SpacePolicy=1'
+              } > /config/nzbget.conf
           volumeMounts:
             - name: config
               mountPath: /config
