@@ -20,21 +20,26 @@ spec:
       securityContext:
         fsGroup: 1000
       initContainers:
-        - name: fix-auth
+        - name: wait-and-fix-auth
           image: alpine:latest
           command:
             - sh
             - -c
             - |
-              # Disable nzbget internal auth — SSO via oauth2-proxy handles it
-              CONF=/config/nzbget.conf
-              if [ -f "$CONF" ]; then
-                sed -i 's/^ControlUsername=.*/ControlUsername=/' "$CONF"
-                sed -i 's/^ControlPassword=.*/ControlPassword=/' "$CONF"
-                echo "Auth disabled in $CONF"
-              else
-                echo "No config yet — env vars will handle fresh config"
-              fi
+              # Wait for nzbget to write its config, then patch it
+              echo "Waiting for nzbget config..."
+              for i in \$(seq 1 60); do
+                if [ -f /config/nzbget.conf ]; then
+                  echo "Config found. Patching auth..."
+                  sed -i 's/^ControlUsername=.*/ControlUsername=/' /config/nzbget.conf
+                  sed -i 's/^ControlPassword=.*/ControlPassword=/' /config/nzbget.conf
+                  echo "Auth disabled."
+                  exit 0
+                fi
+                sleep 1
+              done
+              echo "Timeout — config not created"
+              exit 1
           volumeMounts:
             - name: config
               mountPath: /config
@@ -55,11 +60,6 @@ spec:
               value: "1000"
             - name: TZ
               value: America/New_York
-            # Also set for fresh config case (when no config file exists)
-            - name: NZBGET__ControlUsername
-              value: ""
-            - name: NZBGET__ControlPassword
-              value: ""
           ports:
             - containerPort: 6789
               name: http
