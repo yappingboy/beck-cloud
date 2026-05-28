@@ -59,22 +59,7 @@ spec:
           command:
             - sh
             - -c
-            - |
-              echo "Waiting for nzbget config..."
-              i=0
-              while [ \$i -lt 120 ]; do
-                if [ -f /config/nzbget.conf ]; then
-                  echo "Config found. Patching auth..."
-                  sed -i 's/^ControlUsername=.*/ControlUsername=/' /config/nzbget.conf
-                  sed -i 's/^ControlPassword=.*/ControlPassword=/' /config/nzbget.conf
-                  echo "Auth disabled. Exiting."
-                  exit 0
-                fi
-                sleep 1
-                i=\$((i+1))
-              done
-              echo "Timeout"
-              exit 1
+            - 'for i in $(seq 1 120); do [ -f /config/nzbget.conf ] && { sed -i "s/^ControlUsername=.*/ControlUsername=/" /config/nzbget.conf; sed -i "s/^ControlPassword=.*/ControlPassword=/" /config/nzbget.conf; echo "Auth disabled"; exit 0; }; sleep 1; done; exit 1'
           volumeMounts:
             - name: config
               mountPath: /config
