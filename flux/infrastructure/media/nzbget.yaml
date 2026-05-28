@@ -60,19 +60,20 @@ spec:
             - sh
             - -c
             - |
-              # Wait for nzbget to write its config, then patch it once
               echo "Waiting for nzbget config..."
-              for i in \$(seq 1 120); do
+              i=0
+              while [ \$i -lt 120 ]; do
                 if [ -f /config/nzbget.conf ]; then
                   echo "Config found. Patching auth..."
                   sed -i 's/^ControlUsername=.*/ControlUsername=/' /config/nzbget.conf
                   sed -i 's/^ControlPassword=.*/ControlPassword=/' /config/nzbget.conf
-                  echo "Auth disabled. Exiting sidecar."
+                  echo "Auth disabled. Exiting."
                   exit 0
                 fi
                 sleep 1
+                i=\$((i+1))
               done
-              echo "Timeout — config not created"
+              echo "Timeout"
               exit 1
           volumeMounts:
             - name: config
