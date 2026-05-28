@@ -19,30 +19,6 @@ spec:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
         fsGroup: 1000
-      initContainers:
-        - name: wait-and-fix-auth
-          image: alpine:latest
-          command:
-            - sh
-            - -c
-            - |
-              # Wait for nzbget to write its config, then patch it
-              echo "Waiting for nzbget config..."
-              for i in \$(seq 1 60); do
-                if [ -f /config/nzbget.conf ]; then
-                  echo "Config found. Patching auth..."
-                  sed -i 's/^ControlUsername=.*/ControlUsername=/' /config/nzbget.conf
-                  sed -i 's/^ControlPassword=.*/ControlPassword=/' /config/nzbget.conf
-                  echo "Auth disabled."
-                  exit 0
-                fi
-                sleep 1
-              done
-              echo "Timeout — config not created"
-              exit 1
-          volumeMounts:
-            - name: config
-              mountPath: /config
       containers:
         - name: nzbget
           image: lscr.io/linuxserver/nzbget:latest
@@ -78,6 +54,36 @@ spec:
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 30
+        - name: fix-auth
+          image: alpine:latest
+          command:
+            - sh
+            - -c
+            - |
+              # Wait for nzbget to write its config, then patch it once
+              echo "Waiting for nzbget config..."
+              for i in \$(seq 1 120); do
+                if [ -f /config/nzbget.conf ]; then
+                  echo "Config found. Patching auth..."
+                  sed -i 's/^ControlUsername=.*/ControlUsername=/' /config/nzbget.conf
+                  sed -i 's/^ControlPassword=.*/ControlPassword=/' /config/nzbget.conf
+                  echo "Auth disabled. Exiting sidecar."
+                  exit 0
+                fi
+                sleep 1
+              done
+              echo "Timeout — config not created"
+              exit 1
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          resources:
+            requests:
+              cpu: 10m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
       volumes:
         - name: config
           persistentVolumeClaim:
