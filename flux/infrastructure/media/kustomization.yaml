@@ -15,3 +15,4 @@ resources:
   - bazarr.yaml
   - recyclarr.yaml
   - qbit-gluetun.yaml
+  - nzbget.yaml

@@ -1,0 +1,104 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nzbget
+  namespace: media
+  labels:
+    app: nzbget
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nzbget
+  template:
+    metadata:
+      labels:
+        app: nzbget
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: nzbget
+          image: lscr.io/linuxserver/nzbget:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 2Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/New_York
+          ports:
+            - containerPort: 6789
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media-downloads
+              mountPath: /downloads
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - nc -z localhost 6789
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: nzbget-config
+        - name: media-downloads
+          persistentVolumeClaim:
+            claimName: media-downloads
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nzbget
+  namespace: media
+spec:
+  selector:
+    app: nzbget
+  ports:
+    - name: http
+      port: 6789
+      targetPort: 6789
+      protocol: TCP
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: nzbget
+  namespace: media
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - nzbget.becklab.cloud
+      secretName: nzbget-tls
+  rules:
+    - host: nzbget.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: nzbget
+                port:
+                  number: 6789
