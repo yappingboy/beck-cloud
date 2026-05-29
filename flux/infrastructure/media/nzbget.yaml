@@ -24,7 +24,7 @@ spec:
           image: lscr.io/linuxserver/nzbget:latest
           resources:
             limits:
-              cpu: "2"
+              cpu: 2000m
               memory: 2Gi
             requests:
               cpu: 100m
