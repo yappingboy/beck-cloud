@@ -1,0 +1,202 @@
+# MariaDB StatefulSet + Service
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: mariadb
+  namespace: spotweb
+  labels:
+    app: mariadb
+spec:
+  serviceName: mariadb
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mariadb
+  template:
+    metadata:
+      labels:
+        app: mariadb
+    spec:
+      containers:
+        - name: mariadb
+          image: mariadb:11
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+            - name: MYSQL_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: spotweb-secrets
+                  key: db_password
+            - name: MYSQL_DATABASE
+              value: spotweb
+            - name: MYSQL_USER
+              value: spotweb
+            - name: MYSQL_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: spotweb-secrets
+                  key: db_password
+          ports:
+            - containerPort: 3306
+              name: mysql
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /var/lib/mysql
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ReadWriteOnce]
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mariadb
+  namespace: spotweb
+  labels:
+    app: mariadb
+spec:
+  selector:
+    app: mariadb
+  ports:
+    - name: mysql
+      port: 3306
+      targetPort: 3306
+      protocol: TCP
+  type: ClusterIP
+---
+# Spotweb Deployment + Service
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotweb
+  namespace: spotweb
+  labels:
+    app: spotweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spotweb
+  template:
+    metadata:
+      labels:
+        app: spotweb
+    spec:
+      containers:
+        - name: spotweb
+          image: jgeusebroek/spotweb:latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          env:
+            - name: TZ
+              value: America/New_York
+            - name: SPOTWEB_DB_TYPE
+              value: pdo_mysql
+            - name: SPOTWEB_DB_HOST
+              value: mariadb
+            - name: SPOTWEB_DB_PORT
+              value: "3306"
+            - name: SPOTWEB_DB_NAME
+              value: spotweb
+            - name: SPOTWEB_DB_USER
+              value: spotweb
+            - name: SPOTWEB_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: spotweb-secrets
+                  key: db_password
+            - name: SPOTWEB_CRON_RETRIEVE
+              value: "*/15 * * * *"
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+          startupProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 30
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: spotweb-config
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spotweb-config
+  namespace: spotweb
+  labels:
+    app: spotweb
+spec:
+  accessModes: [ReadWriteOnce]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spotweb
+  namespace: spotweb
+  labels:
+    app: spotweb
+spec:
+  selector:
+    app: spotweb
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+      protocol: TCP
+  type: ClusterIP
+---
+# Ingress (SSO protected)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spotweb
+  namespace: spotweb
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - spotweb.becklab.cloud
+      secretName: spotweb-tls
+  rules:
+    - host: spotweb.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: spotweb
+                port:
+                  number: 80
