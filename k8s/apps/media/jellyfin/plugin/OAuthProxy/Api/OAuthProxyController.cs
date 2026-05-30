@@ -90,8 +90,7 @@ public class OAuthProxyController : ControllerBase
         // on .becklab.cloud after the user authenticated with Keycloak.
         // oauth2-proxy chunks sessions > 4KB as cookiename_0, cookiename_1, etc.
         // We try the base name first, then fall back to assembling chunks.
-        _logger.LogInformation("OAuthProxy callback: raw Cookie header = '{H}', all keys = [{K}]",
-            Request.Headers["Cookie"].ToString(),
+        _logger.LogDebug("OAuthProxy callback: cookie keys = [{K}]",
             string.Join(", ", Request.Cookies.Keys));
         var cookieValue = ReadSessionCookie(config.CookieName);
         if (string.IsNullOrEmpty(cookieValue))
