@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>OAuthProxy SSO</title>
+</head>
+<body>
+<div id="OAuthProxySSOConfigPage"
+     data-role="page"
+     class="page type-interior pluginConfigurationPage"
+     data-require="emby-input,emby-button,emby-checkbox,emby-select">
+  <div data-role="content">
+    <div class="content-primary">
+      <form id="OAuthProxyConfigForm">
+        <div class="sectionTitleContainer flex align-items-center">
+          <h2 class="sectionTitle">OAuthProxy SSO Configuration</h2>
+        </div>
+        <br/>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="userInfoUrl">oauth2-proxy Userinfo URL (internal)</label>
+          <input id="userInfoUrl" name="UserInfoUrl" type="text" is="emby-input"
+                 placeholder="http://oauth2-proxy-media.identity.svc.cluster.local/oauth2/userinfo"/>
+          <div class="fieldDescription">Internal service URL for server-to-server userinfo calls. Never exposed to the browser.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="cookieName">Session Cookie Name</label>
+          <input id="cookieName" name="CookieName" type="text" is="emby-input"
+                 placeholder="_oauth2_media"/>
+          <div class="fieldDescription">The cookie set by oauth2-proxy after login. Must be readable from the Jellyfin domain.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="oauth2ProxyStartUrl">oauth2-proxy Start URL (public)</label>
+          <input id="oauth2ProxyStartUrl" name="OAuth2ProxyStartUrl" type="text" is="emby-input"
+                 placeholder="https://oauth2-media.becklab.cloud/oauth2/start"/>
+          <div class="fieldDescription">Public URL the browser is redirected to for authentication.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="jellyfinPublicUrl">Jellyfin Public URL</label>
+          <input id="jellyfinPublicUrl" name="JellyfinPublicUrl" type="text" is="emby-input"
+                 placeholder="https://jellyfin.becklab.cloud"/>
+          <div class="fieldDescription">The public base URL of this Jellyfin instance. Used to build the OAuth2 callback URL.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="adminGroups">Admin Groups (comma-separated)</label>
+          <input id="adminGroups" name="AdminGroups" type="text" is="emby-input"
+                 placeholder="/admins"/>
+          <div class="fieldDescription">SSO group names whose members receive Jellyfin admin rights. Leave blank to grant no SSO users admin.</div>
+        </div>
+
+        <div class="inputContainer">
+          <label class="inputLabel inputLabelUnfocused" for="allowedGroups">Allowed Groups (comma-separated, blank = all)</label>
+          <input id="allowedGroups" name="AllowedGroups" type="text" is="emby-input" placeholder=""/>
+          <div class="fieldDescription">Restrict SSO login to these groups. Leave blank to allow all authenticated users.</div>
+        </div>
+
+        <div class="checkboxContainer checkboxContainer-withDescription">
+          <label class="emby-checkbox-label">
+            <input id="autoCreateUsers" name="AutoCreateUsers" type="checkbox" is="emby-checkbox"/>
+            <span>Auto-create Jellyfin users on first SSO login</span>
+          </label>
+          <div class="fieldDescription checkboxFieldDescription">
+            If enabled, users will be created automatically the first time they sign in via SSO.
+            If disabled, the Jellyfin account must already exist with a matching username.
+          </div>
+        </div>
+
+        <br/>
+        <div>
+          <button is="emby-button" type="submit" class="raised button-submit block emby-button">
+            <span>Save</span>
+          </button>
+        </div>
+
+        <div id="saveStatus" style="margin-top:1em;display:none;color:#4CAF50;"></div>
+      </form>
+    </div>
+  </div>
+</div>
+</body>
+</html>
