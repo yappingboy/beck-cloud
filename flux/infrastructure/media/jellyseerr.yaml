@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: jellyseerr
-          image: ghcr.io/fallenbagel/jellyseerr:latest
+          image: seerr/seerr:latest
           resources:
             limits:
               cpu: "1"
