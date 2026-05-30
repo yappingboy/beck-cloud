@@ -11,7 +11,7 @@ resources:
   - identity
   - rbac
   - security
-  - media
+  - tdarr
   - monitoring
   # velero: removed — Flux GitOps (all state in git) + ZFS snapshots (data layer)
   #         replace it. Re-add if off-cluster DR becomes a requirement.

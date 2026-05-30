@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tdarr
+  namespace: tdarr
+  labels:
+    app: tdarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tdarr
+  template:
+    metadata:
+      labels:
+        app: tdarr
+    spec:
+      containers:
+        - name: tdarr
+          image: tdarr/tdarr:latest  # Placeholder image, user should verify/replace
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 1Gi
+          env:
+            - name: TDARR_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tdarr-secrets
+                  key: api_key
+            - name: TDARR_DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tdarr-secrets
+                  key: db_password
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
