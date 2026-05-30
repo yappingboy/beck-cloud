@@ -1,0 +1,132 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tdarr
+  namespace: media
+  labels:
+    app: tdarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tdarr
+  template:
+    metadata:
+      labels:
+        app: tdarr
+    spec:
+      containers:
+        - name: tdarr
+          image: ghcr.io/haveagitgat/tdarr  # Placeholder image, user should verify/replace
+          resources:
+            limits:
+              memory: 2Gi
+            requests:
+              memory: 1Gi
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: PUIG
+              value: 1000
+            - name: PGID
+              value: 1000
+            - name: UMASK_SET
+              value: 002
+            - name: serverIP
+              value: 0.0.0.0
+            - name: serverPort
+              value: 8266
+            - name: webUIPort
+              value: 8265
+            - name: internalNode
+              value: true
+            - name: inContainer
+              value: true
+            - name: ffmpegVersion
+              value: 7
+            - name: nodeName
+              value: MyInternalNode
+            - name: auth
+              value: false
+            - name: openBrowser
+              value: true
+            - name: maxLogSizeMB
+              value: 10
+          ports:
+            - containerPort: 8265
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: media-shows
+              mountPath: /data/shows
+            - name: media-anime
+              mountPath: /data/anime
+            - name: media-movies
+              mountPath: /data/movies
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: tdarr-config
+        - name: media-shows
+          persistentVolumeClaim:
+            claimName: media-shows
+        - name: media-anime
+          persistentVolumeClaim:
+            claimName: media-anime
+        - name: media-movies
+          persistentVolumeClaim:
+            claimName: media-movies
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tdarr
+  namespace: media
+  labels:
+    app: tdarr
+spec:
+  selector:
+    app: tdarr
+  ports:
+    - name: http
+      port: 8265
+      targetPort: 8265
+  type: ClusterIP
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tdarr
+  namespace: media
+spec:
+  secretName: tdarr-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - tdarr.becklab.cloud
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tdarr
+  namespace: media
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`tdarr.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: tdarr
+          port: 8265
+  tls:
+    secretName: tdarr-tls
+---
