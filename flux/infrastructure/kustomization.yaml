@@ -13,8 +13,7 @@ resources:
   - security
   - media
   - monitoring
-  # velero: removed — Flux GitOps (all state in git) + ZFS snapshots (data layer)
-  #         replace it. Re-add if off-cluster DR becomes a requirement.
+  - velero
   - llm
   - opennebula
   - cms

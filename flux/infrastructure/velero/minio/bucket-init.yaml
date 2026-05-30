@@ -1,0 +1,24 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: minio-make-bucket
+  namespace: velero
+  labels:
+    app: minio
+spec:
+  template:
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: mc
+          image: quay.io/minio/mc:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              mc alias set myminio http://minio.velero.svc.cluster.local:9000 beck-minio 'beck-minio-secret-2026'
+              mc mb myminio/velero-backups --ignore-existing
+              echo "Bucket created successfully"
+          env:
+            - name: MC_CONFIG_DIR
+              value: /tmp/.mc
