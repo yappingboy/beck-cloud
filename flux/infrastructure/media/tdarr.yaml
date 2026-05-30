@@ -28,31 +28,31 @@ spec:
             - name: TZ
               value: America/Los_Angeles
             - name: PUIG
-              value: 1000
+              value: "1000"
             - name: PGID
-              value: 1000
+              value: "1000"
             - name: UMASK_SET
-              value: 002
+              value: "002"
             - name: serverIP
-              value: 0.0.0.0
+              value: "0.0.0.0"
             - name: serverPort
-              value: 8266
+              value: "8266"
             - name: webUIPort
-              value: 8265
+              value: "8265"
             - name: internalNode
-              value: true
+              value: "true"
             - name: inContainer
-              value: true
+              value: "true"
             - name: ffmpegVersion
-              value: 7
+              value: "7"
             - name: nodeName
-              value: MyInternalNode
+              value: "MyInternalNode"
             - name: auth
-              value: false
+              value: "false"
             - name: openBrowser
-              value: true
+              value: "true"
             - name: maxLogSizeMB
-              value: 10
+              value: "10"
           ports:
             - containerPort: 8265
               name: http
