@@ -90,6 +90,9 @@ public class OAuthProxyController : ControllerBase
         // on .becklab.cloud after the user authenticated with Keycloak.
         // oauth2-proxy chunks sessions > 4KB as cookiename_0, cookiename_1, etc.
         // We try the base name first, then fall back to assembling chunks.
+        _logger.LogInformation("OAuthProxy callback: raw Cookie header = '{H}', all keys = [{K}]",
+            Request.Headers["Cookie"].ToString(),
+            string.Join(", ", Request.Cookies.Keys));
         var cookieValue = ReadSessionCookie(config.CookieName);
         if (string.IsNullOrEmpty(cookieValue))
         {
@@ -104,7 +107,7 @@ public class OAuthProxyController : ControllerBase
         UserInfoResponse? userInfo;
         try
         {
-            userInfo = await FetchUserInfo(config, cookieValue).ConfigureAwait(false);
+            userInfo = await FetchUserInfo(config).ConfigureAwait(false);
         }
         catch (Exception ex)
         {
@@ -183,10 +186,12 @@ public class OAuthProxyController : ControllerBase
             _logger.LogInformation("OAuthProxy: creating Jellyfin user {User}", pending.Username);
             user = await _userManager.CreateUserAsync(pending.Username).ConfigureAwait(false);
 
-            // Assign a random unusable password — login must go through SSO
+            // Set a random unusable password — SSO is the only login path.
+            // Do NOT override AuthenticationProviderId: Jellyfin assigns its default provider on
+            // creation. Overriding it with our class name triggers "InvalidAuthProvider" reassignment
+            // which breaks sessions for the user.
             var randomPassword = Convert.ToBase64String(RandomNumberGenerator.GetBytes(64));
             user.Password = _cryptoProvider.CreatePasswordHash(randomPassword).ToString() ?? string.Empty;
-            user.AuthenticationProviderId = typeof(OAuthProxyController).FullName;
             await _userManager.UpdateUserAsync(user).ConfigureAwait(false);
         }
 
@@ -211,7 +216,7 @@ public class OAuthProxyController : ControllerBase
 
     // ── Helpers ────────────────────────────────────────────────────────────
 
-    private async Task<UserInfoResponse?> FetchUserInfo(PluginConfiguration config, string cookieValue)
+    private async Task<UserInfoResponse?> FetchUserInfo(PluginConfiguration config)
     {
         var client = _httpClientFactory.CreateClient("OAuthProxy");
         using var req = new HttpRequestMessage(HttpMethod.Get, config.UserInfoUrl);
@@ -273,9 +278,14 @@ public class OAuthProxyController : ControllerBase
 
     private async Task SyncAdminStatus(User user, bool isAdmin)
     {
-        // Build a minimal UserPolicy that only changes IsAdministrator, preserving defaults.
-        // UpdatePolicyAsync is the correct API for 10.11.x (SetPermission was removed).
-        var policy = new UserPolicy { IsAdministrator = isAdmin };
+        // UserPolicy has two [Required] NOT NULL fields that must be populated or SQLite will reject the save.
+        // Copy them from the User entity, which always carries the values set at creation time.
+        var policy = new UserPolicy
+        {
+            IsAdministrator = isAdmin,
+            AuthenticationProviderId = user.AuthenticationProviderId,
+            PasswordResetProviderId = user.PasswordResetProviderId,
+        };
         await _userManager.UpdatePolicyAsync(user.Id, policy).ConfigureAwait(false);
     }
 

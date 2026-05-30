@@ -28,7 +28,7 @@
           <label class="inputLabel inputLabelUnfocused" for="cookieName">Session Cookie Base Name</label>
           <input id="cookieName" name="CookieName" type="text" is="emby-input"
                  placeholder="_oauth2_media"/>
-          <div class="fieldDescription">Base name of the cookie set by oauth2-proxy. If chunked, chunks are named base_0, base_1, etc. — the plugin assembles them automatically.</div>
+          <div class="fieldDescription">Base name of the cookie set by oauth2-proxy. If chunked, chunks are named base_0, base_1, etc.</div>
         </div>
 
         <div class="inputContainer">
@@ -72,6 +72,7 @@
           </button>
         </div>
         <p id="saveStatus" style="color:#4CAF50;display:none;">Settings saved.</p>
+        <p id="saveError" style="color:#f44;display:none;"></p>
       </form>
     </div>
   </div>
@@ -81,55 +82,104 @@
 (function () {
     var pluginId = 'a2b4c6d8-e0f2-4a6c-8e0a-123456789abc';
 
+    // Get auth token from Jellyfin credentials stored in localStorage
+    function getToken() {
+        try {
+            var raw = localStorage.getItem('jellyfin_credentials') || '{}';
+            var creds = JSON.parse(raw);
+            var servers = creds.Servers || [];
+            for (var i = 0; i < servers.length; i++) {
+                if (servers[i].AccessToken) return servers[i].AccessToken;
+            }
+        } catch(e) {}
+        // Fallback: try ApiClient
+        if (window.ApiClient && window.ApiClient.accessToken) {
+            return window.ApiClient.accessToken();
+        }
+        return null;
+    }
+
+    function apiHeaders() {
+        var token = getToken();
+        var h = { 'Content-Type': 'application/json' };
+        if (token) h['Authorization'] = 'MediaBrowser Token="' + token + '"';
+        return h;
+    }
+
+    function showError(msg) {
+        var el = document.getElementById('saveError');
+        if (el) { el.textContent = msg; el.style.display = 'block'; }
+        var ok = document.getElementById('saveStatus');
+        if (ok) ok.style.display = 'none';
+    }
+
+    function showOk() {
+        var el = document.getElementById('saveStatus');
+        if (el) { el.style.display = 'block'; setTimeout(function(){ el.style.display='none'; }, 3000); }
+        var err = document.getElementById('saveError');
+        if (err) err.style.display = 'none';
+    }
+
     function loadConfig() {
-        window.ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-            document.querySelector('#userInfoUrl').value = config.UserInfoUrl || '';
-            document.querySelector('#cookieName').value = config.CookieName || '_oauth2_media';
-            document.querySelector('#oauth2ProxyStartUrl').value = config.OAuth2ProxyStartUrl || '';
-            document.querySelector('#jellyfinPublicUrl').value = config.JellyfinPublicUrl || '';
-            document.querySelector('#adminGroups').value = config.AdminGroups || '';
-            document.querySelector('#allowedGroups').value = config.AllowedGroups || '';
-            document.querySelector('#autoCreateUsers').checked = config.AutoCreateUsers !== false;
-            window.Dashboard && window.Dashboard.hideLoadingMsg();
-        });
+        fetch('/Plugins/' + pluginId + '/Configuration', { headers: apiHeaders() })
+            .then(function(r) {
+                if (!r.ok) throw new Error('HTTP ' + r.status);
+                return r.json();
+            })
+            .then(function(config) {
+                document.getElementById('userInfoUrl').value = config.UserInfoUrl || '';
+                document.getElementById('cookieName').value = config.CookieName || '_oauth2_media';
+                document.getElementById('oauth2ProxyStartUrl').value = config.OAuth2ProxyStartUrl || '';
+                document.getElementById('jellyfinPublicUrl').value = config.JellyfinPublicUrl || '';
+                document.getElementById('adminGroups').value = config.AdminGroups || '';
+                document.getElementById('allowedGroups').value = config.AllowedGroups || '';
+                document.getElementById('autoCreateUsers').checked = config.AutoCreateUsers !== false;
+                if (window.Dashboard && window.Dashboard.hideLoadingMsg) window.Dashboard.hideLoadingMsg();
+            })
+            .catch(function(e) { showError('Failed to load config: ' + e.message); });
     }
 
     function onSubmit(e) {
         e.preventDefault();
-        window.ApiClient.getPluginConfiguration(pluginId).then(function (config) {
-            config.UserInfoUrl = document.querySelector('#userInfoUrl').value;
-            config.CookieName = document.querySelector('#cookieName').value;
-            config.OAuth2ProxyStartUrl = document.querySelector('#oauth2ProxyStartUrl').value;
-            config.JellyfinPublicUrl = document.querySelector('#jellyfinPublicUrl').value;
-            config.AdminGroups = document.querySelector('#adminGroups').value;
-            config.AllowedGroups = document.querySelector('#allowedGroups').value;
-            config.AutoCreateUsers = document.querySelector('#autoCreateUsers').checked;
+        var config = {
+            UserInfoUrl: document.getElementById('userInfoUrl').value,
+            CookieName: document.getElementById('cookieName').value,
+            OAuth2ProxyStartUrl: document.getElementById('oauth2ProxyStartUrl').value,
+            JellyfinPublicUrl: document.getElementById('jellyfinPublicUrl').value,
+            AdminGroups: document.getElementById('adminGroups').value,
+            AllowedGroups: document.getElementById('allowedGroups').value,
+            AutoCreateUsers: document.getElementById('autoCreateUsers').checked
+        };
 
-            window.ApiClient.updatePluginConfiguration(pluginId, config).then(function () {
-                var s = document.querySelector('#saveStatus');
-                s.style.display = 'block';
-                setTimeout(function () { s.style.display = 'none'; }, 3000);
-                window.Dashboard && window.Dashboard.processServerConfigurationUpdateResult
-                    && window.Dashboard.processServerConfigurationUpdateResult();
-            });
-        });
+        fetch('/Plugins/' + pluginId + '/Configuration', {
+            method: 'POST',
+            headers: apiHeaders(),
+            body: JSON.stringify(config)
+        })
+        .then(function(r) {
+            if (!r.ok) return r.text().then(function(t){ throw new Error('HTTP ' + r.status + ': ' + t); });
+            showOk();
+            if (window.Dashboard && window.Dashboard.processServerConfigurationUpdateResult) {
+                window.Dashboard.processServerConfigurationUpdateResult();
+            }
+        })
+        .catch(function(e) { showError('Save failed: ' + e.message); });
     }
 
-    // Wire up after DOM is ready (the page element may already exist)
     function init() {
-        var form = document.querySelector('#OAuthProxyConfigForm');
-        if (!form) { return; }
-        window.Dashboard && window.Dashboard.showLoadingMsg();
+        var form = document.getElementById('OAuthProxyConfigForm');
+        if (!form) return;
+        if (window.Dashboard && window.Dashboard.showLoadingMsg) window.Dashboard.showLoadingMsg();
         loadConfig();
         form.addEventListener('submit', onSubmit);
     }
 
-    // Jellyfin renders the page then fires viewshow on the page div
-    var page = document.querySelector('#OAuthProxySSOConfigPage');
+    // Wire up: Jellyfin fires 'viewshow' on the page div when it becomes active
+    var page = document.getElementById('OAuthProxySSOConfigPage');
     if (page) {
         page.addEventListener('viewshow', init);
     }
-    // Also try on DOMContentLoaded as fallback
+    // Also init directly in case viewshow already fired or we're in a plain page load
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
