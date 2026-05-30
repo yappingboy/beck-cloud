@@ -17,4 +17,4 @@ resources:
   - qbit-gluetun.yaml
   - nzbget.yaml
   - tdarr.yaml
-  - tdarr-secret.yaml
+  - secret-tdarr.yaml
