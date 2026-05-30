@@ -88,11 +88,16 @@ public class OAuthProxyController : ControllerBase
 
         // The oauth2-proxy session cookie must be present — it was set by oauth2-proxy
         // on .becklab.cloud after the user authenticated with Keycloak.
-        if (!Request.Cookies.TryGetValue(config.CookieName, out var cookieValue)
-            || string.IsNullOrEmpty(cookieValue))
+        // oauth2-proxy chunks sessions > 4KB as cookiename_0, cookiename_1, etc.
+        // We try the base name first, then fall back to assembling chunks.
+        var cookieValue = ReadSessionCookie(config.CookieName);
+        if (string.IsNullOrEmpty(cookieValue))
         {
-            _logger.LogWarning("OAuthProxy callback: cookie '{Name}' not found", config.CookieName);
-            return Content(ErrorHtml("No SSO session cookie found. Please sign in again."), MediaTypeNames.Text.Html);
+            _logger.LogWarning(
+                "OAuthProxy callback: no session cookie found for '{Name}'. Available: [{Cookies}]",
+                config.CookieName,
+                string.Join(", ", Request.Cookies.Keys));
+            return Content(ErrorHtml("No SSO session cookie found. Please start the login flow at /OAuthProxy/start."), MediaTypeNames.Text.Html);
         }
 
         // Server-to-server: ask oauth2-proxy to validate the cookie and return user info.
@@ -210,11 +215,60 @@ public class OAuthProxyController : ControllerBase
     {
         var client = _httpClientFactory.CreateClient("OAuthProxy");
         using var req = new HttpRequestMessage(HttpMethod.Get, config.UserInfoUrl);
-        req.Headers.Add("Cookie", $"{config.CookieName}={cookieValue}");
+
+        // Forward all matching cookies (plain + chunks) so oauth2-proxy can reconstruct the session.
+        var cookieHeader = BuildCookieHeader(config.CookieName);
+        req.Headers.Add("Cookie", cookieHeader);
+
         using var resp = await client.SendAsync(req).ConfigureAwait(false);
         resp.EnsureSuccessStatusCode();
         var body = await resp.Content.ReadAsStringAsync().ConfigureAwait(false);
         return JsonSerializer.Deserialize<UserInfoResponse>(body);
+    }
+
+    /// <summary>
+    /// Returns a non-empty string if any oauth2-proxy session cookie exists
+    /// (plain or chunked), so we can detect presence before building the full header.
+    /// </summary>
+    private string ReadSessionCookie(string baseName)
+    {
+        if (Request.Cookies.TryGetValue(baseName, out var plain) && !string.IsNullOrEmpty(plain))
+            return plain;
+
+        // Check for at least chunk _0
+        if (Request.Cookies.TryGetValue($"{baseName}_0", out var chunk0) && !string.IsNullOrEmpty(chunk0))
+            return chunk0; // non-empty sentinel — actual forwarding uses BuildCookieHeader
+
+        return string.Empty;
+    }
+
+    /// <summary>
+    /// Builds a Cookie header string containing all matching oauth2-proxy cookies
+    /// (plain baseName and any baseName_N chunks).
+    /// </summary>
+    private string BuildCookieHeader(string baseName)
+    {
+        var parts = new List<string>();
+
+        // Plain (unchunked)
+        if (Request.Cookies.TryGetValue(baseName, out var plain) && !string.IsNullOrEmpty(plain))
+            parts.Add($"{baseName}={plain}");
+
+        // Chunks: baseName_0, baseName_1, ...
+        for (var i = 0; ; i++)
+        {
+            var key = $"{baseName}_{i}";
+            if (!Request.Cookies.TryGetValue(key, out var chunk) || string.IsNullOrEmpty(chunk))
+                break;
+            parts.Add($"{key}={chunk}");
+        }
+
+        // Also include the CSRF cookie if present (oauth2-proxy may need it)
+        var csrfKey = $"{baseName}_csrf";
+        if (Request.Cookies.TryGetValue(csrfKey, out var csrf) && !string.IsNullOrEmpty(csrf))
+            parts.Add($"{csrfKey}={csrf}");
+
+        return string.Join("; ", parts);
     }
 
     private async Task SyncAdminStatus(User user, bool isAdmin)
