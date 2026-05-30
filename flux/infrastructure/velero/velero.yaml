@@ -49,6 +49,14 @@ spec:
       defaultVolumesToFsBackup: true
       uploaderType: restic
 
+      # VolumeSnapshotLocation must have a provider even when unused.
+      # All schedules use snapshotVolumes: false (restic), so VSL is never triggered.
+      volumeSnapshotLocation:
+        - name: default
+          provider: aws
+          config:
+            region: us-east-1
+
       backupStorageLocation:
         - name: default
           provider: aws
