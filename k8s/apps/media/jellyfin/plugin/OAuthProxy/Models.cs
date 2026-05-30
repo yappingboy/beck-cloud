@@ -16,6 +16,9 @@ public sealed class UserInfoResponse
 
     [JsonPropertyName("groups")]
     public List<string>? Groups { get; set; }
+
+    [JsonPropertyName("preferredUsername")]
+    public string? PreferredUsername { get; set; }
 }
 
 /// <summary>

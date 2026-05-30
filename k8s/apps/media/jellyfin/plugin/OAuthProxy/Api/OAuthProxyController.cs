@@ -139,7 +139,11 @@ public class OAuthProxyController : ControllerBase
 
         Pending[nonce] = new PendingAuth
         {
-            Username = userInfo.User,
+            // PreferredUsername = Keycloak login name (e.g. "stephen").
+            // Fall back to User which may be the OIDC sub UUID if preferred_username isn't set.
+            Username = !string.IsNullOrEmpty(userInfo.PreferredUsername)
+                ? userInfo.PreferredUsername
+                : userInfo.User,
             Email = userInfo.Email ?? string.Empty,
             IsAdmin = isAdmin,
         };
