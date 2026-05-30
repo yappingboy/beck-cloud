@@ -35,8 +35,9 @@ spec:
   values:
     fullnameOverride: velero
 
-    # bitnami/kubectl:1.32 doesn't exist — use working tag
-    kubeVersion: "1.31.0"
+    # Skip CRD upgrade job — bitnami/kubectl:1.32 image doesn't exist.
+    # CRDs are managed by install.crds: CreateReplace instead.
+    enableCRDUpgrade: false
 
     # restic/node-agent does filesystem-level backup of PV contents.
     # Works with any storage backend including NFS — no CSI snapshots required.
