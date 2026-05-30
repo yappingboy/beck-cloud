@@ -31,20 +31,18 @@ spec:
               value: "1000"
             - name: PGID
               value: "1000"
-            - name: UMASK_SET
-              value: "002"
             - name: serverIP
               value: "0.0.0.0"
             - name: serverPort
-              value: "8266"
+              value: 8266
             - name: webUIPort
-              value: "8265"
+              value: 8265
             - name: internalNode
-              value: "true"
+              value: true
             - name: inContainer
-              value: "true"
+              value: true
             - name: ffmpegVersion
-              value: "7"
+              value: 7
             - name: nodeName
               value: "MyInternalNode"
             - name: auth
@@ -54,7 +52,7 @@ spec:
             - name: maxLogSizeMB
               value: "10"
           ports:
-            - containerPort: 8266
+            - containerPort: 8265
               name: http
               protocol: TCP
           volumeMounts:
@@ -93,8 +91,8 @@ spec:
     app: tdarr
   ports:
     - name: http
-      port: 8266
-      targetPort: 8266
+      port: 8265
+      targetPort: 8265
   type: ClusterIP
 ---
 apiVersion: cert-manager.io/v1
@@ -126,7 +124,7 @@ spec:
           namespace: identity
       services:
         - name: tdarr
-          port: 8266
+          port: 8265
   tls:
     secretName: tdarr-tls
 ---
