@@ -34,15 +34,15 @@ spec:
             - name: serverIP
               value: "0.0.0.0"
             - name: serverPort
-              value: 8266
+              value: "8266"
             - name: webUIPort
-              value: 8265
+              value: "8265"
             - name: internalNode
-              value: true
+              value: "true"
             - name: inContainer
-              value: true
+              value: "true"
             - name: ffmpegVersion
-              value: 7
+              value: "7"
             - name: nodeName
               value: "MyInternalNode"
             - name: auth
