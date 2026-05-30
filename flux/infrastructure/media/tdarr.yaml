@@ -84,8 +84,6 @@ kind: Service
 metadata:
   name: tdarr
   namespace: media
-  labels:
-    app: tdarr
 spec:
   selector:
     app: tdarr
@@ -93,38 +91,43 @@ spec:
     - name: http
       port: 8265
       targetPort: 8265
-  type: ClusterIP
+      protocol: TCP
 ---
-apiVersion: cert-manager.io/v1
-kind: Certificate
+#apiVersion: cert-manager.io/v1
+#kind: Certificate
+#metadata:
+#  name: tdarr
+#  namespace: media
+#spec:
+#  secretName: tdarr-tls
+#  issuerRef:
+#    name: letsencrypt-prod
+#    kind: ClusterIssuer
+#  dnsNames:
+#    - tdarr.becklab.cloud
+#---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: tdarr
   namespace: media
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
-  secretName: tdarr-tls
-  issuerRef:
-    name: letsencrypt-prod
-    kind: ClusterIssuer
-  dnsNames:
-    - tdarr.becklab.cloud
----
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: tdarr
-  namespace: media
-spec:
-  entryPoints:
-    - websecure
-  routes:
-    - kind: Rule
-      match: Host(`tdarr.becklab.cloud`)
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
-      services:
-        - name: tdarr
-          port: 8265
   tls:
-    secretName: tdarr-tls
----
+    - hosts:
+        - tdarr.becklab.cloud
+      secretName: tdarr-tls
+  rules:
+    - host: tdarr.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tdarr
+                port:
+                  number: 8265
