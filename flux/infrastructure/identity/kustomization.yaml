@@ -8,6 +8,8 @@ resources:
   - secret-lldap.yaml
   - secret-keycloak.yaml
   - secret-oauth2-proxy.yaml
+  - secret-redis.yaml
+  - redis.yaml
   - lldap.yaml
   - keycloak.yaml
   - oauth2-proxy.yaml
