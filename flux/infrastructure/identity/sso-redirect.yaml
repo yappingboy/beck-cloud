@@ -1,43 +1,56 @@
 ---
-# sso-redirect: a tiny nginx pod that serves a JS redirect page.
-# Traefik's errors middleware fetches this HTML and serves it to the browser
-# with 401 status. The browser renders it, JS reads window.location.href
-# (the real full URL including host), and redirects to the correct
-# oauth2-proxy /oauth2/start with the full URL as the rd parameter.
+# sso-redirect: nginx pod serving two redirect pages — one per oauth2-proxy.
+# Traefik errors middleware fetches the page server-side and returns it to the
+# browser. window.location.search is the BROWSER URL (not the fetch URL), so
+# we cannot use query params to pick the proxy. Instead each chain gets its
+# own path with the proxy URL hardcoded.
 #
-# Why JS? Traefik's {url} substitution in errors.query only gives the
-# request path — no scheme or host — so rd always ends up as "/" without this.
+# Admin services (sso-admin-chain):  errors.query = "/"        → /
+# Media  services (sso-media-chain): errors.query = "/media"   → /media
 apiVersion: v1
 kind: ConfigMap
 metadata:
   name: sso-redirect-html
   namespace: identity
 data:
-  index.html: |
+  admin-index.html: |
     <!DOCTYPE html>
     <html>
-    <head>
-      <meta charset="utf-8">
-      <title>Signing in...</title>
-    </head>
-    <body>
-    <p>Signing in, please wait...</p>
+    <head><meta charset="utf-8"><title>Signing in...</title></head>
+    <body><p>Signing in, please wait...</p>
     <script>
     (function() {
-      var proxies = {
-        'oauth2-admin': 'https://oauth2.becklab.cloud',
-        'oauth2-media': 'https://oauth2-media.becklab.cloud'
-      };
-      var params = new URLSearchParams(window.location.search);
-      var key = params.get('proxy');
-      var base = proxies[key] || proxies['oauth2-admin'];
-      // window.location.href is the FULL URL the browser is on — not {url}
       var rd = encodeURIComponent(window.location.href);
-      window.location.replace(base + '/oauth2/start?rd=' + rd);
+      window.location.replace('https://oauth2.becklab.cloud/oauth2/start?rd=' + rd);
     })();
     </script>
     </body>
     </html>
+  media-index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><meta charset="utf-8"><title>Signing in...</title></head>
+    <body><p>Signing in, please wait...</p>
+    <script>
+    (function() {
+      var rd = encodeURIComponent(window.location.href);
+      window.location.replace('https://oauth2-media.becklab.cloud/oauth2/start?rd=' + rd);
+    })();
+    </script>
+    </body>
+    </html>
+  default.conf: |
+    server {
+        listen 80;
+        location / {
+            root /usr/share/nginx/html/admin;
+            index index.html;
+        }
+        location /media {
+            alias /usr/share/nginx/html/media/;
+            index index.html;
+        }
+    }
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -63,7 +76,14 @@ spec:
             - containerPort: 80
           volumeMounts:
             - name: html
-              mountPath: /usr/share/nginx/html
+              mountPath: /usr/share/nginx/html/admin/index.html
+              subPath: admin-index.html
+            - name: html
+              mountPath: /usr/share/nginx/html/media/index.html
+              subPath: media-index.html
+            - name: html
+              mountPath: /etc/nginx/conf.d/default.conf
+              subPath: default.conf
           resources:
             requests:
               cpu: 5m
