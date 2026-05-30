@@ -53,7 +53,7 @@ spec:
     service:
       name: sso-redirect
       port: 80
-    query: "/media"
+    query: "/media/"
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
