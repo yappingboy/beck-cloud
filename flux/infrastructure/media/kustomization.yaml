@@ -16,3 +16,5 @@ resources:
   - recyclarr.yaml
   - qbit-gluetun.yaml
   - nzbget.yaml
+  - tdarr.yaml
+  - tdarr-secret.yaml
