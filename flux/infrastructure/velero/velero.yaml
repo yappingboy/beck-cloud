@@ -79,7 +79,8 @@ spec:
             mountPath: /target
 
     # Backup schedules — volumes use restic (snapshotVolumes: false)
-    cronJobTemplates:
+    # Chart v8 uses 'schedules', not 'cronJobTemplates'.
+    schedules:
       - name: identity-6h
         schedule: "0 */6 * * *"
         template:
