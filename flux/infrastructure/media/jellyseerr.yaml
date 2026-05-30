@@ -31,13 +31,7 @@ spec:
               memory: 512Mi
           env:
             - name: LOG_LEVEL
-              value: info
-          startupProbe:
-            exec:
-              command:
-                - /bin/sh
-                - -c
-                - ls /app/config
+              value: debug
           ports:
             - containerPort: 5055
               name: http
