@@ -41,9 +41,9 @@ spec:
     upgradeCRDs: false
 
     # restic/node-agent does filesystem-level backup of PV contents.
-    # Works with any storage backend including NFS — no CSI snapshots required.
+    # Chart v8 splits toggle from config: deployNodeAgent enables the daemonset.
+    deployNodeAgent: true
     nodeAgent:
-      enabled: true
       podVolumePath: /var/lib/kubelet/pods
 
     configuration:
