@@ -1,0 +1,89 @@
+---
+# sso-redirect: a tiny nginx pod that serves a JS redirect page.
+# Traefik's errors middleware fetches this HTML and serves it to the browser
+# with 401 status. The browser renders it, JS reads window.location.href
+# (the real full URL including host), and redirects to the correct
+# oauth2-proxy /oauth2/start with the full URL as the rd parameter.
+#
+# Why JS? Traefik's {url} substitution in errors.query only gives the
+# request path — no scheme or host — so rd always ends up as "/" without this.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sso-redirect-html
+  namespace: identity
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <meta charset="utf-8">
+      <title>Signing in...</title>
+    </head>
+    <body>
+    <p>Signing in, please wait...</p>
+    <script>
+    (function() {
+      var proxies = {
+        'oauth2-admin': 'https://oauth2.becklab.cloud',
+        'oauth2-media': 'https://oauth2-media.becklab.cloud'
+      };
+      var params = new URLSearchParams(window.location.search);
+      var key = params.get('proxy');
+      var base = proxies[key] || proxies['oauth2-admin'];
+      // window.location.href is the FULL URL the browser is on — not {url}
+      var rd = encodeURIComponent(window.location.href);
+      window.location.replace(base + '/oauth2/start?rd=' + rd);
+    })();
+    </script>
+    </body>
+    </html>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sso-redirect
+  namespace: identity
+  labels:
+    app: sso-redirect
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sso-redirect
+  template:
+    metadata:
+      labels:
+        app: sso-redirect
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+          resources:
+            requests:
+              cpu: 5m
+              memory: 16Mi
+            limits:
+              cpu: 50m
+              memory: 32Mi
+      volumes:
+        - name: html
+          configMap:
+            name: sso-redirect-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: sso-redirect
+  namespace: identity
+spec:
+  selector:
+    app: sso-redirect
+  ports:
+    - port: 80
+      targetPort: 80

@@ -9,9 +9,9 @@ spec:
     status:
       - "401"
     service:
-      name: oauth2-proxy
+      name: sso-redirect
       port: 80
-    query: "/oauth2/start?rd={url}"
+    query: "/?proxy=oauth2-admin"
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
@@ -51,9 +51,9 @@ spec:
     status:
       - "401"
     service:
-      name: oauth2-proxy-media
+      name: sso-redirect
       port: 80
-    query: "/oauth2/start?rd={url}"
+    query: "/?proxy=oauth2-media"
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
