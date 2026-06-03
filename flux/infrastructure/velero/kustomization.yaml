@@ -13,3 +13,4 @@ resources:
   - minio/bucket-init.yaml
   - credentials-secret.yaml
   - velero.yaml
+  - ingressroute.yaml
