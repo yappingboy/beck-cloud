@@ -18,3 +18,7 @@ resources:
   - nzbget.yaml
   - tdarr.yaml
   - secret-tdarr.yaml
+  - homebox-deployment.yaml
+  - homebox-service.yaml
+  - homebox-ingress.yaml
+  - homebox-pvc.yaml
