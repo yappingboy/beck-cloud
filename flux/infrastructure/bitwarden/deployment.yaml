@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bitwarden-secrets-manager
+  namespace: bitwarden
+  labels:
+    app: bitwarden-secrets-manager
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bitwarden-secrets-manager
+  template:
+    metadata:
+      labels:
+        app: bitwarden-secrets-manager
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: bitwarden-secrets-manager
+          image: bitwarden/secrets-manager:latest
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/New_York
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: bitwarden-data
