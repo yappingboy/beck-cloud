@@ -67,7 +67,7 @@ spec:
     app: homebox
   ports:
     - name: http
-      port: 3000
+      port: 7745
       targetPort: 3000
       protocol: TCP
 ---
