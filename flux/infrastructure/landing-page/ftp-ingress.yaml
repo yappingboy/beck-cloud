@@ -1,0 +1,19 @@
+apiVersion: traefik.containo.dev/v1alpha1
+kind: IngressRoute
+metadata:
+  name: vsftpd
+  namespace: landing
+spec:
+  entryPoints:
+    - web
+  routes:
+    - match: Host(`silex.becklab.cloud`) && PathPrefix(`/upload`)
+      kind: Rule
+      services:
+        - name: vsftpd
+          port: 21
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+  tls:
+    secretName: silex-tls

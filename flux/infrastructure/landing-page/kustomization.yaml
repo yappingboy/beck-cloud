@@ -7,3 +7,4 @@ resources:
   - ftp-deployment.yaml
   - ftp-service.yaml
   - ftp-pvc.yaml
+  - ftp-ingress.yaml
