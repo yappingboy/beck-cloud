@@ -37,7 +37,7 @@ spec:
             - name: TZ
               value: America/New_York
           ports:
-            - containerPort: 3000
+            - containerPort: 7745
               name: http
               protocol: TCP
           volumeMounts:
@@ -48,7 +48,7 @@ spec:
               command:
                 - /bin/sh
                 - -c
-                - nc -z localhost 3000
+                - nc -z localhost 7745
             initialDelaySeconds: 10
             periodSeconds: 5
             failureThreshold: 30
