@@ -4,11 +4,15 @@ metadata:
   name: recyclarr
   namespace: media
 spec:
-  schedule: "0 */6 * * *"
+  concurrencyPolicy: Forbid
+  failedJobsHistoryLimit: 3
   successfulJobsHistoryLimit: 3
-  failedJobsHistoryLimit: 1
+  schedule: "0 */6 * * *"
+  startingDeadlineSeconds: 3600
   jobTemplate:
     spec:
+      activeDeadlineSeconds: 1200
+      backoffLimit: 3
       template:
         spec:
           nodeSelector:
@@ -16,6 +20,13 @@ spec:
           containers:
             - name: recyclarr
               image: ghcr.io/recyclarr/recyclarr:latest
+              resources:
+                requests:
+                  memory: "64Mi"
+                  cpu: "50m"
+                limits:
+                  memory: "128Mi"
+                  cpu: "200m"
               volumeMounts:
                 - name: config
                   mountPath: /config
@@ -35,6 +46,7 @@ spec:
                     secretKeyRef:
                       name: recyclarr-secrets
                       key: radarr-api-key
+              terminationGracePeriodSeconds: 60
           restartPolicy: Never
           volumes:
             - name: config
