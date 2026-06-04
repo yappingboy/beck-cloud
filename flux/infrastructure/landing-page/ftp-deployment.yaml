@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: vsftpd
-          image: docker.io/linuxserver/vsftpd:latest
+          image: linuxserver/vsftpd:latest
           resources:
             limits:
               cpu: 200m
