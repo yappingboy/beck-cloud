@@ -94,4 +94,5 @@ spec:
             backend:
               service:
                 name: homebox
-                port: 3000
+                port: 
+                  number: 3000
