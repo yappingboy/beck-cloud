@@ -68,7 +68,7 @@ spec:
   ports:
     - name: http
       port: 7745
-      targetPort: 3000
+      targetPort: 7745
       protocol: TCP
 ---
 apiVersion: networking.k8s.io/v1
@@ -95,4 +95,4 @@ spec:
               service:
                 name: homebox
                 port: 
-                  number: 3000
+                  number: 7745
