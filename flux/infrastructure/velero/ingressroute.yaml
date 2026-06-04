@@ -1,23 +1,24 @@
-apiVersion: traefik.containo.dev/v1alpha1
-kind: IngressRoute
-metadata:
-  name: velero-ui
-  namespace: velero
-spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`admin.becklab.cloud`) && PathPrefix(`/velero`)
-      kind: Rule
-      services:
-        - name: velero
-          port: 8085
-          scheme: https
-          passHostHeader: true
-      middlewares:
-        - name: ssl-redirect
-          namespace: traefik
-        - name: oauth2-proxy
-          namespace: identity
-  tls:
-    secretName: admin-tls
+# TEMPORARILY DISABLED - flux validation error
+# apiVersion: traefik.containo.dev/v1alpha1
+# kind: IngressRoute
+# metadata:
+#   name: velero-ui
+#   namespace: velero
+# spec:
+#   entryPoints:
+#     - websecure
+#   routes:
+#     - match: Host(`admin.becklab.cloud`) && PathPrefix(`/velero`)
+#       kind: Rule
+#       services:
+#         - name: velero
+#           port: 8085
+#           scheme: https
+#           passHostHeader: true
+#       middlewares:
+#         - name: ssl-redirect
+#           namespace: traefik
+#         - name: oauth2-proxy
+#           namespace: identity
+#   tls:
+#     secretName: admin-tls
