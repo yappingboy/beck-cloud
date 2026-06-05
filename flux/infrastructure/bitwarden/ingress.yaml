@@ -12,11 +12,9 @@ spec:
       services:
         - name: bitwarden-secrets-manager
           port: 80
-          scheme: https
+          scheme: http
       middlewares:
-        - name: ssl-redirect
-          namespace: traefik
-        - name: oauth2-proxy
+        - name: sso-admin-chain
           namespace: identity
   tls:
     secretName: bw-tls
