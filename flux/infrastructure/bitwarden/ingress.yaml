@@ -13,8 +13,6 @@ spec:
         - name: bitwarden-secrets-manager
           port: 80
           scheme: http
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
+      middlewares: []
   tls:
     secretName: bw-tls
