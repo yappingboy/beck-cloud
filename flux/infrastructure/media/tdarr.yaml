@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: tdarr
-          image: ghcr.io/haveagitgat/tdarr  # Placeholder image, user should verify/replace
+          image: ghcr.io/haveagitgat/tdarr:latest
           resources:
             limits:
               memory: 2Gi
@@ -26,7 +26,7 @@ spec:
               memory: 1Gi
           env:
             - name: TZ
-              value: America/Los_Angeles
+              value: America/New_York
             - name: PUIG
               value: "1000"
             - name: PGID
