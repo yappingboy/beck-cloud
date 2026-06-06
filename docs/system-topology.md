@@ -105,7 +105,6 @@
 | `data-keycloak-postgresql-0`                                      | identity  | 10Gi     | keycloak (Postgres 16)           |                                         |
 | `data-redis-0`                                                    | identity  | 1Gi      | redis session store              |                                         |
 | `lldap-data`                                                      | identity  | 5Gi      | lldap                            |                                         |
-| `ftp-data`                                                        | landing   | 4Gi      | vsftpd                           |                                         |
 | `silex-hosting`                                                   | landing   | 4Gi      | silex-platform                   |                                         |
 | `silex-root`                                                      | landing   | 4Gi      | silex-platform                   |                                         |
 | `bazarr-config`                                                   | media     | 5Gi      | bazarr                           |                                         |
@@ -233,14 +232,6 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 └────────────────────────────────────────────┘
               │
               ▼
-┌────────────────────────────────────────────┐
-│ database: debian:bookworm-slim (MariaDB)   │
-│       svc: vsftpd:21                       │
-│       ingress: vsftpd                      │
-│       PVC: ftp-data (4Gi)                  │
-└────────────────────────────────────────────┘
-              │
-              ▼
 ┌───────────────────────────────────────────------─┐
 │ hosting: silex-platform (PHP)                    │
 │       PVCs: silex-hosting (4Gi), silex-root(4Gi) │
@@ -248,9 +239,9 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 ```
 
 ### 🔐 identity (SSO + Identity)
-```
 ┌──────────────────────────────────────────────────────┐
 │ keycloak: quay.io/keycloak/keycloak:26.0             │
+│       svc: keycloak:8080                             │
 │       svc: keycloak:8080                             │
 │       ingress: keycloak.becklab.cloud                │
 │       PVC: data-keycloak-postgresql-0 (10Gi)         │
@@ -424,11 +415,6 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 
 ### ✅ Fixed (2026-06-04)
 
-1. **vsftpd** - WAS CrashLoopBackOff (`debian:bookworm-slim` image)
-   - **Root cause:** `ftp-deployment.yaml` used empty base image
-   - **Fix:** Replaced with `stilliard/pure-ftpd:latest` (working FTP server)
-   - **Status:** Running 1/1
-
 2. **bitwarden** - WAS ImagePullBackOff
    - **Root cause:** `bitwarden/secrets-manager:latest` requires Docker Hub auth (private)
    - **Fix:** Replaced with `vaultwarden/server:latest` (community Bitwarden impl)
@@ -451,7 +437,6 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
    - `cilium-secrets`, `default`, `kube-*` — system namespaces
 
 5. **Namespace organization**
-   - `landing` — 3 apps (landing-page, silex, vsftpd) → consider splitting
    - `media` + `torrent` — related but separate → consider consolidating
    - `identity` — well-organized (SSO stack)
 
@@ -470,13 +455,6 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 
 ## Remediation Log
 
-### vsftpd Fix
-```bash
-# ftp-deployment.yaml image changed:
-#   FROM: debian:bookworm-slim
-#   TO:   stilliard/pure-ftpd:latest
-# Applied via Flux sync
-```
 
 ### bitwarden Fix
 ```bash
@@ -502,7 +480,7 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 ### Namespace Purpose Map
 | Namespace   | Purpose                        | Workloads                            |
 |-------------|--------------------------------|--------------------------------------|
-| `landing`   | Public-facing web services     | landing-page, silex, vsftpd          |
+| `landing`   | Public-facing web services     | landing-page, silex,                 |
 | `cms`       | Content Management System      | Directus                             |
 | `identity`  | SSO / OAuth2 / LDAP            | Keycloak, LLDAP, Redis, OAuth2-Proxy |
 | `media`     | Media server stack             | Jellyfin, Radarr, Sonarr, etc.       |
