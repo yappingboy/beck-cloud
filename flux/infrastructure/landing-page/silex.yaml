@@ -69,6 +69,8 @@ spec:
               value: "fs,ftp"
             - name: SILEX_HOST
               value: "silex-server"
+            - name: SILEX_DEBUG
+              value: "TRUE"
           ports:
             - containerPort: 8080
           volumeMounts:
