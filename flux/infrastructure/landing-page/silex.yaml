@@ -42,6 +42,7 @@ spec:
       labels:
         app: silex
     spec:
+      hostname: silex-server
       containers:
         - name: silex
           image: silexlabs/silex:latest
@@ -49,6 +50,7 @@ spec:
             limits:
               memory: 512Mi
           securityContext:
+            privileged: true
             runAsUser: 0
           env:
             - name: PORT
