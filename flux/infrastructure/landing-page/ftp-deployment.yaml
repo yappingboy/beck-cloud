@@ -26,7 +26,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              printf '%s\n%s\n' "$FTP_USER_PASS" "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data -m
+              printf '%s\n%s\n' "$FTP_USER_PASS" "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data -f /ftp-db/pureftpd.pwd -m
           env:
             - name: FTP_USER_NAME
               valueFrom:
@@ -40,10 +40,18 @@ spec:
                   key: ftp_password
           volumeMounts:
             - name: puredb
-              mountPath: /etc/pure-ftpd/passwd
+              mountPath: /ftp-db
       containers:
         - name: vsftpd
           image: stilliard/pure-ftpd:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              exec pure-ftpd \
+                -l puredb:/ftp-db/pureftpd.pdb \
+                -E -j -R -P localhost \
+                -p 30000:30009 -c 5 -C 5
           resources:
             limits:
               cpu: 200m
@@ -69,7 +77,7 @@ spec:
             - name: data
               mountPath: /data
             - name: puredb
-              mountPath: /etc/pure-ftpd/passwd
+              mountPath: /ftp-db
           livenessProbe:
             exec:
               command:
@@ -80,7 +88,7 @@ spec:
             periodSeconds: 5
             failureThreshold: 5
           securityContext:
-            allowPrivilegeEscalation: true
+            allowPrivilegeEscation: true
             capabilities:
               add:
                 - NET_BIND_SERVICE
