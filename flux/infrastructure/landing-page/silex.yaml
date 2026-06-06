@@ -42,7 +42,7 @@ spec:
       labels:
         app: silex
     spec:
-      hostname: 
+      hostname: silex-server
       containers:
         - name: silex
           image: silexlabs/silex:latest
