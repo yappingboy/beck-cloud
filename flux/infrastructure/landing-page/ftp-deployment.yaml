@@ -40,9 +40,7 @@ spec:
                   key: ftp_password
           volumeMounts:
             - name: puredb
-              mountPath: /etc/pure-ftpd/pureftpd.pwd
-            - name: puredb
-              mountPath: /etc/pure-ftpd/pureftpd.pdb
+              mountPath: /etc/pure-ftpd
       containers:
         - name: vsftpd
           image: stilliard/pure-ftpd:latest
@@ -71,9 +69,7 @@ spec:
             - name: data
               mountPath: /data
             - name: puredb
-              mountPath: /etc/pure-ftpd/pureftpd.pwd
-            - name: puredb
-              mountPath: /etc/pure-ftpd/pureftpd.pdb
+              mountPath: /etc/pure-ftpd
           livenessProbe:
             exec:
               command:
@@ -82,7 +78,7 @@ spec:
                 - nc -z localhost 21
             initialDelaySeconds: 10
             periodSeconds: 5
-            failureThreshold: 30
+            failureThreshold: 5
           securityContext:
             allowPrivilegeEscalation: true
             capabilities:
