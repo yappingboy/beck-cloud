@@ -37,9 +37,15 @@ spec:
             - name: TZ
               value: America/New_York
             - name: FTP_USER_NAME
-              value: "ftpuser"
+              valueFrom:
+                secretKeyRef:
+                  name: vsftpd-secrets
+                  key: ftp_username
             - name: FTP_USER_PASS
-              value: "BeckL@b2026!"
+              valueFrom:
+                secretKeyRef:
+                  name: vsftpd-secrets
+                  key: ftp_password
           ports:
             - containerPort: 21
               name: ftp
