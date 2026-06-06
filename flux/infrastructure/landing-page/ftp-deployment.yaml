@@ -44,21 +44,6 @@ spec:
       containers:
         - name: vsftpd
           image: stilliard/pure-ftpd:latest
-          command:
-            - /bin/sh
-            - -c
-            - |
-              exec pure-ftpd \
-                -l puredb:/ftp-db/pureftpd.pdb \
-                -E -j -R -P localhost \
-                -p 30000:30009 -c 5 -C 5
-          resources:
-            limits:
-              cpu: 200m
-              memory: 256Mi
-            requests:
-              cpu: 50m
-              memory: 128Mi
           env:
             - name: PUID
               value: "1000"
@@ -66,6 +51,25 @@ spec:
               value: "1000"
             - name: TZ
               value: America/New_York
+            - name: FTP_PASSIVEPORT_START
+              value: "30000"
+            - name: FTP_PASSIVEPORT_END
+              value: "30009"
+            - name: FTP_MAXCLIENTSPERIP
+              value: "5"
+            - name: FTP_MAXCLIENTSNUMBER
+              value: "5"
+            - name: FTP_PURGELASTDATA
+              value: "yes"
+            - name: FTP_FORCEPASSIVEIP
+              value: "0.0.0.0"
+          command:
+            - /bin/sh
+            - -c
+            - |
+              cp /ftp-db/pureftpd.pdb /etc/pure-ftpd/pureftpd.pdb
+              exec pure-ftpd -l puredb:/etc/pure-ftpd/pureftpd.pdb -E -j -R -P 0.0.0.0 -p 30000:30009 -c 5 -C 5
+              tail -f /var/log/syslog 2>/dev/null || tail -f /dev/null
           ports:
             - containerPort: 21
               name: ftp
@@ -88,10 +92,17 @@ spec:
             periodSeconds: 5
             failureThreshold: 5
           securityContext:
-            allowPrivilegeEscation: true
+            allowPrivilegeEscalation: true
             capabilities:
               add:
                 - NET_BIND_SERVICE
+          resources:
+            limits:
+              cpu: 200m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
       volumes:
         - name: data
           persistentVolumeClaim:
