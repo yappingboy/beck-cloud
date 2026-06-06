@@ -49,8 +49,8 @@ spec:
             limits:
               memory: 512Mi
           env:
-            - name: PORT
-              value: "8080"
+#            - name: PORT
+#              value: "8080"
 #            - name: SILEX_FS_ROOT
 #              value: "/silex/storage/"
 #            - name: SILEX_FS_HOSTING_ROOT
@@ -64,7 +64,7 @@ spec:
 #            - name: HOSTING_CONNECTORS
 #              value: "fs,ftp"
           ports:
-            - containerPort: 8080
+            - containerPort: 6805
           volumeMounts:
             - name: root
               mountPath: /silex/silex/storage
@@ -89,8 +89,8 @@ spec:
     app: silex
   ports:
     - name: http
-      port: 8080
-      targetPort: 8080
+      port: 6805
+      targetPort: 6805
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
