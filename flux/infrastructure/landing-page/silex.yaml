@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex-platform
+          image: silexlabs/silex-platform:prerelease
           resources:
             limits:
               memory: 512Mi
