@@ -66,10 +66,10 @@ spec:
           ports:
             - containerPort: 6805
           volumeMounts:
-            - name: root
-              mountPath: /silex/silex/storage
-            - name: hosting
-              mountPath: /silex/silex/hosting
+#            - name: root
+#              mountPath: /silex/silex/storage
+#            - name: hosting
+#              mountPath: /silex/silex/hosting
       volumes:
         - name: root
           persistentVolumeClaim:
@@ -88,7 +88,7 @@ spec:
   selector:
     app: silex
   ports:
-    - name: tcp
+    - name: http
       port: 6805
       targetPort: 6805
 ---
