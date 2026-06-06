@@ -19,6 +19,31 @@ spec:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
         fsGroup: 1000
+      initContainers:
+        - name: init-ftp-user
+          image: stilliard/pure-ftpd:latest
+          command:
+            - /bin/sh
+            - -c
+            - |
+              echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data
+              pure-pw mkdb
+          env:
+            - name: FTP_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: vsftpd-secrets
+                  key: ftp_username
+            - name: FTP_USER_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: vsftpd-secrets
+                  key: ftp_password
+          volumeMounts:
+            - name: puredb
+              mountPath: /etc/pure-ftpd/pureftpd.pwd
+            - name: puredb
+              mountPath: /etc/pure-ftpd/pureftpd.pdb
       containers:
         - name: vsftpd
           image: stilliard/pure-ftpd:latest
@@ -36,16 +61,6 @@ spec:
               value: "1000"
             - name: TZ
               value: America/New_York
-            - name: FTP_USER_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: vsftpd-secrets
-                  key: ftp_username
-            - name: FTP_USER_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: vsftpd-secrets
-                  key: ftp_password
           ports:
             - containerPort: 21
               name: ftp
@@ -56,6 +71,10 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: puredb
+              mountPath: /etc/pure-ftpd/pureftpd.pwd
+            - name: puredb
+              mountPath: /etc/pure-ftpd/pureftpd.pdb
           livenessProbe:
             exec:
               command:
@@ -74,3 +93,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: ftp-data
+        - name: puredb
+          emptyDir: {}
