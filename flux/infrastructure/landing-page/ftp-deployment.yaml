@@ -26,7 +26,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data -f /etc/pure-ftpd/pureftpd.pwd -m
+              echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data -m
           env:
             - name: FTP_USER_NAME
               valueFrom:
@@ -40,7 +40,7 @@ spec:
                   key: ftp_password
           volumeMounts:
             - name: puredb
-              mountPath: /etc/pure-ftpd
+              mountPath: /etc/pure-ftpd/passwd
       containers:
         - name: vsftpd
           image: stilliard/pure-ftpd:latest
@@ -69,7 +69,7 @@ spec:
             - name: data
               mountPath: /data
             - name: puredb
-              mountPath: /etc/pure-ftpd
+              mountPath: /etc/pure-ftpd/passwd
           livenessProbe:
             exec:
               command:
