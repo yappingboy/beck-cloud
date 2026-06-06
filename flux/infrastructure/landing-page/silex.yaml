@@ -44,32 +44,32 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex-platform:prerelease
+          image: silexlabs/silex:prerelease
           resources:
             limits:
               memory: 512Mi
           env:
-            - name: SILEX_PORT
+            - name: PORT
               value: "8888"
-            - name: SILEX_FS_ROOT
-              value: "/silex/storage/"
-            - name: SILEX_FS_HOSTING_ROOT
-              value: "/silex/hosting/"
-            - name: SILEX_URL
-              value: "https://silex.becklab.cloud"
-            - name: SILEX_HOSTING_SILEX
-              value: "/silex/hosting/"
-            - name: STORAGE_CONNECTORS
-              value: "fs,ftp"
-            - name: HOSTING_CONNECTORS
-              value: "fs,ftp"
+#            - name: SILEX_FS_ROOT
+#              value: "/silex/storage/"
+#            - name: SILEX_FS_HOSTING_ROOT
+#              value: "/silex/hosting/"
+#            - name: SILEX_URL
+#              value: "https://silex.becklab.cloud"
+#            - name: SILEX_HOSTING_SILEX
+#              value: "/silex/hosting/"
+#            - name: STORAGE_CONNECTORS
+#              value: "fs,ftp"
+#            - name: HOSTING_CONNECTORS
+#              value: "fs,ftp"
           ports:
             - containerPort: 8888
           volumeMounts:
             - name: root
-              mountPath: /silex/storage
+              mountPath: /silex/silex/storage
             - name: hosting
-              mountPath: /silex/hosting
+              mountPath: /silex/silex/hosting
       volumes:
         - name: root
           persistentVolumeClaim:
