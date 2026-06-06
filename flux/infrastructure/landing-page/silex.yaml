@@ -68,7 +68,7 @@ spec:
             - name: HOSTING_CONNECTORS
               value: "fs,ftp"
             - name: SILEX_HOST
-              value: "0.0.0.0"
+              value: "silex-server"
           ports:
             - containerPort: 8080
           volumeMounts:
