@@ -59,6 +59,8 @@ spec:
               value: "https://silex.becklab.cloud"
             - name: SILEX_HOSTING_SILEX
               value: "/silex/hosting/"
+            - name: STORAGE_CONNECTORS
+              value: "fs,ftp"
           ports:
             - containerPort: 8888
           volumeMounts:
