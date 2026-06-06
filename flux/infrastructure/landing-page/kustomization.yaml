@@ -4,7 +4,3 @@ resources:
   - namespace.yaml
   - landing-page.yaml
   - silex.yaml
-  - ftp-deployment.yaml
-  - ftp-service.yaml
-  - ftp-pvc.yaml
-  - ftp-ingress.yaml
