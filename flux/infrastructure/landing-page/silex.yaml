@@ -88,7 +88,7 @@ spec:
   selector:
     app: silex
   ports:
-    - name: http
+    - name: tcp
       port: 6805
       targetPort: 6805
 ---
