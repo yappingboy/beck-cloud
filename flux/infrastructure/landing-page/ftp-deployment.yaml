@@ -26,8 +26,7 @@ spec:
             - /bin/sh
             - -c
             - |
-              echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data
-              pure-pw mkdb
+              echo "$FTP_USER_PASS" | pure-pw useradd "$FTP_USER_NAME" -u 1000 -g 1000 -d /data -m
           env:
             - name: FTP_USER_NAME
               valueFrom:
