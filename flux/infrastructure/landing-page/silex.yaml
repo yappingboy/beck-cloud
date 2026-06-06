@@ -42,7 +42,7 @@ spec:
       labels:
         app: silex
     spec:
-      hostname: 0.0.0.0
+      hostname: 
       containers:
         - name: silex
           image: silexlabs/silex:latest
@@ -67,6 +67,8 @@ spec:
               value: "fs,ftp"
             - name: HOSTING_CONNECTORS
               value: "fs,ftp"
+            - name: SILEX_HOST
+              value: "0.0.0.0"
           ports:
             - containerPort: 8080
           volumeMounts:
