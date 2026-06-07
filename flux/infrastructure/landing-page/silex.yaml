@@ -69,8 +69,6 @@ spec:
               value: "fs,ftp"
             - name: SILEX_HOST
               value: "127.0.0.1"
-            - name: SILEX_URL
-              value: "http://127.0.0.1:8080"
             - name: SILEX_DEBUG
               value: "TRUE"
           ports:
