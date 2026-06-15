@@ -36,6 +36,8 @@ spec:
               value: "1000"
             - name: TZ
               value: America/New_York
+            - name: HBOX_AUTH_API_KEY_PEPPER
+              value: "WesFL+mZSTT9ySmaLHWSEfO4LXqVYKffBTNReG75e4DpkbDXFTk+xxT+VmMhzY3W"
           ports:
             - containerPort: 7745
               name: http
@@ -93,6 +95,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: homebox
-                port: 
-                  number: 7745
+                 name: homebox
+                 port:
+                   number: 7745

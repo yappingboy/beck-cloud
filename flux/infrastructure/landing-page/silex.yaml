@@ -50,8 +50,8 @@ spec:
             limits:
               memory: 512Mi
           securityContext:
-            privileged: true
-            runAsUser: 0
+            runAsUser: 1000
+            runAsGroup: 1000
           env:
             - name: PORT
               value: "8080"
@@ -68,9 +68,7 @@ spec:
             - name: HOSTING_CONNECTORS
               value: "fs,ftp"
             - name: SILEX_HOST
-              value: "127.0.0.1"
-            - name: SILEX_DEBUG
-              value: "TRUE"
+              value: "0.0.0.0"
           ports:
             - containerPort: 8080
           volumeMounts:
