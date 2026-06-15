@@ -54,6 +54,8 @@ spec:
           env:
             - name: PORT
               value: "8080"
+            - name: SILEX_PORT
+              value: "8080"
             - name: SILEX_FS_ROOT
               value: "/silex/storage/"
             - name: SILEX_FS_HOSTING_ROOT
