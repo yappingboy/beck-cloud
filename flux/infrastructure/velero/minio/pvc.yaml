@@ -11,5 +11,5 @@ spec:
   storageClassName: ""
   resources:
     requests:
-      storage: 100Gi
+      storage: 200Gi
   volumeName: minio-data
