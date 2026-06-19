@@ -67,10 +67,13 @@ spec:
                     Media:
                       style: row
                       columns: 4
-                    Requests:
+                    TV & Movies:
                       style: row
-                      columns: 2
-                    Subtitles & Indexers:
+                      columns: 3
+                    Indexing:
+                      style: row
+                      columns: 3
+                    Requests:
                       style: row
                       columns: 2
                     Monitoring:
@@ -78,7 +81,7 @@ spec:
                       columns: 3
                     Identity:
                       style: row
-                      columns: 2
+                      columns: 3
                 widgets.yaml: |
                   - resources:
                       cpu: true
@@ -93,30 +96,51 @@ spec:
                   - Media:
                       - Jellyfin:
                           href: https://jellyfin.becklab.cloud
-                          description: Media server
+                          description: Media streaming
                           icon: jellyfin.png
+                      - Tdarr:
+                          href: https://tdarr.becklab.cloud
+                          description: Media transcoding
+                          icon: tdarr.png
+                      - Homebox:
+                          href: https://homebox.becklab.cloud
+                          description: Home inventory
+                          icon: homebox.png
+                      - qBittorrent:
+                          href: https://qbit.becklab.cloud
+                          description: Torrent downloads
+                          icon: qbittorrent.png
+                  - TV & Movies:
                       - Sonarr:
                           href: https://sonarr.becklab.cloud
-                          description: TV show management
+                          description: TV show manager
                           icon: sonarr.png
                       - Radarr:
                           href: https://radarr.becklab.cloud
-                          description: Movie management
+                          description: Movie manager
                           icon: radarr.png
+                      - Bazarr:
+                          href: https://bazarr.becklab.cloud
+                          description: Subtitle manager
+                          icon: bazarr.png
+                  - Indexing:
                       - Prowlarr:
                           href: https://prowlarr.becklab.cloud
                           description: Indexer manager
                           icon: prowlarr.png
+                      - NZBGet:
+                          href: https://nzbget.becklab.cloud
+                          description: NZB downloader
+                          icon: nzbget.png
+                      - Spotweb:
+                          href: https://spotweb.becklab.cloud
+                          description: NZB search
+                          icon: spotweb.png
                   - Requests:
                       - Jellyseerr:
                           href: https://requests.becklab.cloud
                           description: Media requests
                           icon: jellyseerr.png
-                  - Subtitles & Indexers:
-                      - Bazarr:
-                          href: https://bazarr.becklab.cloud
-                          description: Subtitle management
-                          icon: bazarr.png
                   - Monitoring:
                       - Grafana:
                           href: https://grafana.becklab.cloud
@@ -135,26 +159,30 @@ spec:
                           href: https://keycloak.becklab.cloud
                           description: SSO / Identity
                           icon: keycloak.png
-                      - Traefik:
-                          href: https://traefik.becklab.cloud
-                          description: Ingress dashboard
-                          icon: traefik.png
+                      - LDAP:
+                          href: https://lldap.becklab.cloud
+                          description: LDAP directory
+                          icon: lldap.png
+                      - SSO Logout:
+                          href: https://logout.becklab.cloud
+                          description: Sign out
+                          icon: logout.png
                   - Infrastructure:
                       - OpenNebula:
                           href: https://one.becklab.cloud
                           description: VM Management
                           icon: server.png
-                      - qBittorrent:
-                          href: https://qbit.becklab.cloud
-                          description: Torrent Client
-                          icon: qbittorrent.png
+                      - Traefik:
+                          href: https://traefik.becklab.cloud
+                          description: Ingress dashboard
+                          icon: traefik.png
                       - Landing CMS:
                           href: https://cms.becklab.cloud
-                          description: Edit Public Page
+                          description: Edit public page
                           icon: edit.png
                       - Tasks:
                           href: https://tasks.becklab.cloud
-                          description: Ticketing Board
+                          description: Ticketing board
                           icon: list.png
                 bookmarks.yaml: |
                   []
