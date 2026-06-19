@@ -52,6 +52,23 @@ spec:
       labels:
         app: postfix-relay
     spec:
+      initContainers:
+        - name: hash-sasl
+          image: mwader/postfix-relay:latest
+          command:
+            - sh
+            - -c
+            - |
+              cp /tmp/sasl_passwd /etc/postfix/sasl_passwd
+              postmap hash:/etc/postfix/sasl_passwd
+              cp /etc/postfix/sasl_passwd.db /tmp/sasl_passwd.db
+          volumeMounts:
+            - name: sasl
+              mountPath: /tmp/sasl_passwd
+              subPath: sasl_passwd
+              readOnly: true
+            - name: sasl-db
+              mountPath: /tmp
       containers:
         - name: postfix
           image: mwader/postfix-relay:latest
@@ -77,6 +94,10 @@ spec:
               mountPath: /etc/postfix/sasl_passwd
               subPath: sasl_passwd
               readOnly: true
+            - name: sasl-db
+              mountPath: /etc/postfix/sasl_passwd.db
+              subPath: sasl_passwd.db
+              readOnly: true
             - name: mail-queue
               mountPath: /var/spool/postfix
             - name: mail-logs
@@ -96,6 +117,8 @@ spec:
               - key: sasl_passwd
                 path: sasl_passwd
             defaultMode: 0640
+        - name: sasl-db
+          emptyDir: {}
         - name: mail-queue
           emptyDir: {}
         - name: mail-logs
