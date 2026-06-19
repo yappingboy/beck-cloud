@@ -25,9 +25,14 @@ data:
     smtp_sasl_auth_enable = yes
     smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
     smtp_sasl_security_options = noanonymous
-    # TLS
-    smtp_tls_security_level = may
-    smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+    # TLS for outbound connections
+     smtp_tls_security_level = may
+     smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
+     # TLS for inbound connections
+     smtpd_tls_security_level = may
+     smtpd_tls_cert_file = /etc/ssl/certs/mail.crt
+     smtpd_tls_key_file = /etc/ssl/private/mail.key
+     smtpd_tls_session_cache_database = btree:/var/lib/postfix/smtpd_scache
     # Limits
     message_size_limit = 10485760
     mailbox_size_limit = 0
@@ -98,6 +103,14 @@ spec:
               mountPath: /etc/postfix/sasl_passwd.db
               subPath: sasl_passwd.db
               readOnly: true
+            - name: tls-cert
+              mountPath: /etc/ssl/certs/mail.crt
+              subPath: tls.crt
+              readOnly: true
+            - name: tls-key
+              mountPath: /etc/ssl/private/mail.key
+              subPath: tls.key
+              readOnly: true
             - name: mail-queue
               mountPath: /var/spool/postfix
             - name: mail-logs
@@ -119,6 +132,20 @@ spec:
             defaultMode: 0640
         - name: sasl-db
           emptyDir: {}
+        - name: tls-cert
+          secret:
+            secretName: mail-tls
+            items:
+              - key: tls.crt
+                path: tls.crt
+            defaultMode: 0644
+        - name: tls-key
+          secret:
+            secretName: mail-tls
+            items:
+              - key: tls.key
+                path: tls.key
+            defaultMode: 0600
         - name: mail-queue
           emptyDir: {}
         - name: mail-logs
