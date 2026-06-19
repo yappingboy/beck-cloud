@@ -22,13 +22,12 @@ data:
     # K3s pod CIDR ranges + node IPs
     mynetworks = 10.42.0.0/16 10.43.0.0/16 172.16.0.0/16 192.168.100.0/24 127.0.0.0/8
 
-    # Outbound relay — send directly to destination MX servers
-    # Set to a smarthost if preferred: [smtp.gmail.com]:587
-    relayhost =
+    # Outbound relay — Mailgun smarthost
+    relayhost = [smtp.mailgun.org]:587
 
-    # SMTP authentication for outbound (optional — set via secret if using smarthost)
-    smtp_sasl_auth_enable = no
-    smtp_sasl_password_maps =
+    # SMTP authentication for Mailgun
+    smtp_sasl_auth_enable = yes
+    smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
     smtp_sasl_security_options = noanonymous
 
     # TLS for outbound connections
@@ -44,16 +43,6 @@ data:
 
     # Logging
     smtpd_banner = $myhostname ESMTP
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: postfix-sasl
-  namespace: email
-data:
-  # Outbound SMTP credentials — fill in if using a smarthost relay
-  # Format: [smtp.example.com]:587 user:pass
-  sasl_passwd: ""
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -110,8 +99,8 @@ spec:
                 path: main.cf
             defaultMode: 0644
         - name: sasl
-          configMap:
-            name: postfix-sasl
+          secret:
+            secretName: mailgun-smtp
             items:
               - key: sasl_passwd
                 path: sasl_passwd
