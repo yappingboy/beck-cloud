@@ -7,4 +7,5 @@ resources:
   - namespace.yaml
   - postfix-relay.yaml
   - secret-mailgun.yaml
+  - certificate.yaml
   # secret-mailu.yaml — saved for future Mailu full-stack deployment
