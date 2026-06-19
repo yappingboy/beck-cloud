@@ -17,12 +17,12 @@ data:
     myorigin = $mydomain
     mydestination = $myhostname, localhost.$mydomain, localhost
     mynetworks = 10.42.0.0/16 10.43.0.0/16 172.16.0.0/16 192.168.100.0/24 127.0.0.0/8
-    # SMTP authentication
-       smtp_sasl_auth_enable = yes
-       smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
-       smtp_sasl_security_options = noanonymous
-       # Relay restrictions
-       smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+    relayhost = [smtp.mailgun.org]:587
+    smtp_sasl_auth_enable = yes
+    smtp_sasl_password_maps = hash:/etc/postfix/sasl_passwd
+    smtp_sasl_security_options = noanonymous
+    smtpd_relay_restrictions = permit_mynetworks, reject_unauth_destination
+    smtpd_recipient_restrictions = permit_mynetworks, reject_unauth_destination
     smtp_tls_security_level = may
     smtp_tls_CAfile = /etc/ssl/certs/ca-certificates.crt
     smtpd_tls_security_level = may
