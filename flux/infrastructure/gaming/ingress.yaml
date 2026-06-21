@@ -19,6 +19,35 @@ spec:
   tls:
     secretName: gaming-tls
 ---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: rcon-web
+  namespace: gaming
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`rcon.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: rcon-web
+          port: 4326
+    - kind: Rule
+      match: Host(`rcon.becklab.cloud`) && PathPrefix(`/ws/`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+        - name: ws-redirect
+      services:
+        - name: rcon-web
+          port: 4327
+  tls:
+    secretName: gaming-tls
+---
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -31,3 +60,4 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - games.becklab.cloud
+    - rcon.becklab.cloud
