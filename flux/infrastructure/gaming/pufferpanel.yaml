@@ -1,150 +1,66 @@
-# PufferPanel + PostgreSQL for Minecraft server management
+# RCON Web UI - connects to Minecraft server via RCON for management
 ---
-# PostgreSQL for PufferPanel
-apiVersion: apps/v1
-kind: StatefulSet
-metadata:
-  name: pp-postgres
-  namespace: gaming
-  labels:
-    app: pp-postgres
-spec:
-  serviceName: pp-postgres
-  replicas: 1
-  selector:
-    matchLabels:
-      app: pp-postgres
-  template:
-    metadata:
-      labels:
-        app: pp-postgres
-    spec:
-      containers:
-        - name: postgres
-          image: postgres:15-alpine
-          ports:
-            - containerPort: 5432
-              name: postgres
-          env:
-            - name: POSTGRES_USER
-              value: "pufferpanel"
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: gaming-secrets
-                  key: postgres_password
-            - name: POSTGRES_DB
-              value: "pufferpanel"
-          resources:
-            limits:
-              memory: 512Mi
-              cpu: "500m"
-            requests:
-              memory: 256Mi
-              cpu: "250m"
-          volumeMounts:
-            - name: pg-data
-              mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-    - metadata:
-        name: pg-data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: local-path
-        resources:
-          requests:
-            storage: 5Gi
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: pp-postgres
-  namespace: gaming
-  labels:
-    app: pp-postgres
-spec:
-  selector:
-    app: pp-postgres
-  ports:
-    - name: postgres
-      port: 5432
-      targetPort: 5432
-  type: ClusterIP
----
-# PufferPanel
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: pufferpanel
+  name: rcon-web
   namespace: gaming
   labels:
-    app: pufferpanel
+    app: rcon-web
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: pufferpanel
+      app: rcon-web
   template:
     metadata:
       labels:
-        app: pufferpanel
+        app: rcon-web
     spec:
-      initContainers:
-        - name: wait-for-db
-          image: postgres:15-alpine
-          command:
-            - sh
-            - -c
-            - "until pg_isready -h pp-postgres -p 5432; do echo waiting for db; sleep 2; done"
       containers:
-        - name: pufferpanel
-          image: pufferpanel/pufferpanel:latest
+        - name: rcon-web
+          image: itzg/rcon-web:latest
           ports:
-            - containerPort: 4444
+            - containerPort: 80
               name: http
               protocol: TCP
           env:
-            - name: PP_POSTGRES_HOST
-              value: "pp-postgres.gaming.svc.cluster.local"
-            - name: PP_POSTGRES_PORT
-              value: "5432"
-            - name: PP_POSTGRES_USER
-              value: "pufferpanel"
-            - name: PP_POSTGRES_PASSWORD
+            - name: RCON_ADDRESSES
+              value: "minecraft.gaming.svc.cluster.local:25575"
+            - name: RCON_PASSWORDS
               valueFrom:
                 secretKeyRef:
                   name: gaming-secrets
-                  key: postgres_password
-            - name: PP_POSTGRES_DATABASE
-              value: "pufferpanel"
+                  key: rcon_password
+            - name: RCON_NAMES
+              value: "Becklab Minecraft"
           resources:
             limits:
-              memory: 512Mi
-              cpu: "500m"
-            requests:
               memory: 256Mi
               cpu: "250m"
+            requests:
+              memory: 128Mi
+              cpu: "100m"
           readinessProbe:
             httpGet:
               path: /
-              port: 4444
-            initialDelaySeconds: 30
+              port: 80
+            initialDelaySeconds: 10
             periodSeconds: 10
             failureThreshold: 30
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: pufferpanel
+  name: rcon-web
   namespace: gaming
   labels:
-    app: pufferpanel
+    app: rcon-web
 spec:
   selector:
-    app: pufferpanel
+    app: rcon-web
   ports:
     - name: http
-      port: 4444
-      targetPort: 4444
+      port: 80
+      targetPort: 80
   type: ClusterIP

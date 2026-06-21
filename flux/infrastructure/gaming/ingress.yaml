@@ -2,7 +2,7 @@
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
-  name: pufferpanel
+  name: games
   namespace: gaming
 spec:
   entryPoints:
@@ -14,8 +14,8 @@ spec:
         - name: sso-admin-chain
           namespace: identity
       services:
-        - name: pufferpanel
-          port: 4444
+        - name: rcon-web
+          port: 80
   tls:
     secretName: gaming-tls
 ---
