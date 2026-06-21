@@ -5,4 +5,7 @@ namespace: gaming
 
 resources:
   - namespace.yaml
-  # - minecraft-server.yaml
+  - secret.yaml
+  - minecraft-server.yaml
+  - pufferpanel.yaml
+  - ingress.yaml

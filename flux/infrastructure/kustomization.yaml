@@ -21,7 +21,7 @@ resources:
   - bitwarden
   # - ticketing
   # - support
-  # - gaming
+  - gaming
   - email
   - spotweb
   # rancher: removed — K3s + Flux replaces Rancher's management role;

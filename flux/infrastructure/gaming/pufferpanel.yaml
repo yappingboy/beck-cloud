@@ -1,0 +1,150 @@
+# PufferPanel + PostgreSQL for Minecraft server management
+---
+# PostgreSQL for PufferPanel
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: pp-postgres
+  namespace: gaming
+  labels:
+    app: pp-postgres
+spec:
+  serviceName: pp-postgres
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pp-postgres
+  template:
+    metadata:
+      labels:
+        app: pp-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:15-alpine
+          ports:
+            - containerPort: 5432
+              name: postgres
+          env:
+            - name: POSTGRES_USER
+              value: "pufferpanel"
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gaming-secrets
+                  key: postgres_password
+            - name: POSTGRES_DB
+              value: "pufferpanel"
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+            requests:
+              memory: 256Mi
+              cpu: "250m"
+          volumeMounts:
+            - name: pg-data
+              mountPath: /var/lib/postgresql/data
+  volumeClaimTemplates:
+    - metadata:
+        name: pg-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        storageClassName: local-path
+        resources:
+          requests:
+            storage: 5Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pp-postgres
+  namespace: gaming
+  labels:
+    app: pp-postgres
+spec:
+  selector:
+    app: pp-postgres
+  ports:
+    - name: postgres
+      port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+# PufferPanel
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pufferpanel
+  namespace: gaming
+  labels:
+    app: pufferpanel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pufferpanel
+  template:
+    metadata:
+      labels:
+        app: pufferpanel
+    spec:
+      initContainers:
+        - name: wait-for-db
+          image: postgres:15-alpine
+          command:
+            - sh
+            - -c
+            - "until pg_isready -h pp-postgres -p 5432; do echo waiting for db; sleep 2; done"
+      containers:
+        - name: pufferpanel
+          image: pufferpanel/pufferpanel:latest
+          ports:
+            - containerPort: 4444
+              name: http
+              protocol: TCP
+          env:
+            - name: PP_POSTGRES_HOST
+              value: "pp-postgres.gaming.svc.cluster.local"
+            - name: PP_POSTGRES_PORT
+              value: "5432"
+            - name: PP_POSTGRES_USER
+              value: "pufferpanel"
+            - name: PP_POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gaming-secrets
+                  key: postgres_password
+            - name: PP_POSTGRES_DATABASE
+              value: "pufferpanel"
+          resources:
+            limits:
+              memory: 512Mi
+              cpu: "500m"
+            requests:
+              memory: 256Mi
+              cpu: "250m"
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 4444
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pufferpanel
+  namespace: gaming
+  labels:
+    app: pufferpanel
+spec:
+  selector:
+    app: pufferpanel
+  ports:
+    - name: http
+      port: 4444
+      targetPort: 4444
+  type: ClusterIP
