@@ -18,6 +18,20 @@ spec:
         app: rcon-web
     spec:
       containers:
+        - name: patch
+          image: alpine:3.21
+          command:
+            - /bin/sh
+            - -c
+            - |
+              sed -i 's|ws:// + window\.location\.hostname + \x27:|wss://|' /opt/rcon-web-admin-0.14.1/public/scripts/socket.js
+          volumeMounts:
+            - name: rcon-web-static
+              mountPath: /opt/rcon-web-admin-0.14.1/public
+          resources:
+            limits:
+              memory: 32Mi
+              cpu: 100m
         - name: rcon-web
           image: itzg/rcon:latest
           ports:
@@ -47,6 +61,9 @@ spec:
               value: "minecraft"
             - name: RWA_SERVER_NAME
               value: "Becklab Minecraft"
+          volumeMounts:
+            - name: rcon-web-static
+              mountPath: /opt/rcon-web-admin-0.14.1/public
           resources:
             limits:
               memory: 256Mi
@@ -61,6 +78,9 @@ spec:
             initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 30
+      volumes:
+        - name: rcon-web-static
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -76,6 +96,9 @@ spec:
     - name: http
       port: 4326
       targetPort: 4326
+    - name: websocket
+      port: 4327
+      targetPort: 4327
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -103,4 +126,10 @@ spec:
                 name: rcon-web
                 port:
                   number: 4326
-
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: rcon-web
+                port:
+                  number: 4327
