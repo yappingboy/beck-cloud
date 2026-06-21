@@ -25,7 +25,7 @@ spec:
             - -c
             - |
               sed -i 's|ws:// + window\.location\.hostname + \x27:|wss://|' /opt/rcon-web-admin-0.14.1/public/scripts/socket.js
-              exec node /opt/rcon-web-admin-0.14.1/src/main.js
+              exec node /opt/rcon-web-admin-0.14.1/src/main.js start
           ports:
             - containerPort: 4326
               name: http
