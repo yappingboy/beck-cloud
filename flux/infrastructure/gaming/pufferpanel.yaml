@@ -35,7 +35,7 @@ spec:
             - name: RWA_PASSWORD
               value: "Rc0nW3b@dmin!"
             - name: RWA_RCON_HOST
-              value: "minecraft.gaming.svc.cluster.local"
+              value: "10.42.1.60"
             - name: RWA_RCON_PORT
               value: "25575"
             - name: RWA_RCON_PASSWORD
