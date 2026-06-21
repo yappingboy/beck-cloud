@@ -1,4 +1,4 @@
-# RCON Web UI - connects to Minecraft server via RCON for management
+# RCON Web Admin Dashboard - connects to Minecraft server via RCON
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -21,18 +21,31 @@ spec:
         - name: rcon-web
           image: itzg/rcon:latest
           ports:
-            - containerPort: 80
+            - containerPort: 4326
               name: http
               protocol: TCP
+            - containerPort: 4327
+              name: websocket
+              protocol: TCP
           env:
-            - name: RCON_ADDRESSES
-              value: "minecraft.gaming.svc.cluster.local:25575"
-            - name: RCON_PASSWORDS
+            - name: RWA_ENV
+              value: "TRUE"
+            - name: RWA_USERNAME
+              value: "admin"
+            - name: RWA_PASSWORD
+              value: "Rc0nW3b@dmin!"
+            - name: RWA_RCON_HOST
+              value: "minecraft.gaming.svc.cluster.local"
+            - name: RWA_RCON_PORT
+              value: "25575"
+            - name: RWA_RCON_PASSWORD
               valueFrom:
                 secretKeyRef:
                   name: gaming-secrets
                   key: rcon_password
-            - name: RCON_NAMES
+            - name: RWA_GAME
+              value: "minecraft"
+            - name: RWA_SERVER_NAME
               value: "Becklab Minecraft"
           resources:
             limits:
@@ -44,8 +57,8 @@ spec:
           readinessProbe:
             httpGet:
               path: /
-              port: 80
-            initialDelaySeconds: 10
+              port: 4326
+            initialDelaySeconds: 15
             periodSeconds: 10
             failureThreshold: 30
 ---
@@ -61,6 +74,6 @@ spec:
     app: rcon-web
   ports:
     - name: http
-      port: 80
-      targetPort: 80
+      port: 4326
+      targetPort: 4326
   type: ClusterIP
