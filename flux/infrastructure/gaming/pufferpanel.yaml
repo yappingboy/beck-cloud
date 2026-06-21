@@ -1,12 +1,10 @@
-# RCON Web Admin Dashboard - connects to Minecraft server via RCON
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: rcon-web
-  namespace: gaming
   labels:
     app: rcon-web
+  name: rcon-web
+  namespace: gaming
 spec:
   replicas: 1
   selector:
@@ -18,109 +16,107 @@ spec:
         app: rcon-web
     spec:
       containers:
-        - name: rcon-web
-          image: itzg/rcon:latest
-          command:
-            - /bin/sh
-            - -c
-            - >-
-              python3 -c "
-              p='/opt/rcon-web-admin-0.14.1/public/scripts/socket.js'
-              t=open(p).read()
-              t=t.replace(\"'ws://' + window.location.hostname + ':' + Socket.config.port\",\"'wss://' + window.location.hostname + '/ws/'\")
-              open(p,'w').write(t)" && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
-          ports:
-            - containerPort: 4326
-              name: http
-              protocol: TCP
-            - containerPort: 4327
-              name: websocket
-              protocol: TCP
-          env:
-            - name: RWA_ENV
-              value: "TRUE"
-            - name: RWA_USERNAME
-              value: "admin"
-            - name: RWA_PASSWORD
-              value: "Rc0nW3b@dmin!"
-            - name: RWA_RCON_HOST
-              value: "10.42.1.60"
-            - name: RWA_RCON_PORT
-              value: "25575"
-            - name: RWA_RCON_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: gaming-secrets
-                  key: rcon_password
-            - name: RWA_GAME
-              value: "minecraft"
-            - name: RWA_SERVER_NAME
-              value: "Becklab Minecraft"
-          resources:
-            limits:
-              memory: 256Mi
-              cpu: "250m"
-            requests:
-              memory: 128Mi
-              cpu: "100m"
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 4326
-            initialDelaySeconds: 15
-            periodSeconds: 10
-            failureThreshold: 30
+      - command:
+        - /bin/sh
+        - -c
+        - python3 -c "p='/opt/rcon-web-admin-0.14.1/public/scripts/socket.js';t=open(p).read();t=t.replace("var
+          url = 'ws://' + window.location.hostname + ':' + Socket.config.port","var
+          url = 'wss://' + window.location.hostname + '/ws/'");open(p,'w').write(t)"
+          && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
+        env:
+        - name: RWA_ENV
+          value: 'TRUE'
+        - name: RWA_USERNAME
+          value: admin
+        - name: RWA_PASSWORD
+          value: Rc0nW3b@dmin!
+        - name: RWA_RCON_HOST
+          value: 10.42.1.60
+        - name: RWA_RCON_PORT
+          value: '25575'
+        - name: RWA_RCON_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              key: rcon_password
+              name: gaming-secrets
+        - name: RWA_GAME
+          value: minecraft
+        - name: RWA_SERVER_NAME
+          value: Becklab Minecraft
+        image: itzg/rcon:latest
+        name: rcon-web
+        ports:
+        - containerPort: 4326
+          name: http
+          protocol: TCP
+        - containerPort: 4327
+          name: websocket
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 30
+          httpGet:
+            path: /
+            port: 4326
+          initialDelaySeconds: 15
+          periodSeconds: 10
+        resources:
+          limits:
+            cpu: 250m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
 ---
 apiVersion: v1
 kind: Service
 metadata:
-  name: rcon-web
-  namespace: gaming
   labels:
     app: rcon-web
+  name: rcon-web
+  namespace: gaming
 spec:
+  ports:
+  - name: http
+    port: 4326
+    targetPort: 4326
+  - name: websocket
+    port: 4327
+    targetPort: 4327
   selector:
     app: rcon-web
-  ports:
-    - name: http
-      port: 4326
-      targetPort: 4326
-    - name: websocket
-      port: 4327
-      targetPort: 4327
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
   name: rcon-web
   namespace: gaming
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
-  tls:
-    - hosts:
-        - rcon.becklab.cloud
-      secretName: rcon-tls
   rules:
-    - host: rcon.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: rcon-web
-                port:
-                  number: 4326
-          - path: /ws
-            pathType: Prefix
-            backend:
-              service:
-                name: rcon-web
-                port:
-                  number: 4327
-            annotations:
-              traefik.ingress.kubernetes.io/router.middlewares: traefik-ws-redirect@kubernetescrd
+  - host: rcon.becklab.cloud
+    http:
+      paths:
+      - backend:
+          service:
+            name: rcon-web
+            port:
+              number: 4326
+        path: /
+        pathType: Prefix
+      - annotations:
+          traefik.ingress.kubernetes.io/router.middlewares: traefik-ws-redirect@kubernetescrd
+        backend:
+          service:
+            name: rcon-web
+            port:
+              number: 4327
+        path: /ws
+        pathType: Prefix
+  tls:
+  - hosts:
+    - rcon.becklab.cloud
+    secretName: rcon-tls
