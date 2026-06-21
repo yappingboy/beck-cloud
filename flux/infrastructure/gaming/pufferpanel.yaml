@@ -19,7 +19,7 @@ spec:
     spec:
       containers:
         - name: rcon-web
-          image: itzg/rcon-web:latest
+          image: itzg/rcon:latest
           ports:
             - containerPort: 80
               name: http
