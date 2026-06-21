@@ -19,10 +19,7 @@ spec:
       - command:
         - /bin/sh
         - -c
-        - python3 -c "p='/opt/rcon-web-admin-0.14.1/public/scripts/socket.js';t=open(p).read();t=t.replace("var
-          url = 'ws://' + window.location.hostname + ':' + Socket.config.port","var
-          url = 'wss://' + window.location.hostname + '/ws/'");open(p,'w').write(t)"
-          && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
+        - sed -i "s|ws://|wss://|; s|hostname + ':' + Socket.config.port|hostname + '/ws/'|" /opt/rcon-web-admin-0.14.1/public/scripts/socket.js && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
         env:
         - name: RWA_ENV
           value: 'TRUE'
