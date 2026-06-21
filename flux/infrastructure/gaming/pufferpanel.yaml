@@ -24,7 +24,11 @@ spec:
             - /bin/sh
             - -c
             - >-
-              sed -i "s|ws:// + window.location.hostname + ':|wss://\" + window.location.hostname + \"/ws/|" /opt/rcon-web-admin-0.14.1/public/scripts/socket.js && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
+              python3 -c "
+              p='/opt/rcon-web-admin-0.14.1/public/scripts/socket.js'
+              t=open(p).read()
+              t=t.replace(\"'ws://' + window.location.hostname + ':' + Socket.config.port\",\"'wss://' + window.location.hostname + '/ws/'\")
+              open(p,'w').write(t)" && exec node /opt/rcon-web-admin-0.14.1/src/main.js start
           ports:
             - containerPort: 4326
               name: http
