@@ -63,8 +63,6 @@ spec:
         - name: crafty
           image: arcadiatechnology/crafty-4:latest
           imagePullPolicy: Always
-          command: ["python3"]
-          args: ["/app/main.py", "--daemon", "--ignore"]
           ports:
             - containerPort: 80
               name: http
