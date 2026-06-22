@@ -41,7 +41,7 @@ spec:
       services:
         - name: oauth2-proxy
           namespace: identity
-          port: 4180
+          port: 80
   tls:
     secretName: gaming-tls
 ---
