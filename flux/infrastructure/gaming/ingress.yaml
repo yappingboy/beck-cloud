@@ -38,13 +38,10 @@ spec:
           port: 4326
     - kind: Rule
       match: Host(`rcon.becklab.cloud`) && PathPrefix(`/ws/`)
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
-        - name: ws-redirect
       services:
-        - name: rcon-web
-          port: 4327
+        - name: oauth2-proxy
+          namespace: identity
+          port: 4180
   tls:
     secretName: gaming-tls
 ---
