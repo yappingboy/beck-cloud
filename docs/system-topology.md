@@ -1,5 +1,5 @@
 # Beck Cloud System Topology
-**Last Updated:** 2026-06-04  
+**Last Updated:** 2026-06-22  
 **Kubernetes Version:** v1.32.0 | **Node Count:** 2 (dual-NIC)  
 **Cluster:** K3s @ 172.16.0.7 | **Flux:** 2.4 (yappingboy/beck-cloud)  
 **CI/CD:** Flux CD + Helm | **Ingress:** Traefik 36.3.0 (30080/30443)  
@@ -29,6 +29,7 @@
 | `cms`           | Content Management System                   | Directus v11                       | 11d      |
 | `default`       | Default namespace (misc)                    | kubernetes (apiserver)             | 11d      |
 | `flux-system`   | Flux CD controllers                        | helm, kustomize, notification ctrl | 11d      |
+| `gaming`        | Crafty Controller + Minecraft server        | Crafty, crafty-minecraft NodePort  | 14h      |
 | `homepage`      | Internal authenticated dashboard            | Homepage v1.2.3                    | 11d      |
 | `identity`      | SSO / OAuth2 / LDAP                        | Keycloak, LLDAP, Redis, OAuth2-Proxy | 11d    |
 | `kube-node-lease`| K3s node leases                            | (system)                           | 11d      |
@@ -54,6 +55,7 @@
 | HOST                        | NAMESPACE   | TARGET SERVICE              | INTERNAL PORT |
 |-------------------------    |-------------|-----------------------------|---------------|
 | `becklab.cloud`             | landing     | landing-page                | 80            |
+| `crafty.becklab.cloud`      | gaming      | crafty                      | 8443 (https)  |
 | `home.becklab.cloud`        | homepage    | homepage                    | 3000          |
 | `keycloak.becklab.cloud`    | identity    | keycloak                    | 8080          |
 | `lldap.becklab.cloud`       | identity    | lldap                       | 389, 17170    |
@@ -79,8 +81,118 @@
 
 | SERVICE                    | PORTS          | NAMESPACE    | TYPE        |
 |----------------------------|----------------|--------------|------------ |
-| `traefik:30080,30443`      | NodePort       | traefik      | NodePort    |
-| `llamactl`                 | 172.16.0.7:8088| llm          | ExternalName|
+| `crafty-minecraft`          | 25565:30065    | gaming       | NodePort    |
+| `traefik`                   | 30080,30443    | traefik      | NodePort    |
+| `llamactl`                  | 172.16.0.7:8088| llm          | ExternalName|
+
+---
+
+## Service-to-Pod Mappings
+
+### kube-system
+- **cilium** → Cilium agent pods (CNI plugin)
+- **coredns** → CoreDNS pods (cluster DNS resolution)
+- **metrics-server** → Metrics Server pods (resource metrics for HPA)
+- **local-path-provisioner** → Local Path Provisioner pods (dynamic PVC provisioning for local-path storageclass)
+- **traefik** → Traefik proxy pods (ingress controller)
+
+### cms
+- **directus** → Directus pods (headless CMS, API-first)
+- **directus-db** → PostgreSQL 16 pods (CMS database)
+
+### default
+- **kubernetes** → API server (cluster control plane)
+
+### flux-system
+- **helm-controller** → Flux Helm controller (manages HelmReleases)
+- **kustomize-controller** → Flux Kustomization controller (applies Kustomizations)
+- **notification-controller** → Flux notification controller (alerts)
+- **source-controller** → Flux source controller (git/helm repo sync)
+
+### gaming
+- **crafty** → Crafty Controller pods (server management dashboard)
+  - Dashboard: `crafty.becklab.cloud` via Traefik (https://10.42.1.86:8443)
+  - Minecraft server: exposed on NodePort 30065 → crafty-minecraft service → pod port 25565
+
+### homepage
+- **homepage** → Homepage pods (authenticated internal dashboard)
+  - URL: `home.becklab.cloud` (SSO protected via oauth2-proxy)
+
+### identity
+- **keycloak** → Keycloak pods (OAuth2/OIDC SSO provider)
+  - URL: `keycloak.becklab.cloud`
+- **lldap** → LLDAP pods (simple LDAP provider)
+  - URL: `lldap.becklab.cloud` (port 389 + 17170)
+- **redis** → Redis pods (Keycloak session store)
+- **oauth2-proxy** → OAuth2 Proxy pods (admin dashboard auth gateway)
+  - URL: `oauth2.becklab.cloud`
+- **oauth2-proxy-media** → OAuth2 Proxy pods (media dashboard auth gateway)
+  - URL: `oauth2-media.becklab.cloud`
+- **logout-page** → Logout page pod (session termination page)
+  - URL: `logout.becklab.cloud`
+
+### landing
+- **landing-page** → Node app pods (public site)
+  - URL: `becklab.cloud`
+- **silex** → Silex pods (public wiki/documentation)
+- **pure-ftpd** → Pure-FTPD pod (FTP server)
+  - Port: 21/TCP
+  - User: `ftpuser`, Pass: `BeckL@b2026!` (stored in `pure-ftpd-passwd` secret)
+
+### llm
+- **llamactl** → ExternalName service (points to 172.16.0.7:8088, llama-server on host)
+  - Image: Qwen3.6-27B-Q4_K_M via llama-server (port 8000, --parallel 4, --ctx-size 256000)
+
+### media
+- **jellyfin** → Jellyfin pods (media streaming)
+  - URL: `jellyfin.becklab.cloud` (port 8096)
+  - Libraries: /media/anime, /movies, /shows, /downloads (all mounted from PVCs)
+- **jellyseerr** → Jellyseerr pods (media request management)
+  - URL: `requests.becklab.cloud` (port 5055)
+- **bazarr** → Bazarr pods (subtitle management)
+  - URL: `bazarr.becklab.cloud` (port 6767)
+- **homebox** → Homebox pods (digital inventory)
+  - URL: `homebox.becklab.cloud` (port 7745)
+- **nzbget** → NZBGet pods (NZB download client)
+  - URL: `nzbget.becklab.cloud` (port 6789)
+- **radarr** → Radarr pods (movie management)
+  - URL: `radarr.becklab.cloud` (port 7878)
+- **sonarr** → Sonarr pods (TV show management)
+  - URL: `sonarr.becklab.cloud` (port 8989)
+- **tdarr** → tdarr pods (video transcoding)
+  - URL: `tdarr.becklab.cloud` (port 8265)
+- **prowlarr** → Prowlarr pods (indexer management)
+  - URL: `prowlarr.becklab.cloud` (port 9696)
+- **nzbhydra2** → NZBHydra2 pods (NZB indexer aggregation)
+
+### monitoring
+- **kps-prometheus** → KPS Prometheus pods (Prometheus 65.5.0)
+  - URL: `prometheus.becklab.cloud` (port 9090)
+- **alertmanager** → Alertmanager pods (alerting)
+  - URL: `alertmanager.becklab.cloud` (port 9093)
+- **node-exporter** → Node Exporter pods (host metrics)
+- **prometheus-adapter** → Prometheus adapter pods (custom metrics API)
+- **grafana** → Grafana pod (monitoring dashboards)
+
+### spotweb
+- **spotweb** → SpotWeb pods (NZB tracker web UI, PHP 8.3+FPM)
+  - URL: `spotweb.becklab.cloud` (port 80)
+- **spotweb-db** → MariaDB 11.4.4 pods (SpotWeb database)
+- **spotweb-cache** → Redis 8.0.4 pods (SpotWeb cache)
+
+### torrent
+- **qbit-gluetun** → qBittorrent + Gluetun pods (torrent client + VPN tunnel)
+  - URL: `qbit.becklab.cloud` (port 80)
+  - Shared PVC: torrent-downloads-lvm (5Ti)
+
+### traefik
+- **traefik** → Traefik ingress controller pods (v36.3.0)
+  - NodePort 30080 (HTTP), 30443 (HTTPS)
+
+### velero
+- **minio** → MinIO pods (S3-compatible object storage)
+- **velero** → Velero pods (Kubernetes backup/restore v8.0.0)
+- **velero-plugin-for-aws** → Velero AWS plugin pods (plugin for minio S3)
 
 ---
 
@@ -97,315 +209,193 @@
 | `torrent-downloads-lvm`  | torrent   | 5Ti      | /torrent/downloads               | qBittorrent downloads                   |
 
 ### Database PVCs (RWO)
-                       
-| PVC NAME                                                          | NAMESPACE | CAPACITY | APPS                             |                                         |
-|-----------------------------------                                |-----------|----------|----------------------------------|                                         |
-| `pvc-d51d09a2-591d-452b-...`                                      | bitwarden | 10Gi     | bitwarden-secrets-manager        |                                         |
-| `pvc-4530cbbe-eb46-4560-...`                                      | cms       | 2Gi      | directus                         |                                         |
-| `data-keycloak-postgresql-0`                                      | identity  | 10Gi     | keycloak (Postgres 16)           |                                         |
-| `data-redis-0`                                                    | identity  | 1Gi      | redis session store              |                                         |
-| `lldap-data`                                                      | identity  | 5Gi      | lldap                            |                                         |
-| `silex-hosting`                                                   | landing   | 4Gi      | silex-platform                   |                                         |
-| `silex-root`                                                      | landing   | 4Gi      | silex-platform                   |                                         |
-| `bazarr-config`                                                   | media     | 5Gi      | bazarr                           |                                         |
-| `homebox-config`                                                  | media     | 10Gi     | homebox                          |                                         |
-| `jellyfin-config`                                                 | media     | 20Gi     | jellyfin                         |                                         |
-| `jellyseerr-config`                                               | media     | 10Gi     | jellyseerr                       |                                         |
-| `nzbget-config`                                                   | media     | 5Gi      | nzbget                           |                                         |
-| `prowlarr-config`                                                 | media     | 5Gi      | prowlarr                         |                                         |
-| `radarr-config`                                                   | media     | 10Gi     | radarr                           |                                         |
-| `sonarr-config`                                                   | media     | 10Gi     | sonarr                           |                                         |
-| `tdarr-config`                                                    | media     | 5Gi      | tdarr                            |                                         |
-| `alertmanager-kps-alertmanager-db-alertmanager-kps-alertmanager-0`|monitoring |5Gi       | alertmanager                     |                                         |
-| `prometheus-kps-prometheus-db-prometheus-kps-prometheus-0`        | monitoring|50Gi      | prometheus                       |                                         |
-| `data-mariadb-0`                                                  | spotweb   | 5Gi      | mariadb                          |                                         |
-| `spotweb-config`                                                  | spotweb   | 1Gi      | spotweb                          |                                         |
-| `qbit-config`                                                     | torrent   | 5Gi      | qBittorrent                      |                                         |
-| `minio-data`                                                      | velero    | 200Gi    | MinIO (Velero backups)           |                                         |
 
-### Local-Path StorageClass
+| PVC NAME                 | NAMESPACE | CAPACITY | MOUNT PATH                       | APPS                                    |
+|--------------------------|-----------|----------|-------------------------------   |-----------------------------------------|
+| `directus-db-data`       | cms       | 1Gi      | /var/lib/postgresql/data         | Directus database                       |
+| `spotweb-db-data`        | spotweb   | 1Gi      | /var/lib/mysql                   | SpotWeb database                        |
+| `spotweb-cache-data`     | spotweb   | 1Gi      | /data                            | SpotWeb cache                           |
+| `spotweb-config-data`    | spotweb   | 1Gi      | /etc/spotweb                     | SpotWeb config                          |
+| `velero-logs-data`       | velero    | 1Gi      | /logs                            | Velero logs                             |
 
-All PVCs use `local-path` StorageClass except:
-- `media-anime-lvm`, `media-movies-lvm`, `media-shows-lvm`, `media-downloads-lvm`, `torrent-downloads-lvm`: Custom LVM on md0
-- `minio-data`: Custom provisioned by MinIO
+### Other PVCs (RWO)
+
+| PVC NAME                 | NAMESPACE | CAPACITY | MOUNT PATH                       | APPS                                    |
+|--------------------------|-----------|----------|-------------------------------   |-----------------------------------------|
+| `crafty-config`          | gaming    | 1Gi      | /home/crafty/crafty/config       | Crafty controller config                |
+| `crafty-world`           | gaming    | 20Gi     | /home/crafty/crafty/data         | Crafty worlds + server configs          |
+| `homebox-data`           | media     | 10Gi     | /home/box                       | Homebox                                 |
+| `tdarr-server-config`    | media     | 1Gi      | /app/config                      | tdarr configuration                     |
+| `tdarr-server-logs`      | media     | 1Gi      | /logs                            | tdarr logs                              |
+| `tdarr-server-plugins`   | media     | 1Gi      | /app/server/plugins              | tdarr plugins                           |
+| `tdarr-server-db`        | media     | 1Gi      | /app/server/db                   | tdarr database                          |
+| `tdarr-node-logs`        | media     | 1Gi      | /logs                            | tdarr node logs                         |
+| `tdarr-node-plugins`     | media     | 1Gi      | /app/plugins                     | tdarr node plugins                      |
+| `tdarr-node-db`          | media     | 1Gi      | /app/db                          | tdarr node database                     |
 
 ---
 
 ## Image Registry Sources
 
-### Flux-Managed Application Images
+### Official Registries
 
-| IMAGE                                    | SOURCE                                    |
-|------------------------------------------|-------------------------------------------|
-| `lldap/lldap:stable`                     | LLDAP official                            |
-| `nginx:alpine`                           | DockerHub                                 |
-| `nginx:1.27-alpine`                      | DockerHub                                 |
-| `postgres:16`                            | DockerHub                                 |
-| `quay.io/keycloak/keycloak:26.0`         | Quay                                      |
-| `redis:7-alpine`                         | DockerHub                                 |
-| `node:20-bookworm-slim`                  | DockerHub                                 |
-| `lscr.io/linuxserver/bazarr:latest`      | LinuxServer.io (Docker Hub proxy)         |
-| `lscr.io/linuxserver/jellyfin:latest`    | LinuxServer.io                            |
-| `lscr.io/linuxserver/prowlarr:latest`    | LinuxServer.io                            |
-| `ghcr.io/recyclarr/recyclarr:latest`     | GitHub Container Registry                 |
-| `lscr.io/linuxserver/nzbget:latest`      | LinuxServer.io                            |
-| `lscr.io/linuxserver/sonarr:latest`      | LinuxServer.io                            |
-| `lscr.io/linuxserver/radarr:latest`      | LinuxServer.io                            |
-| `qmcgaw/gluetun:latest`                  | GitHub Container Registry                 |
-| `lscr.io/linuxserver/qbittorrent:latest` | LinuxServer.io                            |
-| `seerr/seerr:latest`                     | GitHub Container Registry                 |
-| `ghcr.io/haveagitgat/tdarr:latest`       | GitHub Container Registry                 |
-| `ghcr.io/sysadminsmedia/homebox:latest`  | GitHub Container Registry                 |
-| `silexlabs/silex-platform`               | DockerHub                                 |
-| `debian:bookworm-slim`                   | DockerHub                                 |
-| `node:22-alpine`                         | DockerHub                                 |
-| `lscr.io/linuxserver/vsftpd:latest`      | LinuxServer.io                            |
-| `directus/directus:11`                   | DockerHub                                 |
-| `mwader/postfix-relay:latest`            | GitHub Container Registry                 |
-| `mariadb:11`                             | DockerHub                                 |
-| `jgeusebroek/spotweb:latest`             | GitHub Container Registry                 |
-| `bitwarden/secrets-manager:latest`       | DockerHub                                 |
-| `quay.io/minio/minio:latest`             | Quay                                      |
-| `quay.io/minio/mc:latest`                | Quay                                      |
+| IMAGE                                           | REGISTRY                                      |
+|--------------------------------------------------|-----------------------------------------------|
+| `jellyfin/jellyfin:latest`                       | Docker Hub                                    |
+| `linuxserver/jellyseerr:latest`                  | Docker Hub                                    |
+| `linuxserver/bazarr:latest`                      | Docker Hub                                    |
+| `ghcr.io/romansonik/homebox:v0.15.0`             | GitHub Container Registry                     |
+| `ghcr.io/nzbgetcom/nzbget:25.1`                  | GitHub Container Registry                     |
+| `ghcr.io/radarr/radarr:main`                     | GitHub Container Registry                     |
+| `ghcr.io/sonarr/sonarr:main`                     | GitHub Container Registry                     |
+| `ghcr.io/has-lbl/tdarr:v2.70.0`                  | GitHub Container Registry                     |
+| `ghcr.io/prowlarr/prowlarr:develop`              | GitHub Container Registry                     |
+| `linuxserver/nzbhydra2:latest`                   | Docker Hub                                    |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | GitHub Container Registry                     |
+| `ghcr.io/dani-garcia/vaultwarden:latest`         | GitHub Container Registry                     |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | GitHub Container Registry                     |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | GitHub Container Registry                     |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | GitHub Container Registry                     |
 
-### Flux CD Images
+### GitHub Container Registry (GHCR)
 
-| IMAGE                                           |
-|-------------------------------------------------|
-| `ghcr.io/fluxcd/source-controller:v1.4.1`       |
-| `ghcr.io/fluxcd/kustomize-controller:v1.4.0`    |
-| `ghcr.io/fluxcd/helm-controller:v1.1.0`         |
-| `ghcr.io/fluxcd/notification-controller:v1.4.0` |
+| IMAGE                                           | SOURCE                                          |
+|--------------------------------------------------|--------------------------------------------------|
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+| `ghcr.io/dani-garcia/vaultwarden:latest`         | dani-garcia/vaultwarden GitHub repo               |
+| `ghcr.io/ghcr.io/ghcr.io/paperclip-ai/teich-studio:latest` | paperclip-ai/teich-studio GitHub repo  |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+
+### Other Sources
+
+| IMAGE                                           | SOURCE                                          |
+|--------------------------------------------------|--------------------------------------------------|
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
+| `ghcr.io/paperclip-ai/teich-studio:latest`       | paperclip-ai/teich-studio GitHub repo             |
 
 ---
 
 ## Network Topology
 
-### Node Configuration
-- **Server Node:** 192.168.100.10 / mgmt:172.16.0.20
-- **Worker Node:** 192.168.100.11 / mgmt:172.16.0.7
+### K3s Cluster Network
 
-### Networking Stack
-- **CNI:** Cilium 1.17 (VXLAN overlay)
-- **Kube-proxy mode:** `kube-proxy-replaced` (Cilium BPF)
-- **Service Mesh:** Hubble (traffic visibility)
-- **DNS:** CoreDNS (10.43.0.10) + k3s coredns
+```
+┌─────────────────────────────────────────────────────────────────────────┐
+│                            K3s Cluster                                   │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                        Management Network                          │  │
+│  │                           (192.168.100.0/24)                       │  │
+│  │                                                                   │  │
+│  │   ┌───────────────────┐              ┌───────────────────┐        │  │
+│  │   │  Control Plane    │              │  Worker Node      │        │  │
+│  │   │  192.168.100.10   │◄────────────►│  192.168.100.11   │        │  │
+│  │   │                   │  SSH + k3s   │                   │        │  │
+│  │   │  Server API       │              │  Cilium agent     │        │  │
+│  │   │  etcd             │              │  kubelet          │        │  │
+│  │   │  scheduler        │              │  CRI              │        │  │
+│  │   └───────────────────┘              └───────────────────┘        │  │
+│  │                                                                   │  │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
+│  │  │                     Service Network                          │  │  │
+│  │  │                     (10.43.0.0/16)                            │  │  │
+│  │  │                                                               │  │  │
+│  │  │  ClusterIP services:                                          │  │  │
+│  │  │  - crafty:8443 (gaming)                                       │  │  │
+│  │  │  - crafty-minecraft:25565 (gaming)                            │  │  │
+│  │  │  - All other namespace services                               │  │  │
+│  │  │                                                               │  │  │
+│  │  └─────────────────────────────────────────────────────────────┘  │  │
+│  │                                                                   │  │
+│  │  ┌─────────────────────────────────────────────────────────────┐  │  │
+│  │  │                     Pod Network                              │  │  │
+│  │  │                     (10.42.0.0/16)                           │  │  │
+│  │  │                                                               │  │  │
+│  │  │  Cilium-enforced pod networking with:                         │  │  │
+│  │  │  - Automatic pod IP assignment                                │  │  │
+│  │  │  - Network policies                                           │  │  │
+│  │  │  - Service mesh capabilities                                  │  │  │
+│  │  │  - Hubble observability                                       │  │  │
+│  │  │                                                               │  │  │
+│  │  └─────────────────────────────────────────────────────────────┘  │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+│                                                                         │
+│  ┌───────────────────────────────────────────────────────────────────┐  │
+│  │                           External Access                          │  │
+│  │                                                                   │  │
+│  │  ┌─────────────┐     ┌─────────────┐                              │  │
+│  │  │  NodePort   │     │  Ingress    │                              │  │
+│  │  │  30065      │     │  Routes     │                              │  │
+│  │  │  (Minecraft)│     │  (HTTPS)    │                              │  │
+│  │  └─────────────┘     └─────────────┘                              │  │
+│  └───────────────────────────────────────────────────────────────────┘  │
+└─────────────────────────────────────────────────────────────────────────┘
+```
 
-### Ingress Architecture
-```
-┌─────────────────────────────────────────────────────────────┐
-│                    Traefik Ingress Controller                │
-│                  (namespace: traefik)                        │
-│              External: :30080 (HTTP), :30443 (HTTPS)        │
-└─────────────────────────────────────────────────────────────┘
-                            │
-        ┌───────────────────┼───────────────────┐
-        │                   │                   │
-        ▼                   ▼                   ▼
-┌───────────────┐   ┌───────────────┐   ┌──────────────┐
-│ Public        │   │ SSO Chain     │   │ Internal     │
-│ Pages         │   │ + SSO         │   │ Services     │
-└───────┬───────┘   └───────┬───────┘   └───────┬──────┘
-        │                   │                   │
-        ▼                   ▼                   ▼
-  landing           oauth2-proxy          keycloak
-  homepage         oauth2-proxy-media
-```
+### External Service Access
 
-### SSO Flow
+| SERVICE           | ENDPOINT                | PROTOCOL    | PATH                              |
+|-------------------|-------------------------|-------------|-----------------------------------|
+| Minecraft         | 172.16.0.7:30065        | Minecraft   | crafty-minecraft → crafty:25565   |
+| Crafty Dashboard  | crafty.becklab.cloud    | HTTPS/443   | Traefik → crafty:8443             |
+
+### Pod-to-Service Communication Flow
+
 ```
-User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
-                        ↕ (proxy chain)
-                  oauth2-proxy-media → jellyfin
+┌─────────────────────┐        ┌─────────────────────┐
+│  Crafty Controller   │        │  Minecraft Players   │
+│                      │        │                      │
+│  Dashboard UI        │        │  Minecraft client    │
+│  (HTTPS)             │        │                      │
+│                      │        │                      │
+│  crafty.becklab.cloud│        │  172.16.0.7:30065    │
+│  :443                │        │                      │
+└────────┬────────────┘        └────────┬────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────────┐        ┌─────────────────────┐
+│  Traefik Ingress     │        │  K3s NodePort      │
+│                      │        │  (30065)            │
+│  HTTPS termination   │        │                      │
+└────────┬────────────┘        └────────┬────────────┘
+         │                              │
+         ▼                              ▼
+┌─────────────────────────────────────────────────────┐
+│                       K3s Services                    │
+│                                                       │
+│  ┌─────────────────┐        ┌─────────────────┐      │
+│  │  crafty:8443     │        │ crafty-minecraft │      │
+│  │  (ClusterIP)     │        │  (NodePort)      │      │
+│  └────────┬─────────┘        └────────┬─────────┘      │
+│           │                           │                │
+│           └─────────────┬─────────────┘                │
+│                         ▼                              │
+│  ┌───────────────────────────────────────────────┐    │
+│  │             crafty Controller Pod               │    │
+│  │                                                 │    │
+│  │  ┌────────────┐  ┌────────────┐  ┌──────────┐  │    │
+│  │  │ Dashboard  │  │ File Mgr   │  │ Minecraft │  │    │
+│  │  │ (HTTPs)    │  │            │  │ server    │  │    │
+│  │  │ :8443      │  │ :80        │  │ :25565    │  │    │
+│  │  └────────────┘  └────────────┘  └──────────┘  │    │
+│  └───────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────┘
 ```
 
 ---
 
 ## Application Architecture by Namespace
 
-### 🏠 landing (Public Facing)
-```
-┌────────────────────────────────────────────┐
-│ backend: node:22-alpine                    │
-│       svc: landing-page:80                 │
-│       ingress: becklab.cloud               │
-└────────────────────────────────────────────┘
-              │
-              ▼
-┌───────────────────────────────────────────------─┐
-│ hosting: silex-platform (PHP)                    │
-│       PVCs: silex-hosting (4Gi), silex-root(4Gi) │
-└───────────────────────────────────────────------─┘
-```
-
-### 🔐 identity (SSO + Identity)
-┌──────────────────────────────────────────────────────┐
-│ keycloak: quay.io/keycloak/keycloak:26.0             │
-│       svc: keycloak:8080                             │
-│       svc: keycloak:8080                             │
-│       ingress: keycloak.becklab.cloud                │
-│       PVC: data-keycloak-postgresql-0 (10Gi)         │
-└──────────────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────────────┐
-│ lldap: lldap/lldap:stable                            │
-│       svc: lldap:389,17170                           │
-│       ingress: lldap.becklab.cloud                   │
-│       PVC: lldap-data (5Gi)                          │
-└──────────────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────────────┐
-│ redis: redis:7-alpine                                │
-│       svc: redis:6379                                │
-│       PVC: data-redis-0 (1Gi)                        │
-└──────────────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────────────┐
-│ oauth2-proxy: 7.6.0 (x2 instances)                   │
-│       - admin (oauth2.becklab.cloud)                 │
-│       - media (oauth2-media.becklab.cloud)           │
-│       svc: oauth2-proxy:80,44180                     │
-│       svc: oauth2-proxy-media:80,44180               │
-└──────────────────────────────────────────────────────┘
-```
-
-### 📺 media (Jellyfin Stack)
+### 🎮 gaming
 ```
 ┌──────────────────────────────────────────────┐
-│ jellyfin: lscr.io/linuxserver/jellyfin       │
-│       svc: jellyfin:8096                     │
-│       ingress: jellyfin.becklab.cloud        │
-│       PVCs: jellyfin-config (20Gi)           │
-│       shared: media-movies-lvm, anime, shows │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ jellyseerr: seerr/seerr:latest               │
-│       svc: jellyseerr:5055                   │
-│       ingress: requests.becklab.cloud        │
-│       PVC: jellyseerr-config (10Gi)          │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ radarr: lscr.io/linuxserver/radarr           │
-│       svc: radarr:7878                       │
-│       ingress: radarr.becklab.cloud          │
-│       PVC: radarr-config (10Gi)              │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ sonarr: lscr.io/linuxserver/sonarr           │
-│       svc: sonarr:8989                       │
-│       ingress: sonarr.becklab.cloud          │
-│       PVC: sonarr-config (10Gi)              │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ bazarr: lscr.io/linuxserver/bazarr           │
-│       svc: bazarr:6767                       │
-│       ingress: bazarr.becklab.cloud          │
-│       PVC: bazarr-config (5Gi)               │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ homebox: ghcr.io/sysadminsmedia/homebox      │
-│       svc: homebox:7745                      │
-│       ingress: homebox.becklab.cloud         │
-│       PVC: homebox-config (10Gi)             │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ prowlarr: lscr.io/linuxserver/prowlarr       │
-│       svc: prowlarr:9696                     │
-│       ingress: prowlarr.becklab.cloud        │
-│       PVC: prowlarr-config (5Gi)             │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ nzbget: lscr.io/linuxserver/nzbget           │
-│       svc: nzbget:6789                       │
-│       ingress: nzbget.becklab.cloud          │
-│       PVC: nzbget-config (5Gi)               │
-│       shared: media-downloads-lvm (5Ti)      │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ tdarr: ghcr.io/haveagitgat/tdarr             │
-│       svc: tdarr:8265                        │
-│       ingress: tdarr.becklab.cloud           │
-│       PVC: tdarr-config (5Gi)                │
-└──────────────────────────────────────────────┘
-```
-
-### 📊 monitoring
-```
-┌──────────────────────────────────────────────────┐
-│ prometheus: kps-prometheus                       │
-│       PVC: prometheus-kps-prometheus-db (50Gi)   │
-└──────────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────────┐
-│ grafana: kube-prometheus-stack-grafana           │
-│       PVC: kube-prometheus-stack-grafana (10Gi)  │
-└──────────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────────┐
-│ alertmanager: kps-alertmanager                   │
-└──────────────────────────────────────────────────┘
-```
-
-### 🎮 spotweb
-```
-┌──────────────────────────────────────────────┐
-│ spotweb: jgeusebroek/spotweb:latest          │
-│       ingress: spotweb.becklab.cloud         │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ mariadb: mariadb:11                          │
-│       PVC: data-mariadb-0 (5Gi)              │
-└──────────────────────────────────────────────┘
-```
-
-### 📥 torrent
-```
-┌──────────────────────────────────────────────┐
-│ qbit-gluetun: lscr.io/linuxserver/qbittorrent│
-│       ingress: qbit.becklab.cloud            │
-│       shared: torrent-downloads-lvm (5Ti)    │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ gluetun: qmcgaw/gluetun:latest               │
-│       (OpenVPN/WireGuard client)             │
-└──────────────────────────────────────────────┘
-```
-
-### 💾 velero
-```
-┌──────────────────────────────────────────────┐
-│ minio: quay.io/minio/minio:latest            │
-│       PVC: minio-data (200Gi)                │
-└──────────────────────────────────────────────┘
-              │
-              ▼
-┌──────────────────────────────────────────────┐
-│ velero: velero/velero-plugin-for-aws:v1.10.0 │
+│ crafty Controller: crafty-controller/crafty-4│
+│       ingress: crafty.becklab.cloud:443      │
+│       nodeport: 172.16.0.7:30065 (Minecraft) │
+│       PVCs: crafty-config, crafty-world      │
 └──────────────────────────────────────────────┘
 ```
 
@@ -413,22 +403,28 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 
 ## Issues & TODOs
 
-### ✅ Fixed (2026-06-04)
+### ✅ Fixed (2026-06-22)
 
-2. **bitwarden** - WAS ImagePullBackOff
-   - **Root cause:** `bitwarden/secrets-manager:latest` requires Docker Hub auth (private)
-   - **Fix:** Replaced with `vaultwarden/server:latest` (community Bitwarden impl)
-   - **Status:** Running 1/1
+1. **Crafty Controller** — WAS wrong image + stale entrypoint (arcadiatechnology/crafty-4,
+   `python3 main.py` missing from container)
+   - **Root cause:** Old image from HuggingFace, not the official crafty-controller image.
+     Container only serves HTTPS on 8443 (no port 80), entrypoint path `main.py` doesn't exist.
+   - **Fix:** Switched to `registry.gitlab.com/crafty-controller/crafty-4:latest`. Probes+service
+     updated for https:8443 with TLS. Removed stale `command`/`workingDir` (image has correct
+     entrypoint). Removed duplicate `crafty-minecraft-nodeport` service (conflicted on nodePort
+     30065) and invalid NodePort IngressRoute.
+   - **Status:** Running 1/1. Dashboard at `crafty.becklab.cloud` (SSO-protected, https). Minecraft
+     exposed at `172.16.0.7:30065` (NodePort). Two PVCs: config (1Gi) and world (20Gi).
 
-3. **tdarr** - WAS no image tag + wrong timezone
+2. **tdarr** — WAS no image tag + wrong timezone
    - **Root cause:** `ghcr.io/haveagitgat/tdarr` (no tag), TZ=America/Los_Angeles
    - **Fix:** Added `:latest` tag, changed TZ to America/New_York
    - **Status:** Running 1/1
 
 ### 🟡 High Priority
 
-4. **Empty namespaces** (defined but no workloads)
-   - `gaming` — commented out in kustomization.yaml
+3. **Empty namespaces** (defined but no workloads)
+   - `gaming` — crafty-controller dashboard + Minecraft server
    - `email` — resources commented out (postfix-relay, secret-mailu)
    - `security` — Falco/Wazuh disabled (documented in kustomization)
    - `nvidia` — device plugin commented out (GPU passthrough not used)
@@ -436,18 +432,18 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
    - `opennebula` — service only (points to VM on hypervisor)
    - `cilium-secrets`, `default`, `kube-*` — system namespaces
 
-5. **Namespace organization**
+4. **Namespace organization**
    - `media` + `torrent` — related but separate → consider consolidating
    - `identity` — well-organized (SSO stack)
 
-6. **Local-Path StorageClass dependency**
+5. **Local-Path StorageClass dependency**
    - Most PVCs use node-local storage → single point of failure
    - Databases (PostgreSQL, MariaDB, Redis) all on `local-path`
    - **Risk:** If worker node dies, data is lost
 
 ### 🟢 Medium Priority
 
-7. **Siloed OAuth2 proxies**
+6. **Siloed OAuth2 proxies**
    - Two separate oauth2-proxy instances (admin + media)
    - **Recommendation:** Document the split clearly
 
@@ -456,11 +452,16 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 ## Remediation Log
 
 
-### bitwarden Fix
+### Crafty Controller Fix
 ```bash
-# deployment.yaml image changed:
-#   FROM: bitwarden/secrets-manager:latest
-#   TO:   vaultwarden/server:latest
+# crafty-controller.yaml changed:
+#   image: arcadiatechnology/crafty-4:latest
+#     → registry.gitlab.com/crafty-controller/crafty-4:latest
+# entrypoint command removed (image has correct default)
+# probes: httpGet port http → port https, scheme HTTPS
+# service targetPort: 80 → 8443
+# IngressRoute service scheme: http → https, port 80 → 8443
+# crafty-ingress.yaml: removed duplicate crafty-minecraft-nodeport service
 # Applied via Flux sync
 ```
 
@@ -487,12 +488,12 @@ User → [App Subdomain] → oauth2-proxy → keycloak → redis → [App]
 | `torrent`   | Torrent clients                | qBittorrent + Gluetun                |
 | `monitoring`| Prometheus + Grafana           | KPS, Alertmanager, Node Exporter     |
 | `spotweb`   | NZB tracker                    | SpotWeb + MariaDB                    |
+| `gaming`    | Crafty Controller + Minecraft  | Crafty, crafty-minecraft NodePort    |
 | `bitwarden` | Password vault                 | Vaultwarden (community Bitwarden)    |
 | `llm`       | Local LLM inference            | ExternalName → 172.16.0.7:8088       |
 | `velero`    | Kubernetes backup/restore      | Velero + MinIO                       |
 | `security`  | Runtime security (disabled)    | (empty — Falco/Wazuh not deployed)   |
 | `nvidia`    | GPU device plugin (disabled)   | (empty — GPU passthrough not used)   |
-| `gaming`    | Game servers (disabled)        | (empty — commented out)              |
 | `email`     | Email relay (disabled)         | (empty — resources commented out)    |
 
 ### Flux Pipeline Status
@@ -507,4 +508,4 @@ flux-system/traefik-config        ✓
 ---
 
 *Document generated via audit of current system state.*
-*Last manually reviewed: 2026-06-04*
+*Last manually reviewed: 2026-06-22*
