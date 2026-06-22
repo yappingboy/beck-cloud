@@ -1,0 +1,148 @@
+# Crafty Controller — server management dashboard + Minecraft server.
+# Single container: web UI, file manager, backups, task scheduler.
+# Docker ref: crafty-controller/crafty-4
+#
+# Mounts:
+#   /app/config  — crafty config + default credentials (config-pvc)
+#   /app/data    — server worlds + instance configs (world-pvc)
+#
+# Ports:
+#   80  — crafty web dashboard (HTTP, terminated by traefik)
+#   25565 — minecraft server (NodePort 30065 for external players)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-config
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-world
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crafty
+  template:
+    metadata:
+      labels:
+        app: crafty
+    spec:
+      containers:
+        - name: crafty
+          image: crafty-controller/crafty-4:latest
+          imagePullPolicy: Always
+          command: ["python3"]
+          args: ["/app/main.py", "--daemon", "--ignore"]
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+            - containerPort: 8443
+              name: https
+              protocol: TCP
+            - containerPort: 25565
+              name: minecraft
+              protocol: TCP
+          env:
+            - name: TZ
+              value: America/New_York
+          resources:
+            limits:
+              cpu: "2000m"
+              memory: 8Gi
+            requests:
+              cpu: "500m"
+              memory: 4Gi
+          volumeMounts:
+            - name: config
+              mountPath: /app/config
+            - name: world
+              mountPath: /app/data
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 120
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: crafty-config
+        - name: world
+          persistentVolumeClaim:
+            claimName: crafty-world
+---
+# ClusterIP — crafty dashboard (internal, behind traefik)
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  selector:
+    app: crafty
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+# NodePort — external minecraft players
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty-minecraft
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  selector:
+    app: crafty
+  ports:
+    - name: minecraft
+      port: 25565
+      targetPort: 25565
+      nodePort: 30065
+  type: NodePort

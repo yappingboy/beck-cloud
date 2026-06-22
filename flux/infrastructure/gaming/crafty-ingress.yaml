@@ -1,0 +1,38 @@
+# Crafty dashboard via traefik, behind SSO.
+# Crafty uses WebSockets for the server console — traefik must upgrade
+# ws → wss for the same route, which this IngressRoute already does
+# (traefik auto-upgrades ws on the same listener).
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: crafty
+  namespace: gaming
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`crafty.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: crafty
+          port: 80
+  tls:
+    secretName: crafty-tls
+---
+# cert for crafty subdomain
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: crafty
+  namespace: gaming
+spec:
+  secretName: crafty-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - crafty.becklab.cloud

@@ -5,7 +5,5 @@ namespace: gaming
 
 resources:
   - namespace.yaml
-  - secret.yaml
-  - minecraft-server.yaml
-  - pufferpanel.yaml
-  - ingress.yaml
+  - crafty-controller.yaml
+  - crafty-ingress.yaml
