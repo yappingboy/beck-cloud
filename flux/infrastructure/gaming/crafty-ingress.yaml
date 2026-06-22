@@ -16,7 +16,6 @@ spec:
         - name: crafty
           port: 80
           scheme: http
-          nodePortPort: 30080
   tls:
     secretName: crafty-tls
 ---
