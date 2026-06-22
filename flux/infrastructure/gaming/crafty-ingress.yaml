@@ -20,45 +20,6 @@ spec:
   tls:
     secretName: crafty-tls
 ---
-# NodePort — external minecraft players
-apiVersion: v1
-kind: Service
-metadata:
-  name: crafty-minecraft-nodeport
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  selector:
-    app: crafty
-  ports:
-    - name: minecraft
-      port: 25565
-      targetPort: 25565
-      nodePort: 30065
-  type: NodePort
----
-# crafty dashboard on NodePort
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: crafty-nodeport
-  namespace: gaming
-  annotations:
-    kubernetes.io/ingress.class: traefik
-spec:
-  entryPoints:
-    - web
-    - websecure
-  routes:
-    - match: Host(`crafty.becklab.cloud`) && PathPrefix(`/minecraft`)
-      kind: Rule
-      services:
-        - name: crafty-minecraft-nodeport
-          port: minecraft
-          scheme: http
-          nodePortPort: 30065
----
 # cert for crafty subdomain
 apiVersion: cert-manager.io/v1
 kind: Certificate
