@@ -14,8 +14,8 @@ spec:
           namespace: identity
       services:
         - name: crafty
-          port: 80
-          scheme: http
+          port: 8443
+          scheme: https
   tls:
     secretName: crafty-tls
 ---

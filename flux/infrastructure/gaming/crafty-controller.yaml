@@ -1,13 +1,13 @@
 # Crafty Controller — server management dashboard + Minecraft server.
 # Single container: web UI, file manager, backups, task scheduler.
-# Docker ref: arcadiatechnology/crafty-4
+# Image: registry.gitlab.com/crafty-controller/crafty-4 (official crafty-controller image)
 #
 # Mounts (per docs):
 #   /home/crafty/crafty/config  — crafty config + default credentials (config-pvc)
 #   /home/crafty/crafty/data    — server worlds + instance configs (world-pvc)
 #
 # Ports:
-#   80  — crafty web dashboard (HTTP, terminated by traefik)
+#   8443 — crafty web dashboard (HTTPS, terminated by traefik)
 #   25565 — minecraft server (NodePort 30065 for external players)
 ---
 apiVersion: v1
@@ -64,9 +64,6 @@ spec:
           image: registry.gitlab.com/crafty-controller/crafty-4:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 80
-              name: http
-              protocol: TCP
             - containerPort: 8443
               name: https
               protocol: TCP
@@ -91,14 +88,16 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: http
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 150
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
-              port: http
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
@@ -122,9 +121,9 @@ spec:
   selector:
     app: crafty
   ports:
-    - name: http
-      port: 80
-      targetPort: 80
+    - name: https
+      port: 8443
+      targetPort: 8443
   type: ClusterIP
 ---
 # NodePort — external minecraft players
