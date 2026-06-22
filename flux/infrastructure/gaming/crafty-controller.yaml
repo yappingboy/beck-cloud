@@ -61,10 +61,8 @@ spec:
     spec:
       containers:
         - name: crafty
-          image: arcadiatechnology/crafty-4:latest
+          image: registry.gitlab.com/crafty-controller/crafty-4:latest
           imagePullPolicy: Always
-          command: ["python3", "main.py", "--ignore"]
-          workingDir: /home/crafty/crafty
           ports:
             - containerPort: 80
               name: http
