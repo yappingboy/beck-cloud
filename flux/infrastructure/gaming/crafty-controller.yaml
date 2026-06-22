@@ -1,10 +1,10 @@
 # Crafty Controller — server management dashboard + Minecraft server.
 # Single container: web UI, file manager, backups, task scheduler.
-# Docker ref: crafty-controller/crafty-4
+# Docker ref: arcadiatechnology/crafty-4
 #
-# Mounts:
-#   /app/config  — crafty config + default credentials (config-pvc)
-#   /app/data    — server worlds + instance configs (world-pvc)
+# Mounts (per docs):
+#   /home/crafty/crafty/config  — crafty config + default credentials (config-pvc)
+#   /home/crafty/crafty/data    — server worlds + instance configs (world-pvc)
 #
 # Ports:
 #   80  — crafty web dashboard (HTTP, terminated by traefik)
@@ -63,6 +63,8 @@ spec:
         - name: crafty
           image: arcadiatechnology/crafty-4:latest
           imagePullPolicy: Always
+          command: ["python3", "main.py", "--ignore"]
+          workingDir: /home/crafty/crafty
           ports:
             - containerPort: 80
               name: http
@@ -85,14 +87,14 @@ spec:
               memory: 4Gi
           volumeMounts:
             - name: config
-              mountPath: /app/config
+              mountPath: /home/crafty/crafty/config
             - name: world
-              mountPath: /app/data
+              mountPath: /home/crafty/crafty/data
           livenessProbe:
             httpGet:
               path: /
               port: http
-            initialDelaySeconds: 120
+            initialDelaySeconds: 150
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
