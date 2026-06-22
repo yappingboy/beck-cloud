@@ -61,7 +61,7 @@ spec:
     spec:
       containers:
         - name: crafty
-          image: crafty-controller/crafty-4:latest
+          image: arcadiatechnology/crafty-4:latest
           imagePullPolicy: Always
           command: ["python3"]
           args: ["/app/main.py", "--daemon", "--ignore"]
