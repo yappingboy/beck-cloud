@@ -64,7 +64,7 @@ spec:
           image: registry.gitlab.com/crafty-controller/crafty-4:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8000
+            - containerPort: 8443
               name: http
               protocol: TCP
             - containerPort: 25565
@@ -88,16 +88,16 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: https
-              scheme: HTTPS
+              port: http
+              scheme: HTTP
             initialDelaySeconds: 150
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
-              port: https
-              scheme: HTTPS
+              port: http
+              scheme: HTTP
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
@@ -123,8 +123,8 @@ spec:
     app: crafty
   ports:
     - name: http
-      port: 8000
-      targetPort: 8000
+      port: 8443
+      targetPort: 8443
   type: ClusterIP
 
 ---
@@ -152,7 +152,7 @@ spec:
               service:
                  name: crafty
                  port:
-                   number: 8000
+                   number: 8443
 ---
 # NodePort — external minecraft players
 apiVersion: v1
