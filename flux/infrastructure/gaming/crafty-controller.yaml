@@ -109,6 +109,15 @@ spec:
           persistentVolumeClaim:
             claimName: crafty-world
 ---
+apiVersion: traefik.io/v1alpha1
+kind: ServersTransport
+metadata:
+  name: my-transport
+  namespace: default
+spec:
+  insecureSkipVerify: true
+---
+
 # ClusterIP — crafty dashboard (internal, behind traefik)
 apiVersion: v1
 kind: Service
@@ -136,6 +145,7 @@ metadata:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io/cluster-issuer: letsencrypt-prod
     traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/service.serverstransport: my-transport@kubernetescrd
 spec:
   tls:
     - hosts:
