@@ -65,7 +65,7 @@ spec:
           imagePullPolicy: Always
           ports:
             - containerPort: 8443
-              name: http
+              name: https
               protocol: TCP
             - containerPort: 25565
               name: minecraft
@@ -88,16 +88,16 @@ spec:
           livenessProbe:
             httpGet:
               path: /
-              port: http
-              scheme: HTTP
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 150
             periodSeconds: 30
             timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /
-              port: http
-              scheme: HTTP
+              port: https
+              scheme: HTTPS
             initialDelaySeconds: 30
             periodSeconds: 15
             timeoutSeconds: 5
@@ -122,7 +122,7 @@ spec:
   selector:
     app: crafty
   ports:
-    - name: http
+    - name: https
       port: 8443
       targetPort: 8443
   type: ClusterIP
