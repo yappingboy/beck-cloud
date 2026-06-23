@@ -154,6 +154,19 @@ spec:
                  port:
                    number: 8443
 ---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRouteTCP
+metadata:
+  name: minecraft
+  namespace: gaming
+spec:
+  routes:
+    - match: HostSNI(`*`)
+      kind: Rule
+      services:
+        - name: crafty
+          port: 25565
+---
 # NodePort — external minecraft players
 apiVersion: v1
 kind: Service
