@@ -167,6 +167,7 @@ spec:
     app: crafty
   ports:
     - name: minecraft
+      protocol: TCP
       port: 25565
       targetPort: 25565
       nodePort: 25565
