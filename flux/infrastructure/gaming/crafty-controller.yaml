@@ -70,6 +70,13 @@ spec:
             - containerPort: 25565
               name: minecraft
               protocol: TCP
+          command: ["/bin/sh", "-c"]
+          args:
+            - |
+              python3 main.py --ignore --bind 0.0.0.0:8443 2>/dev/null &
+              sleep 10
+              python3 main.py --ignore --listen 25565 2>/dev/null &
+              wait
           env:
             - name: TZ
               value: America/New_York
