@@ -6,4 +6,4 @@ namespace: gaming
 resources:
   - namespace.yaml
   - crafty-controller.yaml
-  - crafty-ingress.yaml
+#  - crafty-ingress.yaml
