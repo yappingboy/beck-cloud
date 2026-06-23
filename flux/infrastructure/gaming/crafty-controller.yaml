@@ -75,7 +75,7 @@ spec:
               value: America/New_York
           resources:
             limits:
-              cpu: "2000m"
+              cpu: "3000m"
               memory: 8Gi
             requests:
               cpu: "500m"
