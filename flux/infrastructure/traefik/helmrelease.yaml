@@ -18,6 +18,8 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
+    additionalArguments:
+      - "--serversTransport.insecureSkipVerify=true"
     logs:
       general:
         level: INFO
