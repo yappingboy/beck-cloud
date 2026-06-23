@@ -39,10 +39,8 @@ spec:
         whitelist_domains = [".becklab.cloud"]
         skip_provider_button = true
         reverse_proxy = true
-        upstreams:
-          - "static://202"
-          - "http://crafty.gaming.svc.cluster.local:8443"
-        session_store_type: "redis"
+        upstreams = ["static://202"]
+        session_store_type = "redis"
     extraEnv:
       - name: OAUTH2_PROXY_REDIS_CONNECTION_URL
         valueFrom:
