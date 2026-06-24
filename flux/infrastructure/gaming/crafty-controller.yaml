@@ -117,6 +117,9 @@ spec:
             - containerPort: 8443
               name: https
               protocol: TCP
+            - containerPort: 8123
+              name: dynmap
+              protocol: TCP
             - containerPort: 25565
               name: minecraft
               protocol: TCP
@@ -192,6 +195,23 @@ spec:
       port: 8443
       targetPort: 8443
   type: ClusterIP
+---
+# ClusterIP — crafty dashboard (internal, behind traefik)
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  selector:
+    app: crafty
+  ports:
+    - name: dynmap
+      port: 8123
+      targetPort: 8123
+  type: ClusterIP
 
 ---
 apiVersion: networking.k8s.io/v1
@@ -219,6 +239,32 @@ spec:
                  name: crafty
                  port:
                    number: 8443
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crafty
+  namespace: gaming
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+      - dynmap.becklab.cloud
+      secretName: dynmap-tls
+  rules:
+    - host: dynmap.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                 name: crafty
+                 port:
+                   number: 8123
 ---
 # NodePort — external minecraft players
 apiVersion: v1
