@@ -40,6 +40,56 @@ spec:
     requests:
       storage: 20Gi
 ---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-import
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-logs
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-backup
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+
+
+
+
+
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -82,9 +132,15 @@ spec:
               memory: 4Gi
           volumeMounts:
             - name: config
-              mountPath: /home/crafty/crafty/config
+              mountPath: /crafty/app/config
             - name: world
-              mountPath: /home/crafty/crafty/data
+              mountPath: /crafty/servers
+            - name: logs
+              mountPath: /crafty/logs
+            - name: import
+              mountPath: /crafty/import
+            - name: backup
+              mountPath: /crafty/backups
           livenessProbe:
             httpGet:
               path: /
@@ -108,6 +164,16 @@ spec:
         - name: world
           persistentVolumeClaim:
             claimName: crafty-world
+        - name: logs
+          persistentVolumeClaim:
+            claimName: crafty-logs           
+        - name: backup
+          persistentVolumeClaim:
+            claimName: crafty-backup
+        - name: import
+          persistentVolumeClaim:
+            claimName: crafty-import
+               
 ---
 
 # ClusterIP — crafty dashboard (internal, behind traefik)
