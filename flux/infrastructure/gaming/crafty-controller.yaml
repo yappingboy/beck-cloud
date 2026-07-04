@@ -239,32 +239,32 @@ spec:
                  name: crafty
                  port:
                    number: 8443
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  name: crafty
-  namespace: gaming
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
-spec:
-  tls:
-    - hosts:
-      - dynmap.becklab.cloud
-      secretName: dynmap-tls
-  rules:
-    - host: dynmap.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                 name: crafty
-                 port:
-                   number: 8123
+#---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: crafty
+#  namespace: gaming
+#  annotations:
+#    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#    cert-manager.io/cluster-issuer: letsencrypt-prod
+#    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+#spec:
+#  tls:
+#    - hosts:
+#      - dynmap.becklab.cloud
+#      secretName: dynmap-tls
+#  rules:
+#    - host: dynmap.becklab.cloud
+#      http:
+#        paths:
+#          - path: /
+#            pathType: Prefix
+#            backend:
+#              service:
+#                 name: crafty
+#                 port:
+#                   number: 8123
 ---
 # NodePort — external minecraft players
 apiVersion: v1
