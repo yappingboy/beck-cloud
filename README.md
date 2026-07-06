@@ -14,8 +14,8 @@ Production-grade private cloud on K3s + RAID6, managed via Flux CD GitOps.
 | L5 | GitOps (Flux CD) | ✅ Bootstrap + Sources + Controllers + Configs |
 | L6 | Traefik + cert-manager | ✅ HelmReleases + SSO middlewares |
 | L7 | Identity (lldap + Keycloak + oauth2-proxy) | ✅ Full stack defined |
-| L8 | Security (Wazuh + Falco) | ✅ HelmReleases defined |
-| L9 | Rancher (Multi-tenancy) | ✅ HelmRelease + namespace |
+| L8 | Security (Wazuh + Falco) | ⬛ Defined but not deployed — no workloads on cluster |
+| L9 | Rancher (Multi-tenancy) | ⬛ Disabled — K3s + Flux replaces management role |
 | L10 | Media Platform (Jellyfin/Sonarr/Radarr/etc) | ✅ Full stack defined |
 | L11 | LLM/AI | ⬛ Removed (deferred) — will revisit later |
 | L12 | Backup (Velero + restic) | ✅ Full schedules, filesystem backup |
@@ -123,7 +123,7 @@ flux-system (bootstrap)
 | Jellyseerr | https://requests.becklab.cloud | OIDC |
 | qBittorrent | https://qbittorrent.becklab.cloud | — |
 | Wazuh | https://wazuh.becklab.cloud | — |
-| Rancher | https://rancher.becklab.cloud | Keycloak SSO |
+| Rancher | ⬛ Disabled | K3s + Flux replaces management role |
 
 ## Secrets Management
 
