@@ -179,7 +179,8 @@ spec:
                
 ---
 
-# ClusterIP — crafty dashboard (internal, behind traefik)
+# Services
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -194,20 +195,6 @@ spec:
     - name: https
       port: 8443
       targetPort: 8443
-  type: ClusterIP
----
-# ClusterIP — crafty dashboard (internal, behind traefik)
-apiVersion: v1
-kind: Service
-metadata:
-  name: crafty
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  selector:
-    app: crafty
-  ports:
     - name: dynmap
       port: 8123
       targetPort: 8123
