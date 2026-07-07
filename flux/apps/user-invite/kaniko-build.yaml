@@ -61,6 +61,6 @@ spec:
       volumes:
         - name: docker-config
           secret:
-            secretName: ghcr-credentials
+            secretName: ghcr-config
         - name: workspace
           emptyDir: {}
