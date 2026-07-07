@@ -35,7 +35,7 @@ spec:
             - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
-            - --skip-tls-verify=none
+            - --skip-tls-verify=true
           volumeMounts:
             - name: docker-config
               mountPath: /kaniko/.docker/
