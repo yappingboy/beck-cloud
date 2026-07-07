@@ -30,7 +30,7 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=git://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
+            - --context=dir:///workspace/
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
             - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
             - --cache=true
@@ -40,8 +40,27 @@ spec:
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
+            - name: workspace
+              mountPath: /workspace
+      initContainers:
+        - name: clone-source
+          image: bitnami/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              git clone --depth=1 --sparse https://github.com/yappingboy/beck-cloud.git
+              cd beck-cloud
+              git sparse-checkout set apps/user-invite
+              cp -r apps/user-invite/* /workspace/
+              ls -la /workspace/
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       restartPolicy: Never
       volumes:
         - name: docker-config
           secret:
             secretName: ghcr-credentials
+        - name: workspace
+          emptyDir: {}
