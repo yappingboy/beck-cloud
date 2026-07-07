@@ -5,4 +5,5 @@ namespace: identity
 
 resources:
   - secret-user-invite.yaml
+  - secret-ghcr-identity.yaml
   - deployment.yaml

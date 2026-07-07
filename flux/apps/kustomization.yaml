@@ -4,3 +4,4 @@ kind: Kustomization
 resources:
   - homepage
   - user-invite
+  - toolbox

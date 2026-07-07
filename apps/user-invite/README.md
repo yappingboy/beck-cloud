@@ -1,114 +1,82 @@
-# Becklab User Invite Tool
+# User Invite Tool
 
-Admin-only web app for inviting users to Becklab services.
+Admin dashboard for inviting users to BeckCloud services. Creates accounts in LLDAP, sends invite emails, and gates everything behind Keycloak SSO.
 
 ## What It Does
 
-1. **Dashboard** at `https://admin.becklab.cloud` (behind oauth2-proxy, `/admins` group only)
-2. **"Invite User" form** — enter username, email, display name, select groups
-3. On submit:
-   - Creates user in LLDAP via GraphQL API
-   - Sets a random 16-character password
-   - Adds to selected groups (fetched live from LLDAP)
-   - Sends HTML invitation email via Postfix relay with credentials + Keycloak account link
+- Admin form at `admin.becklab.cloud` (behind oauth2-proxy, `/admins` group only)
+- Enter username, email, display name, select groups (fetched live from LLDAP)
+- On submit: creates user in LLDAP → sets random password → adds to groups → sends invite email via Postfix relay
+- Invitee gets credentials + link to Keycloak account page to set their own password
 
-## Architecture
+## Deploying
+
+### 1. Build the image with Kaniko (in-cluster, no Docker needed)
+
+The kaniko Job is already configured in `flux/apps/toolbox/` and will be deployed by Flux automatically when you commit this PR:
 
 ```
-Browser → Traefik → oauth2-proxy (/admins check) → user-invite Flask app
-                                                        ↓
-                                               LLDAP GraphQL API
-                                                        ↓
-                                          Postfix relay (smtp-relay.email)
-                                              ↓
-                                        Mailgun → user's email
+flux/apps/user-invite/kaniko-build.yaml   ← The kaniko Job definition
+flux/apps/user-invite/secret-ghcr-credentials.yaml  ← GHCR push credentials (SOPS encrypted)
+flux/apps/toolbox/kustomization.yaml       ← Deploys kaniko job + secret to 'toolbox' namespace
 ```
 
-## Deploy Steps
+Flux will:
+1. Create the `toolbox` namespace
+2. Deploy the `build-user-invite` Job with kaniko
+3. Kaniko fetches source from GitHub, builds the Dockerfile, pushes to `ghcr.io/yappingboy/becklab-user-invite`
 
-### 1. Build & Push Image
+### 2. Flux deploys everything else
 
-On any machine with Docker:
+After the image is pushed, Flux deploys:
+- Deployment + Service in `identity` namespace
+- Ingress at `admin.becklab.cloud` (TLS via cert-manager)
+- SOPS-encrypted secrets (Flask session key + GHCR credentials)
+
+### 3. Verify
+
+```bash
+# Check kaniko job completed
+kubectl get jobs -n toolbox
+
+# Check the app is running
+kubectl get pods -n identity -l app=user-invite
+
+# Visit https://admin.becklab.cloud
+```
+
+## Alternative: Build locally with Docker
+
+If you prefer to build manually instead of using kaniko:
 
 ```bash
 cd apps/user-invite/
-./build-and-push.sh ghcr.io/YOURUSER/becklab-user-invite:v1
+./build-and-push.sh ghcr.io/yappingboy/becklab-user-invite:v1
 ```
 
-Or manually:
+Then commit the updated manifest. The kaniko job will still run but the image already exists, so it's just extra work — you can delete it afterward:
 
 ```bash
-docker build -t ghcr.io/YOURUSER/becklab-user-invite:v1 .
-docker push ghcr.io/YOURUSER/becklab-user-invite:v1
-# Edit flux/apps/user-invite/deployment.yaml to update the image reference
+kubectl delete -f flux/apps/user-invite/kaniko-build.yaml -n toolbox
 ```
 
-### 2. Configure Registry Auth (if using private registry)
+## Tech Stack
 
-If pushing to a private registry, create an `imagePullSecret`:
-
-```bash
-kubectl -n identity create secret docker-registry regcred \
-  --docker-server=ghcr.io \
-  --docker-username=YOURUSER \
-  --docker-password=TOKEN \
-  --docker-email=you@example.com
-```
-
-Add to the deployment spec: `imagePullSecrets: [{name: regcred}]`
-
-### 3. Commit & Deploy
-
-Everything is wired into Flux via `flux/apps/user-invite/`:
-
-```bash
-git add flux/apps/user-invite/ apps/user-invite/
-git commit -m "feat: deploy user-invite admin tool"
-git push
-```
-
-Flux will pick up the changes automatically. Cert-Manager provisions the TLS cert for `admin.becklab.cloud`.
-
-### 4. DNS
-
-`admin.becklab.cloud` already resolves (CNAME → becklab.cloud). If you change the hostname, update the Ingress and add a DNS record.
-
-## Files
-
-| File | Purpose |
-|------|---------|
-| `app.py` | Flask application |
-| `Dockerfile` | Container image build |
-| `build-and-push.sh` | Build + push helper script |
-| `deployment.yaml` | K8s Deployment, Service, Ingress, Secret (source) |
-| `flux/apps/user-invite/` | Flux-deployed manifests (includes SOPS-encrypted secret) |
+- **Backend:** Python 3.12 + Flask
+- **Auth:** oauth2-proxy → Keycloak SSO (admins group only)
+- **User DB:** LLDAP (GraphQL API)
+- **Email:** Postfix relay via Mailgun
+- **Deploy:** Flux CD + kustomize + SOPS
 
 ## Environment Variables
 
-All set in the Deployment manifest:
-
-| Variable | Default | Description |
-|----------|---------|-------------|
-| `LLDAP_URL` | `http://lldap.identity.svc.cluster.local:17170` | LLDAP web API URL |
-| `LLDAP_ADMIN_USER` | `admin` | LLDAP admin username |
-| `LLDAP_ADMIN_PASS` | from `lldap-admin-password` secret | LLDAP admin password |
-| `SMTP_HOST` | `smtp-relay.email.svc.cluster.local` | Outbound SMTP relay |
-| `SMTP_PORT` | `25` | SMTP port |
-| `FROM_EMAIL` | `invites@becklab.cloud` | Sender address |
-| `KEYCLOAK_URL` | `https://keycloak.becklab.cloud` | Keycloak URL for invite emails |
-
-## Testing Locally
-
-```bash
-# Set required env vars
-export LLDAP_URL=http://lldap.identity.svc.cluster.local:17170
-export LLDAP_ADMIN_USER=admin
-export LLDAP_ADMIN_PASS=<password>
-export SMTP_HOST=localhost  # or any local SMTP for testing
-export FLASK_SECRET_KEY=test
-
-pip install flask requests
-python app.py
-```
-
-Visit `http://localhost:8000` (no SSO when running locally).
+| Variable | Source | Description |
+|---|---|---|
+| `LLDAP_URL` | Hardcoded | LLDAP internal service URL |
+| `LLDAP_ADMIN_USER` | Hardcoded | Admin username for LLDAP API |
+| `LLDAP_ADMIN_PASS` | Secret: `lldap-admin-password` | Admin password (reuses existing secret) |
+| `SMTP_HOST` | Hardcoded | Postfix relay service |
+| `SMTP_PORT` | Hardcoded | SMTP port (25, unencrypted internal) |
+| `FROM_EMAIL` | Hardcoded | Sender address for invite emails |
+| `KEYCLOAK_URL` | Hardcoded | Keycloak public URL |
+| `FLASK_SECRET_KEY` | Secret: `user-invite-secrets` | Flask session signing key (SOPS encrypted) |

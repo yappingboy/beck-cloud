@@ -1,0 +1,50 @@
+# Kaniko build job — builds user-invite image and pushes to GHCR.
+# Run once: kubectl apply -f kaniko-build.yaml -n toolbox
+# The job creates namespace 'toolbox' if needed (create below separately).
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: toolbox
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kaniko-builder
+  namespace: toolbox
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-user-invite
+  namespace: toolbox
+spec:
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=Dockerfile
+            - --context=git://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify=none
+          env:
+            - name: GOOGLE_APPLICATION_CREDENTIALS
+              value: "/etc/docker/cfg"  # dummy; kaniko uses .dockerconfigjson instead
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker/
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: ghcr-credentials

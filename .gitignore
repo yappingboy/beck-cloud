@@ -2,3 +2,4 @@
 .hermes/
 .sops.agekey
 .sops.yaml.bak
+secrets/

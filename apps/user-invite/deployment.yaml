@@ -1,15 +1,4 @@
 ---
-# Secret — only needs Flask session key (LLDAP creds come from existing lldap-admin-password secret)
-apiVersion: v1
-kind: Secret
-metadata:
-  name: user-invite-secrets
-  namespace: identity
-type: Opaque
-stringData:
-  flask-secret-key: "GENERATE-THIS-WITH-SOPS"
-
----
 # Deployment
 apiVersion: apps/v1
 kind: Deployment
@@ -28,9 +17,11 @@ spec:
       labels:
         app: user-invite
     spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
       containers:
         - name: user-invite
-          image: becklab/user-invite:latest
+          image: ghcr.io/yappingboy/becklab-user-invite:v1
           imagePullPolicy: IfNotPresent
           resources:
             limits:
