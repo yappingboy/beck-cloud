@@ -1,0 +1,124 @@
+---
+# Secret — only needs Flask session key (LLDAP creds come from existing lldap-admin-password secret)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: user-invite-secrets
+  namespace: identity
+type: Opaque
+stringData:
+  flask-secret-key: "GENERATE-THIS-WITH-SOPS"
+
+---
+# Deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: user-invite
+  namespace: identity
+  labels:
+    app: user-invite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: user-invite
+  template:
+    metadata:
+      labels:
+        app: user-invite
+    spec:
+      containers:
+        - name: user-invite
+          image: becklab/user-invite:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            limits:
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 128Mi
+          ports:
+            - containerPort: 8000
+              name: http
+              protocol: TCP
+          env:
+            - name: LLDAP_URL
+              value: "http://lldap.identity.svc.cluster.local:17170"
+            - name: LLDAP_ADMIN_USER
+              value: "admin"
+            - name: LLDAP_ADMIN_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: lldap-admin-password
+                  key: admin-password
+            - name: SMTP_HOST
+              value: "smtp-relay.email.svc.cluster.local"
+            - name: SMTP_PORT
+              value: "25"
+            - name: FROM_EMAIL
+              value: "invites@becklab.cloud"
+            - name: KEYCLOAK_URL
+              value: "https://keycloak.becklab.cloud"
+            - name: FLASK_SECRET_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: user-invite-secrets
+                  key: flask-secret-key
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 3
+            periodSeconds: 10
+
+---
+# Service
+apiVersion: v1
+kind: Service
+metadata:
+  name: user-invite
+  namespace: identity
+  labels:
+    app: user-invite
+spec:
+  selector:
+    app: user-invite
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
+
+---
+# Ingress — behind admin oauth2-proxy middleware (requires /admins group)
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: user-invite
+  namespace: identity
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - admin.becklab.cloud
+      secretName: user-invite-tls
+  rules:
+    - host: admin.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: user-invite
+                port:
+                  number: 80
