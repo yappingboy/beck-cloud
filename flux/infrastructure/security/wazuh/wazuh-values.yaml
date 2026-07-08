@@ -96,16 +96,15 @@ spec:
           memory: 1Gi
       ingress:
         enabled: true
-        ingressClassName: traefik
-        # TLS cert auto-provisioned by cert-manager via ClusterIssuer
+        className: traefik
+        host: wazuh.becklab.cloud
+        tls:
+          - hosts:
+              - wazuh.becklab.cloud
+            secretName: wazuh-becklab-cloud-tls
         annotations:
           cert-manager.io/cluster-issuer: letsencrypt-production
           traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
-        rules:
-          - host: wazuh.becklab.cloud
-            paths:
-              - path: /
-                pathType: Prefix
       nodeSelector:
         kubernetes.io/hostname: ip-172-16-0-20
       tolerations:
