@@ -113,9 +113,9 @@ spec:
           operator: Exists
           effect: NoSchedule
 
-    # ── Certificates (self-signed internal TLS between components) ──
+    # ── Certificates ─────────────────────────────────────────────
+    # Disabled: self-signed certs + Cilium eBPF caused bootstrap deadlocks.
+    # Internal comms are isolated by Wazuh NetworkPolicies in security ns.
+    # External TLS handled by Traefik ingress + cert-manager.
     certificates:
-      enabled: true
-      issuer:
-        name: null  # Use self-signed issuer created by chart
-        type: issuer
+      enabled: false
