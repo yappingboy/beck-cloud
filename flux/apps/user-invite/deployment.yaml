@@ -95,6 +95,7 @@ metadata:
   namespace: identity
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
