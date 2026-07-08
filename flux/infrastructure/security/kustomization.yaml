@@ -5,11 +5,8 @@ namespace: security
 
 resources:
   - namespace.yaml
-  # wazuh: disabled — helm repo unavailable and resource requirements (4GB+) exceed homelab capacity
-  # re-enable once a dedicated node or separate namespace with higher limits is available
-  # falco: disabled — both ebpf and modern_ebpf drivers crash in this KVM/Cilium
-  # environment. Revisit with kmod driver + matching kernel headers, or once
-  # a different runtime security tool is selected.
-  # - falco.yaml
-
-
+  - wazuh/wazuh-values.yaml
+  # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
+  # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.
+  # suricata: deferred until Phase 3 (after Wazuh foundation is stable)
+  # trivy-operator: deferred until Phase 2
