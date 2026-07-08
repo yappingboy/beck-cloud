@@ -18,9 +18,10 @@ spec:
         kind: HelmRepository
         name: wazuh-helm
         namespace: flux-system
+  timeout: 15m
   install:
     remediation:
-      retries: 3
+      retries: 5
   upgrade:
     cleanupOnFail: true
     remediation:
