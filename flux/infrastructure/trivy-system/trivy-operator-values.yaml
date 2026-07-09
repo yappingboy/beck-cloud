@@ -30,9 +30,7 @@ spec:
   values:
     # ── Trivy scanner engine ────────────────────────────────────
     trivy:
-      image:
-        repository: ghcr.io/aquasecurity/trivy
-        tag: "0.68.1"
+      image: {repository: ghcr.io/aquasecurity/trivy, tag: "0.68.1", pullPolicy: IfNotPresent}
       ignoreUnfixed: true
       offlineScan: false
 
