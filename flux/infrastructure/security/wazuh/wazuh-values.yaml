@@ -103,7 +103,7 @@ spec:
               - wazuh.becklab.cloud
             secretName: wazuh-becklab-cloud-tls
         annotations:
-          cert-manager.io/cluster-issuer: letsencrypt-production
+          cert-manager.io/cluster-issuer: letsencrypt-prod
           traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
       nodeSelector:
         kubernetes.io/hostname: ip-172-16-0-20
@@ -118,3 +118,23 @@ spec:
     # External TLS handled by Traefik ingress + cert-manager.
     certificates:
       enabled: false
+
+    # ── Dashboard login credentials ─────────────────────────────
+    # After SSO redirect, Wazuh dashboard still shows its own login screen.
+    # Access via https://wazuh.becklab.cloud → Keycloak SSO → Wazuh UI
+    # Login: admin / BeckWazuh2026!
+    indexer:
+      config:
+        internalUsers: |
+          ---
+          _meta:
+            type: "internalusers"
+            config_version: 2
+          admin:
+            hash: "$2b$12$scpE9YgWMbfe2urPA1XAPOBn0YKXIkP7Jt28wZRz5h4H4obmABjnK"
+            reserved: true
+            backend_roles:
+              - "admin"
+          kibanaserver:
+            hash: "$2b$12$57U9LUvmU2gkDC1iUFVAQu67FgTJ/393NzXzSIEVIYAsN53HAnhm."
+            reserved: true
