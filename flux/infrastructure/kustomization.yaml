@@ -11,6 +11,7 @@ resources:
   - identity
   - rbac
   - security
+  - trivy-system
   - media
   - monitoring
   - velero

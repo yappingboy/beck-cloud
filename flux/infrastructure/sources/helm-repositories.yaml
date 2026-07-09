@@ -83,3 +83,12 @@ metadata:
 spec:
   interval: 12h
   url: https://morgoved.github.io/wazuh-helm
+---
+apiVersion: source.toolkit.fluxcd.io/v1
+kind: HelmRepository
+metadata:
+  name: aqua-charts
+  namespace: flux-system
+spec:
+  interval: 12h
+  url: https://aquasecurity.github.io/helm-charts
