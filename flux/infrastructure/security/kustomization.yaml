@@ -9,4 +9,3 @@ resources:
   # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
   # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.
   # suricata: deferred until Phase 3 (after Wazuh foundation is stable)
-  # trivy-operator: deferred until Phase 2
