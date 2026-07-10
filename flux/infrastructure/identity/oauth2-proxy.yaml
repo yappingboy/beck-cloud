@@ -41,6 +41,8 @@ spec:
         reverse_proxy = true
         upstreams = ["static://202"]
         session_store_type = "redis"
+    extraArgs:
+      - --set-xauthrequest=true
     extraEnv:
       - name: OAUTH2_PROXY_REDIS_CONNECTION_URL
         valueFrom:
