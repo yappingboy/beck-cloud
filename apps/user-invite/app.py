@@ -36,7 +36,11 @@ LLDAP_ADMIN_PASS = os.environ.get("LLDAP_ADMIN_PASS", "")
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp-relay.email.svc.cluster.local")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "25"))
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "invites@becklab.cloud")
-KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://keycloak.becklab.cloud")
+KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "http://keycloak.identity.svc.cluster.local:8080")
+KEYCLOAK_EXTERNAL_URL = os.environ.get(
+    "KEYCLOAK_EXTERNAL_URL",
+    "https://keycloak.becklab.cloud",
+)
 KEYCLOAK_ADMIN_USER = os.environ.get("KEYCLOAK_ADMIN_USER", "admin")
 KEYCLOAK_ADMIN_PASS = os.environ.get("KEYCLOAK_ADMIN_PASS", "")
 KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "homelab")
@@ -187,7 +191,6 @@ def set_password(username, password):
         json={
             "type": "password",
             "value": password,
-            "temporary": True,
         },
     )
 
@@ -197,7 +200,7 @@ def set_password(username, password):
 # ---------------------------------------------------------------------------
 def send_invite(email, username, password, group_names):
     groups_str = ", ".join(group_names) if group_names else "none"
-    account_url = f"{KEYCLOAK_URL}/realms/homelab/account"
+    account_url = f"{KEYCLOAK_EXTERNAL_URL}/realms/homelab/account"
 
     html = f"""<!doctype html>
 <html><head><meta charset="utf-8"><title>Welcome to Becklab</title>
