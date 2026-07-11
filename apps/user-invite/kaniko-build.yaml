@@ -30,7 +30,7 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=git::https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
+            - --context=https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
             - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
             - --cache=true
