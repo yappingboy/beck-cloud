@@ -20,7 +20,7 @@ spec:
       initContainers:
         - name: affine-migration
           image: ghcr.io/toeverything/affine:stable
-          command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
+          command: ['sh', '-c', 'for i in $(seq 1 60); do (echo > /dev/tcp/affine-postgres.affine.svc.cluster.local/5432) >/dev/null 2>&1 && break; echo "Waiting for postgres... ($i)"; sleep 3; done; node ./scripts/self-host-predeploy.js']
           env:
             - name: REDIS_SERVER_HOST
               value: affine-redis.affine.svc.cluster.local
