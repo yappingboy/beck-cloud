@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: affine
+  namespace: affine
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`affine.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: affine-server
+          port: 3010
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+  tls:
+    secretName: affine-tls

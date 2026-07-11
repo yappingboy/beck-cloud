@@ -1,0 +1,142 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine-server
+  namespace: affine
+  labels:
+    app: affine
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: affine
+  template:
+    metadata:
+      labels:
+        app: affine
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      initContainers:
+        - name: affine-migration
+          image: ghcr.io/toeverything/affine:stable
+          command: ['sh', '-c', 'node ./scripts/self-host-predeploy.js']
+          env:
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: affine-db
+                  key: database-url
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+      containers:
+        - name: affine
+          image: ghcr.io/toeverything/affine:stable
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          env:
+            - name: AFFINE_REVISION
+              value: stable
+            - name: REDIS_SERVER_HOST
+              value: affine-redis.affine.svc.cluster.local
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: affine-db
+                  key: database-url
+            - name: AFFINE_INDEXER_ENABLED
+              value: "false"
+            - name: AFFINE_SERVER_EXTERNAL_URL
+              value: https://affine.becklab.cloud
+          ports:
+            - containerPort: 3010
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: storage
+              mountPath: /root/.affine/storage
+            - name: config
+              mountPath: /root/.affine/config
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3010
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3010
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: affine-storage
+        - name: config
+          persistentVolumeClaim:
+            claimName: affine-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine-redis
+  namespace: affine
+  labels:
+    app: affine-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: affine-redis
+  template:
+    metadata:
+      labels:
+        app: affine-redis
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      containers:
+        - name: redis
+          image: redis:7-alpine
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          ports:
+            - containerPort: 6379
+              name: redis
+              protocol: TCP
+          livenessProbe:
+            exec:
+              command:
+                - redis-cli
+                - --raw
+                - incr
+                - ping
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - redis-cli
+                - --raw
+                - incr
+                - ping
+            initialDelaySeconds: 5
+            periodSeconds: 5
