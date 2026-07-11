@@ -113,7 +113,7 @@ def get_kc_admin_token():
     return resp.json()["access_token"]
 
 
-def kc_api(path, method="GET", json=None):
+def kc_api(path, method="GET", json=None, params=None):
     """Make an authenticated Keycloak Admin API call."""
     token = get_kc_admin_token()
     url = f"{KEYCLOAK_URL}/admin{path}"
@@ -121,6 +121,7 @@ def kc_api(path, method="GET", json=None):
         method,
         url,
         json=json,
+        params=params,
         headers={
             "Authorization": f"Bearer {token}",
             "Content-Type": "application/json",
