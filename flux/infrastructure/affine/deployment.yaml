@@ -85,6 +85,8 @@ spec:
           env:
             - name: AFFINE_REVISION
               value: stable
+            - name: AFFINE_SERVER_PORT
+              value: "3010"
             - name: REDIS_SERVER_HOST
               value: affine-redis.affine.svc.cluster.local
             - name: DATABASE_URL
