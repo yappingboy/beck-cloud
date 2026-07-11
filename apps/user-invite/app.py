@@ -37,6 +37,9 @@ SMTP_HOST = os.environ.get("SMTP_HOST", "smtp-relay.email.svc.cluster.local")
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "25"))
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "invites@becklab.cloud")
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://keycloak.becklab.cloud")
+KEYCLOAK_ADMIN_USER = os.environ.get("KEYCLOAK_ADMIN_USER", "admin")
+KEYCLOAK_ADMIN_PASS = os.environ.get("KEYCLOAK_ADMIN_PASS", "")
+KEYCLOAK_REALM = os.environ.get("KEYCLOAK_REALM", "homelab")
 
 
 app = Flask(__name__)
@@ -91,33 +94,101 @@ def add_to_group(username, group_id):
     )
 
 
-def set_password(username, password):
-    """Set a user's password in LLDAP.
-
-    Uses the updateUser mutation with userPassword attribute insertion.
-    This works because the admin JWT has full privileges.
-    """
-    token = get_jwt()
+# ---------------------------------------------------------------------------
+# Keycloak Admin API
+# ---------------------------------------------------------------------------
+def get_kc_admin_token():
+    """Get a Keycloak admin token via the master realm."""
     resp = http_requests.post(
-        f"{LLDAP_URL}/api/graphql",
-        json={
-            "query": """
-                mutation SetPass($id: String!, $pass: [String!]!) {
-                    updateUser(user: { id: $id, insertAttributes: [{name: "userPassword", value: $pass}] }) { ok }
-                }
-            """,
-            "variables": {"id": username, "pass": [password]},
+        f"{KEYCLOAK_URL}/realms/master/protocol/openid-connect/token",
+        data={
+            "grant_type": "password",
+            "client_id": "admin-cli",
+            "username": KEYCLOAK_ADMIN_USER,
+            "password": KEYCLOAK_ADMIN_PASS,
         },
-        headers={"Authorization": f"Bearer {token}", "Content-Type": "application/json"},
+        timeout=10,
+    )
+    resp.raise_for_status()
+    return resp.json()["access_token"]
+
+
+def kc_api(path, method="GET", json=None):
+    """Make an authenticated Keycloak Admin API call."""
+    token = get_kc_admin_token()
+    url = f"{KEYCLOAK_URL}/admin{path}"
+    resp = http_requests.request(
+        method,
+        url,
+        json=json,
+        headers={
+            "Authorization": f"Bearer {token}",
+            "Content-Type": "application/json",
+        },
         timeout=15,
     )
     resp.raise_for_status()
-    data = resp.json()
-    if "errors" in data:
-        raise Exception(f"setPassword GraphQL error: {data['errors']}")
-    result = data["data"]["updateUser"]
-    if not result.get("ok"):
-        raise Exception("setPassword returned ok=false")
+    if resp.status_code not in (200, 201, 204):
+        raise Exception(f"Keycloak API {method} {path} returned {resp.status_code}: {resp.text}")
+    return resp
+
+
+def find_kc_user(username):
+    """Find a user in the target realm by username."""
+    r = kc_api(f"/realms/{KEYCLOAK_REALM}/users", params={"username": username, "exact": True})
+    if r.status_code == 204 or (r.text.strip() and r.text.strip() != "[]"):
+        users = r.json()
+        if users:
+            return users[0]
+    return None
+
+
+def create_kc_user(username, email="", display_name=""):
+    """Create a user in Keycloak."""
+    payload = {
+        "username": username,
+        "email": email,
+        "enabled": True,
+        "emailVerified": False,
+        "credentials": [],
+    }
+    if display_name:
+        parts = display_name.split()
+        payload["firstName"] = parts[0]
+        if len(parts) > 1:
+            payload["lastName"] = " ".join(parts[1:])
+
+    r = kc_api(f"/realms/{KEYCLOAK_REALM}/users", method="POST", json=payload)
+    location = r.headers.get("Location", "")
+    user_id = location.split("/")[-1] if location else None
+    return {"id": user_id, "username": username}
+
+
+def set_password(username, password):
+    """Set a user's initial password in Keycloak.
+
+    Finds or creates the user, then sets a temporary password credential.
+    """
+    user = find_kc_user(username)
+
+    if not user:
+        try:
+            user = create_kc_user(username, "", "")
+        except Exception as e:
+            raise Exception(f"Failed to create user in Keycloak: {e}")
+
+    user_id = user["id"]
+
+    cred_path = f"/realms/{KEYCLOAK_REALM}/users/{user_id}/reset-password"
+    kc_api(
+        cred_path,
+        method="PUT",
+        json={
+            "type": "password",
+            "value": password,
+            "temporary": True,
+        },
+    )
 
 
 # ---------------------------------------------------------------------------

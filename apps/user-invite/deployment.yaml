@@ -21,8 +21,8 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: user-invite
-          image: ghcr.io/yappingboy/becklab-user-invite:v1
-          imagePullPolicy: IfNotPresent
+          image: ghcr.io/yappingboy/becklab-user-invite:v2
+          imagePullPolicy: Always
           resources:
             limits:
               memory: 256Mi
@@ -51,6 +51,13 @@ spec:
               value: "invites@becklab.cloud"
             - name: KEYCLOAK_URL
               value: "https://keycloak.becklab.cloud"
+            - name: KEYCLOAK_ADMIN_USER
+              value: "admin"
+            - name: KEYCLOAK_ADMIN_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: keycloak-admin-password
+                  key: admin-password
             - name: FLASK_SECRET_KEY
               valueFrom:
                 secretKeyRef:
