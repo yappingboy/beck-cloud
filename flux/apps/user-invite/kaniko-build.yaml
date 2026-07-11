@@ -32,9 +32,8 @@ spec:
             - --dockerfile=Dockerfile
             - --context=dir:///workspace/
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
-            - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
-            - --cache=true
-            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:v2
+            - --cache=false
             - --skip-tls-verify
           volumeMounts:
             - name: docker-config
@@ -49,11 +48,8 @@ spec:
             - sh
             - -c
             - |
-              git clone --depth=1 --sparse https://github.com/yappingboy/beck-cloud.git
-              cd beck-cloud
-              git sparse-checkout set apps/user-invite
-              cp -r apps/user-invite/* /workspace/
-              ls -la /workspace/
+              git clone --depth=1 https://github.com/yappingboy/beck-cloud.git
+              cp -r beck-cloud/apps/user-invite/* /workspace/
           volumeMounts:
             - name: workspace
               mountPath: /workspace
