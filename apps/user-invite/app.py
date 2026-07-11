@@ -38,7 +38,6 @@ SMTP_PORT = int(os.environ.get("SMTP_PORT", "25"))
 FROM_EMAIL = os.environ.get("FROM_EMAIL", "invites@becklab.cloud")
 KEYCLOAK_URL = os.environ.get("KEYCLOAK_URL", "https://keycloak.becklab.cloud")
 
-ADMIN_GROUP = "/admins"
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
@@ -268,20 +267,14 @@ def render(title, content_html):
 # ---------------------------------------------------------------------------
 @app.route("/")
 def dashboard():
-    groups = request.headers.get("X-Auth-Request-Groups", "").split(",")
-    if ADMIN_GROUP not in groups:
-        return "Forbidden", 403
     username = request.headers.get("X-Auth-Request-User", "Guest")
     return render("Dashboard", DASHBOARD_CONTENT)
 
 
 @app.route("/invite", methods=["GET"])
 def invite_get():
-    groups = request.headers.get("X-Auth-Request-Groups", "").split(",")
-    if ADMIN_GROUP not in groups:
-        return "Forbidden", 403
-
     all_groups = fetch_groups()
+    content = render_template_string(INVITE_FORM_CONTENT, groups=all_groups)
     return render("Invite User", content)
 
 
