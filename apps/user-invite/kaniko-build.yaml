@@ -30,12 +30,12 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=git://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
+            - --context=git::https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
             - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
-            - --skip-tls-verify=none
+            - --skip-tls-verify
           env:
             - name: GOOGLE_APPLICATION_CREDENTIALS
               value: "/etc/docker/cfg"  # dummy; kaniko uses .dockerconfigjson instead
