@@ -20,7 +20,37 @@ spec:
       initContainers:
         - name: affine-migration
           image: ghcr.io/toeverything/affine:stable
-          command: ['sh', '-c', 'for i in $(seq 1 60); do (echo > /dev/tcp/affine-postgres.affine.svc.cluster.local/5432) >/dev/null 2>&1 && break; echo "Waiting for postgres... ($i)"; sleep 3; done; node ./scripts/self-host-predeploy.js']
+          command:
+            - sh
+            - -c
+            - |
+              # Wait for Postgres using Node.js (dash doesn't support /dev/tcp)
+              node -e "
+                const net = require('net');
+                let attempts = 0;
+                const maxAttempts = 60;
+                function tryConnect() {
+                  attempts++;
+                  const c = new net.Socket();
+                  c.setTimeout(3000);
+                  c.on('connect', () => { c.destroy(); runMigrations(); });
+                  c.on('timeout', () => { c.destroy(); onFail(); });
+                  c.on('error', () => { onFail(); });
+                  c.connect(5432, process.env.PGHOST || 'affine-postgres.affine.svc.cluster.local');
+                }
+                function onFail() {
+                  console.log('Waiting for postgres... (' + attempts + ')');
+                  if (attempts < maxAttempts) setTimeout(tryConnect, 3000);
+                  else process.exit(1);
+                }
+                function runMigrations() {
+                  console.log('Postgres ready after ' + attempts + ' attempt(s)');
+                  const { execSync } = require('child_process');
+                  try { execSync('node ./scripts/self-host-predeploy.js', { stdio: 'inherit' }); }
+                  catch(e) { console.error('Migration failed:', e.message); process.exit(1); }
+                }
+                tryConnect();
+              "
           env:
             - name: REDIS_SERVER_HOST
               value: affine-redis.affine.svc.cluster.local
