@@ -1,6 +1,9 @@
 # Kaniko build job — builds user-invite image and pushes to GHCR.
 # Deployed by Flux alongside the rest of user-invite resources.
-# Runs once, then sits in "Completed" state.
+# Delete old job before updating: kubectl delete job build-user-invite -n toolbox --force
+#
+# NOTE: This Job uses a timestamp tag for cache-busting on every change.
+# Update the IMAGE_TAG variable below or use kustomize replacements to rotate it.
 
 ---
 apiVersion: v1
@@ -25,22 +28,6 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
-      containers:
-        - name: kaniko
-          image: gcr.io/kaniko-project/executor:v1.24.0
-          args:
-            - --dockerfile=Dockerfile
-            - --context=dir:///workspace/
-            - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
-            - --destination=ghcr.io/yappingboy/becklab-user-invite:v2
-            - --cache=false
-            - --skip-tls-verify
-          volumeMounts:
-            - name: docker-config
-              mountPath: /kaniko/.docker/
-              readOnly: true
-            - name: workspace
-              mountPath: /workspace
       initContainers:
         - name: clone-source
           image: bitnami/git:latest
@@ -51,6 +38,22 @@ spec:
               git clone --depth=1 https://github.com/yappingboy/beck-cloud.git
               cp -r beck-cloud/apps/user-invite/* /workspace/
           volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=Dockerfile
+            - --context=dir:///workspace/
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:v3.1783837566
+            - --cache=false
+            - --skip-tls-verify
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker/
+              readOnly: true
             - name: workspace
               mountPath: /workspace
       restartPolicy: Never
