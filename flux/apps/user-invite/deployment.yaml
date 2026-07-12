@@ -50,6 +50,8 @@ spec:
             - name: FROM_EMAIL
               value: "invites@becklab.cloud"
             - name: KEYCLOAK_URL
+              value: "http://keycloak.identity.svc.cluster.local:8080"
+            - name: KEYCLOAK_EXTERNAL_URL
               value: "https://keycloak.becklab.cloud"
             - name: KEYCLOAK_ADMIN_USER
               value: "admin"
