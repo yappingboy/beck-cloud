@@ -1,6 +1,6 @@
 # Networking & Ingress Deep Dive
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Scope:** Traefik routing, SSO middleware chains, TLS, network policies
 
 ---
@@ -111,17 +111,18 @@ User → Traefik IngressRoute with sso-*-chain middleware
 
 | LLDAP Group | Access Level | Services |
 |------------|-------------|----------|
-| `/admins` | Admin tier | Traefik dashboard, Grafana, Hubble, Rancher, Sonarr, Radarr, Prowlarr, Bazarr, Wazuh, OpenNebula Sunstone |
+| `/admins` | Admin tier | Traefik dashboard, Grafana, Hubble, Rancher, Sonarr, Radarr, Prowlarr, Bazarr, Wazuh, OpenNebula Sunstone, Affine, Directus, Silex |
 | `/media` | Media tier | Jellyfin, Jellyseerr |
 
 ---
 
 ## IngressRoute Inventory
 
-### Currently Active Routes
+### Currently Active Routes (as of 2026-07-12)
 
 | Route Name | Namespace | Host | Service:Port | SSO Middleware | TLS Secret |
 |-----------|-----------|------|-------------|---------------|------------|
+| affine | affine | `affine.becklab.cloud` | affine-server:3010 | sso-admin-chain | affine-tls |
 | bitwarden-secrets-manager | bitwarden | `bw.becklab.cloud` | bitwarden-secrets-manager:80 | None | bw-tls |
 | directus | cms | `cms.becklab.cloud` | directus:8055 | sso-admin-chain | cms-tls |
 | grafana | monitoring | `grafana.becklab.cloud` | kube-prometheus-stack-grafana:80 | sso-admin-chain | grafana-tls |
@@ -180,6 +181,14 @@ No custom CiliumNetworkPolicies are currently visible — relying on standard na
 - **Internal:** CoreDNS 1.12.0 handles cluster.local service discovery
 - **External:** Custom domains under `*.becklab.cloud` managed externally, pointing to bare metal IP
 - **Custom CoreDNS config** deployed via Flux (`flux/infrastructure/configs/coredns-custom.yaml`) for internal resolution overrides
+
+---
+
+## Known Issues (as of 2026-07-12)
+
+| Issue | Severity | Notes |
+|-------|----------|-------|
+| oauth2-proxy pods in CrashLoopBackOff | 🔴 High | Both admin and media SSO chains are non-functional — all SSO-protected routes return errors. Keycloak is running but the proxy layer can't authenticate against it. Check `oauth2-proxy` config/credentials for misalignment with current Keycloak client secrets. |
 
 ---
 

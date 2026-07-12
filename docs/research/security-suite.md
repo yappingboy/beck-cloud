@@ -1,7 +1,8 @@
 # BeckCloud Security Suite — Comprehensive Plan
 
 **Authored:** 2026-07-08 by Nova (AI Sysadmin)  
-**Status:** Planned — not yet deployed  
+**Last updated:** 2026-07-12
+**Status:** Partially deployed — Wazuh + Trivy Operator active; Falco + Suricata still planned  
 **Namespace:** `security`  
 **GitOps path:** `flux/infrastructure/security/`  
 **Last audited against current sources:** 2026-07-08
@@ -13,6 +14,15 @@
 BeckCloud's security stack provides defense-in-depth across four complementary layers: runtime host monitoring, network traffic inspection, centralized log correlation and SIEM, and continuous vulnerability assessment. All four components operate within the `security` namespace and are managed through Flux CD GitOps alongside the rest of the cluster.
 
 The suite is purpose-built for a two-node K3s homelab running on OpenNebula VMs — resource-aware, open-source only, and designed to integrate with existing Prometheus/Grafana/Alertmanager in `monitoring` and Keycloak SSO in `identity`.
+
+### Current Deployment Status (2026-07-12)
+
+| Component | Status | Notes |
+|-----------|--------|-------|
+| Wazuh (Manager + Indexer + Dashboard + Agents) | ✅ Deployed | Active in `security` namespace. Manager pods have high restart counts (641+) — investigating resource/config issues. No external IngressRoute yet.
+| Trivy Operator | ✅ Deployed | Active in `trivy-system` namespace. Continuous scanning operational.
+| Falco (HIDS) | 🔲 Planned | Previous deployment failed with eBPF driver crashes under KVM/Cilium. Not yet resolved.
+| Suricata (IDS) | 🔲 Planned | Not deployed yet.
 
 ---
 
@@ -188,16 +198,16 @@ High-severity findings from any tool can trigger Alertmanager notifications to c
 
 ## Deployment Phases
 
-### Phase 1: Foundation (Week 1)
-- [ ] Create/update `security` namespace with proper labels and network policies
-- [ ] Deploy Wazuh stack first — it's the SIEM hub that everything feeds into
+### Phase 1: Foundation ✅ COMPLETE
+- [x] Create/update `security` namespace with proper labels and network policies
+- [x] Deploy Wazuh stack first — it's the SIEM hub that everything feeds into
 - [ ] Configure Wazuh dashboard ingress (`wazuh.becklab.cloud`, admin SSO, TLS via cert-manager)
 - [ ] Add Wazuh HelmRepository to Flux sources
 - [ ] Verify Wazuh dashboard is accessible and authenticated
 
-### Phase 2: HIDS + VAS (Week 2)
-- [ ] Deploy Trivy Operator — lightweight, immediate value, no driver dependencies
-- [ ] Configure daily scan schedule and severity thresholds
+### Phase 2: HIDS + VAS — PARTIAL
+- [x] Deploy Trivy Operator — lightweight, immediate value, no driver dependencies
+- [x] Configure daily scan schedule and severity thresholds
 - [ ] Deploy Falco — resolve eBPF/kmod driver issue from previous attempt
 - [ ] Wire Falco alerts to Wazuh manager via syslog or JSON output
 

@@ -1,6 +1,6 @@
 # BeckCloud System Overview
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Git repo:** `ssh://git@github.com/yappingboy/beck-cloud` (main branch)  
 **Docs author:** Nova (AI Sysadmin) — auto-generated from live cluster data
 
@@ -8,13 +8,13 @@
 
 ## Executive Summary
 
-BeckCloud is a self-hosted private cloud platform running on bare metal hardware, virtualized through OpenNebula CE 7.2, hosting a K3s Kubernetes cluster managed entirely via Flux CD GitOps. It provides SSO-authenticated access to ~40 services across media management, infrastructure monitoring, password vaulting, CMS, email relay, gaming, and security — all exposed through Traefik with Let's Encrypt TLS.
+BeckCloud is a self-hosted private cloud platform running on bare metal hardware, virtualized through OpenNebula CE 7.2, hosting a K3s Kubernetes cluster managed entirely via Flux CD GitOps. It provides SSO-authenticated access to ~40 services across media management, infrastructure monitoring, password vaulting, CMS, email relay, gaming, security, and collaborative wiki — all exposed through Traefik with Let's Encrypt TLS.
 
 ### Key Numbers
 - **2 K3s nodes** (1 master + 1 worker) on Ubuntu 24.04
 - **Kubernetes v1.32.0+k3s1** with Cilium CNI
 - **~45 deployments**, ~30 StatefulSets/DaemonSets, all healthy
-- **8 HelmReleases** (cert-manager, Traefik, Cilium, Prometheus, Flux, Velero, oauth2-proxy ×2)
+- **8 HelmReleases** (cert-manager, Traefik, Cilium, Prometheus, Velero, oauth2-proxy ×2)
 - **5 Kustomizations** applying manifests from `flux/infrastructure` and `flux/apps`
 - **30+ TLS certificates** managed by cert-manager via Let's Encrypt production
 - **5 Velero backup schedules** protecting identity, security, media, torrent namespaces + full weekly cluster backups
@@ -40,8 +40,10 @@ Traefik v3.4.3 (NodePort :80/:443) ← Cert-manager + Let's Encrypt
       ├── identity:     Keycloak 26.0, LLDAP, oauth2-proxy ×2, Redis
       ├── media:        Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, qBittorrent, etc.
       ├── monitoring:   Prometheus + Grafana (kube-prometheus-stack v65.5.0)
+      ├── security:     Wazuh (SIEM), Trivy Operator (VAS)
       ├── bitwarden:    Vaultwarden (BSM)
       ├── cms:          Directus 11
+      ├── affine:       Affine wiki/knowledge base (new, ~2026-07-11)
       ├── velero:       Velero v1.15.0 + MinIO (backup storage)
       └── ... (see namespace map below)
         │
@@ -86,28 +88,31 @@ Traefik v3.4.3 (NodePort :80/:443) ← Cert-manager + Let's Encrypt
 
 ### Namespaces & Purpose
 
-| Namespace | Purpose | Key Services |
-|-----------|---------|--------------|
-| `bitwarden` | Password vaulting | Vaultwarden BSM (vaultwarden/server:latest) |
-| `cert-manager` | TLS certificate management | cert-manager v1.16.5 + cainjector + webhook |
-| `cms` | Headless CMS | Directus 11 |
-| `email` | Outbound email relay | Postfix Relay (Mailgun) |
-| `flux-system` | GitOps controller | Flux CD source/helm/kustomize/notification controllers |
-| `gaming` | Game servers | Crafty Controller (Minecraft) — NodePort 25565:31337 |
-| `homepage` | Service dashboard | Homepage v1.2.3 |
-| `identity` | Authentication & SSO | Keycloak 26.0, LLDAP, oauth2-proxy ×2, Redis, logout-page, sso-redirect, user-invite |
-| `kube-system` | Core K8s + CNI | Cilium operator/envoy/relay/UI, CoreDNS, local-path-provisioner, metrics-server |
-| `landing` | Landing page & design tools | Custom landing page (Node 22), Silex 3.6.6 |
-| `llm` | LLM inference | llama.cpp ExternalName → 172.16.0.7:8088, rho |
-| `media` | Media stack | Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, nzbget, SABnzbd, qBittorrent+Gluetun, Homebox, Tdarr, Recyclarr |
-| `monitoring` | Observability | kube-prometheus-stack v65.5.0 (Prometheus + Grafana + Alertmanager) |
-| `nvidia` | GPU support | NVIDIA Device Plugin |
-| `opennebula` | Hypervisor UI proxy | OpenNebula Sunstone |
-| `security` | Security monitoring | Wazuh |
-| `spotweb` | NZB search frontend | SpotWeb + MariaDB |
-| `torrent` | Torrent downloads | qBittorrent + Gluetun VPN |
-| `traefik` | Ingress controller | Traefik v3.4.3 |
-| `velero` | Backup infrastructure | Velero v1.15.0, MinIO (200Gi local PV) |
+| Namespace | Purpose | Key Services | Status |
+|-----------|---------|--------------|--------|
+| `affine` | Collaborative wiki/knowledge base | Affine server, PostgreSQL, Redis | ✅ Active (new ~2026-07-11) |
+| `bitwarden` | Password vaulting | Vaultwarden BSM (vaultwarden/server:latest) | ✅ Active |
+| `cert-manager` | TLS certificate management | cert-manager v1.16.5 + cainjector + webhook | ✅ Active |
+| `cms` | Headless CMS | Directus 11 | ✅ Active |
+| `email` | Outbound email relay | Postfix Relay (Mailgun) | ⚠️ Active, pod issues |
+| `flux-system` | GitOps controller | Flux CD source/helm/kustomize/notification controllers | ✅ Active |
+| `gaming` | Game servers | Crafty Controller (Minecraft) — NodePort 25565:31337 | ✅ Active |
+| `homepage` | Service dashboard | Homepage v1.2.3 | ✅ Active |
+| `identity` | Authentication & SSO | Keycloak 26.0, LLDAP, oauth2-proxy ×2, Redis, logout-page, sso-redirect, user-invite | ⚠️ Partial — oauth2-proxies in CrashLoopBackOff |
+| `kube-system` | Core K8s + CNI | Cilium operator/envoy/relay/UI, CoreDNS, local-path-provisioner, metrics-server | ✅ Active |
+| `landing` | Landing page & design tools | Custom landing page (Node 22), Silex 3.6.6 | ✅ Active |
+| `llm` | LLM inference | llama.cpp ExternalName → 172.16.0.7:8088, rho | ✅ Active |
+| `media` | Media stack | Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, nzbget, SABnzbd, qBittorrent+Gluetun, Homebox, Tdarr, Recyclarr | ⚠️ Partial — some pods Unknown |
+| `monitoring` | Observability | kube-prometheus-stack v65.5.0 (Prometheus + Grafana + Alertmanager) | ✅ Active |
+| `nvidia` | GPU support | NVIDIA Device Plugin | ✅ Active |
+| `opennebula` | Hypervisor UI proxy | OpenNebula Sunstone | ✅ Active |
+| `security` | Security monitoring | Wazuh (Manager, Indexer, Dashboard, Agents) | ✅ Active |
+| `spotweb` | NZB search frontend | SpotWeb + MariaDB | ⚠️ Pod issues |
+| `toolbox` | Build utilities | Kaniko build pods (user-invite builds) | ✅ Active |
+| `torrent` | Torrent downloads | qBittorrent + Gluetun VPN | ⚠️ Partial — pod Unknown |
+| `traefik` | Ingress controller | Traefik v3.4.3 | ✅ Active |
+| `trivy-system` | Vulnerability scanning | Trivy Operator (continuous image/cluster scanning) | ✅ Active (new ~2026-07-09) |
+| `velero` | Backup infrastructure | Velero v1.15.0, MinIO (200Gi local PV) | ✅ Active |
 
 ### Service Exposure Map
 
@@ -115,6 +120,7 @@ Currently exposed via Traefik IngressRoutes:
 
 | URL | Namespace | Service | SSO Tier |
 |-----|-----------|---------|----------|
+| `affine.becklab.cloud` | affine | affine-server:3010 | Admin SSO |
 | `bw.becklab.cloud` | bitwarden | bitwarden-secrets-manager:80 | None (Vaultwarden auth) |
 | `cms.becklab.cloud` | cms | directus:8055 | Admin SSO |
 | `grafana.becklab.cloud` | monitoring | kube-prometheus-stack-grafana:80 | Admin SSO |
@@ -145,7 +151,7 @@ All managed by ClusterIssuer `letsencrypt-prod`. Notable certificates:
 - Infrastructure: traefik-dashboard-tls, grafana-tls, hubble-tls, one-tls
 - Identity: keycloak-tls, lldap-tls, logout-tls, oauth2-proxy-tls, oauth2-proxy-media-tls
 - Media: jellyfin-tls, sonarr-tls, radarr-tls, bazarr-tls, prowlarr-tls, etc. (certificates exist but most IngressRoutes are not yet deployed)
-- Applications: bw-tls, cms-tls, homepage-tls, crafty-tls, spotweb-tls
+- Applications: bw-tls, cms-tls, homepage-tls, crafty-tls, spotweb-tls, affine-tls
 
 ---
 
@@ -164,7 +170,7 @@ All managed by ClusterIssuer `letsencrypt-prod`. Notable certificates:
 
 ### Persistent Volume Claims (local-path)
 
-~30 PVCs on local-path provisioner for service configs: sonarr-config, radarr-config, jellyfin-config, keycloak-postgresql (10Gi), lldap-data (5Gi), prometheus DB (50Gi), grafana data (10Gi), etc.
+~30 PVCs on local-path provisioner for service configs: sonarr-config, radarr-config, jellyfin-config, keycloak-postgresql (10Gi), lldap-data (5Gi), prometheus DB (50Gi), grafana data (10Gi), etc. See [Storage & Backups Deep Dive](storage-backups.md) for the full list.
 
 ---
 
@@ -189,7 +195,6 @@ All managed by ClusterIssuer `letsencrypt-prod`. Notable certificates:
 ### Source
 - **GitRepo:** `flux-system/flux-system` → `ssh://git@github.com/yappingboy/beck-cloud`
 - **Sync interval:** 1 minute
-- **Last applied revision:** `main@sha1:548ee9474b6eb9603017d3dea76deed37b97c7cc`
 
 ### Kustomizations (5)
 
@@ -248,6 +253,19 @@ all:
 
 ---
 
+## Security Stack
+
+| Component | Namespace | Purpose | Status |
+|-----------|-----------|---------|--------|
+| Wazuh Manager + Indexer | security | SIEM/XDR hub | ✅ Deployed |
+| Wazuh Dashboard | security | Web UI for alerts/correlation | ✅ Deployed (no IngressRoute yet) |
+| Wazuh Agents | security | Host monitoring agents (DaemonSet) | ✅ Active on both nodes |
+| Trivy Operator | trivy-system | Continuous vulnerability scanning | ✅ Deployed |
+
+> See [Security Suite Plan](security-suite.md) for the full planned architecture including Falco and Suricata.
+
+---
+
 ## Service Inventory by Image
 
 ### Infrastructure Services
@@ -275,41 +293,51 @@ all:
 ### Identity & SSO
 | Deployment | Image | Ready/Total |
 |-----------|-------|-------------|
-| keycloak | quay.io/keycloak/keycloak:26.0 | 1/1 |
+| keycloak | quay.io/keycloak/keycloak:26.0 | ⚠️ issues |
 | keycloak-postgresql (STS) | — | 1/1 |
 | lldap | lldap/lldap:stable | 1/1 |
-| oauth2-proxy | quay.io/oauth2-proxy/oauth2-proxy:v7.6.0 | 1/1 |
-| oauth2-proxy-media | quay.io/oauth2-proxy/oauth2-proxy:v7.6.0 | 1/1 |
+| oauth2-proxy | quay.io/oauth2-proxy/oauth2-proxy:v7.6.0 | ❌ CrashLoopBackOff |
+| oauth2-proxy-media | quay.io/oauth2-proxy/oauth2-proxy:v7.6.0 | ❌ CrashLoopBackOff |
 | redis (STS) | — | 1/1 |
 | logout-page | nginx:alpine | 1/1 |
 | sso-redirect | nginx:1.27-alpine | 1/1 |
-| user-invite | ghcr.io/yappingboy/becklab-user-invite:v1 | 1/1 |
+| user-invite | ghcr.io/yappingboy/becklab-user-invite:v1 | 1/1 (one pod ErrImagePull) |
 
 ### Media Stack
 | Deployment | Image | Ready/Total |
 |-----------|-------|-------------|
-| jellyfin | lscr.io/linuxserver/jellyfin:latest | 1/1 |
+| jellyfin | lscr.io/linuxserver/jellyfin:latest | ⚠️ Unknown |
 | sonarr | lscr.io/linuxserver/sonarr:latest | 1/1 |
 | radarr | lscr.io/linuxserver/radarr:latest | 1/1 |
 | prowlarr | lscr.io/linuxserver/prowlarr:latest | 1/1 |
 | bazarr | lscr.io/linuxserver/bazarr:latest | 1/1 |
 | nzbget | lscr.io/linuxserver/nzbget:latest | 1/1 |
 | sabnzbd | lscr.io/linuxserver/sabnzbd:latest | 1/1 |
-| qbit-gluetun (torrent) | lscr.io/linuxserver/qbittorrent:latest | 1/1 |
+| qbit-gluetun (torrent) | lscr.io/linuxserver/qbittorrent:latest | ⚠️ Unknown |
 | jellyseerr | seerr/seerr:latest | 1/1 |
 | homebox | ghcr.io/sysadminsmedia/homebox:latest | 1/1 |
-| tdarr | ghcr.io/haveagitgat/tdarr:latest | 1/1 |
+| tdarr | ghcr.io/haveagitgat/tdarr:latest | ⚠️ Unknown |
 
 ### Applications
 | Deployment | Image | Ready/Total |
 |-----------|-------|-------------|
-| bitwarden-secrets-manager | vaultwarden/server:latest | 1/1 |
+| bitwarden-secrets-manager | vaultwarden/server:latest | 0/1 (Running but not ready) |
 | directus | directus/directus:11 | 1/1 |
 | homepage | ghcr.io/gethomepage/homepage:latest | 1/1 |
-| crafty (Minecraft) | registry.gitlab.com/crafty-controller/crafty-4:latest | 1/1 |
-| spotweb | jgeusebroek/spotweb:latest | 1/1 |
+| crafty (Minecraft) | registry.gitlab.com/crafty-controller/crafty-4:latest | ⚠️ Running but not ready |
+| spotweb | jgeusebroek/spotweb:latest | ⚠️ issues |
 | silex | silexlabs/silex:3.6.6 | 1/1 |
 | landing-page | node:22-alpine | 1/1 |
+
+### Security
+| Deployment | Image | Ready/Total |
+|-----------|-------|-------------|
+| wazuh-manager-master-0 | — | 1/1 |
+| wazuh-manager-worker-0,1 | — | 1/1 each |
+| wazuh-indexer-0 | — | 1/1 |
+| wazuh-dashboard | — | 1/1 |
+| wazuh-agent (DaemonSet) | — | 2/2 nodes |
+| trivy-operator | — | 1/1 + scan jobs running |
 
 ### Monitoring
 | Deployment | Image | Ready/Total |
@@ -337,14 +365,16 @@ all:
 
 ---
 
-## Security Notes
+## Known Issues (as of 2026-07-12)
 
-- **Secrets encrypted with SOPS** (age key management) — see `.sops.yaml` and `ansible/docs/SOPS-ROTATION.md`
-- **TLS everywhere** via cert-manager + Let's Encrypt production CA
-- **SSO enforced** on admin-facing services through Keycloak → LLDAP federation
-- **SSH access** requires key-based auth; worker only reachable via server ProxyJump
-- **No public NodePort exposure** except Traefik (:80/:443) and Minecraft (:25565→:31337)
+| Issue | Namespace | Severity | Notes |
+|-------|-----------|----------|-------|
+| oauth2-proxy CrashLoopBackOff | identity | 🔴 High | Both admin and media tiers crashing — SSO broken for all external services |
+| user-invite ErrImagePull | identity | 🟡 Medium | One old pod failing to pull image; newer revision running fine |
+| Multiple pods Unknown status | various | 🟡 Medium | Likely worker node communication issue (pods on ip-192-168-100-11) |
+| Wazuh manager pods restarting frequently | security | 🟡 Medium | Master pod has 641+ restarts; workers have 643+ restarts |
+| SpotWeb unstable | spotweb | 🟢 Low | Pod shows as Running but not Ready, high restart count |
 
 ---
 
-*End of system overview. Generated from live cluster data 2026-07-08.*
+*End of system overview. Updated from live cluster data 2026-07-12.*

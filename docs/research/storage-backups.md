@@ -1,6 +1,6 @@
 # Storage & Backups Deep Dive
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Scope:** Persistent volumes, storage classes, Velero backup strategy, MinIO object storage
 
 ---

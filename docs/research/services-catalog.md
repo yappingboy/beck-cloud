@@ -1,7 +1,33 @@
 # Services Catalog — Detailed Reference
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Scope:** Every running service with operational details, ports, config locations, and access patterns
+
+---
+
+## Affine Namespace (`affine`)
+
+> New deployment ~2026-07-11. Collaborative wiki/knowledge base.
+
+### Affine Server
+| Property | Value |
+|----------|-------|
+| Image | (see Flux manifest) |
+| Port | 3010/TCP |
+| URL | `affine.becklab.cloud` (admin SSO) |
+| Status | ✅ Running, IngressRoute active |
+
+### Affine PostgreSQL
+| Property | Value |
+|----------|-------|
+| Type | StatefulSet |
+| Status | ⚠️ Restarting (6 restarts in 36h) |
+
+### Affine Redis
+| Property | Value |
+|----------|-------|
+| Type | Deployment/StatefulSet |
+| Status | ✅ Running |
 
 ---
 
@@ -18,6 +44,7 @@
 | Users DN | `ou=people,dc=becklab,dc=cloud` |
 | Username attribute | `uid` |
 | Edit mode | READ_ONLY (users managed in LLDAP) |
+| Status | ⚠️ Running but showing readiness issues (12 restarts in 3d) |
 
 ### LLDAP (User Directory)
 | Property | Value |
@@ -37,6 +64,7 @@
 | Session store | Redis (local STS, 1 GiB PVC) |
 | Auth endpoint | `/oauth2/auth` (ForwardAuth target for Traefik) |
 | Group requirement | `/admins` |
+| Status | ❌ CrashLoopBackOff — SSO broken |
 
 ### oauth2-proxy-media (Media Tier)
 | Property | Value |
@@ -46,11 +74,12 @@
 | Provider | Keycloak OIDC (`homelab` realm) |
 | Session store | Redis (shared with admin tier) |
 | Group requirement | `/media` |
+| Status | ❌ CrashLoopBackOff — SSO broken |
 
 ### Supporting Services
 - **logout-page** — nginx:alpine serving logout landing page
 - **sso-redirect** — nginx:1.27-alpine, catches 401 errors and redirects to Keycloak login
-- **user-invite** — Custom Python app (`ghcr.io/yappingboy/becklab-user-invite:v1`) for user provisioning
+- **user-invite** — Custom Python app (`ghcr.io/yappingboy/becklab-user-invite:v1`) for user provisioning (one old pod ErrImagePull)
 
 ---
 
@@ -65,6 +94,7 @@
 | Port | 8096/TCP |
 | Config PVC | 20 GiB local-path |
 | Libraries | media-anime (45T), media-movies (45T), media-shows (45T) via LVM PV mounts |
+| Status | ⚠️ Unknown status |
 
 ### Sonarr (TV Show Management)
 | Property | Value |
@@ -120,6 +150,7 @@
 | Port | 8265/TCP |
 | Config PVC | 5 GiB local-path |
 | Purpose | Batch transcode media files to optimal formats |
+| Status | ⚠️ Unknown status |
 
 ### Jellyseerr (Request Management)
 | Property | Value |
@@ -149,6 +180,7 @@
 | Config PVC | 5 GiB local-path |
 | Download dir | torrent-downloads-lvm (5 TiB) |
 | VPN | Gluetun for anonymized torrenting |
+| Status | ⚠️ Unknown status, 1/2 containers ready |
 
 ---
 
@@ -170,6 +202,30 @@ Deploys the full Prometheus monitoring stack:
 - **Grafana:** `grafana.becklab.cloud` (admin SSO)
 - **Hubble UI:** `hubble.becklab.cloud` (admin SSO, network visibility)
 - **Prometheus + Alertmanager:** No IngressRoutes — internal only (TLS certs exist: prometheus-tls, alertmanager-tls)
+
+---
+
+## Security Namespace (`security`)
+
+### Wazuh Stack
+| Component | Type | Details |
+|-----------|------|---------|
+| wazuh-manager-master-0 | StatefulSet | SIEM manager master node (high restart count — 641+) |
+| wazuh-manager-worker-0,1 | StatefulSet | Manager worker nodes (also high restart counts) |
+| wazuh-indexer-0 | StatefulSet | OpenSearch indexer for alert storage |
+| wazuh-dashboard | Deployment | Web UI — no IngressRoute yet (planned: `wazuh.becklab.cloud`) |
+| wazuh-agent | DaemonSet | Host monitoring agents on both nodes |
+
+> **Note:** Wazuh is deployed but not fully stable. Manager pods have very high restart counts suggesting resource or configuration issues. No external IngressRoute yet — planned for admin SSO tier. See [Security Suite Plan](security-suite.md).
+
+### Trivy Operator
+| Property | Value |
+|----------|-------|
+| Namespace | `trivy-system` (separate from security) |
+| Purpose | Continuous vulnerability scanning of container images and cluster configs |
+| Scan mode | On pod creation + daily scheduled rescans |
+| Output | Kubernetes SecurityReports CRDs, ComplianceReports CRDs, SBOMs |
+| Status | ✅ Operator running, scan jobs active |
 
 ---
 
@@ -267,6 +323,18 @@ Deploys the full Prometheus monitoring stack:
 | Database | MariaDB via StatefulSet (5 GiB PVC) |
 | Config PVC | 1 GiB local-path |
 | Purpose | Newznab search frontend for NZB indexing |
+| Status | ⚠️ Pod Running but not Ready, high restart count (25) |
+
+---
+
+## Toolbox Namespace (`toolbox`)
+
+### Build Containers
+| Property | Value |
+|----------|-------|
+| Purpose | Kaniko build pods for in-cluster image builds |
+| Current work | `build-user-invite` — building user-invite app images to GHCR |
+| Pattern | Ephemeral pods, created as needed |
 
 ---
 
@@ -301,12 +369,6 @@ See [Storage & Backups Deep Dive](storage-backups.md) for full details.
 - **Velero** v1.15.0 — 5 backup schedules
 - **MinIO** — S3-compatible storage backend, 200 GiB LVM PV
 - **node-agent** DaemonSet — filesystem backup on both nodes
-
----
-
-## Rancher Namespace (`rancher`)
-
-HelmRelease exists but no active pods visible. May be planned or disabled.
 
 ---
 

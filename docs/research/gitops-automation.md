@@ -1,6 +1,6 @@
 # GitOps & Automation Deep Dive
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Scope:** Flux CD pipeline, Ansible playbooks, SOPS encryption, CI/CD patterns
 
 ---
@@ -91,6 +91,9 @@ flux/apps/kustomization.yaml  ← apps kustomization
 | kube-prometheus-stack | monitoring | kube-prometheus-stack | 65.5.0 | Prometheus Community repo | ✅ Ready, 46d |
 | traefik | traefik | traefik | 36.3.0 | Traefik official repo | ✅ Ready, 46d |
 | velero | velero | velero | 8.0.0 | VMware Tanzu repo | ✅ Ready, 38d |
+
+| `affine` | Collaborative wiki/knowledge base | Affine server, PostgreSQL, Redis | ✅ Active |
+| `trivy-system` | Vulnerability scanning | Trivy Operator + scan jobs | ✅ Active |
 
 ### Disabled/Unused Components
 

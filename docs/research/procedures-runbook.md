@@ -1,7 +1,109 @@
 # Procedures & Runbook
 
-**Last audited:** 2026-07-08  
+**Last audited:** 2026-07-12  
 **Scope:** Operational procedures, common tasks, troubleshooting patterns
+
+---
+
+## Post-Deploy Checklist (Current Services)
+
+*Consolidated from the legacy `docs/POST-DEPLOY-CHECKLIST.md`.
+Updated to reflect current service state as of 2026-07-12.*
+
+### DNS Records
+
+All externally exposed services need A records pointing to your cluster public IP:
+
+```
+affine.becklab.cloud    -> <YOUR_PUBLIC_IP>
+bw.becklab.cloud        -> <YOUR_PUBLIC_IP>
+cms.becklab.cloud       -> <YOUR_PUBLIC_IP>
+grafana.becklab.cloud   -> <YOUR_PUBLIC_IP>
+hubble.becklab.cloud    -> <YOUR_PUBLIC_IP>
+one.becklab.cloud       -> <YOUR_PUBLIC_IP>
+silex.becklab.cloud     -> <YOUR_PUBLIC_IP>
+traefik.becklab.cloud   -> <YOUR_PUBLIC_IP>
+```
+
+> Media services (jellyfin, sonarr, etc.) have TLS certificates but no IngressRoutes yet.
+> DNS records for those can be added when routes are deployed.
+
+### Verify Deployment
+
+```bash
+# Check all pods across namespaces
+kubectl get pods -A
+
+# Check specific namespaces
+kubectl get pods -n identity    # Keycloak, LLDAP, oauth2-proxy ×2, Redis
+kubectl get pods -n media       # Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, etc.
+kubectl get pods -n monitoring  # Prometheus stack, Grafana
+kubectl get pods -n security    # Wazuh stack, agents
+kubectl get pods -n trivy-system # Trivy Operator + scan jobs
+kubectl get pods -n affine      # Affine wiki (new)
+kubectl get pods -n bitwarden   # Vaultwarden BSM
+kubectl get pods -n cms         # Directus
+```
+
+### Check IngressRoutes
+
+```bash
+kubectl get ingressroute -A
+```
+
+Expected routes:
+| Route | Namespace |
+|-------|-----------|
+| affine | affine |
+| bitwarden-secrets-manager | bitwarden |
+| directus | cms |
+| grafana | monitoring |
+| hubble-ui | monitoring |
+| opennebula | opennebula |
+| traefik-dashboard-https | traefik |
+| silex | landing |
+
+### First-Time Setup
+
+| Service | URL | Initial Action |
+|---------|-----|----------------|
+| Affine | https://affine.becklab.cloud | SSO login (admin tier), create workspace |
+| Bitwarden BSM | https://bw.becklab.cloud | Create admin account, set up projects |
+| Directus | https://cms.becklab.cloud | SSO login, configure collections |
+| Grafana | https://grafana.becklab.cloud | SSO login (admin tier) |
+| Hubble UI | https://hubble.becklab.cloud | SSO login, view network map |
+| OpenNebula Sunstone | https://one.becklab.cloud | SSO login |
+| Silex | https://silex.becklab.cloud | SSO login, run setup wizard if first time |
+| Traefik Dashboard | https://traefik.becklab.cloud | SSO login (admin tier) |
+
+### SOPS Key Management
+
+The SOPS age private key lives at:
+```
+/root/beck-cloud/.sops.agekey
+```
+
+Copy to your workstation for future secret edits:
+```bash
+scp root@becklab:/root/beck-cloud/.sops.agekey ~/.config/sops/age/becklab.agekey
+```
+
+### Email Deliverability (Postfix Relay)
+
+The `email` namespace runs a Postfix relay via Mailgun. No full mail server.
+For services that send email through the cluster:
+
+1. **SPF record** — Add TXT record for `becklab.cloud`:
+   ```
+   v=spf1 include:mailgun.org ~all
+   ```
+2. **DMARC record** — Add TXT record for `_dmarc.becklab.cloud`:
+   ```
+   v=DMARC1; p=none; rua=admin@becklab.cloud
+   ```
+
+> The legacy Mailu setup (full email server with IMAP/SMTP) was removed.
+> Current setup is outbound-only relay via Mailgun.
 
 ---
 
