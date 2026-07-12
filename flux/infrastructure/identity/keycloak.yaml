@@ -97,10 +97,10 @@ spec:
           resources:
             limits:
               cpu: "2"
-              memory: 2Gi
+              memory: 4Gi
             requests:
               cpu: 200m
-              memory: 512Mi
+              memory: 1Gi
           env:
             - name: KC_DB
               value: postgres
@@ -133,6 +133,12 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+          startupProbe:
+            httpGet:
+              path: /health/ready
+              port: 8080
+            failureThreshold: 60
+            periodSeconds: 5
           readinessProbe:
             httpGet:
               path: /health/ready
