@@ -173,20 +173,40 @@ def create_kc_user(username, email="", display_name=""):
     return {"id": user_id, "username": username}
 
 
-def set_password(username, password):
+def set_password(username, password, first_name="", last_name=""):
     """Set a user's initial password in Keycloak.
 
-    Finds or creates the user, then sets a temporary password credential.
+    Finds or creates the user, ensures firstName/lastName are set,
+    then sets a temporary password credential.
     """
     user = find_kc_user(username)
 
     if not user:
         try:
-            user = create_kc_user(username, "", "")
+            display_name = f"{first_name} {last_name}".strip() or ""
+            user = create_kc_user(username, "", display_name)
         except Exception as e:
             raise Exception(f"Failed to create user in Keycloak: {e}")
 
     user_id = user["id"]
+
+    # Ensure firstName/lastName are set - LDAP-synced users may be missing these,
+    # and Keycloak requires both for login to work
+    needs_update = False
+    update_payload = {}
+    if not user.get("firstName"):
+        update_payload["firstName"] = first_name or username.capitalize()
+        needs_update = True
+    if not user.get("lastName"):
+        update_payload["lastName"] = last_name or "User"
+        needs_update = True
+
+    if needs_update:
+        kc_api(
+            f"/realms/{KEYCLOAK_REALM}/users/{user_id}",
+            method="PUT",
+            json=update_payload,
+        )
 
     cred_path = f"/realms/{KEYCLOAK_REALM}/users/{user_id}/reset-password"
     kc_api(
@@ -314,8 +334,8 @@ INVITE_FORM_CONTENT = """\
   <label class="lbl" for="email">Email Address</label>
   <input type="email" id="email" name="email" required placeholder="jdoe@example.com">
 
-  <label class="lbl" for="display_name">Full Name (optional)</label>
-  <input type="text" id="display_name" name="display_name" placeholder="Jane Doe">
+  <label class="lbl" for="display_name">First and Last Name *</label>
+  <input type="text" id="display_name" name="display_name" required placeholder="Jane Doe">
 
   <label class="lbl">Groups</label>
   <div class="cbs">
@@ -365,7 +385,19 @@ def invite_post():
     selected_gids = request.form.getlist("groups")
 
     if not username or not email:
-        flash("Username and email are required.", "err")
+        flash("Username, email, and full name are required.", "err")
+        return redirect(url_for("invite_get"))
+
+    if not display_name:
+        flash("Please enter the user's first and last name (required for Keycloak login).", "err")
+        return redirect(url_for("invite_get"))
+
+    name_parts = display_name.split(maxsplit=1)
+    first_name = name_parts[0]
+    last_name = name_parts[1] if len(name_parts) > 1 else ""
+
+    if not last_name:
+        flash("Please enter both a first and last name (e.g. 'Jane Doe').", "err")
         return redirect(url_for("invite_get"))
 
     if not re.match(r"^[a-z0-9][a-z0-9._-]{1,38}$", username):
@@ -377,7 +409,7 @@ def invite_post():
     temp_pass = "".join(secrets.choice(alphabet) for _ in range(16))
 
     try:
-        create_user(username, email, display_name or username)
+        create_user(username, email, display_name)
     except Exception as e:
         msg = str(e).lower()
         if "already" in msg or "duplicate" in msg or "exists" in msg:
@@ -387,7 +419,7 @@ def invite_post():
         return redirect(url_for("invite_get"))
 
     try:
-        set_password(username, temp_pass)
+        set_password(username, temp_pass, first_name, last_name)
     except Exception as e:
         flash(f"User created but password setting failed: {e}. Fix manually in LLDAP.", "err")
         return redirect("/")
