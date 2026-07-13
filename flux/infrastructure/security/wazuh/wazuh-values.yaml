@@ -134,4 +134,24 @@ spec:
     certificates:
       enabled: false
 
+  # ── Indexer admin password fix ───────────────────────────────
+  # The default WazuhSecretPassword must match the internalUsers hash below.
+  # Bcrypt hash of 'WazuhSecretPassword' ($2b$12$ rounds).
+  indexer:
+    config:
+      internalUsers: |
+        ---
+        _meta:
+          type: "internalusers"
+          config_version: 2
+        admin:
+          hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
+          reserved: true
+          backend_roles:
+            - "admin"
+        kibanaserver:
+          hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
+          reserved: true
+
+
 
