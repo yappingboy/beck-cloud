@@ -1,0 +1,83 @@
+# Suricata IDS DaemonSet — detect-only mode on all nodes.
+# Captures on cilium_host for full visibility (external + pod traffic).
+# EVE JSON logs forwarded to wazuh-manager-worker:514/TCP via log-forwarder sidecar.
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: suricata
+  namespace: security
+  labels:
+    app: suricata
+spec:
+  selector:
+    matchLabels:
+      app: suricata
+  updateStrategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 1
+  template:
+    metadata:
+      labels:
+        app: suricata
+    spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
+      tolerations:
+        - operator: Exists
+      containers:
+
+        # ── Suricata IDS ────────────────────────────────────────
+        - name: suricata
+          image: jasonish/suricata:8.0.6-amd64
+          args: ["-i", "cilium_host"]
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
+          securityContext:
+            capabilities:
+              add: ["NET_ADMIN", "NET_RAW", "SYS_NICE"]
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log/suricata
+            - name: config
+              mountPath: /etc/suricata/suricata.yaml
+              subPath: suricata.yaml
+              readOnly: true
+
+        # ── EVE JSON → Wazuh forwarder ──────────────────────────
+        # Tails eve.json and forwards each line to wazuh-manager-worker:514/TCP.
+        # The worker's <connection>syslog</connection> listener on port 514 accepts raw data.
+        - name: log-forwarder
+          image: busybox:latest
+          command:
+            - sh
+            - -c
+            - |
+              until [ -f /var/log/suricata/eve.json ]; do sleep 1; done
+              tail -n +0 -F /var/log/suricata/eve.json 2>/dev/null | \
+                while IFS= read -r line; do
+                  echo "$line" > /dev/tcp/wazuh-manager-worker.security.svc.cluster.local/514 || sleep 2
+                done
+          resources:
+            requests:
+              cpu: 10m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          volumeMounts:
+            - name: logs
+              mountPath: /var/log/suricata
+              readOnly: true
+
+      volumes:
+        - name: logs
+          emptyDir: {}
+        - name: config
+          configMap:
+            name: suricata-config

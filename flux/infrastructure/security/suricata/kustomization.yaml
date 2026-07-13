@@ -1,0 +1,10 @@
+# Suricata IDS deployment for BeckCloud (Phase 3)
+# DaemonSet on all nodes, IDS mode (detect-only), EVE JSON → Wazuh manager via log forwarder sidecar.
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: security
+
+resources:
+  - suricata-daemonset.yaml
+  - suricata-configmap.yaml

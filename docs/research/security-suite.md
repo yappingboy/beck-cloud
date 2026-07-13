@@ -22,7 +22,7 @@ The suite is purpose-built for a two-node K3s homelab running on OpenNebula VMs 
 | Wazuh (Manager + Indexer + Dashboard + Agents) | ✅ Deployed | Active in `security` namespace. Manager pods have high restart counts (641+) — investigating resource/config issues. No external IngressRoute yet.
 | Trivy Operator | ✅ Deployed | Active in `trivy-system` namespace. Continuous scanning operational.
 | Falco (HIDS) | 🔲 Planned | Previous deployment failed with eBPF driver crashes under KVM/Cilium. Not yet resolved.
-| Suricata (IDS) | 🔲 Planned | Not deployed yet.
+| Suricata (IDS) | ✅ Deployed | DaemonSet on all nodes, IDS mode, EVE JSON → Wazuh via syslog port 514/TCP. ETOpen ruleset bundled in jasonish/suricata:8.0.6.
 
 ---
 
@@ -211,10 +211,10 @@ High-severity findings from any tool can trigger Alertmanager notifications to c
 - [ ] Deploy Falco — resolve eBPF/kmod driver issue from previous attempt
 - [ ] Wire Falco alerts to Wazuh manager via syslog or JSON output
 
-### Phase 3: IDS (Week 3)
-- [ ] Deploy Suricata in IDS mode (detect-only)
-- [ ] Configure Emerging Threats ruleset
-- [ ] Pipe EVE logs to Wazuh for correlation
+### Phase 3: IDS ✅ COMPLETE
+- [x] Deploy Suricata in IDS mode (detect-only)
+- [x] Configure Emerging Threats ruleset (bundled in jasonish/suricata image)
+- [x] Pipe EVE logs to Wazuh for correlation (via wazuh-manager-worker:514/TCP syslog listener)
 - [ ] Validate alert accuracy, tune false positives
 - [ ] Add Prometheus exporter scrape config
 

@@ -1,0 +1,98 @@
+# Suricata configuration — IDS mode, EVE JSON output, ETOpen ruleset (bundled in jasonish image).
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: suricata-config
+  namespace: security
+data:
+  suricata.yaml: |
+    %{{ $HOME_NET = "10.42.0.0/16,172.16.0.0/16,192.168.100.0/24" }}
+
+    vars:
+      address-groups:
+        HOME_NET: "[%{{ $HOME_NET }}]"
+        EXTERNAL_NET: "!%{{ $HOME_NET }}"
+        HTTP_SERVERS: "%{{ $HOME_NET }}"
+        SMTP_SERVERS: "%{{ $HOME_NET }}"
+        SQL_SERVERS: "%{{ $HOME_NET }}"
+        DNS_SERVERS: "%{{ $HOME_NET }}"
+        TELNET_SERVERS: "%{{ $HOME_NET }}"
+        AIM_SERVERS: "$EXTERNAL_NET"
+        DC_SERVERS: "%{{ $HOME_NET }}"
+        DNP3_SERVER: "%{{ $HOME_NET }}"
+        DNP3_CLIENT: "%{{ $HOME_NET }}"
+        MODBUS_CLIENT: "%{{ $HOME_NET }}"
+        MODBUS_SERVER: "%{{ $HOME_NET }}"
+        ENIP_SERVER: "%{{ $HOME_NET }}"
+        ENIP_CLIENT: "%{{ $HOME_NET }}"
+
+    default-log-dir: /var/log/suricata/
+
+    stats:
+      enabled: yes
+      interval: 8
+
+    outputs:
+      - eve-log:
+          enabled: yes
+          filetype: regular
+          filename: /var/log/suricata/eve.json
+          types:
+            - alert:
+                payload: yes
+                payload-printable: yes
+                http-body: yes
+                http-body-printable: yes
+                xff:
+                  enabled: no
+              event-type:
+                enabled: yes
+            - dns:
+                enabled: yes
+                pretty-print: yes
+            - tls:
+                enabled: yes
+                extended: yes
+                session: yes
+            - http:
+                enabled: yes
+                extended: yes
+            - files:
+                enabled: no
+            - ftp:
+                enabled: yes
+            - smb:
+                enabled: yes
+            - rdp:
+                enabled: yes
+            - tls-version:
+                enabled: yes
+
+    af-packet:
+      - interface: eth0
+        threads: 2
+        cluster-type: cluster_flow
+        cluster-id: 99
+        defrag: yes
+        use-mmap: yes
+        tpacket-v3: yes
+        tsocket-defrag: yes
+
+    # Disable features we don't need in IDS mode
+    detect:
+      profile: medium
+      sga: auto
+
+    # App-layer protocol configs (keep defaults for most)
+    app-layer:
+      protocols:
+        dns:
+          enabled: yes
+        http:
+          enabled: yes
+        tls:
+          enabled: yes
+        ssh:
+          enabled: yes
+        smtp:
+          enabled: yes
