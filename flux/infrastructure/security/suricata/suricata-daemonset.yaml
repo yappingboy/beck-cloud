@@ -25,6 +25,19 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       tolerations:
         - operator: Exists
+
+      # Init container copies writable config from ConfigMap to emptyDir
+      initContainers:
+        - name: copy-config
+          image: busybox:latest
+          command: ["sh", "-c", "cp /config/suricata.yaml /suricata-config/suricata.yaml"]
+          volumeMounts:
+            - name: config-src
+              mountPath: /config
+              readOnly: true
+            - name: suricata-config
+              mountPath: /suricata-config
+
       containers:
 
         # ── Suricata IDS ────────────────────────────────────────
@@ -44,24 +57,22 @@ spec:
           volumeMounts:
             - name: logs
               mountPath: /var/log/suricata
-            - name: config
+            - name: suricata-config
               mountPath: /etc/suricata/suricata.yaml
               subPath: suricata.yaml
-              readOnly: true
 
         # ── EVE JSON → Wazuh forwarder ──────────────────────────
         # Tails eve.json and forwards each line to wazuh-manager-worker:514/TCP.
-        # The worker's <connection>syslog</connection> listener on port 514 accepts raw data.
         - name: log-forwarder
-          image: busybox:latest
+          image: alpine:3.20
           command:
-            - sh
+            - /bin/sh
             - -c
             - |
-              until [ -f /var/log/suricata/eve.json ]; do sleep 1; done
-              tail -n +0 -F /var/log/suricata/eve.json 2>/dev/null | \
+              until [ -s /var/log/suricata/eve.json ]; do sleep 2; done
+              tail -n +1 -F /var/log/suricata/eve.json 2>/dev/null | \
                 while IFS= read -r line; do
-                  echo "$line" > /dev/tcp/wazuh-manager-worker.security.svc.cluster.local/514 || sleep 2
+                  echo "$line" | nc -w1 wazuh-manager-worker.security.svc.cluster.local 514 || sleep 2
                 done
           resources:
             requests:
@@ -78,6 +89,8 @@ spec:
       volumes:
         - name: logs
           emptyDir: {}
-        - name: config
+        - name: config-src
           configMap:
             name: suricata-config
+        - name: suricata-config
+          emptyDir: {}
