@@ -5,6 +5,7 @@ namespace: security
 
 resources:
   - namespace.yaml
+  - wazuh/filebeat-configmap.yaml
   - wazuh/wazuh-values.yaml
   # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
   # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.

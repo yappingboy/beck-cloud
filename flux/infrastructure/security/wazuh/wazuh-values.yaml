@@ -47,14 +47,15 @@ spec:
           memory: 3Gi
       storage:
         size: 50Gi
-        # Uses local-path provisioner (default SC)
       nodeSelector:
         kubernetes.io/hostname: ip-172-16-0-20
       tolerations:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
-      # Custom internal users for dashboard login (after SSO redirect)
+
+      # Admin/kibanaserver password = WazuhSecretPassword (matches Filebeat config).
+      # Bcrypt hash of 'WazuhSecretPassword' ($2b$12$ rounds).
       config:
         internalUsers: |
           ---
@@ -62,17 +63,16 @@ spec:
             type: "internalusers"
             config_version: 2
           admin:
-            hash: "$2b$12$scpE9YgWMbfe2urPA1XAPOBn0YKXIkP7Jt28wZRz5h4H4obmABjnK"
+            hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
             reserved: true
             backend_roles:
               - "admin"
           kibanaserver:
-            hash: "$2b$12$57U9LUvmU2gkDC1iUFVAQu67FgTJ/393NzXzSIEVIYAsN53HAnhm."
+            hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
             reserved: true
 
-    # ── Manager ──────────────────────────────────────────────────
-    manager:
-      enabled: true
+    # ── Wazuh Manager (master + workers) ────────────────────────
+    wazuh:
       replicas: 1
       images:
         repository: wazuh/wazuh-manager
@@ -93,6 +93,31 @@ spec:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
+
+      master:
+        additionalVolumes:
+          # Overlay filebeat.yml from ConfigMap to prevent s6 init scripts
+          # overwriting it with an empty file on fresh pod starts.
+          - name: filebeat-config
+            configMap:
+              name: wazuh-filebeat-config
+        additionalVolumeMounts:
+          - name: filebeat-config
+            readOnly: true
+            mountPath: /etc/filebeat/filebeat.yml
+            subPath: filebeat.yml
+
+      worker:
+        replicas: 2
+        additionalVolumes:
+          - name: filebeat-config
+            configMap:
+              name: wazuh-filebeat-config
+        additionalVolumeMounts:
+          - name: filebeat-config
+            readOnly: true
+            mountPath: /etc/filebeat/filebeat.yml
+            subPath: filebeat.yml
 
     # ── Dashboard ────────────────────────────────────────────────
     dashboard:
@@ -133,25 +158,3 @@ spec:
     # External TLS handled by Traefik ingress + cert-manager.
     certificates:
       enabled: false
-
-  # ── Indexer admin password fix ───────────────────────────────
-  # The default WazuhSecretPassword must match the internalUsers hash below.
-  # Bcrypt hash of 'WazuhSecretPassword' ($2b$12$ rounds).
-  indexer:
-    config:
-      internalUsers: |
-        ---
-        _meta:
-          type: "internalusers"
-          config_version: 2
-        admin:
-          hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
-          reserved: true
-          backend_roles:
-            - "admin"
-        kibanaserver:
-          hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
-          reserved: true
-
-
-
