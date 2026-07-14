@@ -1,0 +1,175 @@
+---
+# 11-opennebula-ldap.yml — Wire OpenNebula FireEdge/Sunstone to LLDAP for auth
+#
+# What this does:
+#   • Enables LDAP in AUTH_MAD (alongside existing ssh/x509/cipher)
+#   • Sets DEFAULT_AUTH = "ssh" so oneadmin keeps working with local auth
+#   • Configures /etc/one/auth/ldap_auth.conf to talk to LLDAP via NodePort
+#     (only users in the "admins" LDAP group can authenticate)
+#   • Creates symlink for auto-user-creation on first login
+#   • Sets FireEdge :auth: opennebula so the web UI delegates to ONE auth
+#   • Restarts OpenNebula services
+#
+# Run: ansible-playbook -i inventory/hosts.yml playbooks/11-opennebula-ldap.yml
+
+- name: Configure OpenNebula LDAP authentication (LLDAP)
+  hosts: hypervisor
+  become: true
+  gather_facts: true
+
+  vars:
+    # LLDAP is exposed on k3s-server via NodePort 31389.
+    # Hypervisor reaches k3s-server through the internal bridge (one0).
+    lldap_host: "192.168.100.10"
+    lldap_port: 31389
+
+    # Bind DN for searching users — use the LLDAP admin account
+    ldap_bind_user: "admin"
+    ldap_bind_dn: "uid=admin,ou=people,dc=becklab,dc=cloud"
+
+    # LLDAP bind user password (for directory search, not per-user login).
+    # OpenNebula uses this to find the user DN, then re-binds with the
+    # authenticating user's own credentials for actual auth.
+    ldap_bind_password: "changeme"  # override with -e ldap_bind_password=<secret> or vault
+
+    # Restrict to members of the "admins" group only
+    ldap_group_filter: "cn=admins,ou=groups,dc=becklab,dc=cloud"
+
+  tasks:
+    # ── Enable LDAP in AUTH_MAD (add to existing line if not present) ─────────
+    - name: Read current oned.conf
+      ansible.builtin.slurp:
+        src: /etc/one/oned.conf
+      register: oned_conf_raw
+
+    - name: Add ldap to AUTHN list if missing
+      ansible.builtin.replace:
+        path: /etc/one/oned.conf
+        regexp: '(\s+AUTHN = "[^"]*?)"'
+        replace: '\1,ldap"'
+      when: '"ldap" not in oned_conf_raw.content | b64decode'
+
+    - name: Add AUTH_MAD section with ldap if completely missing
+      ansible.builtin.blockinfile:
+        path: /etc/one/oned.conf
+        block: |
+          AUTH_MAD = [
+            EXECUTABLE = "one_auth_mad",
+            AUTHN = "ssh,x509,ldap,server_cipher,server_x509"
+          ]
+        marker: '# {mark} OpenNebula LDAP auth — managed by Ansible'
+      when: '"AUTH_MAD" not in oned_conf_raw.content | b64decode'
+
+    - name: Set DEFAULT_AUTH to ssh (keeps local auth as default for oneadmin)
+      ansible.builtin.lineinfile:
+        path: /etc/one/oned.conf
+        regexp: '^#?DEFAULT_AUTH\s*='
+        line: 'DEFAULT_AUTH = "ssh"'
+
+    # ── Create ldap_auth.conf ───────────────────────────────────────────────────
+    - name: Ensure /etc/one/auth directory exists
+      ansible.builtin.file:
+        path: /etc/one/auth
+        state: directory
+        owner: oneadmin
+        group: oneadmin
+        mode: '0750'
+
+    - name: Write ldap_auth.conf for LLDAP
+      ansible.builtin.copy:
+        dest: /etc/one/auth/ldap_auth.conf
+        owner: oneadmin
+        group: oneadmin
+        mode: '0640'
+        content: |
+          # OpenNebula LDAP auth config — points to LLDAP via NodePort
+          server 1:
+
+            # Bind user for searching (LLDAP admin) — ONE uses this to find user DNs,
+            # then re-binds with the authenticating user's own credentials.
+            :user: '{{ ldap_bind_user }}'
+            :password: '{{ ldap_bind_password }}'
+
+            # Auth method (simple = plain password bind per-user)
+            :auth_method: :simple
+
+            # LLDAP reachable via NodePort on k3s-server
+            :host: {{ lldap_host }}
+            :port: {{ lldap_port }}
+
+            # Base DN for user search
+            :base: 'dc=becklab,dc=cloud'
+
+            # Only allow members of the "admins" group
+            :group: '{{ ldap_group_filter }}'
+
+            # LLDAP uses uid as the user identifier
+            :user_field: 'uid'
+
+            # Group membership field (LLDAP uses RFC 2307bis, member = DN)
+            :rfc2307bis: true
+
+            # Mapping — auto-generate group mapping file
+            :mapping_generate: true
+            :mapping_timeout: 300
+            :mapping_filename: lldap_server1.yaml
+            :mapping_key: GROUP_DN
+            :mapping_default: 1
+
+          :order:
+            - server 1
+
+    # ── Symlink for auto-user-creation ─────────────────────────────────────────
+    - name: Ensure /var/lib/one/remotes/auth/default directory structure exists
+      ansible.builtin.file:
+        path: /var/lib/one/remotes/auth
+        state: directory
+        owner: oneadmin
+        group: oneadmin
+
+    - name: Create symlink for LDAP as default auth (auto-creates users on first login)
+      ansible.builtin.file:
+        src: /var/lib/one/remotes/auth/ldap
+        dest: /var/lib/one/remotes/auth/default
+        state: link
+        force: false
+
+    # ── FireEdge config — delegate to OpenNebula auth system ───────────────────
+    - name: Set FireEdge :auth: opennebula (delegates login to ONE core, which uses LDAP)
+      ansible.builtin.lineinfile:
+        path: /etc/one/fireedge-server.conf
+        regexp: '^#?:auth:'
+        line: ':auth: opennebula'
+
+    # ── Restart services ───────────────────────────────────────────────────────
+    - name: Restart OpenNebula core (pick up AUTH_MAD + ldap_auth.conf)
+      ansible.builtin.systemd:
+        name: opennebula
+        state: restarted
+        daemon_reload: true
+
+    - name: Restart FireEdge (pick up :auth: opennebula)
+      ansible.builtin.systemd:
+        name: opennebula-fireedge
+        state: restarted
+
+  post_tasks:
+    - name: Verify opennebula service is running
+      ansible.builtin.systemd:
+        name: opennebula
+      register: oned_status
+
+    - name: Verify fireedge service is running
+      ansible.builtin.systemd:
+        name: opennebula-fireedge
+      register: fireedge_status
+
+    - name: Print status summary
+      ansible.builtin.debug:
+        msg: |
+          OpenNebula LDAP auth configured.
+          oned state: {{ oned_status.status.ActiveState }}
+          fireedge state: {{ fireedge_status.status.ActiveState }}
+          LLDAP reachable at {{ lldap_host }}:{{ lldap_port }}
+          Admin group filter: {{ ldap_group_filter }}
+          Users in that group can now log into FireEdge (one.becklab.cloud) with their LDAP credentials.
