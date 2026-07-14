@@ -4,5 +4,4 @@ kind: Kustomization
 namespace: security
 
 resources:
-  - namespace.yaml
   - trivy-operator-values.yaml

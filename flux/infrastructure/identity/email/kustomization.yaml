@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: identity
 
 resources:
-  - namespace.yaml
   - postfix-relay.yaml
   - secret-mailgun.yaml
   - certificate.yaml

@@ -4,6 +4,5 @@ kind: Kustomization
 namespace: media
 
 resources:
-  - namespace.yaml
   - secret-spotweb.yaml
   - spotweb.yaml
