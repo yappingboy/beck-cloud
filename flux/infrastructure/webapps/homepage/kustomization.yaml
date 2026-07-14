@@ -4,5 +4,4 @@ kind: Kustomization
 namespace: webapps
 
 resources:
-  - namespace.yaml
   - helmrelease.yaml

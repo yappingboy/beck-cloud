@@ -2,7 +2,6 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 namespace: affine
 resources:
-  - namespace.yaml
   - secret-db.yaml
   - pvc.yaml
   - postgres-deployment.yaml
