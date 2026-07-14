@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: bitwarden-secrets-manager
-  namespace: bitwarden
+  namespace: webapps
   labels:
     app: bitwarden-secrets-manager
 spec:

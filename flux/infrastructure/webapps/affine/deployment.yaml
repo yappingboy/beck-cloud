@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: affine-server
-  namespace: affine
+  namespace: webapps
   labels:
     app: affine
 spec:
@@ -131,7 +131,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: affine-redis
-  namespace: affine
+  namespace: webapps
   labels:
     app: affine-redis
 spec:

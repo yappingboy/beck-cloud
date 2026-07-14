@@ -2,7 +2,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: affine-postgres
-  namespace: affine
+  namespace: webapps
   labels:
     app: affine-postgres
 spec:

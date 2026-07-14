@@ -7,7 +7,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: directus-data
-  namespace: cms
+  namespace: webapps
 spec:
   accessModes:
     - ReadWriteOnce
@@ -20,7 +20,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: directus
-  namespace: cms
+  namespace: webapps
   labels:
     app: directus
 spec:
@@ -72,7 +72,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: directus
-  namespace: cms
+  namespace: webapps
 spec:
   selector:
     app: directus
@@ -85,7 +85,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: directus
-  namespace: cms
+  namespace: webapps
 spec:
   entryPoints:
     - websecure
@@ -105,7 +105,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: cms
-  namespace: cms
+  namespace: webapps
 spec:
   secretName: cms-tls
   issuerRef:

@@ -2,7 +2,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: affine-server
-  namespace: affine
+  namespace: webapps
 spec:
   selector:
     app: affine
@@ -16,7 +16,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: affine-redis
-  namespace: affine
+  namespace: webapps
 spec:
   selector:
     app: affine-redis
@@ -30,7 +30,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: affine-postgres
-  namespace: affine
+  namespace: webapps
 spec:
   selector:
     app: affine-postgres
