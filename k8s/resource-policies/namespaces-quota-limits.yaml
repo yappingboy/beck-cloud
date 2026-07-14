@@ -20,8 +20,8 @@ items:
       pods: "20"
       requests.cpu: "6"
       requests.memory: 14Gi
-      limits.cpu: "32"
-      limits.memory: 36Gi
+      limits.cpu: "40"
+      limits.memory: 42Gi
 
 - apiVersion: v1
   kind: LimitRange
