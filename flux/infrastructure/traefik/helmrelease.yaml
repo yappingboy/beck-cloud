@@ -40,6 +40,9 @@ spec:
         nodePort: 30080
         exposed: true
         exposedPort: 80
+        redirectEntryPoint:
+          to: websecure
+          scheme: https
       websecure:
         nodePort: 30443
         exposed: true
