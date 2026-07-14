@@ -1,9 +1,10 @@
 ---
 # 11-opennebula-ldap.yml — Wire OpenNebula FireEdge/Sunstone to LLDAP for auth
 #
+# NOTE: Already applied directly (2026-07-14). Kept here as drift-prevention.
+#
 # What this does:
-#   • Enables LDAP in AUTH_MAD (alongside existing ssh/x509/cipher)
-#   • Sets DEFAULT_AUTH = "ssh" so oneadmin keeps working with local auth
+#   • Ensures ldap is in AUTH_MAD's AUTHN list
 #   • Configures /etc/one/auth/ldap_auth.conf to talk to LLDAP via NodePort
 #     (only users in the "admins" LDAP group can authenticate)
 #   • Creates symlink for auto-user-creation on first login
@@ -20,7 +21,7 @@
   vars:
     # LLDAP is exposed on k3s-server via NodePort 31389.
     # Hypervisor reaches k3s-server through the internal bridge (one0).
-    lldap_host: "192.168.100.10"
+    lldap_host: "172.16.0.20"
     lldap_port: 31389
 
     # Bind DN for searching users — use the LLDAP admin account
