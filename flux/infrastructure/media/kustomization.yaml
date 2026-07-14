@@ -19,3 +19,4 @@ resources:
   - tdarr.yaml
   - secret-tdarr.yaml
   - homebox.yaml
+  - spotweb

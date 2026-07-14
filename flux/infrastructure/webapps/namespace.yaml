@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: webapps
+  labels:
+    app.kubernetes.io/part-of: beck-cloud
+    team: personal

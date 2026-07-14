@@ -36,7 +36,7 @@ spec:
     - apiVersion: apps/v1
       kind: Deployment
       name: qbit-gluetun
-      namespace: torrent
+      namespace: media
     - apiVersion: apps/v1
       kind: Deployment
       name: wazuh-dashboard

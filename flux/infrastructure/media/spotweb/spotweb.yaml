@@ -3,7 +3,7 @@ apiVersion: apps/v1
 kind: StatefulSet
 metadata:
   name: mariadb
-  namespace: spotweb
+  namespace: media
   labels:
     app: mariadb
 spec:
@@ -63,7 +63,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: mariadb
-  namespace: spotweb
+  namespace: media
   labels:
     app: mariadb
 spec:
@@ -81,7 +81,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: spotweb
-  namespace: spotweb
+  namespace: media
   labels:
     app: spotweb
 spec:
@@ -147,7 +147,7 @@ apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: spotweb-config
-  namespace: spotweb
+  namespace: media
   labels:
     app: spotweb
 spec:
@@ -161,7 +161,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: spotweb
-  namespace: spotweb
+  namespace: media
   labels:
     app: spotweb
 spec:
@@ -179,7 +179,7 @@ apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   name: spotweb
-  namespace: spotweb
+  namespace: media
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io/cluster-issuer: letsencrypt-prod

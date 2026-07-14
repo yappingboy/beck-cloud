@@ -1,27 +1,13 @@
 # ============================================================================
-# BeckCloud Namespace ResourceQuotas + LimitRanges
+# BeckCloud Namespace ResourceQuotas + LimitRanges (v2 — consolidated 2026-07-14)
 # Sourced from live pod usage (kubectl top) on 2026-07-14
 # Applied via Flux Kustomization in infrastructure/ namespace overlays
-# ============================================================================
-# 
-# Strategy: Set quotas at ~2x current observed usage to allow headroom for
-# traffic spikes, without allowing any single namespace to starve the cluster.
-# LimitRanges provide sensible defaults so pods without explicit resource specs
-# get bounded behavior automatically.
-#
-# Cluster capacity (approximate, 2 nodes):
-#   CPU: ~16 cores total (i5-14400)
-#   Memory: ~32Gi usable per node (~64Gi total minus system overhead)
 # ============================================================================
 
 apiVersion: v1
 kind: List
 items:
 
-# ============================================================================
-# HIGH-RESOURCE NAMESPACE: media (Jellyfin, Sonarr, Radarr, etc.)
-# Live usage: Jellyfin alone peaks at 1012m CPU / 5.7Gi memory
-# Sonarr uses ~2.4Gi memory during indexing
 # ============================================================================
 
 - apiVersion: v1
@@ -31,11 +17,11 @@ items:
     namespace: media
   spec:
     hard:
-      pods: "16"
+      pods: "20"
       requests.cpu: "6"
-      requests.memory: 12Gi
+      requests.memory: 14Gi
       limits.cpu: "12"
-      limits.memory: 24Gi
+      limits.memory: 28Gi
 
 - apiVersion: v1
   kind: LimitRange
@@ -53,10 +39,6 @@ items:
           memory: 256Mi
 
 # ============================================================================
-# HIGH-RESOURCE NAMESPACE: security (Wazuh indexers/managers)
-# Live usage: wazuh-indexer ~1.4Gi mem, managers ~790-889Mi each
-# Suricata daemonsets add ~23Mi/node
-# ============================================================================
 
 - apiVersion: v1
   kind: ResourceQuota
@@ -67,9 +49,9 @@ items:
     hard:
       pods: "16"
       requests.cpu: "4"
-      requests.memory: 8Gi
-      limits.cpu: "6"
-      limits.memory: 12Gi
+      requests.memory: 9Gi
+      limits.cpu: "7"
+      limits.memory: 14Gi
 
 - apiVersion: v1
   kind: LimitRange
@@ -86,9 +68,6 @@ items:
           cpu: "50m"
           memory: 128Mi
 
-# ============================================================================
-# MEDIUM-RESOURCE NAMESPACE: identity (Keycloak, LLDAP, oauth2-proxy x2)
-# Live usage: Keycloak ~489Mi mem, Redis minimal, oauth2-proxy ~7-10Mi each
 # ============================================================================
 
 - apiVersion: v1
@@ -120,10 +99,6 @@ items:
           memory: 64Mi
 
 # ============================================================================
-# MEDIUM-RESOURCE NAMESPACE: monitoring (Prometheus, Grafana, Alertmanager)
-# Live usage: Prometheus ~879Mi mem / 22m CPU avg, Grafana ~253Mi
-# Node exporters run per-node (~11Mi each)
-# ============================================================================
 
 - apiVersion: v1
   kind: ResourceQuota
@@ -153,9 +128,6 @@ items:
           cpu: "50m"
           memory: 64Mi
 
-# ============================================================================
-# MEDIUM-RESOURCE NAMESPACE: gaming (Crafty Controller / Minecraft)
-# Live usage: Crafty ~267m CPU / 3.5Gi mem (spikes with players)
 # ============================================================================
 
 - apiVersion: v1
@@ -187,61 +159,25 @@ items:
           memory: 1Gi
 
 # ============================================================================
-# MEDIUM-RESOURCE NAMESPACE: torrent (qBittorrent + Gluetun VPN)
-# Live usage: ~46Mi mem, low CPU — but can spike during downloads
-# ============================================================================
 
 - apiVersion: v1
   kind: ResourceQuota
   metadata:
-    name: torrent-quota
-    namespace: torrent
+    name: webapps-quota
+    namespace: webapps
   spec:
     hard:
-      pods: "2"
-      requests.cpu: "500m"
-      requests.memory: 2Gi
-      limits.cpu: "1"
-      limits.memory: 4Gi
+      pods: "16"
+      requests.cpu: "2"
+      requests.memory: 3Gi
+      limits.cpu: "4"
+      limits.memory: 8Gi
 
 - apiVersion: v1
   kind: LimitRange
   metadata:
-    name: torrent-limits
-    namespace: torrent
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "500m"
-          memory: 2Gi
-        defaultRequest:
-          cpu: "100m"
-          memory: 256Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: affine (server + postgres + redis)
-# Live usage: server ~193Mi, postgres ~35Mi, redis minimal
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: affine-quota
-    namespace: affine
-  spec:
-    hard:
-      pods: "6"
-      requests.cpu: "1"
-      requests.memory: 2Gi
-      limits.cpu: "2"
-      limits.memory: 4Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: affine-limits
-    namespace: affine
+    name: webapps-limits
+    namespace: webapps
   spec:
     limits:
       - type: Container
@@ -253,207 +189,7 @@ items:
           memory: 64Mi
 
 # ============================================================================
-# LOW-RESOURCE NAMESPACE: spotweb (Spotweb + MariaDB)
-# Live usage: Spotweb ~65Mi, MariaDB ~493Mi
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: spotweb-quota
-    namespace: spotweb
-  spec:
-    hard:
-      pods: "4"
-      requests.cpu: "500m"
-      requests.memory: 1Gi
-      limits.cpu: "1"
-      limits.memory: 2Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: spotweb-limits
-    namespace: spotweb
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "300m"
-          memory: 512Mi
-        defaultRequest:
-          cpu: "50m"
-          memory: 64Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: cms (Directus)
-# Live usage: ~236Mi mem, 7m CPU
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: cms-quota
-    namespace: cms
-  spec:
-    hard:
-      pods: "4"
-      requests.cpu: "500m"
-      requests.memory: 1Gi
-      limits.cpu: "1"
-      limits.memory: 2Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: cms-limits
-    namespace: cms
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "500m"
-          memory: 512Mi
-        defaultRequest:
-          cpu: "50m"
-          memory: 64Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: bitwarden (Vaultwarden BSM)
-# Live usage: ~11Mi mem, minimal CPU
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: bitwarden-quota
-    namespace: bitwarden
-  spec:
-    hard:
-      pods: "2"
-      requests.cpu: "200m"
-      requests.memory: 512Mi
-      limits.cpu: "500m"
-      limits.memory: 1Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: bitwarden-limits
-    namespace: bitwarden
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "500m"
-          memory: 256Mi
-        defaultRequest:
-          cpu: "50m"
-          memory: 64Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: landing (Landing page + Silex)
-# Live usage: ~72Mi combined, negligible CPU
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: landing-quota
-    namespace: landing
-  spec:
-    hard:
-      pods: "4"
-      requests.cpu: "300m"
-      requests.memory: 512Mi
-      limits.cpu: "500m"
-      limits.memory: 1Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: landing-limits
-    namespace: landing
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "200m"
-          memory: 128Mi
-        defaultRequest:
-          cpu: "25m"
-          memory: 32Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: email (Postfix relay)
-# Live usage: ~11Mi mem, negligible CPU
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: email-quota
-    namespace: email
-  spec:
-    hard:
-      pods: "2"
-      requests.cpu: "100m"
-      requests.memory: 128Mi
-      limits.cpu: "200m"
-      limits.memory: 256Mi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: email-limits
-    namespace: email
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "200m"
-          memory: 128Mi
-        defaultRequest:
-          cpu: "25m"
-          memory: 32Mi
-
-# ============================================================================
-# LOW-RESOURCE NAMESPACE: homepage (Homepage dashboard)
-# Live usage: ~95Mi mem, minimal CPU
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: homepage-quota
-    namespace: homepage
-  spec:
-    hard:
-      pods: "2"
-      requests.cpu: "200m"
-      requests.memory: 256Mi
-      limits.cpu: "300m"
-      limits.memory: 512Mi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: homepage-limits
-    namespace: homepage
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "200m"
-          memory: 128Mi
-        defaultRequest:
-          cpu: "25m"
-          memory: 32Mi
-
-# ============================================================================
-# SYSTEM NAMESPACE: velero (backup — MinIO + Velero + node agents)
-# Live usage: ~360Mi total across 5 pods, intermittent CPU bursts during backup
-# ============================================================================
+# Infra namespaces (unchanged from v1)
 
 - apiVersion: v1
   kind: ResourceQuota
@@ -483,76 +219,6 @@ items:
           cpu: "50m"
           memory: 64Mi
 
-# ============================================================================
-# SYSTEM NAMESPACE: trivy-system (Trivy vulnerability scanner)
-# Live usage: ~191Mi mem, 3m CPU — scans are periodic and bursty
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: trivy-quota
-    namespace: trivy-system
-  spec:
-    hard:
-      pods: "4"
-      requests.cpu: "500m"
-      requests.memory: 512Mi
-      limits.cpu: "1"
-      limits.memory: 2Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: trivy-limits
-    namespace: trivy-system
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "500m"
-          memory: 512Mi
-        defaultRequest:
-          cpu: "50m"
-          memory: 64Mi
-
-# ============================================================================
-# SYSTEM NAMESPACE: toolbox (Kaniko build pods — ephemeral)
-# Live usage: mostly empty, pods spin up for builds then terminate
-# ============================================================================
-
-- apiVersion: v1
-  kind: ResourceQuota
-  metadata:
-    name: toolbox-quota
-    namespace: toolbox
-  spec:
-    hard:
-      pods: "4"
-      requests.cpu: "2"
-      requests.memory: 4Gi
-      limits.cpu: "3"
-      limits.memory: 6Gi
-
-- apiVersion: v1
-  kind: LimitRange
-  metadata:
-    name: toolbox-limits
-    namespace: toolbox
-  spec:
-    limits:
-      - type: Container
-        default:
-          cpu: "2000m"
-          memory: 4Gi
-        defaultRequest:
-          cpu: "500m"
-          memory: 1Gi
-
-# ============================================================================
-# CLUSTER-INFRA NAMESPACE: cert-manager (3 pods)
-# Live usage: ~76Mi combined, minimal CPU
-# These are cluster-critical — quotas kept loose to avoid disruption
 # ============================================================================
 
 - apiVersion: v1
@@ -584,10 +250,6 @@ items:
           memory: 32Mi
 
 # ============================================================================
-# CLUSTER-INFRA NAMESPACE: traefik (ingress controller)
-# Live usage: ~47Mi, minimal CPU — but handles ALL ingress traffic
-# Quotas loose to avoid rate-limiting legitimate traffic
-# ============================================================================
 
 - apiVersion: v1
   kind: ResourceQuota
@@ -618,10 +280,6 @@ items:
           memory: 64Mi
 
 # ============================================================================
-# CLUSTER-INFRA NAMESPACE: flux-system (GitOps — already has critical-pods quota)
-# Live usage: ~93Mi combined, source-controller peaks at 55Mi
-# Existing quota: critical-pods-flux-system (pods: 1k) — adding resource quota
-# ============================================================================
 
 - apiVersion: v1
   kind: ResourceQuota
@@ -650,3 +308,33 @@ items:
         defaultRequest:
           cpu: "50m"
           memory: 32Mi
+
+# ============================================================================
+
+- apiVersion: v1
+  kind: ResourceQuota
+  metadata:
+    name: toolbox-quota
+    namespace: toolbox
+  spec:
+    hard:
+      pods: "4"
+      requests.cpu: "2"
+      requests.memory: 4Gi
+      limits.cpu: "3"
+      limits.memory: 6Gi
+
+- apiVersion: v1
+  kind: LimitRange
+  metadata:
+    name: toolbox-limits
+    namespace: toolbox
+  spec:
+    limits:
+      - type: Container
+        default:
+          cpu: "2000m"
+          memory: 4Gi
+        defaultRequest:
+          cpu: "500m"
+          memory: 1Gi

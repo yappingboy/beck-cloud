@@ -7,7 +7,7 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: postfix-main
-  namespace: email
+  namespace: identity
 data:
   main.cf: |
     inet_interfaces = all
@@ -38,7 +38,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: postfix-relay
-  namespace: email
+  namespace: identity
   labels:
     app: postfix-relay
 spec:
@@ -152,7 +152,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: smtp-relay
-  namespace: email
+  namespace: identity
   labels:
     app: postfix-relay
 spec:

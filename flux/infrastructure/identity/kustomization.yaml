@@ -17,5 +17,6 @@ resources:
   - logout-page.yaml
   - sso-redirect.yaml
   - sso-middlewares.yaml
+  - email
 
 
