@@ -36,6 +36,7 @@ spec:
 
     # ── Operator controller ─────────────────────────────────────
     operator:
+      replicas: 1
       excludeNamespaces:
         - kube-system
         - trivy-system
