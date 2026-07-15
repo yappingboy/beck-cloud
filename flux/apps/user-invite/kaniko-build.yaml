@@ -47,7 +47,7 @@ spec:
             - --dockerfile=Dockerfile
             - --context=dir:///workspace/
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
-            - --destination=ghcr.io/yappingboy/becklab-user-invite:v3.1783837566
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:v4.1783837566
             - --cache=false
             - --skip-tls-verify
           volumeMounts:

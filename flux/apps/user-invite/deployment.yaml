@@ -21,7 +21,7 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: user-invite
-          image: ghcr.io/yappingboy/becklab-user-invite:v3.1783837566
+          image: ghcr.io/yappingboy/becklab-user-invite:v4.1783837566
           imagePullPolicy: Always
           resources:
             limits:
