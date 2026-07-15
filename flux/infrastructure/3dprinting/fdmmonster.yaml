@@ -1,0 +1,83 @@
+# FDM Monster — 3D print farm manager
+# fdmmonster/fdm-monster:2, port 4000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+  labels:
+    app: fdmmonster
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fdmmonster
+  template:
+    metadata:
+      labels:
+        app: fdmmonster
+    spec:
+      containers:
+        - name: fdm-monster
+          image: docker.io/fdmmonster/fdm-monster:latest
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          ports:
+            - containerPort: 4000
+              name: http
+              protocol: TCP
+          env:
+            - name: TZ
+              value: America/New_York
+          volumeMounts:
+            - name: data
+              mountPath: /app/data
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: fdmmonster-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+spec:
+  selector:
+    app: fdmmonster
+  ports:
+    - port: 4000
+      targetPort: 4000
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - fdm.becklab.cloud
+      secretName: fdmmonster-tls
+  rules:
+    - host: fdm.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: fdmmonster
+                port:
+                  number: 4000

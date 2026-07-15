@@ -1,0 +1,96 @@
+# OrcaSlicer — web-accessible 3D slicer (noVNC-based, single HTTPS port)
+# linuxserver/orca-slicer:latest, port 3001 (HTTPS with self-signed cert)
+# Access at https://slicer.becklab.cloud (Traefik provides real TLS + admin SSO)
+# NOTE: reverse proxy must skip upstream SSL verification
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+  labels:
+    app: orcaslicer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: orcaslicer
+  template:
+    metadata:
+      labels:
+        app: orcaslicer
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: orca-slicer
+          image: lscr.io/linuxserver/orca-slicer:latest
+          resources:
+            limits:
+              cpu: "4"
+              memory: 8Gi
+            requests:
+              cpu: 500m
+              memory: 2Gi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/New_York
+          ports:
+            - containerPort: 3001
+              name: https
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: orcaslicer-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+spec:
+  selector:
+    app: orcaslicer
+  ports:
+    - port: 3001
+      targetPort: 3001
+      name: https
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+    # Skip upstream SSL verification (linuxserver uses self-signed cert internally)
+    traefik.ingress.kubernetes.io/service.serversscheme: https
+spec:
+  tls:
+    - hosts:
+        - slicer.becklab.cloud
+      secretName: orcaslicer-tls
+  rules:
+    - host: slicer.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: orcaslicer
+                port:
+                  number: 3001

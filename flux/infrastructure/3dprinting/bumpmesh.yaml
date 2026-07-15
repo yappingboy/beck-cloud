@@ -1,0 +1,103 @@
+# BumpMesh — browser-based mesh texture displacement tool
+# Pure client-side app (no backend) served via nginx:alpine-slim
+# Files downloaded from GitHub on first boot via initContainer into a PVC
+# Source: https://github.com/CNCKitchen/stlTexturizer (aka BumpMesh by CNC Kitchen)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: bumpmesh-html
+  namespace: 3dprinting
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 200Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bumpmesh
+  namespace: 3dprinting
+  labels:
+    app: bumpmesh
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bumpmesh
+  template:
+    metadata:
+      labels:
+        app: bumpmesh
+    spec:
+      initContainers:
+        - name: download
+          image: docker.io/library/busybox:latest
+          command:
+            [sh, -c, |
+              rm -rf /html/*;
+              cd /tmp && wget -qO- https://github.com/MarkusNiewoehner/BumpMesh/archive/refs/heads/main.tar.gz | tar xz --strip-components=1 BumpMesh-main/index.html BumpMesh-main/style.css BumpMesh-main/logo.png BumpMesh-main/js BumpMesh-main/textures -C /html;
+            ]
+          volumeMounts:
+            - name: html
+              mountPath: /html
+      containers:
+        - name: nginx
+          image: docker.io/library/nginx:alpine-slim
+          resources:
+            limits:
+              cpu: "1"
+              memory: 256Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+      volumes:
+        - name: html
+          persistentVolumeClaim:
+            claimName: bumpmesh-html
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bumpmesh
+  namespace: 3dprinting
+spec:
+  selector:
+    app: bumpmesh
+  ports:
+    - port: 80
+      targetPort: 80
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bumpmesh
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - bump.becklab.cloud
+      secretName: bumpmesh-tls
+  rules:
+    - host: bump.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: bumpmesh
+                port:
+                  number: 80
