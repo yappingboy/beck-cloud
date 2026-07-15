@@ -38,6 +38,11 @@ spec:
           env:
             - name: TZ
               value: America/New_York
+            # Override K8s service-discovery vars that conflict with Spoolman's config
+            - name: SPOOLEMAN_HOST
+              value: "0.0.0.0"
+            - name: SPOOLEMAN_PORT
+              value: "8000"
           volumeMounts:
             - name: data
               mountPath: /home/app/.local/share/spoolman
