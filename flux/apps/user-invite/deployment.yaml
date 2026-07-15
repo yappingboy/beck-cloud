@@ -44,7 +44,7 @@ spec:
                   name: lldap-admin-password
                   key: admin-password
             - name: SMTP_HOST
-              value: "smtp-relay.email.svc.cluster.local"
+              value: "smtp-relay.identity.svc.cluster.local"
             - name: SMTP_PORT
               value: "25"
             - name: FROM_EMAIL
