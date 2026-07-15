@@ -35,10 +35,11 @@ spec:
         - name: download
           image: docker.io/library/busybox:latest
           command:
-            [sh, -c, |
+            - sh
+            - -c
+            - |
               rm -rf /html/*;
               cd /tmp && wget -qO- https://github.com/MarkusNiewoehner/BumpMesh/archive/refs/heads/main.tar.gz | tar xz --strip-components=1 BumpMesh-main/index.html BumpMesh-main/style.css BumpMesh-main/logo.png BumpMesh-main/js BumpMesh-main/textures -C /html;
-            ]
           volumeMounts:
             - name: html
               mountPath: /html
