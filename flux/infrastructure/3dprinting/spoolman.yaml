@@ -18,6 +18,9 @@ spec:
       labels:
         app: spoolman
     spec:
+      securityContext:
+        runAsUser: 0
+        fsGroup: 1000
       containers:
         - name: spoolman
           image: ghcr.io/donkie/spoolman:latest

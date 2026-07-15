@@ -9,3 +9,6 @@ resources:
   - spoolman.yaml
   - bumpmesh.yaml
   - orcaslicer.yaml
+
+generators:
+  - secret-generator.yaml

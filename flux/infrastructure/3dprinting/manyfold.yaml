@@ -24,7 +24,7 @@ spec:
         kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: postgresql
-          image: lscr.io/linuxserver/postgresql:latest
+          image: docker.io/library/postgres:17-alpine
           resources:
             limits:
               cpu: "1"
@@ -33,16 +33,13 @@ spec:
               cpu: 100m
               memory: 256Mi
           env:
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
-            - name: TZ
-              value: America/New_York
             - name: POSTGRES_USER
               value: manyfold
             - name: POSTGRES_PASSWORD
-              value: "manyfold3d"
+              valueFrom:
+                secretKeyRef:
+                  name: manyfold-db-secret
+                  key: password
             - name: POSTGRES_DB
               value: manyfold_production
           ports:
@@ -51,7 +48,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - name: config
-              mountPath: /config
+              mountPath: /var/lib/postgresql/data
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -150,7 +147,10 @@ spec:
             - name: RAILS_ENV
               value: production
             - name: DATABASE_URL
-              value: "postgresql://manyfold:manyfold3d@manyfold-db.3dprinting.svc.cluster.local:5432/manyfold_production"
+              valueFrom:
+                secretKeyRef:
+                  name: manyfold-db-secret
+                  key: database-url
             - name: REDIS_URL
               value: "redis://manyfold-redis.3dprinting.svc.cluster.local:6379"
             - name: SECRET_KEY_BASE
