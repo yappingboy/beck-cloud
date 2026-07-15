@@ -4,10 +4,3 @@ metadata:
   name: media
   labels:
     name: media
----
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: torrent
-  labels:
-    name: torrent
