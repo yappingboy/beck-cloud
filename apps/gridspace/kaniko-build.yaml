@@ -1,4 +1,5 @@
 # Kaniko build job — builds GridSpace grid-apps from upstream source and pushes to GHCR.
+# Uses an init container to clone the repo, then Kaniko builds from the mounted volume.
 # Run once: kubectl apply -f kaniko-build.yaml -n toolbox
 
 ---
@@ -11,23 +12,38 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: clone-repo
+          image: alpine/git:latest
+          command:
+            [
+              "sh",
+              "-c",
+              "git clone --branch v2.0.4 --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && cd /workspace/src/dock && cp Dockerfile /workspace/Dockerfile.build",
+            ]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=src/dock/Dockerfile
-            - --context=https://github.com/GridSpace/grid-apps/archive/refs/tags/v2.0.4.tar.gz
-            - --context-sub-path=v2.0.4
+            - --dockerfile=Dockerfile.build
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/becklab-gridspace:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
           volumeMounts:
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-credentials
