@@ -1,0 +1,87 @@
+# Kiri:Moto — 3D Slicer for printers, CNC mills, and laser cutters
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: gridspace-kiri-prefix
+  namespace: gridspace
+spec:
+  prefixRewrite:
+    replacement: /kiri/
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kiri-moto
+  namespace: gridspace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`kiri.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: gridspace
+          port: 8080
+      middlewares:
+        - name: gridspace-kiri-prefix
+  tls:
+    secretName: kiri-tls
+---
+# Mesh:Tool — Browser-based mesh repair and editing tool
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: gridspace-mesh-prefix
+  namespace: gridspace
+spec:
+  prefixRewrite:
+    replacement: /mesh/
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: mesh-tool
+  namespace: gridspace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`mesh.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: gridspace
+          port: 8080
+      middlewares:
+        - name: gridspace-mesh-prefix
+  tls:
+    secretName: mesh-tls
+---
+# Void:Form — Generative design / form-finding tool
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: gridspace-void-prefix
+  namespace: gridspace
+spec:
+  prefixRewrite:
+    replacement: /form/
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: void-form
+  namespace: gridspace
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`void.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: gridspace
+          port: 8080
+      middlewares:
+        - name: gridspace-void-prefix
+  tls:
+    secretName: void-tls

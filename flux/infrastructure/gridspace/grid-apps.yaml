@@ -1,0 +1,93 @@
+# GridSpace apps — Kiri:Moto, Mesh:Tool, Void:Form
+# Single container serving all three on port 8080 with path-based routing.
+# Source: https://github.com/GridSpace/grid-apps
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gridspace-data
+  namespace: gridspace
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gridspace
+  namespace: gridspace
+  labels:
+    app: gridspace
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gridspace
+  template:
+    metadata:
+      labels:
+        app: gridspace
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: gridspace
+          image: docker.io/gridspace/grid-apps:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+            # Run as non-root
+            - name: NODE_ENV
+              value: production
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /boot/
+              port: 8080
+            initialDelaySeconds: 30
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /boot/
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 5
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: gridspace-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: gridspace
+  namespace: gridspace
+spec:
+  selector:
+    app: gridspace
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+  type: ClusterIP
