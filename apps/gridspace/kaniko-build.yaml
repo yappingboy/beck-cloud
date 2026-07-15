@@ -19,7 +19,7 @@ spec:
             [
               "sh",
               "-c",
-              "git clone --branch v2.0.4 --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && cd /workspace/src/dock && cp Dockerfile /workspace/Dockerfile.build",
+              "git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace",
             ]
           volumeMounts:
             - name: workspace
@@ -28,7 +28,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=Dockerfile.build
+            - --dockerfile=src/dock/Dockerfile
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/becklab-gridspace:latest
             - --cache=true
