@@ -10,5 +10,8 @@ resources:
   - bumpmesh.yaml
   - orcaslicer.yaml
 
-generators:
-  - secret-generator.yaml
+secretGenerator:
+  - name: manyfold-db-secret
+    literals:
+      - password=Xk9#mP2$vL7nQ4wR
+      - database-url=postgresql://manyfold:Xk9#mP2$vL7nQ4wR@manyfold-db.3dprinting.svc.cluster.local:5432/manyfold_production
