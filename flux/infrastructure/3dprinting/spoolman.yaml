@@ -4,7 +4,7 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: spoolman
+  name: spoolman-app
   namespace: 3dprinting
   labels:
     app: spoolman
@@ -22,7 +22,7 @@ spec:
         runAsUser: 0
         fsGroup: 1000
       containers:
-        - name: spoolman
+        - name: filament-tracker
           image: ghcr.io/donkie/spoolman:latest
           resources:
             limits:
@@ -38,10 +38,10 @@ spec:
           env:
             - name: TZ
               value: America/New_York
-            # Override K8s service-discovery vars that conflict with Spoolman's config
-            - name: SPOOLEMAN_HOST
+            # Override K8s auto-injected SPOOLMAN_SERVICE_* vars that conflict with Spoolman's config
+            - name: SPOOLMAN_HOST
               value: "0.0.0.0"
-            - name: SPOOLEMAN_PORT
+            - name: SPOOLMAN_PORT
               value: "8000"
           volumeMounts:
             - name: data
