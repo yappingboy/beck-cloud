@@ -16,7 +16,8 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=src/dock/Dockerfile
-            - --context=git://github.com/GridSpace/grid-apps.git#ref=v2.0.4
+            - --context=https://github.com/GridSpace/grid-apps/archive/refs/tags/v2.0.4.tar.gz
+            - --context-sub-path=v2.0.4
             - --destination=ghcr.io/yappingboy/becklab-gridspace:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
