@@ -6,6 +6,7 @@ metadata:
   labels:
     app: affine
 spec:
+  revisionHistoryLimit: 1
   replicas: 1
   selector:
     matchLabels:
@@ -36,7 +37,7 @@ spec:
                   c.on('connect', () => { c.destroy(); runMigrations(); });
                   c.on('timeout', () => { c.destroy(); onFail(); });
                   c.on('error', () => { onFail(); });
-                  c.connect(5432, process.env.PGHOST || 'affine-postgres.affine.svc.cluster.local');
+                  c.connect(5432, process.env.PGHOST || 'affine-postgres.webapps.svc.cluster.local');
                 }
                 function onFail() {
                   console.log('Waiting for postgres... (' + attempts + ')');
@@ -59,7 +60,7 @@ spec:
             - name: AFFINE_SERVER_EXTERNAL_URL
               value: https://affine.becklab.cloud
             - name: REDIS_SERVER_HOST
-              value: affine-redis.affine.svc.cluster.local
+              value: affine-redis.webapps.svc.cluster.local
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
@@ -88,7 +89,7 @@ spec:
             - name: AFFINE_SERVER_PORT
               value: "3010"
             - name: REDIS_SERVER_HOST
-              value: affine-redis.affine.svc.cluster.local
+              value: affine-redis.webapps.svc.cluster.local
             - name: DATABASE_URL
               valueFrom:
                 secretKeyRef:
