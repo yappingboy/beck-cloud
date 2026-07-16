@@ -18,6 +18,8 @@ spec:
       labels:
         app: fdmmonster
     spec:
+      hostNetwork: true
+      dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: fdm-monster
           image: docker.io/fdmmonster/fdm-monster:latest
@@ -54,7 +56,7 @@ spec:
   ports:
     - port: 4000
       targetPort: 4000
-  type: ClusterIP
+  type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
