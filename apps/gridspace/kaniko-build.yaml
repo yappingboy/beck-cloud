@@ -20,8 +20,23 @@ spec:
             - -c
             - |
               git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && \
-              sed -i 's/apt-get -y install curl$/apt-get -y install curl git/' /workspace/src/dock/Dockerfile && \
-              sed -i 's|FROM node:18-slim|FROM node:20-slim|' /workspace/src/dock/Dockerfile
+              cat > /workspace/src/dock/Dockerfile << 'DOCKERFILE'
+FROM node:20-slim
+WORKDIR /grid
+COPY package.json /grid
+COPY app.js /grid
+COPY apps /grid/apps
+COPY src /grid/src
+COPY web /grid/web
+COPY bin /grid/bin
+RUN apt-get -y update && apt-get -y install curl git
+EXPOSE 8080
+RUN npm i
+RUN npm run webpack-src prod && npm run bundle && rm -rf node_modules/.cache && npm cache clean --force
+RUN npm install -g @gridspace/app-server
+RUN rm -rf /grid/bin
+CMD gs-app-server
+DOCKERFILE
           volumeMounts:
             - name: workspace
               mountPath: /workspace
