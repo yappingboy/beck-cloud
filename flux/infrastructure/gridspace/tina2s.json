@@ -3,7 +3,7 @@
 	"device":"My Tina2S",
 	"process":
 	{
-		"processName":"Tina2 PLA Profile",
+		"processName":"Tina2S PLA Profile",
 		"sliceAngle":45,
 		"sliceHeight":0.2,
 		"sliceShells":3,
