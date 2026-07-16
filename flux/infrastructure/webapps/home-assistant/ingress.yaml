@@ -9,11 +9,11 @@ spec:
   entryPoints:
     - websecure
   routes:
-    # Main HA UI — admin SSO
+    # Main HA UI — admin SSO (no Authorization header forwarded; HA has its own auth)
     - kind: Rule
       match: Host(`ha.becklab.cloud`)
       middlewares:
-        - name: sso-admin-chain
+        - name: sso-admin-chain-no-auth-header
           namespace: identity
       services:
         - name: home-assistant
@@ -23,7 +23,7 @@ spec:
     - kind: Rule
       match: Host(`ha.becklab.cloud`) && PathPrefix(`/esphome`)
       middlewares:
-        - name: sso-admin-chain
+        - name: sso-admin-chain-no-auth-header
           namespace: identity
         - name: esphome-strip-prefix
       services:
