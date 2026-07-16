@@ -1,8 +1,7 @@
 {
 	"version":"4.7.0",
 	"device":"My Tina2S",
-	"process":
-	{
+	"process":{
 		"processName":"Tina2S PLA Profile",
 		"sliceAngle":45,
 		"sliceHeight":0.2,
@@ -16,7 +15,7 @@
 		"sliceFillAngle":45,
 		"sliceFillWidth":1,
 		"sliceFillOverlap":0.35,
-		"sliceFillSparse":0.1.
+		"sliceFillSparse":0.1,
 		"sliceFillRepeat":1,
 		"sliceFillType":"grid",
 		"sliceSupportDensity":0.1,

@@ -20,12 +20,17 @@ spec:
             - -c
             - |
               git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && \
-              cp /docker/Dockerfile /workspace/Dockerfile
+              cp /docker/Dockerfile /workspace/Dockerfile && \
+              mkdir -p /workspace/src/cli && \
+              cp /devices/tina2s.json /workspace/src/cli/tina2s.json
           volumeMounts:
             - name: workspace
               mountPath: /workspace
             - name: dockerfile
               mountPath: /docker
+              readOnly: true
+            - name: devices
+              mountPath: /devices
               readOnly: true
       containers:
         - name: kaniko
@@ -62,6 +67,10 @@ spec:
               - key: Dockerfile
                 path: Dockerfile
             name: gridspace-dockerfile
+        - name: devices
+          configMap:
+            defaultMode: 0644
+            name: gridspace-tina2s-device
         - name: docker-config
           secret:
             secretName: ghcr-config
