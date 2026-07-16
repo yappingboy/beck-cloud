@@ -90,11 +90,14 @@ data:
     }
 
     function refreshCache() {
-      const hostingHtml = readHostingIndex();
-      if (hostingHtml) { cachedHtml = hostingHtml; cacheTime = Date.now(); return; }
+      // Priority: Directus > hosting index > default
       fetchDirectus().then(function(html) {
         if (html) { cachedHtml = html; cacheTime = Date.now(); }
-        else if (!cachedHtml) { cachedHtml = defaultPage(); cacheTime = Date.now(); }
+        else {
+          const hostingHtml = readHostingIndex();
+          if (hostingHtml) { cachedHtml = hostingHtml; cacheTime = Date.now(); }
+          else if (!cachedHtml) { cachedHtml = defaultPage(); cacheTime = Date.now(); }
+        }
       });
     }
 
