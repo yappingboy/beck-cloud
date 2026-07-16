@@ -16,11 +16,12 @@ spec:
         - name: clone-repo
           image: alpine/git:latest
           command:
-            [
-              "sh",
-              "-c",
-              "git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace",
-            ]
+            - sh
+            - -c
+            - |
+              git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && \
+              sed -i 's/apt-get -y install curl$/apt-get -y install curl git/' /workspace/src/dock/Dockerfile && \
+              sed -i 's|FROM node:18-slim|FROM node:20-slim|' /workspace/src/dock/Dockerfile
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -34,6 +35,14 @@ spec:
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "2"
+              memory: 6Gi
+            requests:
+              cpu: "1"
+              memory: 2Gi
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -46,4 +55,4 @@ spec:
           emptyDir: {}
         - name: docker-config
           secret:
-            secretName: ghcr-credentials
+            secretName: ghcr-config
