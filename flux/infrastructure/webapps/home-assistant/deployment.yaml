@@ -1,0 +1,120 @@
+# Home Assistant Container (Core) — supported install method on Kubernetes
+# Runs as a multi-container pod: HA Core + Mosquitto MQTT + ESPHome + Matter Server
+# All share the same network namespace so localhost-based integrations work.
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: home-assistant
+  namespace: webapps
+  labels:
+    app: home-assistant
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: home-assistant
+  template:
+      metadata:
+        labels:
+          app: home-assistant
+      spec:
+        # Run as non-root user (HA runs as root inside container by default,
+        # but we set a runAsUser for the pod; HA will drop privileges internally)
+        securityContext:
+          fsGroup: 1000
+        containers:
+
+          # ── Home Assistant Core ──────────────────────────────
+          - name: home-assistant
+            image: ghcr.io/home-assistant/home-assistant:stable
+            ports:
+              - containerPort: 8123
+                name: http
+            resources:
+              requests:
+                cpu: 100m
+                memory: 512Mi
+              limits:
+                cpu: "1"
+                memory: 2Gi
+            env:
+              - name: TZ
+                value: "America/Los_Angeles"
+              - name: PYTHONUNBUFFERED
+                value: "1"
+            volumeMounts:
+              - name: config
+                mountPath: /config
+            readinessProbe:
+              httpGet:
+                path: /api
+                port: 8123
+              initialDelaySeconds: 30
+              periodSeconds: 10
+            livenessProbe:
+              httpGet:
+                path: /api
+                port: 8123
+              initialDelaySeconds: 60
+              periodSeconds: 30
+
+          # ── Mosquitto MQTT Broker ────────────────────────────
+          - name: mosquitto
+            image: eclipse-mosquitto:latest
+            ports:
+              - containerPort: 1883   # MQTT (local)
+              - containerPort: 9001   # WebSocket (for HA frontend)
+            resources:
+              requests:
+                cpu: 50m
+                memory: 64Mi
+              limits:
+                cpu: "0.5"
+                memory: 256Mi
+            volumeMounts:
+              - name: mosquitto-config
+                mountPath: /mosquitto/config
+              - name: mosquitto-data
+                mountPath: /mosquitto/data
+
+          # ── ESPHome Dashboard (compile & manage ESP devices) ──
+          - name: esphome
+            image: ghcr.io/esphome/esphome-dashboard:latest
+            ports:
+              - containerPort: 6052   # ESPHome dashboard
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: "0.5"
+                memory: 128Mi
+            env:
+              - name: TZ
+                value: "America/Los_Angeles"
+
+          # ── Matter Server (local Matter/Thread controller) ───
+          - name: matter-server
+            image: ghcr.io/home-assistant-libs/python-matter-server:latest
+            ports:
+              - containerPort: 5580   # WebSocket for HA integration
+            resources:
+              requests:
+                cpu: 10m
+                memory: 32Mi
+              limits:
+                cpu: "0.5"
+                memory: 128Mi
+
+        volumes:
+          - name: config
+            persistentVolumeClaim:
+              claimName: home-assistant-config
+          - name: mosquitto-config
+            configMap:
+              name: mosquitto-config
+          - name: mosquitto-data
+            emptyDir: {}

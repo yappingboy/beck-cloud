@@ -20,31 +20,18 @@ spec:
             - -c
             - |
               git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && \
-              cat > /workspace/src/dock/Dockerfile << 'DOCKERFILE'
-FROM node:20-slim
-WORKDIR /grid
-COPY package.json /grid
-COPY app.js /grid
-COPY apps /grid/apps
-COPY src /grid/src
-COPY web /grid/web
-COPY bin /grid/bin
-RUN apt-get -y update && apt-get -y install curl git
-EXPOSE 8080
-RUN npm i
-RUN npm run webpack-src prod && npm run bundle && rm -rf node_modules/.cache && npm cache clean --force
-RUN npm install -g @gridspace/app-server
-RUN rm -rf /grid/bin
-CMD gs-app-server
-DOCKERFILE
+              cp /docker/Dockerfile /workspace/Dockerfile
           volumeMounts:
             - name: workspace
               mountPath: /workspace
+            - name: dockerfile
+              mountPath: /docker
+              readOnly: true
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=src/dock/Dockerfile
+            - --dockerfile=Dockerfile
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/becklab-gridspace:latest
             - --cache=true
@@ -68,6 +55,13 @@ DOCKERFILE
       volumes:
         - name: workspace
           emptyDir: {}
+        - name: dockerfile
+          configMap:
+            defaultMode: 0644
+            items:
+              - key: Dockerfile
+                path: Dockerfile
+            name: gridspace-dockerfile
         - name: docker-config
           secret:
             secretName: ghcr-config

@@ -41,3 +41,7 @@ spec:
       kind: Deployment
       name: wazuh-dashboard
       namespace: security
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: home-assistant
+      namespace: webapps
