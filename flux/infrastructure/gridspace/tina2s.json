@@ -136,9 +136,9 @@
 			"M107",
 			"G92 E0 (Reset after prime)",
 			"G0 E-1 F300",
-			"G28 Z F300",
-			"M203 Z-10",
-			"G28 X0 Y0",
+			"G28 X Y; Home extruder",
+			"G1 X55 Y55 F1000",
+			"G28 Z",
 			"G1 Y90 F1000"
 		],
 		"gcodeProc":"",
