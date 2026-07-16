@@ -15,6 +15,11 @@ data:
     const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || '';
     const CACHE_TTL = 10000;
 
+    // Parse DIRECTUS_URL into hostname + port
+    const u = new URL(DIRECTUS_URL);
+    const DIRECTUS_HOST = u.hostname;
+    const DIRECTUS_PORT = parseInt(u.port) || (u.protocol === 'https:' ? 443 : 80);
+
     let cachedHtml = null;
     let cacheTime = 0;
     let apiToken = null;
@@ -31,7 +36,7 @@ data:
     function httpReq(method, urlPath, body, bearerToken) {
       return new Promise((resolve) => {
         const data = body ? JSON.stringify(body) : '';
-        const opts = { hostname: 'localhost', port: 8055, path: urlPath, method, timeout: 5000 };
+        const opts = { hostname: DIRECTUS_HOST, port: DIRECTUS_PORT, path: urlPath, method, timeout: 5000 };
         if (bearerToken) opts.headers = { Authorization: 'Bearer ' + bearerToken };
         if (data) opts.headers = Object.assign(opts.headers || {}, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) });
         const req = http.request(opts, (res) => {
