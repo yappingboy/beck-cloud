@@ -140,15 +140,9 @@ spec:
             - name: DIRECTUS_URL
               value: "http://directus.webapps:8055"
             - name: DIRECTUS_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: landing-directus-creds
-                  key: email
+              value: "admin@becklab.cloud"
             - name: DIRECTUS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: landing-directus-creds
-                  key: password
+              value: "changeme"
             - name: HOSTING_DIR
               value: "/hosting"
           ports:
