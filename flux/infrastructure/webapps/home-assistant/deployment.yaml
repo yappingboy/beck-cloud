@@ -25,6 +25,28 @@ spec:
         # but we set a runAsUser for the pod; HA will drop privileges internally)
         securityContext:
           fsGroup: 1000
+        # Init container: ensure reverse-proxy settings in configuration.yaml
+        # Adds http: block if missing; skips if already present
+        initContainers:
+          - name: init-config
+            image: busybox:latest
+            command:
+              - sh
+              - -c
+              - |
+                CONFIG=/config/configuration.yaml
+                HTTP_BLOCK="http:\n  use_x_forwarded_for: true\n  trusted_proxies:\n    - 10.42.0.0/16"
+                if ! grep -q 'use_x_forwarded_for' "$CONFIG"; then
+                  echo "" >> "$CONFIG"
+                  echo "# Reverse proxy support (Traefik + oauth2-proxy)" >> "$CONFIG"
+                  printf '%b\n' "$HTTP_BLOCK" >> "$CONFIG"
+                  echo "Added reverse proxy config to configuration.yaml"
+                else
+                  echo "Reverse proxy config already present, skipping"
+                fi
+            volumeMounts:
+              - name: config
+                mountPath: /config
         containers:
 
           # ── Home Assistant Core ──────────────────────────────
