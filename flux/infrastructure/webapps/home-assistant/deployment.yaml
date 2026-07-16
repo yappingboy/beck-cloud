@@ -48,16 +48,21 @@ spec:
             volumeMounts:
               - name: config
                 mountPath: /config
+            startupProbe:
+              tcpSocket:
+                port: 8123
+              initialDelaySeconds: 5
+              periodSeconds: 10
+              failureThreshold: 60
             readinessProbe:
               httpGet:
-                path: /api
+                path: /
                 port: 8123
               initialDelaySeconds: 120
               periodSeconds: 15
               failureThreshold: 10
             livenessProbe:
-              httpGet:
-                path: /
+              tcpSocket:
                 port: 8123
               initialDelaySeconds: 180
               periodSeconds: 30
