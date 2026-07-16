@@ -7,7 +7,7 @@ metadata:
   namespace: gridspace
 spec:
   replacePathRegex:
-    regex: "(.*)"
+    regex: "^/$"
     replacement: /kiri/$1
 ---
 apiVersion: traefik.io/v1alpha1
@@ -37,7 +37,7 @@ metadata:
   namespace: gridspace
 spec:
   replacePathRegex:
-    regex: "(.*)"
+    regex: "^/$"
     replacement: /mesh/$1
 ---
 apiVersion: traefik.io/v1alpha1
@@ -67,7 +67,7 @@ metadata:
   namespace: gridspace
 spec:
   replacePathRegex:
-    regex: "(.*)"
+    regex: "^/$"
     replacement: /form/$1
 ---
 apiVersion: traefik.io/v1alpha1
