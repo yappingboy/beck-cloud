@@ -38,12 +38,17 @@ spec:
             - name: TZ
               value: America/New_York
           volumeMounts:
-            - name: data
-              mountPath: /app/data
+            - name: database
+              mountPath: /app/database
+            - name: media
+              mountPath: /app/media
       volumes:
-        - name: data
+        - name: media
           persistentVolumeClaim:
-            claimName: fdmmonster-data
+            claimName: fdm-monster-media
+        - name: database
+          persistentVolumeClaim:
+            claimName: fdm-monster-database
 ---
 apiVersion: v1
 kind: Service
