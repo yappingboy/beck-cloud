@@ -1,14 +1,20 @@
-# Kiri:Moto — 3D Slicer for printers, CNC mills, and laser cutters
+# GridSpace IngressRoutes
+# Each app redirects root → subpath (browser URL becomes /mesh/, /kiri/, /form/)
+# so relative asset paths in HTML resolve correctly.
+# Non-root requests pass through unchanged to the app server.
+
 ---
+# Kiri:Moto — 3D Slicer for printers, CNC mills, and laser cutters
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: gridspace-kiri-prefix
+  name: gridspace-kiri-root-redirect
   namespace: gridspace
 spec:
-  replacePathRegex:
-    regex: "^/$"
-    replacement: /kiri/$1
+  redirectRegex:
+    regex: "^https://kiri\\.becklab\\.cloud/$"
+    replacement: https://kiri.becklab.cloud/kiri/
+    permanent: true
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -25,20 +31,22 @@ spec:
         - name: gridspace
           port: 8080
       middlewares:
-        - name: gridspace-kiri-prefix
+        - name: gridspace-kiri-root-redirect
   tls:
     secretName: kiri-tls
+
 ---
 # Mesh:Tool — Browser-based mesh repair and editing tool
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: gridspace-mesh-prefix
+  name: gridspace-mesh-root-redirect
   namespace: gridspace
 spec:
-  replacePathRegex:
-    regex: "^/$"
-    replacement: /mesh/$1
+  redirectRegex:
+    regex: "^https://mesh\\.becklab\\.cloud/$"
+    replacement: https://mesh.becklab.cloud/mesh/
+    permanent: true
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -55,20 +63,22 @@ spec:
         - name: gridspace
           port: 8080
       middlewares:
-        - name: gridspace-mesh-prefix
+        - name: gridspace-mesh-root-redirect
   tls:
     secretName: mesh-tls
+
 ---
 # Void:Form — Generative design / form-finding tool
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
-  name: gridspace-void-prefix
+  name: gridspace-void-root-redirect
   namespace: gridspace
 spec:
-  replacePathRegex:
-    regex: "^/$"
-    replacement: /form/$1
+  redirectRegex:
+    regex: "^https://void\\.becklab\\.cloud/$"
+    replacement: https://void.becklab.cloud/form/
+    permanent: true
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -85,6 +95,6 @@ spec:
         - name: gridspace
           port: 8080
       middlewares:
-        - name: gridspace-void-prefix
+        - name: gridspace-void-root-redirect
   tls:
     secretName: void-tls
