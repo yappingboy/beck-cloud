@@ -11,40 +11,69 @@ data:
 
     const HOSTING_DIR = process.env.HOSTING_DIR || '/hosting';
     const DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://directus.cms:8055';
-    const DIRECTUS_TOKEN = process.env.DIRECTUS_TOKEN || '';
-    const CACHE_TTL = 5000;
+    const DIRECTUS_EMAIL = process.env.DIRECTUS_EMAIL || '';
+    const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || '';
+    const CACHE_TTL = 10000;
 
     let cachedHtml = null;
     let cacheTime = 0;
+    let apiToken = null;
+    let tokenExpiry = 0;
 
     function readHostingIndex() {
       try {
         const filepath = path.join(HOSTING_DIR, 'index.html');
-        if (fs.existsSync(filepath)) {
-          return fs.readFileSync(filepath, 'utf8');
-        }
+        if (fs.existsSync(filepath)) return fs.readFileSync(filepath, 'utf8');
       } catch (e) { /* ignore */ }
       return null;
     }
 
-    function fetchDirectus() {
+    function httpReq(method, urlPath, body, bearerToken) {
       return new Promise((resolve) => {
-        const url = DIRECTUS_URL + '/items/pages/home';
-        const opts = { timeout: 5000 };
-        if (DIRECTUS_TOKEN) opts.headers = { Authorization: 'Bearer ' + DIRECTUS_TOKEN };
-        const req = http.get(url, opts, (res) => {
-          let data = '';
-          res.on('data', (chunk) => data += chunk);
-          res.on('end', () => {
-            try {
-              const json = JSON.parse(data);
-              if (json.data && json.data[0]) { resolve(renderDirectus(json.data[0])); }
-              else { resolve(null); }
-            } catch (e) { resolve(null); }
-          });
+        const data = body ? JSON.stringify(body) : '';
+        const opts = { hostname: 'localhost', port: 8055, path: urlPath, method, timeout: 5000 };
+        if (bearerToken) opts.headers = { Authorization: 'Bearer ' + bearerToken };
+        if (data) opts.headers = Object.assign(opts.headers || {}, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) });
+        const req = http.request(opts, (res) => {
+          let d = ''; res.on('data', c => d += c);
+          res.on('end', () => resolve({ status: res.statusCode, body: d }));
         });
-        req.on('error', () => resolve(null));
-        req.on('timeout', () => { req.destroy(); resolve(null); });
+        req.on('error', () => resolve({ status: 0, body: '' }));
+        req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: '' }); });
+        if (data) req.write(data);
+        req.end();
+      });
+    }
+
+    function ensureToken() {
+      if (apiToken && Date.now() < tokenExpiry - 180000) return Promise.resolve(apiToken);
+      return httpReq('POST', '/auth/login', { email: DIRECTUS_EMAIL, password: DIRECTUS_PASSWORD }).then((res) => {
+        try {
+          const json = JSON.parse(res.body);
+          if (json.data && json.data.access_token) {
+            apiToken = json.data.access_token;
+            tokenExpiry = Date.now() + (json.data.expires || 900000);
+            return apiToken;
+          }
+        } catch(e) {}
+        const legacyToken = process.env.DIRECTUS_TOKEN || '';
+        if (legacyToken) { apiToken = legacyToken; tokenExpiry = Date.now() + 600000; }
+        return apiToken || null;
+      });
+    }
+
+    function fetchDirectus() {
+      return ensureToken().then((token) => {
+        if (!token) return Promise.resolve(null);
+        return httpReq('GET', '/items/pages', null, token).then((res) => {
+          try {
+            const json = JSON.parse(res.body);
+            let page = null;
+            if (json.data && Array.isArray(json.data) && json.data.length > 0) page = json.data[0];
+            else if (json.data && typeof json.data === 'object' && !Array.isArray(json.data)) page = json.data;
+            return page ? renderDirectus(page) : null;
+          } catch(e) { return null; }
+        });
       });
     }
 
@@ -61,13 +90,8 @@ data:
     }
 
     function refreshCache() {
-      // Priority: hosting index > Directus > default
       const hostingHtml = readHostingIndex();
-      if (hostingHtml) {
-        cachedHtml = hostingHtml;
-        cacheTime = Date.now();
-        return;
-      }
+      if (hostingHtml) { cachedHtml = hostingHtml; cacheTime = Date.now(); return; }
       fetchDirectus().then(function(html) {
         if (html) { cachedHtml = html; cacheTime = Date.now(); }
         else if (!cachedHtml) { cachedHtml = defaultPage(); cacheTime = Date.now(); }
@@ -75,9 +99,7 @@ data:
     }
 
     http.createServer((req, res) => {
-      if (!cachedHtml || Date.now() - cacheTime > CACHE_TTL) {
-        refreshCache();
-      }
+      if (!cachedHtml || Date.now() - cacheTime > CACHE_TTL) refreshCache();
       res.writeHead(200, { 'Content-Type': 'text/html' });
       res.end(cachedHtml || defaultPage());
     }).listen(80, function() { console.log('Landing page on :80'); refreshCache(); });
@@ -109,12 +131,16 @@ spec:
           env:
             - name: DIRECTUS_URL
               value: "http://directus.cms:8055"
-            - name: DIRECTUS_TOKEN
+            - name: DIRECTUS_EMAIL
               valueFrom:
                 secretKeyRef:
-                  name: cms-token
-                  key: token
-                  optional: true
+                  name: landing-directus-creds
+                  key: email
+            - name: DIRECTUS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: landing-directus-creds
+                  key: password
             - name: HOSTING_DIR
               value: "/hosting"
           ports:
