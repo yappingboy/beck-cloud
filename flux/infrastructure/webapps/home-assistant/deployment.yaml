@@ -82,7 +82,7 @@ spec:
 
           # ── ESPHome Dashboard (compile & manage ESP devices) ──
           - name: esphome
-            image: ghcr.io/esphome/esphome-dashboard:latest
+            image: ghcr.io/esphome/esphome:latest
             ports:
               - containerPort: 6052   # ESPHome dashboard
             resources:
@@ -98,7 +98,7 @@ spec:
 
           # ── Matter Server (local Matter/Thread controller) ───
           - name: matter-server
-            image: ghcr.io/home-assistant-libs/python-matter-server:latest
+            image: ghcr.io/matter-js/python-matter-server:stable
             ports:
               - containerPort: 5580   # WebSocket for HA integration
             resources:
