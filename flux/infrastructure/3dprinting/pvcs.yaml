@@ -25,7 +25,18 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
-  name: fdmmonster-data
+  name: fdm-monster-media
+  namespace: 3dprinting
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: fdm-monster-database
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
