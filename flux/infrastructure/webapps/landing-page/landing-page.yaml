@@ -82,12 +82,11 @@ data:
       });
     }
 
-    const S = 'body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}.hero{text-align:center;padding:6rem 2rem}h1{font-size:3rem;margin-bottom:1rem}.content{max-width:800px;margin:0 auto;padding:2rem}a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}p{color:#94a3b8;line-height:1.6}';
-
     function renderDirectus(page) {
       var t = page.title || 'Becklab';
       var b = page.body || '<p>Home automation, media, and infrastructure.</p>';
-      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + '</title><style>' + S + '</style></head><body><div class="hero"><h1>' + t + '</h1></div><div class="content">' + b + '</div></body></html>';
+      var css = page.theme_css || S;
+      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + '</title><style>' + css + '</style></head><body><div class="hero"><h1>' + t + '</h1></div><div class="content">' + b + '</div></body></html>';
     }
 
     function defaultPage() {
