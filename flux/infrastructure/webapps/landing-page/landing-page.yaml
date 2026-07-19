@@ -20,10 +20,16 @@ data:
     const DIRECTUS_HOST = u.hostname;
     const DIRECTUS_PORT = parseInt(u.port) || (u.protocol === 'https:' ? 443 : 80);
 
-    let cachedHtml = null;
+    let cachedPages = null;
     let cacheTime = 0;
     let apiToken = null;
     let tokenExpiry = 0;
+
+    // Escape HTML to prevent XSS in dynamic content
+    function esc(s) {
+      if (!s) return '';
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    }
 
     function readHostingIndex() {
       try {
@@ -70,23 +76,59 @@ data:
     function fetchDirectus() {
       return ensureToken().then((token) => {
         if (!token) return Promise.resolve(null);
-        return httpReq('GET', '/items/pages', null, token).then((res) => {
+        return httpReq('GET', '/items/pages?sort=_rank', null, token).then((res) => {
           try {
             const json = JSON.parse(res.body);
-            let page = null;
-            if (json.data && Array.isArray(json.data) && json.data.length > 0) page = json.data[0];
-            else if (json.data && typeof json.data === 'object' && !Array.isArray(json.data)) page = json.data;
-            return page ? renderDirectus(page) : null;
-          } catch(e) { return null; }
+            if (json.data && Array.isArray(json.data)) return json.data;
+          } catch(e) {}
+          return null;
         });
       });
     }
 
-    function renderDirectus(page) {
+    function buildNav(pages) {
+      if (!pages || pages.length === 0) return '';
+      var items = '';
+      for (var i = 0; i < pages.length; i++) {
+        var p = pages[i];
+        var slug = p.slug || '';
+        var href = slug ? '/' + slug : '/';
+        items += '<a href="' + esc(href) + '">' + esc(p.title || 'Page') + '</a>';
+      }
+      return '<nav class="nav">' + items + '</nav>';
+    }
+
+    function renderPage(page, allPages, currentSlug) {
+      if (!page) return null;
       var t = page.title || 'Becklab';
       var b = page.body || '<p>Home automation, media, and infrastructure.</p>';
       var css = page.theme_css || S;
-      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + t + '</title><style>' + css + '</style></head><body><div class="hero"><h1>' + t + '</h1></div><div class="content">' + b + '</div></body></html>';
+      var nav = buildNav(allPages);
+      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '</style></head><body>' + nav + '<div class="hero"><h1>' + esc(t) + '</h1></div><div class="content">' + b + '</div></body></html>';
+    }
+
+    function findPage(pages, slug) {
+      if (!pages) return null;
+      // Exact match first
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].slug === slug) return pages[i];
+      }
+      // If slug is empty, return the first page
+      if (!slug && pages.length > 0) return pages[0];
+      return null;
+    }
+
+    function handleRequest(reqUrl) {
+      var pages = cachedPages;
+      if (!pages) return defaultPage();
+
+      // Strip query string and trailing slash
+      var path = reqUrl.split('?')[0];
+      if (path !== '/' && path.endsWith('/')) path = path.slice(0, -1);
+
+      var slug = path === '/' ? '' : path.slice(1);
+      var page = findPage(pages, slug);
+      return renderPage(page, pages, slug);
     }
 
     function defaultPage() {
@@ -95,20 +137,24 @@ data:
 
     function refreshCache() {
       // Priority: Directus > hosting index > default
-      fetchDirectus().then(function(html) {
-        if (html) { cachedHtml = html; cacheTime = Date.now(); }
-        else {
-          const hostingHtml = readHostingIndex();
-          if (hostingHtml) { cachedHtml = hostingHtml; cacheTime = Date.now(); }
-          else if (!cachedHtml) { cachedHtml = defaultPage(); cacheTime = Date.now(); }
+      fetchDirectus().then(function(pages) {
+        if (pages && pages.length > 0) {
+          cachedPages = pages;
+          cacheTime = Date.now();
+        } else if (!cachedPages) {
+          cachedPages = [null]; // sentinel for default
+          cacheTime = Date.now();
         }
       });
     }
 
+    const S = 'body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}.nav{text-align:center;padding:1rem;background:#1e293b}.nav a{color:#38bdf8;text-decoration:none;margin:0 1rem;font-weight:500}.nav a:hover{text-decoration:underline}.hero{text-align:center;padding:6rem 2rem}h1{font-size:3rem;margin-bottom:1rem}.content{max-width:800px;margin:0 auto;padding:2rem}a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}p{color:#94a3b8;line-height:1.6}';
+
     http.createServer((req, res) => {
-      if (!cachedHtml || Date.now() - cacheTime > CACHE_TTL) refreshCache();
+      if (!cachedPages || Date.now() - cacheTime > CACHE_TTL) refreshCache();
+      var html = handleRequest(req.url);
       res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(cachedHtml || defaultPage());
+      res.end(html);
     }).listen(80, function() { console.log('Landing page on :80'); refreshCache(); });
 ---
 apiVersion: apps/v1
