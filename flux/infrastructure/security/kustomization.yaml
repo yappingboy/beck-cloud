@@ -9,5 +9,6 @@ resources:
   - wazuh/wazuh-values.yaml
   - suricata
   - trivy-operator
+  - crowdsec
   # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
   # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.

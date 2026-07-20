@@ -1,0 +1,63 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: crowdsec
+  namespace: crowdsec
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: crowdsec
+      version: 0.20.0
+      sourceRef:
+        kind: HelmRepository
+        name: crowdsec
+        namespace: flux-system
+  install:
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3
+  values:
+    container_runtime: containerd
+
+    # ── Local-only mode (no cloud enrollment) ──
+    # To enroll with app.crowdsec.net later, add ENROLL_KEY to crowdsec-keys
+    # secret and set it in lapi.env below.
+
+    config:
+      config.yaml.local: |
+        api:
+          server:
+            auto_registration:
+              enabled: true
+              token: "${REGISTRATION_TOKEN}"
+              allowed_ranges:
+                - "127.0.0.1/32"
+                - "10.42.0.0/16"
+                - "172.16.0.0/12"
+                - "192.168.0.0/16"
+
+    lapi:
+      replicas: 1
+      persistentVolume:
+        config:
+          enabled: true
+        data:
+          enabled: true
+      env:
+        - name: BOUNCER_KEY_traefik
+          valueFrom:
+            secretKeyRef:
+              name: crowdsec-keys
+              key: BOUNCER_KEY_traefik
+
+    agent:
+      acquisition:
+        - namespace: traefik
+          podName: traefik-*
+          program: traefik
+
+    # Collect logs from all namespaces (not just crowdsec)
+    enablePrometheus: true
