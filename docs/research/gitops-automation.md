@@ -1,6 +1,6 @@
 # GitOps & Automation Deep Dive
 
-**Last audited:** 2026-07-12  
+**Last audited:** 2026-07-20  
 **Scope:** Flux CD pipeline, Ansible playbooks, SOPS encryption, CI/CD patterns
 
 ---
@@ -14,28 +14,25 @@ GitHub (yappingboy/beck-cloud)
     ▼
 Flux Source Controller (source-controller:v1.4.1)
     │
-    ├── GitRepository: flux-system → revision main@sha1:548ee9...
+    ├── GitRepository: flux-system → revision main@sha1:c161d06cd29bb2caabcd037fd675a48646ea9c71
     │       │
     │       ├── Kustomization: flux-system (path=./flux, interval=10m)
     │       │     └── Applies: Flux system components + Helm repositories
     │       │
     │       ├── Kustomization: infrastructure (path=./flux/infrastructure, interval=1m)
     │       │     └── Applies: ALL services via nested kustomizations
-    │       │           ├── identity/ (Keycloak, LLDAP, oauth2-proxy ×2, Redis, SSO middlewares)
+    │       │           ├── identity/ (Keycloak, LLDAP, oauth2-proxy ×2, Redis, SSO middlewares, Postfix relay)
     │       │           ├── media/ (Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, etc.)
     │       │           ├── monitoring/ (Prometheus stack ingress)
-    │       │           ├── bitwarden/ (Vaultwarden BSM)
-    │       │           ├── cms/ (Directus)
-    │       │           ├── email/ (Postfix relay)
-    │       │           ├── velero/minio/ (Backup storage)
+    │       │           ├── webapps/ (Affine, Bitwarden, Directus, Home Assistant, Homepage, Landing, Silex, OpenClaw)
+    │       │           ├── 3dprinting/ (Manyfold, FDM Monster, Spoolman, OrcaSlicer, BumpMesh)
+    │       │           ├── gridspace/ (Gridspace, Kiri:moto, Mesh Tool, Void:Form)
     │       │           ├── gaming/ (Crafty Controller)
-    │       │           ├── landing/ (Landing page, Silex)
+    │       │           ├── landing/ (Landing page, Silex — legacy, now in webapps)
     │       │           ├── llm/ (llama.cpp ExternalName, rho)
     │       │           ├── opennebula/ (Sunstone proxy)
-    │       │           ├── spotweb/ (NZB search)
-    │       │           ├── torrent/ (qBittorrent + Gluetun)
-    │       │           ├── security/ (Wazuh)
-    │       │           └── rancher/ (Rancher dashboard)
+    │       │           ├── security/ (Wazuh, Trivy Operator, Suricata)
+    │       │           └── ... (various other namespaces)
     │       │
     │       ├── Kustomization: traefik-config (path=./flux/infrastructure/traefik-config, interval=5m)
     │       │     └── Applies: HTTPS redirect, security headers, Traefik dashboard route
@@ -44,13 +41,13 @@ Flux Source Controller (source-controller:v1.4.1)
     │       │     └── Applies: ClusterIssuer for Let's Encrypt production
     │       │
     │       └── Kustomization: apps (path=./flux/apps, interval=5m)
-    │             └── Applies: Homepage, Toolbox, User-invite custom app
+    │             └── Applies: Homepage (now in webapps), Toolbox, User-invite custom app
     │
-    └── HelmRepository sources → jetstack, cilium, traefik, prometheus-community, vmware-tanzu, etc.
+    └── HelmRepository sources → jetstack, cilium, traefik, prometheus-community, vmware-tanzu, aquasecurity, etc.
             │
             ▼
         Flux Helm Controller (helm-controller:v1.1.0)
-            └── Manages 8 HelmReleases across namespaces
+            └── Manages 10 HelmReleases across namespaces
 ```
 
 ### Kustomization Hierarchy
@@ -59,46 +56,50 @@ Flux Source Controller (source-controller:v1.4.1)
 flux/infrastructure/kustomization.yaml  ← root kustomization
  ├── identity/ (namespace: identity)
  ├── media/ (namespace: media)
- ├── monitoring/ (namespace: monitoring, includes ingress routes only)
- ├── bitwarden/ (namespace: bitwarden)
- ├── cms/ (namespace: cms)
- ├── email/ (namespace: email)
- ├── velero/minio/ (namespace: velero)
+ ├── monitoring/ (namespace: monitoring, includes ingress routes)
+ ├── webapps/ (namespace: webapps) ← NEW consolidation namespace
+ ├── 3dprinting/ (namespace: 3dprinting) ← NEW
+ ├── gridspace/ (namespace: gridspace) ← NEW
  ├── gaming/ (namespace: gaming)
- ├── landing/ (namespace: landing)
  ├── llm/ (namespace: llm)
  ├── opennebula/ (namespace: opennebula)
- ├── spotweb/ (namespace: spotweb)
- ├── torrent/ (namespace: torrent)
  ├── security/ (namespace: security)
- └── rancher/ (namespace: rancher, likely disabled/not deployed)
+ └── ... (additional namespaces)
 
 flux/apps/kustomization.yaml  ← apps kustomization
- ├── homepage/ (namespace: homepage)
+ ├── homepage/ (namespace: webapps) ← moved from homepage
  ├── toolbox/ (namespace: toolbox)
  └── user-invite/ (namespace: identity — cross-ns app)
 ```
 
-### Helm Releases
+### Helm Releases (10)
 
-| Release | Namespace | Chart | Version | Source Repository | Last Status |
-|---------|-----------|-------|---------|-------------------|-------------|
-| cert-manager | cert-manager | cert-manager | v1.16.5 | jetstack (Bitnami/Jetstack) | ✅ Ready, 46d |
-| homepage | homepage | homepage | 1.2.3 | gethomepage Helm repo | ✅ Ready, 46d |
-| oauth2-proxy | identity | oauth2-proxy | 7.6.0 |/oauth2-proxy Helm repo | ✅ Ready, 45d |
-| oauth2-proxy-media | identity | oauth2-proxy | 7.6.0 | /oauth2-proxy Helm repo | ✅ Ready, 45d |
-| cilium | kube-system | cilium | 1.17.0 | Cilium official repo | ✅ Ready, 46d |
-| kube-prometheus-stack | monitoring | kube-prometheus-stack | 65.5.0 | Prometheus Community repo | ✅ Ready, 46d |
-| traefik | traefik | traefik | 36.3.0 | Traefik official repo | ✅ Ready, 46d |
-| velero | velero | velero | 8.0.0 | VMware Tanzu repo | ✅ Ready, 38d |
+| Release | Namespace | Chart | Source Repository | Status |
+|---------|-----------|-------|-------------------|--------|
+| cert-manager | cert-manager | cert-manager v1.16.5 | jetstack | ✅ True |
+| homepage | webapps | homepage | gethomepage | ✅ True |
+| oauth2-proxy | identity | oauth2-proxy v7.6.0 | oauth2-proxy | ✅ True |
+| oauth2-proxy-media | identity | oauth2-proxy v7.6.0 | oauth2-proxy | ✅ True |
+| cilium | kube-system | cilium v1.17.0 | Cilium official repo | ✅ True |
+| kube-prometheus-stack | monitoring | kube-prometheus-stack v65.5.0 | Prometheus Community repo | ✅ True |
+| trivy-operator | security | trivy-operator v0.30.0 | Aqua Security | ✅ True |
+| wazuh | security | wazuh v4.14.3 | Morgoved | ✅ True |
+| traefik | traefik | traefik v36.3.0 | Traefik official repo | ✅ True |
+| velero | velero | velero v8.0.0 | VMware Tanzu repo | ✅ True |
 
-| `affine` | Collaborative wiki/knowledge base | Affine server, PostgreSQL, Redis | ✅ Active |
-| `trivy-system` | Vulnerability scanning | Trivy Operator + scan jobs | ✅ Active |
+> **Changes since July 12:**
+> - Homepage HelmRelease moved from `homepage` to `webapps` namespace
+> - Trivy Operator HelmRelease moved from `trivy-system` to `security` namespace
+> - Wazuh HelmRelease added (replacing older deployment)
 
-### Disabled/Unused Components
+### Flux Controller Versions
 
-- **llm-stack.disabled/** — Contains Flowise, LiteLLM, Ollama (multiple instances), Open WebUI — directory named `.disabled` so NOT applied by Flux
-- **Rancher** — HelmRelease exists in `flux/infrastructure/rancher/` but no corresponding namespace or running pods visible
+| Controller | Image | Version |
+|-----------|-------|---------|
+| source-controller | ghcr.io/fluxcd/source-controller:v1.4.1 | v1.4.1 |
+| helm-controller | ghcr.io/fluxcd/helm-controller:v1.1.0 | v1.1.0 |
+| kustomize-controller | ghcr.io/fluxcd/kustomize-controller:v1.4.0 | v1.4.0 |
+| notification-controller | ghcr.io/fluxcd/notification-controller:v1.4.0 | v1.4.0 |
 
 ---
 
@@ -180,8 +181,16 @@ The `user-invite` service is a custom Python application built with Kaniko insid
 1. **Source:** `apps/user-invite/` in the repo
 2. **Dockerfile:** Builds Python app with dependencies
 3. **Build:** `kaniko-build.yaml` triggers an in-cluster build to GHCR
-4. **Push target:** `ghcr.io/yappingboy/becklab-user-invite:v1`
+4. **Push target:** `ghcr.io/yappingboy/becklab-user-invite:v4.1783837566` (UPGRADED from v1)
 5. **Deployed via Flux** from `flux/apps/user-invite/kustomization.yaml`
+
+### gridspace App (Kaniko)
+
+Custom Gridspace application also built in-cluster:
+
+1. **Build pod:** `build-gridspace-fnzlz` (Completed, 3d6h ago)
+2. **Push target:** `ghcr.io/yappingboy/becklab-gridspace:latest`
+3. **Deployed in** `gridspace` namespace
 
 ### Build Script (offline use)
 

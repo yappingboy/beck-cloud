@@ -180,6 +180,8 @@ spec:
       labels:
         app: landing-page
     spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
       containers:
         - name: landing
           image: ghcr.io/yappingboy/becklab-landing:latest

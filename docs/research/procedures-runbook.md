@@ -1,6 +1,6 @@
 # Procedures & Runbook
 
-**Last audited:** 2026-07-12  
+**Last audited:** 2026-07-20  
 **Scope:** Operational procedures, common tasks, troubleshooting patterns
 
 ---
@@ -8,21 +8,26 @@
 ## Post-Deploy Checklist (Current Services)
 
 *Consolidated from the legacy `docs/POST-DEPLOY-CHECKLIST.md`.
-Updated to reflect current service state as of 2026-07-12.*
+Updated to reflect current service state as of 2026-07-20.*
 
 ### DNS Records
 
 All externally exposed services need A records pointing to your cluster public IP:
 
 ```
-affine.becklab.cloud    -> <YOUR_PUBLIC_IP>
-bw.becklab.cloud        -> <YOUR_PUBLIC_IP>
-cms.becklab.cloud       -> <YOUR_PUBLIC_IP>
-grafana.becklab.cloud   -> <YOUR_PUBLIC_IP>
-hubble.becklab.cloud    -> <YOUR_PUBLIC_IP>
-one.becklab.cloud       -> <YOUR_PUBLIC_IP>
-silex.becklab.cloud     -> <YOUR_PUBLIC_IP>
-traefik.becklab.cloud   -> <YOUR_PUBLIC_IP>
+affine.becklab.cloud     -> <YOUR_PUBLIC_IP>
+bw.becklab.cloud         -> <YOUR_PUBLIC_IP>
+cms.becklab.cloud        -> <YOUR_PUBLIC_IP>
+grafana.becklab.cloud    -> <YOUR_PUBLIC_IP>
+ha.becklab.cloud         -> <YOUR_PUBLIC_IP>       (NEW — Home Assistant)
+hubble.becklab.cloud     -> <YOUR_PUBLIC_IP>
+kiri.becklab.cloud       -> <YOUR_PUBLIC_IP>       (NEW — Gridspace Kiri:moto)
+mesh.becklab.cloud       -> <YOUR_PUBLIC_IP>       (NEW — Gridspace Mesh Tool)
+nova.becklab.cloud       -> <YOUR_PUBLIC_IP>       (NEW — OpenClaw)
+one.becklab.cloud        -> <YOUR_PUBLIC_IP>
+silex.becklab.cloud      -> <YOUR_PUBLIC_IP>
+traefik.becklab.cloud    -> <YOUR_PUBLIC_IP>
+void.becklab.cloud       -> <YOUR_PUBLIC_IP>       (NEW — Gridspace Void:Form)
 ```
 
 > Media services (jellyfin, sonarr, etc.) have TLS certificates but no IngressRoutes yet.
@@ -35,14 +40,14 @@ traefik.becklab.cloud   -> <YOUR_PUBLIC_IP>
 kubectl get pods -A
 
 # Check specific namespaces
-kubectl get pods -n identity    # Keycloak, LLDAP, oauth2-proxy ×2, Redis
-kubectl get pods -n media       # Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, etc.
+kubectl get pods -n identity    # Keycloak, LLDAP, oauth2-proxy ×2, Redis, logout-page, sso-redirect, user-invite, Postfix relay
+kubectl get pods -n webapps     # Affine, Bitwarden BSM, Directus, Home Assistant, Homepage, Landing, Silex, OpenClaw
+kubectl get pods -n media       # Jellyfin, Sonarr, Radarr, Prowlarr, Bazarr, qBittorrent+Gluetun, Homebox, Tdarr, Jellyseerr, SABnzbd, nzbget, SpotWeb, MariaDB
 kubectl get pods -n monitoring  # Prometheus stack, Grafana
-kubectl get pods -n security    # Wazuh stack, agents
-kubectl get pods -n trivy-system # Trivy Operator + scan jobs
-kubectl get pods -n affine      # Affine wiki (new)
-kubectl get pods -n bitwarden   # Vaultwarden BSM
-kubectl get pods -n cms         # Directus
+kubectl get pods -n security    # Wazuh stack, Suricata, Trivy Operator
+kubectl get pods -n 3dprinting  # Manyfold, FDM Monster, Spoolman, OrcaSlicer, BumpMesh
+kubectl get pods -n gridspace   # Gridspace, Kiri:moto, Mesh Tool, Void:Form
+kubectl get pods -n gaming      # Crafty Controller (Minecraft)
 ```
 
 ### Check IngressRoutes
@@ -54,14 +59,19 @@ kubectl get ingressroute -A
 Expected routes:
 | Route | Namespace |
 |-------|-----------|
-| affine | affine |
-| bitwarden-secrets-manager | bitwarden |
-| directus | cms |
+| affine | webapps |
+| bitwarden-secrets-manager | webapps |
+| directus | webapps |
 | grafana | monitoring |
+| home-assistant | webapps |
 | hubble-ui | monitoring |
+| kiri-moto | gridspace |
+| mesh-tool | gridspace |
+| openclaw | webapps |
 | opennebula | opennebula |
+| silex | webapps |
 | traefik-dashboard-https | traefik |
-| silex | landing |
+| void-form | gridspace |
 
 ### First-Time Setup
 
@@ -70,9 +80,11 @@ Expected routes:
 | Affine | https://affine.becklab.cloud | SSO login (admin tier), create workspace |
 | Bitwarden BSM | https://bw.becklab.cloud | Create admin account, set up projects |
 | Directus | https://cms.becklab.cloud | SSO login, configure collections |
+| Home Assistant | https://ha.becklab.cloud | SSO login (admin tier, no-auth-header variant) |
 | Grafana | https://grafana.becklab.cloud | SSO login (admin tier) |
 | Hubble UI | https://hubble.becklab.cloud | SSO login, view network map |
 | OpenNebula Sunstone | https://one.becklab.cloud | SSO login |
+| OpenClaw | https://nova.becklab.cloud | SSO login (admin tier) |
 | Silex | https://silex.becklab.cloud | SSO login, run setup wizard if first time |
 | Traefik Dashboard | https://traefik.becklab.cloud | SSO login (admin tier) |
 
@@ -90,7 +102,7 @@ scp root@becklab:/root/beck-cloud/.sops.agekey ~/.config/sops/age/becklab.agekey
 
 ### Email Deliverability (Postfix Relay)
 
-The `email` namespace runs a Postfix relay via Mailgun. No full mail server.
+The Postfix relay now runs in the `identity` namespace (moved from `email` via Mailgun). No full mail server.
 For services that send email through the cluster:
 
 1. **SPF record** — Add TXT record for `becklab.cloud`:
@@ -154,12 +166,12 @@ Use via `grant_type=password` through Traefik:
 4. Commit and push — Flux picks it up within 1 minute (infrastructure kustomization interval)
 
 ```yaml
-# Example: flux/infrastructure/media/new-service.yaml
+# Example: flux/infrastructure/webapps/new-service.yaml
 apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: new-service
-  namespace: media
+  namespace: webapps
 spec:
   replicas: 1
   selector:
@@ -180,7 +192,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: new-service
-  namespace: media
+  namespace: webapps
 spec:
   selector:
     app: new-service
@@ -196,7 +208,7 @@ apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: new-service
-  namespace: media
+  namespace: webapps
 spec:
   entryPoints:
   - websecure
@@ -216,7 +228,7 @@ apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: new-service
-  namespace: media
+  namespace: webapps
 spec:
   secretName: new-service-tls
   issuerRef:
@@ -235,10 +247,10 @@ spec:
 
 ```bash
 # Example
-cp flux/infrastructure/media/new-secret.yaml.template flux/infrastructure/media/new-secret.yaml
+cp flux/infrastructure/webapps/new-secret.yaml.template flux/infrastructure/webapps/new-secret.yaml
 # Fill in values, then:
-sops --encrypt-in-place flux/infrastructure/media/new-secret.yaml
-git add flux/infrastructure/media/new-secret.yaml
+sops --encrypt-in-place flux/infrastructure/webapps/new-secret.yaml
+git add flux/infrastructure/webapps/new-secret.yaml
 ```
 
 ### Rolling Restart of a Deployment
@@ -269,8 +281,8 @@ kubectl port-forward -n media svc/jellyfin 8096:8096
 # Access Sonarr
 kubectl port-forward -n media svc/sonarr 8989:8989
 
-# Access qBittorrent
-kubectl port-forward -n torrent svc/qbit-gluetun 8080:8080
+# Access qBittorrent (moved from torrent namespace)
+kubectl port-forward -n media svc/qbit-gluetun 8080:8080
 
 # Access Grafana (already exposed but useful for quick access)
 kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
@@ -286,7 +298,7 @@ kubectl get backups -n velero --sort-by=.metadata.creationTimestamp
 kubectl get schedules -n velero
 
 # Trigger manual backup of a namespace
-velero backup create media-backup-$(date +%Y%m%d) --include-namespaces media
+velero backup create webapps-backup-$(date +%Y%m%d) --include-namespaces webapps
 
 # Restore from backup (if needed)
 velero restore create --from-backup <backup-name> --namespace-mappings source=destination
@@ -340,6 +352,21 @@ kubectl describe clusterissuer letsencrypt-prod
 1. `kubectl describe node ip-192-168-100-11` — check conditions, disk pressure, memory
 2. `kubectl top node ip-192-168-100-11` — resource utilization
 3. If worker is unreachable: try SSH via ProxyJump from Ansible host
+
+### Trivy Operator Failing to Schedule
+
+The security namespace has a ResourceQuota (`security-quota`) limiting CPU to 7000m.
+Wazuh stack already uses ~7300m, leaving no room for Trivy's 500m request.
+
+```bash
+# Check quota usage
+kubectl describe resourcequota security-quota -n security
+
+# Options:
+# 1. Increase the quota limit
+# 2. Reduce Wazuh resource limits
+# 3. Move Trivy to a different namespace
+```
 
 ---
 
@@ -402,8 +429,9 @@ ansible-playbook -i ansible/inventory/hosts.yml -l k3s_nodes ansible/playbooks/0
 
 1. **Identity namespace** (backed up every 6h, 30d retention) — Most critical, contains all auth data
 2. **Security namespace** (daily at 02:00, 90d retention) — Wazuh security monitoring
-3. **Media + Torrent namespaces** (daily at 01:00, 14d retention) — Service configs and databases
-4. **Full cluster weekly backup** (Sunday 02:00, 90d retention) — Everything
+3. **Webapps namespace** (covered by weekly full-cluster backup) — User-facing services
+4. **Media + Torrent namespaces** (daily at 01:00, 14d retention) — Service configs and databases
+5. **Full cluster weekly backup** (Sunday 02:00, 90d retention) — Everything
 
 ### Media Library Recovery Note
 
