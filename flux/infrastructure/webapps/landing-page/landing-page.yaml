@@ -139,11 +139,15 @@ data:
         })
 
     def index_view(request):
-        """Serve /hosting/index.html as raw text, no template parsing."""
+        """Serve /hosting/index.html as raw text, no template parsing.
+        Strips Silex YAML frontmatter (--- ... ---) from the beginning."""
+        import re
         idx = os.path.join(hosting, "index.html")
         try:
             with open(idx, "r", encoding="utf-8") as f:
                 content = f.read()
+            # Strip leading YAML frontmatter: --- ... ---
+            content = re.sub(r'^---[\s\S]*?---\s*', '', content)
             return HttpResponse(content, content_type="text/html; charset=utf-8")
         except FileNotFoundError:
             return HttpResponseNotFound("<h1>404</h1>")
