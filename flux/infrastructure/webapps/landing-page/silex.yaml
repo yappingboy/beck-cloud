@@ -70,10 +70,6 @@ spec:
               value: "fs,ftp"
             - name: SILEX_HOST
               value: "0.0.0.0"
-            - name: UUID
-              value: 0
-            - name: GUID
-              value: 0
           ports:
             - containerPort: 8080
           volumeMounts:
