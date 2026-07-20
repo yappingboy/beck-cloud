@@ -39,7 +39,6 @@ data:
 
     KeepAlive Off
     MaxRequestWorkers 50
-    
 
     <Directory "/hosting">
         Options -Indexes -FollowSymLinks
@@ -98,7 +97,7 @@ data:
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ]
 
-    ROOT_URLCONF = "beckcloud.urls"
+    ROOT_URLCONF = "urls"
 
     TEMPLATES = [
         {
@@ -113,7 +112,7 @@ data:
         },
     ]
 
-    WSGI_APPLICATION = "beckcloud.wsgi.application"
+    WSGI_APPLICATION = "wsgi.application"
     STATIC_URL = "/static/"
     DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -136,7 +135,6 @@ data:
         return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
 
     def index_api(request):
-        """Returns site metadata for the landing page."""
         return JsonResponse({
             "name": "BeckCloud",
             "tagline": "Built by one. Running for all.",
@@ -151,14 +149,13 @@ data:
     import os
     from django.core.wsgi import get_wsgi_application
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
     application = get_wsgi_application()
-  __init__.py: "# BeckCloud Django backend\n"
   manage.py: |
     #!/usr/bin/env python
     import os, sys
     def main():
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
         from django.core.management import execute_from_command_line
         execute_from_command_line(sys.argv)
     if __name__ == "__main__":
@@ -166,7 +163,8 @@ data:
   start.sh: |
     #!/bin/sh
     pip install --quiet django==5.1 2>/dev/null
-    exec python /app/manage.py runserver 0.0.0.0:8000 --noreload
+    cd /app
+    exec python manage.py runserver 0.0.0.0:8000 --noreload
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -233,24 +231,23 @@ spec:
               value: "1"
             - name: PYTHONUNBUFFERED
               value: "1"
+            - name: PYTHONPATH
+              value: "/app"
           volumeMounts:
             - name: django-config
               mountPath: /app
-              readOnly: true
-            - name: django-src
-              mountPath: /app/beckcloud
               readOnly: true
           readinessProbe:
             httpGet:
               path: /api/health/
               port: 8000
-            initialDelaySeconds: 5
+            initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/health/
               port: 8000
-            initialDelaySeconds: 10
+            initialDelaySeconds: 15
             periodSeconds: 30
 
       volumes:
@@ -261,94 +258,9 @@ spec:
           configMap:
             name: landing-django
             defaultMode: 0755
-        - name: django-src
-          configMap:
-            name: landing-django-src
-            defaultMode: 0644
         - name: hosting
           persistentVolumeClaim:
             claimName: silex-hosting
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: landing-django-src
-  namespace: webapps
-data:
-  __init__.py: "# BeckCloud Django app\n"
-  settings.py: |
-    import os
-
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "beckcloud-landing-insecure-key")
-    DEBUG = False
-    ALLOWED_HOSTS = ["*"]
-
-    INSTALLED_APPS = [
-        "django.contrib.contenttypes",
-        "django.contrib.staticfiles",
-    ]
-
-    MIDDLEWARE = [
-        "django.middleware.security.SecurityMiddleware",
-        "django.middleware.common.CommonMiddleware",
-        "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    ]
-
-    ROOT_URLCONF = "beckcloud.urls"
-
-    TEMPLATES = [
-        {
-            "BACKEND": "django.template.backends.django.DjangoTemplates",
-            "DIRS": [],
-            "APP_DIRS": True,
-            "OPTIONS": {
-                "context_processors": [
-                    "django.template.context_processors.request",
-                ],
-            },
-        },
-    ]
-
-    WSGI_APPLICATION = "beckcloud.wsgi.application"
-    STATIC_URL = "/static/"
-    DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-    LOGGING = {
-        "version": 1,
-        "disable_existing_loggers": False,
-        "handlers": {
-            "console": {"class": "logging.StreamHandler"},
-        },
-        "root": {"handlers": ["console"], "level": "WARNING"},
-        "loggers": {
-            "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
-        },
-    }
-  urls.py: |
-    from django.urls import path
-    from django.http import JsonResponse
-
-    def health_check(request):
-        return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
-
-    def index_api(request):
-        return JsonResponse({
-            "name": "BeckCloud",
-            "tagline": "Built by one. Running for all.",
-            "description": "A self-hosted homelab running K3s.",
-        })
-
-    urlpatterns = [
-        path("health/", health_check, name="health"),
-        path("", index_api, name="index"),
-    ]
-  wsgi.py: |
-    import os
-    from django.core.wsgi import get_wsgi_application
-
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
-    application = get_wsgi_application()
 ---
 apiVersion: v1
 kind: Service
