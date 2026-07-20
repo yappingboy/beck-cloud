@@ -4,7 +4,7 @@ metadata:
   name: landing-httpd
   namespace: webapps
 data:
-  httpd.conf: |
+  apache2.conf: |
     ServerRoot "/etc/apache2"
     Listen 80
 
@@ -201,8 +201,8 @@ spec:
               value: "/hosting"
           volumeMounts:
             - name: httpd-config
-              mountPath: /etc/apache2/httpd.conf
-              subPath: httpd.conf
+              mountPath: /etc/apache2/apache2.conf
+              subPath: apache2.conf
               readOnly: true
             - name: django-config
               mountPath: /app/beckcloud/settings.py

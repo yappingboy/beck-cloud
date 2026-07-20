@@ -7,9 +7,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && pip install django==5.1 \
     && rm -rf /var/lib/apt/lists/* /tmp/*
 
-# Remove default Apache config — we mount our own
-RUN rm -f /etc/apache2/apache2.conf /etc/apache2/ports.conf \
-    && rm -rf /etc/apache2/conf-enabled/* /etc/apache2/sites-enabled/* /etc/apache2/mods-enabled/*
+# Remove default Apache configs (we mount our own)
+RUN rm -rf /etc/apache2/conf-enabled/* /etc/apache2/sites-enabled/* /etc/apache2/mods-enabled/*
 
 # Set up app directory structure
 RUN mkdir -p /app/beckcloud
