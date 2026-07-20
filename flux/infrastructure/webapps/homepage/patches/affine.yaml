@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: affine
+  namespace: webapps
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Collaborative wiki
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: si-affine
+    gethomepage.dev/name: Affine
+    gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://affine.becklab.cloud

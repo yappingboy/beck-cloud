@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bazarr
+  namespace: media
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Subtitle manager
+    gethomepage.dev/group: Media
+    gethomepage.dev/icon: bazarr
+    gethomepage.dev/name: Bazarr
+    gethomepage.dev/widget.type: bazarr
+    gethomepage.dev/widget.url: https://bazarr.becklab.cloud
+    gethomepage.dev/weight: '4'

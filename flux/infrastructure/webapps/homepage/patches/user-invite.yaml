@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: user-invite
+  namespace: identity
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: User provisioning
+    gethomepage.dev/group: Identity
+    gethomepage.dev/icon: mdi-account-plus
+    gethomepage.dev/name: User Invite
+    gethomepage.dev/weight: '4'

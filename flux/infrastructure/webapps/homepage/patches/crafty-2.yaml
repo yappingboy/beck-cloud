@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: crafty
+  namespace: gaming
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Minecraft server
+    gethomepage.dev/group: Gaming
+    gethomepage.dev/icon: crafty-controller
+    gethomepage.dev/name: Crafty Controller
+    gethomepage.dev/widget.type: minecraft
+    gethomepage.dev/widget.url: https://crafty.becklab.cloud
+    gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://crafty.becklab.cloud

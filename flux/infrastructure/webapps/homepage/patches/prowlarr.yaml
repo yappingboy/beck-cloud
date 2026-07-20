@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: prowlarr
+  namespace: media
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Indexer manager
+    gethomepage.dev/group: Media
+    gethomepage.dev/icon: mdi-rss
+    gethomepage.dev/name: Prowlarr
+    gethomepage.dev/widget.type: prowlarr
+    gethomepage.dev/widget.url: https://prowlarr.becklab.cloud
+    gethomepage.dev/weight: '5'

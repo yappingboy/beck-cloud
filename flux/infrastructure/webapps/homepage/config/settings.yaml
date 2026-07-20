@@ -1,0 +1,34 @@
+title: Becklab
+theme: dark
+color: auto
+headerStyle: clean
+background:
+  image: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80
+  blur: true
+  brightness: 0.5
+  opacity: 0.4
+layout:
+  Media:
+    style: row
+    columns: 4
+  3D Printing:
+    style: row
+    columns: 4
+  Apps:
+    style: row
+    columns: 4
+  Security:
+    style: row
+    columns: 3
+  Monitoring:
+    style: row
+    columns: 4
+  Identity:
+    style: row
+    columns: 4
+  Infrastructure:
+    style: row
+    columns: 4
+  Gaming:
+    style: row
+    columns: 2

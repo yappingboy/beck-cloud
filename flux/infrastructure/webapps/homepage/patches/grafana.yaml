@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+  namespace: monitoring
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Dashboards
+    gethomepage.dev/group: Monitoring
+    gethomepage.dev/icon: si-grafana
+    gethomepage.dev/name: Grafana
+    gethomepage.dev/widget.type: grafana
+    gethomepage.dev/widget.url: https://grafana.becklab.cloud
+    gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://grafana.becklab.cloud

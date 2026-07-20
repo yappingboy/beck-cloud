@@ -1,0 +1,312 @@
+{
+  "generated_at": "2026-07-20",
+  "total_resources_scanned": 37,
+  "total_patches": 37,
+  "services_by_group": {
+    "Identity": 5,
+    "3D Printing": 5,
+    "Gaming": 2,
+    "Apps": 9,
+    "Media": 11,
+    "Monitoring": 2,
+    "Infrastructure": 3
+  },
+  "services": [
+    {
+      "name": "User Invite",
+      "group": "Identity",
+      "host": "admin.becklab.cloud",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-account-plus"
+    },
+    {
+      "name": "Bumpmesh",
+      "group": "3D Printing",
+      "host": "bump.becklab.cloud",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "mdi-cube-scan"
+    },
+    {
+      "name": "FDM Monster",
+      "group": "3D Printing",
+      "host": "fdm.becklab.cloud",
+      "namespace": "3dprinting",
+      "widget": "customapi",
+      "icon": "si-bambulab"
+    },
+    {
+      "name": "Manyfold",
+      "group": "3D Printing",
+      "host": "manyfold.becklab.cloud",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "mdi-printer-3d"
+    },
+    {
+      "name": "Orca Slicer",
+      "group": "3D Printing",
+      "host": "slicer.becklab.cloud",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "si-bambulab"
+    },
+    {
+      "name": "Spoolman",
+      "group": "3D Printing",
+      "host": "spoolman.becklab.cloud",
+      "namespace": "3dprinting",
+      "widget": "spoolman",
+      "icon": "mdi-spool"
+    },
+    {
+      "name": "Crafty Controller",
+      "group": "Gaming",
+      "host": "crafty.becklab.cloud",
+      "namespace": "gaming",
+      "widget": "minecraft",
+      "icon": "crafty-controller"
+    },
+    {
+      "name": "Crafty Controller",
+      "group": "Gaming",
+      "host": "crafty.becklab.cloud",
+      "namespace": "gaming",
+      "widget": "minecraft",
+      "icon": "crafty-controller"
+    },
+    {
+      "name": "Kiri:Moto",
+      "group": "Apps",
+      "host": "kiri.becklab.cloud",
+      "namespace": "gridspace",
+      "widget": null,
+      "icon": "mdi-printer-3d"
+    },
+    {
+      "name": "Mesh:Tool",
+      "group": "Apps",
+      "host": "mesh.becklab.cloud",
+      "namespace": "gridspace",
+      "widget": null,
+      "icon": "mdi-cube-outline"
+    },
+    {
+      "name": "Void:Form",
+      "group": "Apps",
+      "host": "void.becklab.cloud",
+      "namespace": "gridspace",
+      "widget": null,
+      "icon": "mdi-cube-unfolded"
+    },
+    {
+      "name": "Keycloak",
+      "group": "Identity",
+      "host": "keycloak.becklab.cloud",
+      "namespace": "identity",
+      "widget": "keycloak",
+      "icon": "keycloak.png"
+    },
+    {
+      "name": "LDAP",
+      "group": "Identity",
+      "host": "lldap.becklab.cloud",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-account-group"
+    },
+    {
+      "name": "SSO Logout",
+      "group": "Identity",
+      "host": "logout.becklab.cloud",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-logout-variant"
+    },
+    {
+      "name": "Bazarr",
+      "group": "Media",
+      "host": "bazarr.becklab.cloud",
+      "namespace": "media",
+      "widget": "bazarr",
+      "icon": "bazarr"
+    },
+    {
+      "name": "Homebox",
+      "group": "Apps",
+      "host": "homebox.becklab.cloud",
+      "namespace": "media",
+      "widget": "homebox",
+      "icon": "mdi-box"
+    },
+    {
+      "name": "Jellyfin",
+      "group": "Media",
+      "host": "jellyfin.becklab.cloud",
+      "namespace": "media",
+      "widget": "jellyfin",
+      "icon": "si-jellyfin"
+    },
+    {
+      "name": "Jellyseerr",
+      "group": "Media",
+      "host": "requests.becklab.cloud",
+      "namespace": "media",
+      "widget": "seerr",
+      "icon": "mdi-television-box"
+    },
+    {
+      "name": "NZBGet",
+      "group": "Media",
+      "host": "nzbget.becklab.cloud",
+      "namespace": "media",
+      "widget": "nzbget",
+      "icon": "mdi-download-circle"
+    },
+    {
+      "name": "Prowlarr",
+      "group": "Media",
+      "host": "prowlarr.becklab.cloud",
+      "namespace": "media",
+      "widget": "prowlarr",
+      "icon": "mdi-rss"
+    },
+    {
+      "name": "qBittorrent",
+      "group": "Media",
+      "host": "qbit.becklab.cloud",
+      "namespace": "media",
+      "widget": "qbittorrent",
+      "icon": "si-qbittorrent"
+    },
+    {
+      "name": "Radarr",
+      "group": "Media",
+      "host": "radarr.becklab.cloud",
+      "namespace": "media",
+      "widget": "radarr",
+      "icon": "si-radarr"
+    },
+    {
+      "name": "SABnzbd",
+      "group": "Media",
+      "host": "sabnzbd.becklab.cloud",
+      "namespace": "media",
+      "widget": "sabnzbd",
+      "icon": "mdi-download"
+    },
+    {
+      "name": "Sonarr",
+      "group": "Media",
+      "host": "sonarr.becklab.cloud",
+      "namespace": "media",
+      "widget": "sonarr",
+      "icon": "si-sonarr"
+    },
+    {
+      "name": "Spotweb",
+      "group": "Media",
+      "host": "spotweb.becklab.cloud",
+      "namespace": "media",
+      "widget": null,
+      "icon": "mdi-web"
+    },
+    {
+      "name": "Tdarr",
+      "group": "Media",
+      "host": "tdarr.becklab.cloud",
+      "namespace": "media",
+      "widget": "tdarr",
+      "icon": "mdi-filmstrip-box"
+    },
+    {
+      "name": "Grafana",
+      "group": "Monitoring",
+      "host": "grafana.becklab.cloud",
+      "namespace": "monitoring",
+      "widget": "grafana",
+      "icon": "si-grafana"
+    },
+    {
+      "name": "Hubble",
+      "group": "Monitoring",
+      "host": "hubble.becklab.cloud",
+      "namespace": "monitoring",
+      "widget": null,
+      "icon": "mdi-network"
+    },
+    {
+      "name": "OpenNebula",
+      "group": "Infrastructure",
+      "host": "one.becklab.cloud",
+      "namespace": "opennebula",
+      "widget": null,
+      "icon": "si-opennebula"
+    },
+    {
+      "name": "Traefik",
+      "group": "Infrastructure",
+      "host": "traefik.becklab.cloud",
+      "namespace": "traefik",
+      "widget": null,
+      "icon": "mdi-server"
+    },
+    {
+      "name": "Affine",
+      "group": "Apps",
+      "host": "affine.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "si-affine"
+    },
+    {
+      "name": "Bitwarden BSM",
+      "group": "Identity",
+      "host": "bw.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "si-bitwarden"
+    },
+    {
+      "name": "Directus",
+      "group": "Apps",
+      "host": "cms.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "si-directus"
+    },
+    {
+      "name": "Home Assistant",
+      "group": "Apps",
+      "host": "ha.becklab.cloud",
+      "namespace": "webapps",
+      "widget": "homeassistant",
+      "icon": "si-homeassistant"
+    },
+    {
+      "name": "BeckCloud",
+      "group": "Infrastructure",
+      "host": "becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-domain"
+    },
+    {
+      "name": "Silex",
+      "group": "Apps",
+      "host": "silex.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-pencil-ruler"
+    },
+    {
+      "name": "OpenClaw",
+      "group": "Apps",
+      "host": "nova.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-robot"
+    }
+  ]
+}

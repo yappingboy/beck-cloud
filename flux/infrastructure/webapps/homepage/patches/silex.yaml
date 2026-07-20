@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: silex
+  namespace: webapps
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Design tool
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-pencil-ruler
+    gethomepage.dev/name: Silex
+    gethomepage.dev/weight: '4'
+    gethomepage.dev/href: https://silex.becklab.cloud

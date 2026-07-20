@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: opennebula
+  namespace: opennebula
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: VM Management
+    gethomepage.dev/group: Infrastructure
+    gethomepage.dev/icon: si-opennebula
+    gethomepage.dev/name: OpenNebula
+    gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://one.becklab.cloud

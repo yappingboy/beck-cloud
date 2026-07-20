@@ -17,16 +17,13 @@ spec:
     image:
       repository: ghcr.io/gethomepage/homepage
       tag: latest
-    
     env:
-      - name: HOMEPAGE_ALLOWED_HOSTS
-        value: home.becklab.cloud
+    - name: HOMEPAGE_ALLOWED_HOSTS
+      value: home.becklab.cloud
     serviceAccount:
       create: true
       name: homepage
-
     enableRbac: true
-
     ingress:
       main:
         enabled: true
@@ -36,225 +33,35 @@ spec:
           traefik.ingress.kubernetes.io/router.entrypoints: websecure
           traefik.ingress.kubernetes.io/router.middlewares: identity-sso-media-chain@kubernetescrd
         hosts:
-          - host: home.becklab.cloud
-            paths:
-              - path: /
-                pathType: Prefix
+        - host: home.becklab.cloud
+          paths:
+          - path: /
+            pathType: Prefix
         tls:
-          - hosts:
-              - home.becklab.cloud
-            secretName: homepage-tls
-
+        - hosts:
+          - home.becklab.cloud
+          secretName: homepage-tls
   postRenderers:
-    - kustomize:
-        patches:
-          - target:
-              version: v1
-              kind: ConfigMap
-              name: homepage
-            patch: |-
-              apiVersion: v1
-              kind: ConfigMap
-              metadata:
-                name: homepage
-              data:
-                settings.yaml: |
-                  title: Becklab
-                  theme: dark
-                  color: slate
-                  headerStyle: clean
-                  layout:
-                    Media:
-                      style: row
-                      columns: 4
-                    TV & Movies:
-                      style: row
-                      columns: 3
-                    Indexing:
-                      style: row
-                      columns: 3
-                    Requests:
-                      style: row
-                      columns: 2
-                    '3D Printing':
-                      style: row
-                      columns: 4
-                    Apps:
-                      style: row
-                      columns: 4
-                    Security:
-                      style: row
-                      columns: 3
-                    Monitoring:
-                      style: row
-                      columns: 4
-                    Identity:
-                      style: row
-                      columns: 4
-                widgets.yaml: |
-                  - resources:
-                      cpu: true
-                      memory: true
-                      label: cluster
-                  - datetime:
-                      text_size: xl
-                      format:
-                        timeStyle: short
-                        dateStyle: short
-                services.yaml: |
-                  - Media:
-                      - Jellyfin:
-                          href: https://jellyfin.becklab.cloud
-                          description: Media streaming
-                          icon: jellyfin.png
-                      - Tdarr:
-                          href: https://tdarr.becklab.cloud
-                          description: Media transcoding
-                          icon: tdarr.png
-                      - Homebox:
-                          href: https://homebox.becklab.cloud
-                          description: Home inventory
-                          icon: homebox.png
-                      - qBittorrent:
-                          href: https://qbit.becklab.cloud
-                          description: Torrent downloads
-                          icon: qbittorrent.png
-                  - TV & Movies:
-                      - Sonarr:
-                          href: https://sonarr.becklab.cloud
-                          description: TV show manager
-                          icon: sonarr.png
-                      - Radarr:
-                          href: https://radarr.becklab.cloud
-                          description: Movie manager
-                          icon: radarr.png
-                      - Bazarr:
-                          href: https://bazarr.becklab.cloud
-                          description: Subtitle manager
-                          icon: bazarr.png
-                  - Indexing:
-                      - Prowlarr:
-                          href: https://prowlarr.becklab.cloud
-                          description: Indexer manager
-                          icon: prowlarr.png
-                      - SABnzbd:
-                          href: https://sabnzbd.becklab.cloud
-                          description: NZB downloader
-                          icon: sabnzbd.png
-                      - NZBGet:
-                          href: https://nzbget.becklab.cloud
-                          description: NZB downloader
-                          icon: nzbget.png
-                      - Spotweb:
-                          href: https://spotweb.becklab.cloud
-                          description: NZB search
-                          icon: spotweb.png
-                  - Requests:
-                      - Jellyseerr:
-                          href: https://requests.becklab.cloud
-                          description: Media requests
-                          icon: jellyseerr.png
-                  - 3D Printing:
-                      - FDM Monster:
-                          href: https://fdm-monster.becklab.cloud
-                          description: Printer monitoring
-                          icon: fdmmonster.png
-                      - Manyfold:
-                          href: https://manyfold.becklab.cloud
-                          description: Model library
-                          icon: manyfold.png
-                      - Spoolman:
-                          href: https://spoolman.becklab.cloud
-                          description: Filament tracker
-                          icon: spoolman.png
-                      - Orca Slicer:
-                          href: https://orca-slicer.becklab.cloud
-                          description: 3D slicing web UI
-                          icon: orcaslicer.png
-                      - Bumpmesh:
-                          href: https://bumpmesh.becklab.cloud
-                          description: Mesh analysis
-                          icon: bumpmesh.png
-                  - Apps:
-                      - Affine:
-                          href: https://affine.becklab.cloud
-                          description: Collaborative wiki
-                          icon: affine.png
-                      - Directus:
-                          href: https://cms.becklab.cloud
-                          description: Headless CMS
-                          icon: directus.png
-                      - Silex:
-                          href: https://silex.becklab.cloud
-                          description: Design tool
-                          icon: silex.png
-                      - Home Assistant:
-                          href: https://homeassistant.becklab.cloud
-                          description: Smart home
-                          icon: home-assistant.png
-                      - Gridspace:
-                          href: https://gridspace.becklab.cloud
-                          description: File manager
-                          icon: gridspace.png
-                  - Security:
-                      - Wazuh Dashboard:
-                          href: https://wazuh.becklab.cloud
-                          description: SIEM / XDR
-                          icon: wazuh.png
-                      - Trivy Operator:
-                          href: https://trivy.becklab.cloud
-                          description: Vulnerability scanning
-                          icon: trivy.png
-                  - Monitoring:
-                      - Grafana:
-                          href: https://grafana.becklab.cloud
-                          description: Dashboards
-                          icon: grafana.png
-                      - Prometheus:
-                          href: https://prometheus.becklab.cloud
-                          description: Metrics
-                          icon: prometheus.png
-                      - Alertmanager:
-                          href: https://alertmanager.becklab.cloud
-                          description: Alerts
-                          icon: alertmanager.png
-                      - Hubble:
-                          href: https://hubble.becklab.cloud
-                          description: CNI observability
-                          icon: hubble.png
-                  - Identity:
-                      - Keycloak:
-                          href: https://keycloak.becklab.cloud
-                          description: SSO / Identity
-                          icon: keycloak.png
-                      - LDAP:
-                          href: https://lldap.becklab.cloud
-                          description: LDAP directory
-                          icon: lldap.png
-                      - Bitwarden BSM:
-                          href: https://bw.becklab.cloud
-                          description: Secrets manager
-                          icon: bitwarden.png
-                      - SSO Logout:
-                          href: https://logout.becklab.cloud
-                          description: Sign out
-                          icon: logout.png
-                  - Infrastructure:
-                      - OpenNebula:
-                          href: https://one.becklab.cloud
-                          description: VM Management
-                          icon: server.png
-                      - Traefik:
-                          href: https://traefik.becklab.cloud
-                          description: Ingress dashboard
-                          icon: traefik.png
-                      - Velero:
-                          href: https://velero.becklab.cloud
-                          description: Backups
-                          icon: velero.png
-                bookmarks.yaml: |
-                  []
-                kubernetes.yaml: |
-                  mode: cluster
-                docker.yaml: |
-                  {}
+  - kustomize:
+      patches:
+      - target:
+          version: v1
+          kind: ConfigMap
+          name: homepage
+        patch: "apiVersion: v1\nkind: ConfigMap\nmetadata:\n  name: homepage\ndata:\n\
+          \  settings.yaml: \"title: Becklab\\ntheme: dark\\ncolor: auto\\nheaderStyle:\
+          \ clean\\nbackground:\\n\\\n    \\  image: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80\\\
+          n\\\n    \\  blur: true\\n  brightness: 0.5\\n  opacity: 0.4\\nlayout:\\\
+          n  Media:\\n    style:\\\n    \\ row\\n    columns: 4\\n  3D Printing:\\\
+          n    style: row\\n    columns: 4\\n  Apps:\\n\\\n    \\    style: row\\\
+          n    columns: 4\\n  Security:\\n    style: row\\n    columns: 3\\n\\\n \
+          \   \\  Monitoring:\\n    style: row\\n    columns: 4\\n  Identity:\\n \
+          \   style: row\\n\\\n    \\    columns: 4\\n  Infrastructure:\\n    style:\
+          \ row\\n    columns: 4\\n  Gaming:\\n\\\n    \\    style: row\\n    columns:\
+          \ 2\\n\"\n  widgets.yaml: \"resources:\\n  cpu: true\\n  memory: true\\\
+          n  label: Cluster\\ndatetime:\\n\\\n    \\  text_size: xl\\n  format:\\\
+          n    timeStyle: short\\n    dateStyle: short\\nsearch:\\n\\\n    \\  provider:\
+          \ duckduckgo\\n  target: _blank\\n\"\n  services.yaml: ''\n  bookmarks.yaml:\
+          \ '[]\n\n    '\n  kubernetes.yaml: 'mode: cluster\n\n    ingress: true\n\
+          \n    traefik: true\n\n    '\n  docker.yaml: '{}\n\n    '\n"
+

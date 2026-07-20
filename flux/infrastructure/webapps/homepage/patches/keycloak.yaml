@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: keycloak
+  namespace: identity
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: SSO / Identity
+    gethomepage.dev/group: Identity
+    gethomepage.dev/icon: keycloak.png
+    gethomepage.dev/name: Keycloak
+    gethomepage.dev/widget.type: keycloak
+    gethomepage.dev/widget.url: https://keycloak.becklab.cloud
+    gethomepage.dev/weight: '1'

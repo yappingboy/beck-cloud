@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: directus
+  namespace: webapps
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Headless CMS
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: si-directus
+    gethomepage.dev/name: Directus
+    gethomepage.dev/weight: '2'
+    gethomepage.dev/href: https://cms.becklab.cloud

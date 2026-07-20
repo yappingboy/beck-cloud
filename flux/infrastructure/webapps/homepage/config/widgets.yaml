@@ -1,0 +1,12 @@
+resources:
+  cpu: true
+  memory: true
+  label: Cluster
+datetime:
+  text_size: xl
+  format:
+    timeStyle: short
+    dateStyle: short
+search:
+  provider: duckduckgo
+  target: _blank

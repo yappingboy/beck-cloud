@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: void-form
+  namespace: gridspace
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Generative design
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-cube-unfolded
+    gethomepage.dev/name: Void:Form
+    gethomepage.dev/weight: '3'
+    gethomepage.dev/href: https://void.becklab.cloud

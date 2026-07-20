@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: 3D slicing web UI
+    gethomepage.dev/group: 3D Printing
+    gethomepage.dev/icon: si-bambulab
+    gethomepage.dev/name: Orca Slicer
+    gethomepage.dev/weight: '4'

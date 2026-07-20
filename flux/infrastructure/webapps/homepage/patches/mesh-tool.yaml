@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: mesh-tool
+  namespace: gridspace
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Mesh repair
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-cube-outline
+    gethomepage.dev/name: Mesh:Tool
+    gethomepage.dev/weight: '2'
+    gethomepage.dev/href: https://mesh.becklab.cloud

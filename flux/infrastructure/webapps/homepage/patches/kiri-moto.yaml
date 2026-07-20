@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: kiri-moto
+  namespace: gridspace
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: 3D slicer
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-printer-3d
+    gethomepage.dev/name: Kiri:Moto
+    gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://kiri.becklab.cloud

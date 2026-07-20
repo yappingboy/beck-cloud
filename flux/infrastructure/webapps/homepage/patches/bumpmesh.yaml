@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: bumpmesh
+  namespace: 3dprinting
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Mesh analysis
+    gethomepage.dev/group: 3D Printing
+    gethomepage.dev/icon: mdi-cube-scan
+    gethomepage.dev/name: Bumpmesh
+    gethomepage.dev/weight: '5'

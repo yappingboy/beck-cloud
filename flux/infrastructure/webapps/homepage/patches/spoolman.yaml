@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: spoolman
+  namespace: 3dprinting
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Filament tracker
+    gethomepage.dev/group: 3D Printing
+    gethomepage.dev/icon: mdi-spool
+    gethomepage.dev/name: Spoolman
+    gethomepage.dev/widget.type: spoolman
+    gethomepage.dev/widget.url: https://spoolman.becklab.cloud
+    gethomepage.dev/weight: '3'

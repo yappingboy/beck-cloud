@@ -1,0 +1,11 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing-page
+  namespace: webapps
+  annotations:
+    gethomepage.dev/description: Landing page
+    gethomepage.dev/group: Infrastructure
+    gethomepage.dev/icon: mdi-domain
+    gethomepage.dev/name: BeckCloud
+    gethomepage.dev/weight: '10'

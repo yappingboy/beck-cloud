@@ -1,0 +1,14 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Printer monitoring
+    gethomepage.dev/group: 3D Printing
+    gethomepage.dev/icon: si-bambulab
+    gethomepage.dev/name: FDM Monster
+    gethomepage.dev/widget.type: customapi
+    gethomepage.dev/widget.url: https://fdm.becklab.cloud/api/printer
+    gethomepage.dev/weight: '1'

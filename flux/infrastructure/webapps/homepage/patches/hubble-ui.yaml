@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hubble-ui
+  namespace: monitoring
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: CNI observability
+    gethomepage.dev/group: Monitoring
+    gethomepage.dev/icon: mdi-network
+    gethomepage.dev/name: Hubble
+    gethomepage.dev/weight: '2'
+    gethomepage.dev/href: https://hubble.becklab.cloud

@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: logout-page
+  namespace: identity
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Sign out
+    gethomepage.dev/group: Identity
+    gethomepage.dev/icon: mdi-logout-variant
+    gethomepage.dev/name: SSO Logout
+    gethomepage.dev/weight: '99'

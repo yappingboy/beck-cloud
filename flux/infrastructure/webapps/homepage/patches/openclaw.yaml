@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: openclaw
+  namespace: webapps
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: AI assistant
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-robot
+    gethomepage.dev/name: OpenClaw
+    gethomepage.dev/weight: '5'
+    gethomepage.dev/href: https://nova.becklab.cloud
