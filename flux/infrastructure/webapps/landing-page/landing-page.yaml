@@ -76,7 +76,7 @@ data:
     function fetchDirectus() {
       return ensureToken().then((token) => {
         if (!token) return Promise.resolve(null);
-        return httpReq('GET', '/items/pages?sort=_rank', null, token).then((res) => {
+        return httpReq('GET', '/items/pages', null, token).then((res) => {
           try {
             const json = JSON.parse(res.body);
             if (json.data && Array.isArray(json.data)) return json.data;
