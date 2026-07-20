@@ -8,8 +8,13 @@ data:
     ServerRoot "/etc/apache2"
     Listen 80
 
-    # Minimal modules — Debian ships most built-in, only load what's needed
+    # Minimal modules for Debian Apache 2.4
     LoadModule mpm_event_module /usr/lib/apache2/modules/mod_mpm_event.so
+    LoadModule authz_core_module /usr/lib/apache2/modules/mod_authz_core.so
+    LoadModule authz_host_module /usr/lib/apache2/modules/mod_authz_host.so
+    LoadModule headers_module /usr/lib/apache2/modules/mod_headers.so
+    LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
+    LoadModule filter_module /usr/lib/apache2/modules/mod_filter.so
     LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
     LoadModule ssl_module /usr/lib/apache2/modules/mod_ssl.so
     LoadModule socache_shmcb_module /usr/lib/apache2/modules/mod_socache_shmcb.so
