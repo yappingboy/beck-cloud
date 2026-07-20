@@ -70,9 +70,7 @@ spec:
               value: "false"
           volumeMounts:
             - name: storage
-              mountPath: /root/.affine/storage
-            - name: config
-              mountPath: /root/.affine/config
+              mountPath: /app/data
       containers:
         - name: affine
           image: ghcr.io/toeverything/affine:stable
@@ -105,9 +103,7 @@ spec:
               protocol: TCP
           volumeMounts:
             - name: storage
-              mountPath: /root/.affine/storage
-            - name: config
-              mountPath: /root/.affine/config
+              mountPath: /app/data
           livenessProbe:
             httpGet:
               path: /
