@@ -94,11 +94,17 @@ data:
 
     TEMPLATES = [
         {
-            "BACKEND": "django.template.backends.filesystem.FilesystemTemplates",
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
             "DIRS": [os.environ.get("HOSTING_DIR", "/hosting")],
-            "APP_DIRS": False,
+            "APP_DIRS": True,
             "OPTIONS": {
-                "file_charset": "utf-8",
+                "context_processors": [
+                    "django.template.context_processors.request",
+                ],
+                # Disable template caching so PVC updates are picked up immediately
+                "loaders": [
+                    "django.template.loaders.filesystem.Loader",
+                ],
             },
         },
     ]
@@ -138,7 +144,7 @@ data:
         })
 
     urlpatterns = [
-        path("", TemplateView.as_view(template_name="index.html"), name="home"),
+        path("", index_view, name="home"),
         path("robots.txt", serve, {"path": "robots.txt", "document_root": hosting}, name="robots"),
         path("favicon.svg", serve, {"path": "favicon.svg", "document_root": hosting}, name="favicon"),
         path("css/<path:path>", serve, {"document_root": os.path.join(hosting, "css")}, name="css"),
@@ -147,6 +153,19 @@ data:
         path("api/", index_api, name="index"),
         path("api", index_api, name="index-noslash"),
     ]
+
+    def index_view(request):
+        """Serve /hosting/index.html as raw text, no template parsing."""
+        from django.http import HttpResponse
+        import os
+        idx = os.path.join(hosting, "index.html")
+        try:
+            with open(idx, "r", encoding="utf-8") as f:
+                content = f.read()
+            return HttpResponse(content, content_type="text/html; charset=utf-8")
+        except FileNotFoundError:
+            from django.http import HttpResponseNotFound
+            return HttpResponseNotFound("<h1>404</h1>")
   wsgi.py: |
     import os
     from django.core.wsgi import get_wsgi_application
