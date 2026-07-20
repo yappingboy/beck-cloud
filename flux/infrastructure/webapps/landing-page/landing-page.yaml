@@ -9,6 +9,7 @@ data:
     Listen 80
 
     # Minimal modules — Debian ships most built-in, only load what's needed
+    LoadModule mpm_event_module /usr/lib/apache2/modules/mod_mpm_event.so
     LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
     LoadModule ssl_module /usr/lib/apache2/modules/mod_ssl.so
     LoadModule socache_shmcb_module /usr/lib/apache2/modules/mod_socache_shmcb.so
