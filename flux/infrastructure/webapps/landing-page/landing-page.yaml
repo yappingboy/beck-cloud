@@ -142,8 +142,9 @@ data:
         })
 
     urlpatterns = [
-        path("health/", health_check, name="health"),
-        path("", index_api, name="index"),
+        path("api/health/", health_check, name="health"),
+        path("api/", index_api, name="index"),
+        path("api", index_api, name="index-noslash"),
     ]
   wsgi.py: |
     import os
