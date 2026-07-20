@@ -94,13 +94,11 @@ data:
 
     TEMPLATES = [
         {
-            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "BACKEND": "django.template.backends.filesystem.FilesystemTemplates",
             "DIRS": [os.environ.get("HOSTING_DIR", "/hosting")],
-            "APP_DIRS": True,
+            "APP_DIRS": False,
             "OPTIONS": {
-                "context_processors": [
-                    "django.template.context_processors.request",
-                ],
+                "file_charset": "utf-8",
             },
         },
     ]
