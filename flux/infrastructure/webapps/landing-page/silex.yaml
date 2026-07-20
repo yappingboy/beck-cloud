@@ -57,13 +57,13 @@ spec:
             - name: SILEX_PORT
               value: "8080"
             - name: SILEX_FS_ROOT
-              value: "/silex/storage/"
+              value: "/silex/silex/storage/"
             - name: SILEX_FS_HOSTING_ROOT
-              value: "/silex/hosting/"
+              value: "/silex/silex/hosting/"
             - name: SILEX_URL
               value: "https://silex.becklab.cloud"
             - name: SILEX_HOSTING_SILEX
-              value: "/silex/hosting/"
+              value: "/silex/silex/hosting/"
             - name: STORAGE_CONNECTORS
               value: "fs,ftp"
             - name: HOSTING_CONNECTORS
@@ -74,9 +74,9 @@ spec:
             - containerPort: 8080
           volumeMounts:
             - name: root
-              mountPath: /silex/storage
+              mountPath: /silex/silex/storage
             - name: hosting
-              mountPath: /silex/hosting
+              mountPath: /silex/silex/hosting
       volumes:
         - name: root
           persistentVolumeClaim:
