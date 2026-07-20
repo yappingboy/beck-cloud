@@ -91,6 +91,7 @@ data:
       var items = '';
       for (var i = 0; i < pages.length; i++) {
         var p = pages[i];
+        if (!p) continue;
         var slug = p.slug || '';
         var href = slug ? '/' + slug : '/';
         items += '<a href="' + esc(href) + '">' + esc(p.title || 'Page') + '</a>';
@@ -102,7 +103,7 @@ data:
       if (!page) return null;
       var t = page.title || 'Becklab';
       var b = page.body || '<p>Home automation, media, and infrastructure.</p>';
-      var css = page.theme_css || S;
+      var css = (page.theme_css && page.theme_css !== 'S') ? page.theme_css : S;
       var nav = buildNav(allPages);
       return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '</style></head><body>' + nav + '<div class="hero"><h1>' + esc(t) + '</h1></div><div class="content">' + b + '</div></body></html>';
     }
@@ -111,10 +112,14 @@ data:
       if (!pages) return null;
       // Exact match first
       for (var i = 0; i < pages.length; i++) {
-        if (pages[i].slug === slug) return pages[i];
+        if (pages[i] && pages[i].slug === slug) return pages[i];
       }
-      // If slug is empty, return the first page
-      if (!slug && pages.length > 0) return pages[0];
+      // If slug is empty, return the first valid page
+      if (!slug) {
+        for (var i = 0; i < pages.length; i++) {
+          if (pages[i]) return pages[i];
+        }
+      }
       return null;
     }
 
@@ -141,10 +146,8 @@ data:
         if (pages && pages.length > 0) {
           cachedPages = pages;
           cacheTime = Date.now();
-        } else if (!cachedPages) {
-          cachedPages = [null]; // sentinel for default
-          cacheTime = Date.now();
         }
+        // If Directus fails, cachedPages stays null and handleRequest uses defaultPage()
       });
     }
 
