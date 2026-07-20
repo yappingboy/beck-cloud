@@ -13,156 +13,55 @@ data:
     const DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://directus.webapps:8055';
     const DIRECTUS_EMAIL = process.env.DIRECTUS_EMAIL || '';
     const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || '';
-    const CACHE_TTL = 10000;
 
-    // Parse DIRECTUS_URL into hostname + port
     const u = new URL(DIRECTUS_URL);
     const DIRECTUS_HOST = u.hostname;
     const DIRECTUS_PORT = parseInt(u.port) || (u.protocol === 'https:' ? 443 : 80);
 
-    let cachedPages = null;
-    let cacheTime = 0;
-    let apiToken = null;
-    let tokenExpiry = 0;
+    // MIME types
+    const MIME = {
+      '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
+      '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.png': 'image/png',
+      '.jpg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
+      '.txt': 'text/plain', '.json': 'application/json',
+      '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
+    };
 
-    // Escape HTML to prevent XSS in dynamic content
-    function esc(s) {
-      if (!s) return '';
-      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+    function serveFile(res, filepath) {
+      fs.readFile(filepath, (err, data) => {
+        if (err) { res.writeHead(404); res.end('Not found'); return; }
+        const ext = path.extname(filepath).toLowerCase();
+        const mime = MIME[ext] || 'application/octet-stream';
+        res.writeHead(200, { 'Content-Type': mime + '; charset=utf-8' });
+        res.end(data);
+      });
     }
 
-    function readHostingIndex() {
-      try {
-        const filepath = path.join(HOSTING_DIR, 'index.html');
-        if (fs.existsSync(filepath)) return fs.readFileSync(filepath, 'utf8');
-      } catch (e) { /* ignore */ }
+    function findFile(reqPath) {
+      // Direct path lookup
+      let candidate = path.join(HOSTING_DIR, path.normalize(reqPath).replace(/^\.\.?(\/|$)/, ''));
+      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+
+      // Try .html fallback for directory-like paths
+      let htmlCandidate = candidate + '.html';
+      if (fs.existsSync(htmlCandidate)) return htmlCandidate;
+
       return null;
     }
-
-    function httpReq(method, urlPath, body, bearerToken) {
-      return new Promise((resolve) => {
-        const data = body ? JSON.stringify(body) : '';
-        const opts = { hostname: DIRECTUS_HOST, port: DIRECTUS_PORT, path: urlPath, method, timeout: 5000 };
-        if (bearerToken) opts.headers = { Authorization: 'Bearer ' + bearerToken };
-        if (data) opts.headers = Object.assign(opts.headers || {}, { 'Content-Type': 'application/json', 'Content-Length': Buffer.byteLength(data) });
-        const req = http.request(opts, (res) => {
-          let d = ''; res.on('data', c => d += c);
-          res.on('end', () => resolve({ status: res.statusCode, body: d }));
-        });
-        req.on('error', () => resolve({ status: 0, body: '' }));
-        req.on('timeout', () => { req.destroy(); resolve({ status: 0, body: '' }); });
-        if (data) req.write(data);
-        req.end();
-      });
-    }
-
-    function ensureToken() {
-      if (apiToken && Date.now() < tokenExpiry - 180000) return Promise.resolve(apiToken);
-      return httpReq('POST', '/auth/login', { email: DIRECTUS_EMAIL, password: DIRECTUS_PASSWORD }).then((res) => {
-        try {
-          const json = JSON.parse(res.body);
-          if (json.data && json.data.access_token) {
-            apiToken = json.data.access_token;
-            tokenExpiry = Date.now() + (json.data.expires || 900000);
-            return apiToken;
-          }
-        } catch(e) {}
-        const legacyToken = process.env.DIRECTUS_TOKEN || '';
-        if (legacyToken) { apiToken = legacyToken; tokenExpiry = Date.now() + 600000; }
-        return apiToken || null;
-      });
-    }
-
-    function fetchDirectus() {
-      return ensureToken().then((token) => {
-        if (!token) return Promise.resolve(null);
-        return httpReq('GET', '/items/pages', null, token).then((res) => {
-          try {
-            const json = JSON.parse(res.body);
-            if (json.data) {
-              // Directus returns either {data: [...]} or {data: {...}} for single item
-              var items = Array.isArray(json.data) ? json.data : [json.data];
-              if (items.length > 0) return items;
-            }
-          } catch(e) {}
-          return null;
-        });
-      });
-    }
-
-    function buildNav(pages) {
-      if (!pages || pages.length === 0) return '';
-      var items = '';
-      for (var i = 0; i < pages.length; i++) {
-        var p = pages[i];
-        if (!p) continue;
-        var slug = p.slug || '';
-        var href = slug ? '/' + slug : '/';
-        items += '<a href="' + esc(href) + '">' + esc(p.title || 'Page') + '</a>';
-      }
-      return '<nav class="nav">' + items + '</nav>';
-    }
-
-    function renderPage(page, allPages, currentSlug) {
-      if (!page) return null;
-      var t = page.title || 'Becklab';
-      var b = page.body || '<p>Home automation, media, and infrastructure.</p>';
-      var css = (page.theme_css && page.theme_css !== 'S') ? page.theme_css : S;
-      var nav = buildNav(allPages);
-      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>' + esc(t) + '</title><style>' + css + '</style></head><body>' + nav + '<div class="hero"><h1>' + esc(t) + '</h1></div><div class="content">' + b + '</div></body></html>';
-    }
-
-    function findPage(pages, slug) {
-      if (!pages) return null;
-      // Exact match first
-      for (var i = 0; i < pages.length; i++) {
-        if (pages[i] && pages[i].slug === slug) return pages[i];
-      }
-      // If slug is empty, return the first valid page
-      if (!slug) {
-        for (var i = 0; i < pages.length; i++) {
-          if (pages[i]) return pages[i];
-        }
-      }
-      return null;
-    }
-
-    function handleRequest(reqUrl) {
-      var pages = cachedPages;
-      if (!pages) return defaultPage();
-
-      // Strip query string and trailing slash
-      var path = reqUrl.split('?')[0];
-      if (path !== '/' && path.endsWith('/')) path = path.slice(0, -1);
-
-      var slug = path === '/' ? '' : path.slice(1);
-      var page = findPage(pages, slug);
-      return renderPage(page, pages, slug);
-    }
-
-    function defaultPage() {
-      return '<!doctype html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Becklab</title><style>' + S + '</style></head><body><div class="hero"><h1>Becklab</h1><p>Home automation, media, and infrastructure.</p></div></body></html>';
-    }
-
-    function refreshCache() {
-      // Priority: Directus > hosting index > default
-      fetchDirectus().then(function(pages) {
-        if (pages && pages.length > 0) {
-          cachedPages = pages;
-          cacheTime = Date.now();
-        }
-        // If Directus fails, cachedPages stays null and handleRequest uses defaultPage()
-      });
-    }
-
-    const S = 'body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0}.nav{text-align:center;padding:1rem;background:#1e293b}.nav a{color:#38bdf8;text-decoration:none;margin:0 1rem;font-weight:500}.nav a:hover{text-decoration:underline}.hero{text-align:center;padding:6rem 2rem}h1{font-size:3rem;margin-bottom:1rem}.content{max-width:800px;margin:0 auto;padding:2rem}a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}p{color:#94a3b8;line-height:1.6}';
 
     http.createServer((req, res) => {
-      if (!cachedPages || Date.now() - cacheTime > CACHE_TTL) refreshCache();
-      var html = handleRequest(req.url);
-      res.writeHead(200, { 'Content-Type': 'text/html' });
-      res.end(html);
-    }).listen(80, function() { console.log('Landing page on :80'); refreshCache(); });
+      // Strip query string
+      var reqPath = req.url.split('?')[0];
+      if (!reqPath || reqPath === '/') reqPath = '/index.html';
+
+      var file = findFile(reqPath);
+      if (file) {
+        serveFile(res, file);
+      } else {
+        res.writeHead(404, { 'Content-Type': 'text/plain' });
+        res.end('404 — Not found');
+      }
+    }).listen(80, function() { console.log('Landing page on :80'); });
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -186,21 +85,9 @@ spec:
           image: node:22-alpine
           resources:
             limits:
-              memory: 256Mi
+              memory: 128Mi
           command: ["node", "/app/server.js"]
           env:
-            - name: DIRECTUS_URL
-              value: "http://directus.webapps:8055"
-            - name: DIRECTUS_EMAIL
-              valueFrom:
-                secretKeyRef:
-                  name: landing-directus-creds
-                  key: email
-            - name: DIRECTUS_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: landing-directus-creds
-                  key: password
             - name: HOSTING_DIR
               value: "/hosting"
           ports:
