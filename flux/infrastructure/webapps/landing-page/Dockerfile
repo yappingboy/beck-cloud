@@ -19,4 +19,4 @@ RUN mkdir -p /app/beckcloud
 WORKDIR /app
 EXPOSE 80
 
-CMD ["apachectl", "-D", "FOREGROUND"]
+CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]
