@@ -1,6 +1,6 @@
 # Networking & Ingress Deep Dive
 
-**Last audited:** 2026-07-12  
+**Last audited:** 2026-07-20  
 **Scope:** Traefik routing, SSO middleware chains, TLS, network policies
 
 ---
@@ -34,9 +34,23 @@ Internet → becklab.cloud DNS → Bare Metal IP (172.16.0.20)
 
 | Middleware | Namespace | Type | Purpose |
 |-----------|-----------|------|---------|
+| `crowdsec-bouncer` | traefik | Plugin (Bouncer) | Crowdsec WAF — blocks banned IPs in stream mode |
 | `redirect-to-https` | traefik | Redirect | Forces HTTP → HTTPS (code 301) |
 | `security-headers` | traefik | Headers | Adds X-Frame-Options, CSP, etc. |
 | `ws-redirect` | traefik | — | WebSocket redirect handler |
+
+### Crowdsec Bouncer Integration
+
+The `crowdsec-bouncer` middleware is applied globally to both `web` and `websecure` entrypoints via Traefik's `additionalArguments`:
+
+```
+--entrypoints.web.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd
+--entrypoints.websecure.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd
+```
+
+It runs as an experimental Traefik plugin (`maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.5) and connects to the Crowdsec LAPI in the `crowdsec` namespace via stream mode. The bouncer key is mounted from the `crowdsec-bouncer-key` secret as a file at `/etc/traefik/crowdsec/BOUNCER_KEY_traefik`.
+
+**Traffic order:** Crowdsec bouncer → SSO chain → backend service. Banned IPs get a 429 before they even reach the SSO layer.
 
 ---
 
@@ -56,6 +70,13 @@ Request → sso-admin-chain (ChainMiddleware)
                                        X-Auth-Request-Access-Token, X-Auth-Request-Groups, Authorization
                        trustForwardHeader: true
 ```
+
+### Admin Tier — No Auth Header (`sso-admin-chain-no-auth-header`)
+
+**NEW** since July 12. Identical to admin chain but without forwarding the `Authorization` header — used by Home Assistant which has issues with forwarded auth headers.
+
+1. `oauth2-redirect-admin` → errors middleware pointing to sso-redirect
+2. `keycloak-forwardauth-admin-no-auth-header` → ForwardAuth against oauth2-proxy (no auth header passthrough)
 
 ### Media Tier (`sso-media-chain`)
 
@@ -111,25 +132,30 @@ User → Traefik IngressRoute with sso-*-chain middleware
 
 | LLDAP Group | Access Level | Services |
 |------------|-------------|----------|
-| `/admins` | Admin tier | Traefik dashboard, Grafana, Hubble, Rancher, Sonarr, Radarr, Prowlarr, Bazarr, Wazuh, OpenNebula Sunstone, Affine, Directus, Silex |
+| `/admins` | Admin tier | Traefik dashboard, Grafana, Hubble, Rancher, Sonarr, Radarr, Prowlarr, Bazarr, Wazuh, OpenNebula Sunstone, Affine, Directus, Silex, OpenClaw, Home Assistant |
 | `/media` | Media tier | Jellyfin, Jellyseerr |
 
 ---
 
 ## IngressRoute Inventory
 
-### Currently Active Routes (as of 2026-07-12)
+### Currently Active Routes (as of 2026-07-20)
 
-| Route Name | Namespace | Host | Service:Port | SSO Middleware | TLS Secret |
-|-----------|-----------|------|-------------|---------------|------------|
-| affine | affine | `affine.becklab.cloud` | affine-server:3010 | sso-admin-chain | affine-tls |
-| bitwarden-secrets-manager | bitwarden | `bw.becklab.cloud` | bitwarden-secrets-manager:80 | None | bw-tls |
-| directus | cms | `cms.becklab.cloud` | directus:8055 | sso-admin-chain | cms-tls |
-| grafana | monitoring | `grafana.becklab.cloud` | kube-prometheus-stack-grafana:80 | sso-admin-chain | grafana-tls |
-| hubble-ui | monitoring | `hubble.becklab.cloud` | hubble-ui (kube-system):80 | sso-admin-chain | hubble-tls |
-| opennebula | opennebula | `one.becklab.cloud` (+ PathPrefix `/fireedge/`) | opennebula-sunstone:2616 | sso-admin-chain | one-tls |
-| traefik-dashboard-https | traefik | `traefik.becklab.cloud` | api@internal (TraefikService) | sso-admin-chain | traefik-dashboard-tls |
-| silex | landing | `silex.becklab.cloud` | silex:8080 | sso-admin-chain | silex-tls |
+| Route Name | Namespace | Host | SSO Middleware | TLS Secret |
+|-----------|-----------|------|---------------|------------|
+| affine | webapps | `affine.becklab.cloud` | sso-admin-chain | affine-tls |
+| bitwarden-secrets-manager | webapps | `bw.becklab.cloud` | None | bw-tls |
+| directus | webapps | `cms.becklab.cloud` | sso-admin-chain | cms-tls |
+| grafana | monitoring | `grafana.becklab.cloud` | sso-admin-chain | grafana-tls |
+| home-assistant | webapps | `ha.becklab.cloud` (+ PathPrefix `/esphome`, `/mqtt`, `/api/websocket`) | sso-admin-chain-no-auth-header + esphome-strip-prefix/mqtt-strip-prefix | ha-tls |
+| hubble-ui | monitoring | `hubble.becklab.cloud` | sso-admin-chain | hubble-tls |
+| kiri-moto | gridspace | `kiri.becklab.cloud` | gridspace-kiri-root-redirect | kiri-tls |
+| mesh-tool | gridspace | `mesh.becklab.cloud` | gridspace-mesh-root-redirect | mesh-tls |
+| openclaw | webapps | `nova.becklab.cloud` | sso-admin-chain | nova-tls |
+| opennebula | opennebula | `one.becklab.cloud` (+ PathPrefix `/fireedge/`) | sso-admin-chain | one-tls |
+| silex | webapps | `silex.becklab.cloud` | sso-admin-chain | silex-tls |
+| traefik-dashboard-https | traefik | `traefik.becklab.cloud` | sso-admin-chain | traefik-dashboard-tls |
+| void-form | gridspace | `void.becklab.cloud` | gridspace-void-root-redirect | void-tls |
 
 ### Services Without IngressRoutes (Internal Only)
 
@@ -144,24 +170,43 @@ These services exist in the cluster but have no Traefik routes — accessible on
 | media/bazarr | 6767 | Internal cluster only |
 | media/nzbget | 6789 | Internal cluster only |
 | media/sabnzbd | 8080 | Internal cluster only |
+| media/qbit-gluetun | 8080 | Internal cluster only |
 | media/jellyseerr | 5055 | Internal cluster only |
 | media/homebox | 7745 | Internal cluster only |
 | media/tdarr | 8265 | Internal cluster only |
-| torrent/qbit-gluetun | 8080 | Internal cluster only |
+| media/spotweb | 80 | Internal cluster only |
 | gaming/crafty | 8443, 8123 | Internal + Minecraft NodePort :31337→:25565 |
-| homepage/homepage | 3000 | Internal cluster only |
+| webapps/homepage | 3000 | Internal cluster only |
 
 ### Certificates Without Routes (Pre-provisioned)
 
-TLS certificates exist in these namespaces but no corresponding IngressRoutes are deployed yet — likely planned for future exposure:
+TLS certificates exist but no corresponding IngressRoutes are deployed yet — likely planned for future exposure:
 
-- **media:** bazarr-tls, homebox-tls, jellyfin-tls, jellyseerr-tls, nzbget-tls, prowlarr-tls, radarr-tls, sabnzbd-tls, sonarr-tls, tdarr-tls
-- **spotweb:** spotweb-tls
-- **torrent:** qbit-tls
+- **media:** bazarr-tls, homebox-tls, jellyfin-tls, jellyseerr-tls, nzbget-tls, prowlarr-tls, radarr-tls, sabnzbd-tls, sonarr-tls, tdarr-tls, spotweb-tls, qbit-tls
 - **gaming:** crafty-tls
-- **homepage:** homepage-tls
-- **identity:** logout-tls, oauth2-proxy-media-tls, oauth2-proxy-tls, user-invite-tls
+- **webapps:** homepage-tls, landing-tls
+- **identity:** logout-tls, oauth2-proxy-media-tls, oauth2-proxy-tls, user-invite-tls, mail-becklab
 - **monitoring:** alertmanager-tls, prometheus-tls
+- **security:** wazuh-becklab-cloud-tls
+
+---
+
+## Webapp-Specific Middlewares
+
+### Gridspace Redirect Middlewares (NEW)
+
+| Middleware | Namespace | Type | Purpose |
+|-----------|-----------|------|---------|
+| `gridspace-kiri-root-redirect` | gridspace | Redirect | Root path redirect for Kiri:moto |
+| `gridspace-mesh-root-redirect` | gridspace | Redirect | Root path redirect for Mesh Tool |
+| `gridspace-void-root-redirect` | gridspace | Redirect | Root path redirect for Void:Form |
+
+### Home Assistant Middlewares (NEW)
+
+| Middleware | Namespace | Type | Purpose |
+|-----------|-----------|------|---------|
+| `esphome-strip-prefix` | webapps | StripPrefix | Strips `/esphome` prefix for ESPHome dashboard |
+| `mqtt-strip-prefix` | webapps | StripPrefix | Strips `/mqtt` prefix for MQTT WebSocket |
 
 ---
 
@@ -184,11 +229,9 @@ No custom CiliumNetworkPolicies are currently visible — relying on standard na
 
 ---
 
-## Known Issues (as of 2026-07-12)
+## Known Issues (as of 2026-07-20)
 
-| Issue | Severity | Notes |
-|-------|----------|-------|
-| oauth2-proxy pods in CrashLoopBackOff | 🔴 High | Both admin and media SSO chains are non-functional — all SSO-protected routes return errors. Keycloak is running but the proxy layer can't authenticate against it. Check `oauth2-proxy` config/credentials for misalignment with current Keycloak client secrets. |
+No known networking issues. All IngressRoutes serving healthy backends. oauth2-proxy CrashLoopBackOff from July 12 has been resolved.
 
 ---
 

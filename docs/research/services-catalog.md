@@ -1,32 +1,89 @@
 # Services Catalog — Detailed Reference
 
-**Last audited:** 2026-07-12  
+**Last audited:** 2026-07-20  
 **Scope:** Every running service with operational details, ports, config locations, and access patterns
 
 ---
 
-## Affine Namespace (`affine`)
+## 3D Printing Namespace (`3dprinting`)
 
-> New deployment ~2026-07-11. Collaborative wiki/knowledge base.
+> New deployment ~2026-07-16. Complete 3D printing management stack.
 
-### Affine Server
+### Manyfold (Print Management)
 | Property | Value |
 |----------|-------|
-| Image | (see Flux manifest) |
-| Port | 3010/TCP |
-| URL | `affine.becklab.cloud` (admin SSO) |
-| Status | ✅ Running, IngressRoute active |
+| Image | `ghcr.io/manyfold3d/manyfold:latest` |
+| Database | PostgreSQL 17 (manyfold-db, 50 GiB libraries PVC) |
+| Cache | Valkey 8 (Redis-compatible, manyfold-redis) |
+| Config PVC | 5 GiB local-path |
+| Libraries PVC | 50 GiB local-path |
+| Status | ✅ Running |
 
-### Affine PostgreSQL
+### FDM Monster (Slicer & Print Profiles)
 | Property | Value |
 |----------|-------|
-| Type | StatefulSet |
-| Status | ⚠️ Restarting (6 restarts in 36h) |
+| Image | `docker.io/fdmmonster/fdm-monster:latest` |
+| Database PVC | 5 GiB local-path |
+| Media PVC | 5 GiB local-path |
+| Status | ✅ Running |
 
-### Affine Redis
+### Spoolman (Filament Tracking)
 | Property | Value |
 |----------|-------|
-| Type | Deployment/StatefulSet |
+| Image | `ghcr.io/donkie/spoolman:latest` |
+| Data PVC | 2 GiB local-path |
+| Status | ✅ Running |
+
+### OrcaSlicer (Cloud Slicing)
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/linuxserver/orcaslicer:latest` |
+| Config PVC | 5 GiB local-path |
+| Status | ✅ Running |
+
+### BumpMesh (Mesh Generation)
+| Property | Value |
+|----------|-------|
+| Image | `docker.io/library/nginx:alpine-slim` |
+| HTML PVC | 200Mi local-path |
+| Status | ✅ Running |
+
+---
+
+## Gridspace Namespace (`gridspace`)
+
+> New deployment ~2026-07-16. Custom 3D design platform.
+
+### Gridspace
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/yappingboy/becklab-gridspace:latest` |
+| Data PVC | 2 GiB local-path |
+| URL | `gridspace.becklab.cloud` (custom app — no SSO) |
+| Status | ✅ Running |
+
+### Kiri:moto (Texture Generation)
+| Property | Value |
+|----------|-------|
+| URL | `kiri.becklab.cloud` |
+| IngressRoute | `kiri-moto` (middleware: `gridspace-kiri-root-redirect`) |
+| TLS | `kiri-tls` (expires 2026-10-13) |
+| Status | ✅ Running |
+
+### Mesh Tool
+| Property | Value |
+|----------|-------|
+| URL | `mesh.becklab.cloud` |
+| IngressRoute | `mesh-tool` (middleware: `gridspace-mesh-root-redirect`) |
+| TLS | `mesh-tls` (expires 2026-10-13) |
+| Status | ✅ Running |
+
+### Void:Form
+| Property | Value |
+|----------|-------|
+| URL | `void.becklab.cloud` |
+| IngressRoute | `void-form` (middleware: `gridspace-void-root-redirect`) |
+| TLS | `void-tls` (expires 2026-10-13) |
 | Status | ✅ Running |
 
 ---
@@ -40,11 +97,7 @@
 | Database | PostgreSQL via StatefulSet (10 GiB PVC) |
 | Realm | `homelab` |
 | Federation | LDAP → LLDAP at `ldap://lldap.identity.svc.cluster.local:389` |
-| Bind DN | `uid=admin,ou=people,dc=becklab,dc=cloud` |
-| Users DN | `ou=people,dc=becklab,dc=cloud` |
-| Username attribute | `uid` |
-| Edit mode | READ_ONLY (users managed in LLDAP) |
-| Status | ⚠️ Running but showing readiness issues (12 restarts in 3d) |
+| Status | ✅ Running — healthy (0 recent restarts) |
 
 ### LLDAP (User Directory)
 | Property | Value |
@@ -54,6 +107,7 @@
 | Web UI port | 17170/TCP |
 | Storage | 5 GiB local-path PVC |
 | Groups | `/admins`, `/media` |
+| Status | ✅ Running |
 
 ### oauth2-proxy (Admin Tier)
 | Property | Value |
@@ -62,9 +116,8 @@
 | Helm chart | oauth2-proxy v7.6.0 |
 | Provider | Keycloak OIDC (`homelab` realm) |
 | Session store | Redis (local STS, 1 GiB PVC) |
-| Auth endpoint | `/oauth2/auth` (ForwardAuth target for Traefik) |
 | Group requirement | `/admins` |
-| Status | ❌ CrashLoopBackOff — SSO broken |
+| Status | ✅ Running — **FIXED** (was CrashLoopBackOff on 2026-07-12) |
 
 ### oauth2-proxy-media (Media Tier)
 | Property | Value |
@@ -74,18 +127,97 @@
 | Provider | Keycloak OIDC (`homelab` realm) |
 | Session store | Redis (shared with admin tier) |
 | Group requirement | `/media` |
-| Status | ❌ CrashLoopBackOff — SSO broken |
+| Status | ✅ Running — **FIXED** (was CrashLoopBackOff on 2026-07-12) |
 
 ### Supporting Services
 - **logout-page** — nginx:alpine serving logout landing page
 - **sso-redirect** — nginx:1.27-alpine, catches 401 errors and redirects to Keycloak login
-- **user-invite** — Custom Python app (`ghcr.io/yappingboy/becklab-user-invite:v1`) for user provisioning (one old pod ErrImagePull)
+- **user-invite** — Custom Python app (`ghcr.io/yappingboy/becklab-user-invite:v4.1783837566`) for user provisioning — **UPGRADED** from v1
+- **postfix-relay** — `mwader/postfix-relay:latest`, Mailgun API relay (moved from `email` namespace)
+
+---
+
+## Webapps Namespace (`webapps`)
+
+> New consolidation namespace ~2026-07-15. Most user-facing web services migrated here from their individual namespaces.
+
+### Affine Server
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/toeverything/affine:stable` |
+| Port | 3010/TCP |
+| URL | `affine.becklab.cloud` (admin SSO) |
+| Config PVC | 1 GiB local-path |
+| Storage PVC | 20 GiB local-path |
+| PostgreSQL | pgvector:pg16 (10 GiB PVC) |
+| Redis | redis:7-alpine |
+| Status | ✅ Running |
+
+### Bitwarden Secrets Manager
+| Property | Value |
+|----------|-------|
+| Image | `vaultwarden/server:latest` |
+| Port | 80/TCP (internal) |
+| Config PVC | 10 GiB local-path |
+| URL | `bw.becklab.cloud` (no SSO — Vaultwarden's own auth) |
+| Status | ✅ Running |
+
+### Directus 11
+| Property | Value |
+|----------|-------|
+| Image | `directus/directus:11` |
+| Port | 8055/TCP |
+| Config PVC | 2 GiB local-path |
+| URL | `cms.becklab.cloud` (admin SSO) |
+| Status | ✅ Running |
+
+### Home Assistant
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/home-assistant/home-assistant:stable` |
+| Config PVC | 5 GiB local-path |
+| URL | `ha.becklab.cloud` (admin SSO via `sso-admin-chain-no-auth-header`) |
+| Special routes | `/esphome` (ESPHome strip-prefix), `/mqtt` (MQTT strip-prefix), `/api/websocket` |
+| Status | ✅ Running — 4/4 containers ready |
+
+### Homepage (Service Dashboard)
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/gethomepage/homepage:latest` |
+| Port | 3000/TCP |
+| Helm chart | homepage (deployed via HelmRelease in `webapps`) |
+| Status | ✅ Running |
+
+### Landing Page
+| Property | Value |
+|----------|-------|
+| Image | `node:22-alpine` |
+| Port | 80/TCP (custom app) |
+| Status | ✅ Running |
+
+### Silex (Design Tool)
+| Property | Value |
+|----------|-------|
+| Image | `silexlabs/silex:3.6.6` |
+| Port | 8080/TCP |
+| Config PVC (root) | 4 GiB local-path |
+| Hosting PVC | 4 GiB local-path (user projects) |
+| URL | `silex.becklab.cloud` (admin SSO) |
+| Status | ✅ Running |
+
+### OpenClaw
+| Property | Value |
+|----------|-------|
+| URL | `nova.becklab.cloud` (admin SSO) |
+| TLS | `nova-tls` (expires 2026-10-16) |
+| Status | ✅ Running |
 
 ---
 
 ## Media Namespace (`media`)
 
 > All services in this namespace are internal-only (no IngressRoutes). Access via LAN or kubectl port-forward.
+> **Note:** SpotWeb, qBittorrent+Gluetun, and SABnzbd were moved into this namespace from their previous locations.
 
 ### Jellyfin (Media Server)
 | Property | Value |
@@ -94,7 +226,7 @@
 | Port | 8096/TCP |
 | Config PVC | 20 GiB local-path |
 | Libraries | media-anime (45T), media-movies (45T), media-shows (45T) via LVM PV mounts |
-| Status | ⚠️ Unknown status |
+| Status | ✅ Running |
 
 ### Sonarr (TV Show Management)
 | Property | Value |
@@ -102,7 +234,7 @@
 | Image | `lscr.io/linuxserver/sonarr:latest` |
 | Port | 8989/TCP |
 | Config PVC | 10 GiB local-path |
-| Connected to | Prowlarr (indexer), SABnzbd/nzbget/qBittorrent (downloaders), Jellyfin (notify) |
+| Status | ✅ Running |
 
 ### Radarr (Movie Management)
 | Property | Value |
@@ -110,7 +242,7 @@
 | Image | `lscr.io/linuxserver/radarr:latest` |
 | Port | 7878/TCP |
 | Config PVC | 10 GiB local-path |
-| Connected to | Prowlarr (indexer), downloaders, Jellyfin |
+| Status | ✅ Running |
 
 ### Prowlarr (Indexer Aggregator)
 | Property | Value |
@@ -118,7 +250,7 @@
 | Image | `lscr.io/linuxserver/prowlarr:latest` |
 | Port | 9696/TCP |
 | Config PVC | 5 GiB local-path |
-| Indexers | NZB and torrent indexers configured here, shared with Sonarr/Radarr/Readarr |
+| Status | ✅ Running |
 
 ### Bazarr (Subtitle Management)
 | Property | Value |
@@ -126,7 +258,7 @@
 | Image | `lscr.io/linuxserver/bazarr:latest` |
 | Port | 6767/TCP |
 | Config PVC | 5 GiB local-path |
-| Connected to | Sonarr, Radarr for library sync |
+| Status | ✅ Running |
 
 ### SABnzbd (NZB Downloader)
 | Property | Value |
@@ -135,6 +267,7 @@
 | Port | 8080/TCP |
 | Config PVC | 5 GiB local-path |
 | Download dir | media-downloads-lvm (5 TiB) |
+| Status | ✅ Running |
 
 ### nzbget (Alternative NZB Downloader)
 | Property | Value |
@@ -142,35 +275,7 @@
 | Image | `lscr.io/linuxserver/nzbget:latest` |
 | Port | 6789/TCP |
 | Config PVC | 5 GiB local-path |
-
-### Tdarr (Media Transcoding)
-| Property | Value |
-|----------|-------|
-| Image | `ghcr.io/haveagitgat/tdarr:latest` |
-| Port | 8265/TCP |
-| Config PVC | 5 GiB local-path |
-| Purpose | Batch transcode media files to optimal formats |
-| Status | ⚠️ Unknown status |
-
-### Jellyseerr (Request Management)
-| Property | Value |
-|----------|-------|
-| Image | `seerr/seerr:latest` |
-| Port | 5055/TCP |
-| Config PVC | 10 GiB local-path |
-| Purpose | Media request/approval system, integrates with Sonarr/Radarr |
-
-### Homebox (Inventory Management)
-| Property | Value |
-|----------|-------|
-| Image | `ghcr.io/sysadminsmedia/homebox:latest` |
-| Port | 7745/TCP |
-| Config PVC | 10 GiB local-path |
-| Purpose | Physical inventory tracking (tools, equipment, etc.) |
-
----
-
-## Torrent Namespace (`torrent`)
+| Status | ✅ Running |
 
 ### qBittorrent + Gluetun VPN
 | Property | Value |
@@ -178,9 +283,40 @@
 | Image | `lscr.io/linuxserver/qbittorrent:latest` (with Gluetun sidecar) |
 | Port | 8080/TCP (Web UI) |
 | Config PVC | 5 GiB local-path |
-| Download dir | torrent-downloads-lvm (5 TiB) |
 | VPN | Gluetun for anonymized torrenting |
-| Status | ⚠️ Unknown status, 1/2 containers ready |
+| Status | ✅ Running — **MOVED** from `torrent` namespace |
+
+### Tdarr (Media Transcoding)
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/haveagitgat/tdarr:latest` |
+| Port | 8265/TCP |
+| Config PVC | 5 GiB local-path |
+| Status | ✅ Running |
+
+### Jellyseerr (Request Management)
+| Property | Value |
+|----------|-------|
+| Image | `seerr/seerr:latest` |
+| Port | 5055/TCP |
+| Config PVC | 10 GiB local-path |
+| Status | ✅ Running |
+
+### Homebox (Inventory Management)
+| Property | Value |
+|----------|-------|
+| Image | `ghcr.io/sysadminsmedia/homebox:latest` |
+| Port | 7745/TCP |
+| Config PVC | 10 GiB local-path |
+| Status | ✅ Running |
+
+### SpotWeb + MariaDB (NZB Search)
+| Property | Value |
+|----------|-------|
+| Image | `jgeusebroek/spotweb:latest` |
+| Database | MariaDB via StatefulSet (5 GiB PVC) |
+| Config PVC | 1 GiB local-path |
+| Status | ✅ Running — **MOVED** from `spotweb` namespace |
 
 ---
 
@@ -210,46 +346,67 @@ Deploys the full Prometheus monitoring stack:
 ### Wazuh Stack
 | Component | Type | Details |
 |-----------|------|---------|
-| wazuh-manager-master-0 | StatefulSet | SIEM manager master node (high restart count — 641+) |
-| wazuh-manager-worker-0,1 | StatefulSet | Manager worker nodes (also high restart counts) |
+| wazuh-manager-master-0 | StatefulSet | SIEM manager master node (0 restarts — **FIXED**, was 641+) |
+| wazuh-manager-worker-0,1 | StatefulSet | Manager worker nodes (0 restarts — **FIXED**) |
 | wazuh-indexer-0 | StatefulSet | OpenSearch indexer for alert storage |
 | wazuh-dashboard | Deployment | Web UI — no IngressRoute yet (planned: `wazuh.becklab.cloud`) |
 | wazuh-agent | DaemonSet | Host monitoring agents on both nodes |
 
-> **Note:** Wazuh is deployed but not fully stable. Manager pods have very high restart counts suggesting resource or configuration issues. No external IngressRoute yet — planned for admin SSO tier. See [Security Suite Plan](security-suite.md).
-
 ### Trivy Operator
 | Property | Value |
 |----------|-------|
-| Namespace | `trivy-system` (separate from security) |
+| Image | `mirror.gcr.io/aquasec/trivy-operator:0.30.0` |
 | Purpose | Continuous vulnerability scanning of container images and cluster configs |
 | Scan mode | On pod creation + daily scheduled rescans |
 | Output | Kubernetes SecurityReports CRDs, ComplianceReports CRDs, SBOMs |
-| Status | ✅ Operator running, scan jobs active |
+| Status | ✅ Running — **MOVED** from `trivy-system` namespace |
+
+### Suricata (IDS)
+| Property | Value |
+|----------|-------|
+| Image | `jasonish/suricata:8.0.6` |
+| Mode | IDS (detect-only) |
+| Ruleset | Emerging Threats Open (ETOpen) |
+| Deployment | DaemonSet (2/2 pods, one per node) |
+| Output | EVE JSON logs → Wazuh manager via syslog port 514/TCP |
+| Status | ✅ Running — **NEW** since July 12 |
 
 ---
 
-## Bitwarden Namespace (`bitwarden`)
+## Crowdsec Namespace (`crowdsec`)
 
-### Vaultwarden BSM (Bitwarden Secrets Manager)
+> New deployment 2026-07-20. WAF + behavioral analysis with Traefik bouncer integration.
+
+### Crowdsec LAPI
 | Property | Value |
 |----------|-------|
-| Image | `vaultwarden/server:latest` |
-| Port | 80/TCP (internal) |
-| Config PVC | 10 GiB local-path |
-| URL | `bw.becklab.cloud` (no SSO — Vaultwarden's own auth) |
+| Image | `crowdsecurity/local-api:latest` (via Helm chart v0.20.0) |
+| Port | 8080/TCP (cluster-internal) |
+| Replicas | 1 |
+| Storage | PersistentVolume for config + data |
+| Mode | Local-only (no cloud enrollment) |
+| Auto-registration | Enabled for agents + bouncer (token-based, cluster IP ranges) |
+| Status | ✅ Running |
 
----
-
-## CMS Namespace (`cms`)
-
-### Directus 11
+### Crowdsec Agents
 | Property | Value |
 |----------|-------|
-| Image | `directus/directus:11` |
-| Port | 8055/TCP |
-| Config PVC | 2 GiB local-path |
-| URL | `cms.becklab.cloud` (admin SSO) |
+| Image | `crowdsecurity/falcon:latest` (agent v1.7.0) |
+| Deployment | DaemonSet (1 per node, auto-scheduled) |
+| Acquisition | Traefik logs (`namespace: traefik`, `program: traefik`) |
+| Output | Parsed logs → LAPI for scenario analysis |
+| Status | ✅ 2/2 Running |
+
+### Traefik Bouncer Plugin
+| Property | Value |
+|----------|-------|
+| Plugin | `maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.5 |
+| Mode | Stream (real-time decision streaming via HTTP long-poll) |
+| LAPI target | `crowdsec-service.crowdsec.svc.cluster.local:8080` |
+| Key | Mounted from `crowdsec-bouncer-key` secret at `/etc/traefik/crowdsec/` |
+| Scope | Global on `web` + `websecure` entrypoints |
+| Trusted IPs | `10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16` |
+| Status | ✅ Streaming, registered with LAPI |
 
 ---
 
@@ -267,74 +424,7 @@ Deploys the full Prometheus monitoring stack:
 | Backup PVC | 20 GiB local-path |
 | Database | PostgreSQL via StatefulSet (5 GiB PVC) |
 | Minecraft access | NodePort :31337 → pod port 25565/TCP |
-
----
-
-## Homepage Namespace (`homepage`)
-
-### Homepage (Service Dashboard)
-| Property | Value |
-|----------|-------|
-| Image | `ghcr.io/gethomepage/homepage:latest` |
-| Port | 3000/TCP |
-| Helm chart | homepage v1.2.3 |
-| Status | No IngressRoute — internal only (TLS cert exists) |
-
----
-
-## Landing Namespace (`landing`)
-
-### Custom Landing Page
-| Property | Value |
-|----------|-------|
-| Image | `node:22-alpine` |
-| Port | 80/TCP (inferred, custom app) |
-| Source | `flux/infrastructure/landing-page/server.js` |
-
-### Silex (Design Tool)
-| Property | Value |
-|----------|-------|
-| Image | `silexlabs/silex:3.6.6` |
-| Port | 8080/TCP |
-| Config PVC | 4 GiB local-path |
-| Hosting PVC | 4 GiB local-path (user projects) |
-| URL | `silex.becklab.cloud` (admin SSO) |
-
----
-
-## Email Namespace (`email`)
-
-### Postfix Relay
-| Property | Value |
-|----------|-------|
-| Image | `mwader/postfix-relay:latest` |
-| Backend | Mailgun API key (encrypted secret) |
-| Purpose | Outbound email relay for cluster services (alerts, notifications) |
-| TLS cert | mail-tls certificate exists |
-
----
-
-## SpotWeb Namespace (`spotweb`)
-
-### SpotWeb + MariaDB
-| Property | Value |
-|----------|-------|
-| Image | `jgeusebroek/spotweb:latest` |
-| Database | MariaDB via StatefulSet (5 GiB PVC) |
-| Config PVC | 1 GiB local-path |
-| Purpose | Newznab search frontend for NZB indexing |
-| Status | ⚠️ Pod Running but not Ready, high restart count (25) |
-
----
-
-## Toolbox Namespace (`toolbox`)
-
-### Build Containers
-| Property | Value |
-|----------|-------|
-| Purpose | Kaniko build pods for in-cluster image builds |
-| Current work | `build-user-invite` — building user-invite app images to GHCR |
-| Pattern | Ephemeral pods, created as needed |
+| Status | ✅ Running |
 
 ---
 
@@ -369,6 +459,17 @@ See [Storage & Backups Deep Dive](storage-backups.md) for full details.
 - **Velero** v1.15.0 — 5 backup schedules
 - **MinIO** — S3-compatible storage backend, 200 GiB LVM PV
 - **node-agent** DaemonSet — filesystem backup on both nodes
+
+---
+
+## Toolbox Namespace (`toolbox`)
+
+### Build Containers
+| Property | Value |
+|----------|-------|
+| Purpose | Kaniko build pods for in-cluster image builds |
+| Current work | `build-user-invite` (Completed), `build-gridspace` (Completed) |
+| Pattern | Ephemeral pods, created as needed |
 
 ---
 
