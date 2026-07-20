@@ -38,7 +38,7 @@ data:
     # Django via mod_wsgi — all requests go through Django
     WSGIDaemonProcess landing processes=2 threads=15 maximum-requests=10000 display-name=%{GROUP}
     WSGIProcessGroup landing
-    WSGIPythonPath /app:/usr/lib/python3/dist-packages:/usr/local/lib/python3.12/dist-packages
+    WSGIPythonPath /app:/usr/local/lib/python3.12/site-packages
     WSGIScriptAlias / /app/beckcloud/wsgi.py process-group=landing
 
     <Directory "/app/beckcloud">
