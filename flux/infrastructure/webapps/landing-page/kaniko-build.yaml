@@ -13,17 +13,39 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=flux/infrastructure/webapps/landing-page
+            - --context=dir:///workspace/flux/infrastructure/webapps/landing-page
             - --destination=ghcr.io/yappingboy/becklab-landing:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
           volumeMounts:
             - name: docker-config
-              mountPath: /kaniko/.docker/
+              mountPath: /kaniko/.docker/config.json
+              subPath: config.json
               readOnly: true
+            - name: source
+              mountPath: /workspace
+              readOnly: true
+      initContainers:
+        - name: clone-source
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              git config --global --add safe.directory /repo
+              git clone https://github.com/yappingboy/beck-cloud.git /repo
+              cp -a /repo/. /workspace
+          volumeMounts:
+            - name: source
+              mountPath: /workspace
       restartPolicy: Never
       volumes:
         - name: docker-config
           secret:
             secretName: ghcr-credentials
+            items:
+              - key: .dockerconfigjson
+                path: config.json
+        - name: source
+          emptyDir: {}
