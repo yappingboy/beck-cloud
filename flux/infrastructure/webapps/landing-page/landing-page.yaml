@@ -1,67 +1,171 @@
 apiVersion: v1
 kind: ConfigMap
 metadata:
-  name: landing-app
+  name: landing-httpd
   namespace: webapps
 data:
-  server.js: |
-    const http = require('http');
-    const fs = require('fs');
-    const path = require('path');
+  httpd.conf: |
+    ServerRoot "/usr/local/apache2"
+    Listen 80
 
-    const HOSTING_DIR = process.env.HOSTING_DIR || '/hosting';
-    const DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://directus.webapps:8055';
-    const DIRECTUS_EMAIL = process.env.DIRECTUS_EMAIL || '';
-    const DIRECTUS_PASSWORD = process.env.DIRECTUS_PASSWORD || '';
+    LoadModule unixd_module modules/mod_unixd.so
+    LoadModule authz_core_module modules/mod_authz_core.so
+    LoadModule authz_host_module modules/mod_authz_host.so
+    LoadModule dir_module modules/mod_dir.so
+    LoadModule env_module modules/mod_env.so
+    LoadModule headers_module modules/mod_headers.so
+    LoadModule log_config_module modules/mod_log_config.so
+    LoadModule mime_module modules/mod_mime.so
+    LoadModule mpm_prefork_module modules/mod_mpm_prefork.so
+    LoadModule proxy_module modules/mod_proxy.so
+    LoadModule proxy_http_module modules/mod_proxy_http.so
+    LoadModule rewrite_module modules/mod_rewrite.so
+    LoadModule setenvif_module modules/mod_setenvif.so
+    LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
+    LoadModule ssl_module modules/mod_ssl.so
+    LoadModule deflate_module modules/mod_deflate.so
+    LoadModule filter_module modules/mod_filter.so
 
-    const u = new URL(DIRECTUS_URL);
-    const DIRECTUS_HOST = u.hostname;
-    const DIRECTUS_PORT = parseInt(u.port) || (u.protocol === 'https:' ? 443 : 80);
+    User www-data
+    Group www-data
 
-    // MIME types
-    const MIME = {
-      '.html': 'text/html', '.css': 'text/css', '.js': 'application/javascript',
-      '.svg': 'image/svg+xml', '.ico': 'image/x-icon', '.png': 'image/png',
-      '.jpg': 'image/jpeg', '.gif': 'image/gif', '.webp': 'image/webp',
-      '.txt': 'text/plain', '.json': 'application/json',
-      '.woff2': 'font/woff2', '.woff': 'font/woff', '.ttf': 'font/ttf',
-    };
+    ServerAdmin admin@becklab.cloud
+    ServerName becklab.cloud
+    DocumentRoot "/hosting"
 
-    function serveFile(res, filepath) {
-      fs.readFile(filepath, (err, data) => {
-        if (err) { res.writeHead(404); res.end('Not found'); return; }
-        const ext = path.extname(filepath).toLowerCase();
-        const mime = MIME[ext] || 'application/octet-stream';
-        res.writeHead(200, { 'Content-Type': mime + '; charset=utf-8' });
-        res.end(data);
-      });
+    ErrorLog /proc/self/fd/2
+    LogLevel warn
+    CustomLog /proc/self/fd/1 combined
+
+    KeepAlive Off
+    MaxRequestWorkers 50
+    ThreadsPerChild 1
+
+    <Directory "/hosting">
+        Options -Indexes -FollowSymLinks
+        AllowOverride None
+        Require all granted
+        DirectoryIndex index.html
+    </Directory>
+
+    # API routes proxy to Django
+    RewriteEngine On
+    RewriteRule ^/api(/.*)$ http://127.0.0.1:8000/api$1 [P,L]
+
+    # Security headers
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options SAMEORIGIN
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy strict-origin-when-cross-origin
+    Header always unset X-Powered-By
+
+    # Compression
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+
+    # Caching for static assets
+    <FilesMatch "\.(css|js|svg|ico|png|jpg|gif|webp|woff2|woff|ttf)$">
+        Header set Cache-Control "public, max-age=86400"
+    </FilesMatch>
+
+    <FilesMatch "^robots\.txt$">
+        Header set Cache-Control "public, max-age=3600"
+    </FilesMatch>
+
+    TypesConfig /usr/local/apache2/conf/mime.types
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-django
+  namespace: webapps
+data:
+  settings.py: |
+    import os
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "beckcloud-landing-insecure-key")
+    DEBUG = False
+    ALLOWED_HOSTS = ["*"]
+
+    INSTALLED_APPS = [
+        "django.contrib.contenttypes",
+        "django.contrib.staticfiles",
+    ]
+
+    MIDDLEWARE = [
+        "django.middleware.security.SecurityMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    ]
+
+    ROOT_URLCONF = "beckcloud.urls"
+
+    TEMPLATES = [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": [],
+            "APP_DIRS": True,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.template.context_processors.request",
+                ],
+            },
+        },
+    ]
+
+    WSGI_APPLICATION = "beckcloud.wsgi.application"
+    STATIC_URL = "/static/"
+    DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        },
     }
+  urls.py: |
+    from django.urls import path
+    from django.http import JsonResponse
 
-    function findFile(reqPath) {
-      // Direct path lookup
-      let candidate = path.join(HOSTING_DIR, path.normalize(reqPath).replace(/^\.\.?(\/|$)/, ''));
-      if (fs.existsSync(candidate) && fs.statSync(candidate).isFile()) return candidate;
+    def health_check(request):
+        return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
 
-      // Try .html fallback for directory-like paths
-      let htmlCandidate = candidate + '.html';
-      if (fs.existsSync(htmlCandidate)) return htmlCandidate;
+    def index_api(request):
+        """Returns site metadata for the landing page."""
+        return JsonResponse({
+            "name": "BeckCloud",
+            "tagline": "Built by one. Running for all.",
+            "description": "A self-hosted homelab running K3s.",
+        })
 
-      return null;
-    }
+    urlpatterns = [
+        path("health/", health_check, name="health"),
+        path("", index_api, name="index"),
+    ]
+  wsgi.py: |
+    import os
+    from django.core.wsgi import get_wsgi_application
 
-    http.createServer((req, res) => {
-      // Strip query string
-      var reqPath = req.url.split('?')[0];
-      if (!reqPath || reqPath === '/') reqPath = '/index.html';
-
-      var file = findFile(reqPath);
-      if (file) {
-        serveFile(res, file);
-      } else {
-        res.writeHead(404, { 'Content-Type': 'text/plain' });
-        res.end('404 — Not found');
-      }
-    }).listen(80, function() { console.log('Landing page on :80'); });
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+    application = get_wsgi_application()
+  __init__.py: "# BeckCloud Django backend\n"
+  manage.py: |
+    #!/usr/bin/env python
+    import os, sys
+    def main():
+        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+        from django.core.management import execute_from_command_line
+        execute_from_command_line(sys.argv)
+    if __name__ == "__main__":
+        main()
+  start.sh: |
+    #!/bin/sh
+    exec python /app/manage.py runserver 0.0.0.0:8000 --noreload
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -81,30 +185,169 @@ spec:
         app: landing-page
     spec:
       containers:
-        - name: node
-          image: node:22-alpine
-          resources:
-            limits:
-              memory: 128Mi
-          command: ["node", "/app/server.js"]
-          env:
-            - name: HOSTING_DIR
-              value: "/hosting"
+        # Apache — serves static files, proxies /api/ to Django
+        - name: httpd
+          image: httpd:2.4-alpine
           ports:
             - containerPort: 80
+              name: http
+          resources:
+            limits:
+              memory: 64Mi
+              cpu: 100m
           volumeMounts:
-            - name: app
-              mountPath: /app
+            - name: httpd-config
+              mountPath: /usr/local/apache2/conf/httpd.conf
+              subPath: httpd.conf
+              readOnly: true
             - name: hosting
               mountPath: /hosting
               readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
+
+        # Django — handles /api/ routes
+        - name: django
+          image: python:3.12-slim
+          command: ["/app/start.sh"]
+          ports:
+            - containerPort: 8000
+              name: api
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 200m
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+          volumeMounts:
+            - name: django-config
+              mountPath: /app
+              readOnly: true
+            - name: django-src
+              mountPath: /app/beckcloud
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health/
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+
       volumes:
-        - name: app
+        - name: httpd-config
           configMap:
-            name: landing-app
+            name: landing-httpd
+        - name: django-config
+          configMap:
+            name: landing-django
+            defaultMode: 0755
+        - name: django-src
+          configMap:
+            name: landing-django-src
+            defaultMode: 0644
         - name: hosting
           persistentVolumeClaim:
             claimName: silex-hosting
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-django-src
+  namespace: webapps
+data:
+  __init__.py: "# BeckCloud Django app\n"
+  settings.py: |
+    import os
+
+    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "beckcloud-landing-insecure-key")
+    DEBUG = False
+    ALLOWED_HOSTS = ["*"]
+
+    INSTALLED_APPS = [
+        "django.contrib.contenttypes",
+        "django.contrib.staticfiles",
+    ]
+
+    MIDDLEWARE = [
+        "django.middleware.security.SecurityMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    ]
+
+    ROOT_URLCONF = "beckcloud.urls"
+
+    TEMPLATES = [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": [],
+            "APP_DIRS": True,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.template.context_processors.request",
+                ],
+            },
+        },
+    ]
+
+    WSGI_APPLICATION = "beckcloud.wsgi.application"
+    STATIC_URL = "/static/"
+    DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        },
+    }
+  urls.py: |
+    from django.urls import path
+    from django.http import JsonResponse
+
+    def health_check(request):
+        return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
+
+    def index_api(request):
+        return JsonResponse({
+            "name": "BeckCloud",
+            "tagline": "Built by one. Running for all.",
+            "description": "A self-hosted homelab running K3s.",
+        })
+
+    urlpatterns = [
+        path("health/", health_check, name="health"),
+        path("", index_api, name="index"),
+    ]
+  wsgi.py: |
+    import os
+    from django.core.wsgi import get_wsgi_application
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+    application = get_wsgi_application()
 ---
 apiVersion: v1
 kind: Service
