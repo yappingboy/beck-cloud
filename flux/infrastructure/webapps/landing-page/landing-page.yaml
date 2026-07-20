@@ -96,14 +96,10 @@ data:
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
             "DIRS": [os.environ.get("HOSTING_DIR", "/hosting")],
-            "APP_DIRS": True,
+            "APP_DIRS": False,
             "OPTIONS": {
                 "context_processors": [
                     "django.template.context_processors.request",
-                ],
-                # Disable template caching so PVC updates are picked up immediately
-                "loaders": [
-                    "django.template.loaders.filesystem.Loader",
                 ],
             },
         },
