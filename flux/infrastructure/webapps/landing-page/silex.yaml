@@ -72,6 +72,7 @@ spec:
               value: "0.0.0.0"
           ports:
             - containerPort: 8080
+            - containerPort: 6807
           volumeMounts:
             - name: root
               mountPath: /silex/silex/storage
@@ -100,6 +101,9 @@ spec:
     - name: http
       port: 8080
       targetPort: 8080
+    - name: mcp
+      port: 6807
+      targetPort: 6807
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
