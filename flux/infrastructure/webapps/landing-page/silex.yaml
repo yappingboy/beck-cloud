@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex:3.6.6
+          image: silexlabs/silex:latest
           resources:
             limits:
               memory: 512Mi
@@ -70,6 +70,10 @@ spec:
               value: "fs,ftp"
             - name: SILEX_HOST
               value: "0.0.0.0"
+            - name: UUID
+              value: 0
+            - name: GUID
+              value: 0
           ports:
             - containerPort: 8080
           volumeMounts:
