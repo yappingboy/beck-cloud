@@ -133,6 +133,20 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
+      initContainers:
+        - name: init-permissions
+          image: docker.io/library/alpine:3.21
+          command: ["sh", "-c", "chown -R 1000:1000 /data/libraries"]
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - name: libraries
+              mountPath: /data/libraries
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
       containers:
         - name: manyfold
           image: ghcr.io/manyfold3d/manyfold:latest
@@ -157,6 +171,10 @@ spec:
               value: "3dprint-manyfold-secret-key-change-me"
             - name: HOSTNAME
               value: "manyfold.becklab.cloud"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
           ports:
             - containerPort: 3214
               name: http
