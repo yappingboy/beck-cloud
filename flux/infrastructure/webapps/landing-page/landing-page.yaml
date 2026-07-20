@@ -5,7 +5,7 @@ metadata:
   namespace: webapps
 data:
   httpd.conf: |
-    ServerRoot "/usr/local/apache2"
+    ServerRoot "/etc/apache2"
     Listen 80
 
     LoadModule unixd_module modules/mod_unixd.so
@@ -17,14 +17,12 @@ data:
     LoadModule log_config_module modules/mod_log_config.so
     LoadModule mime_module modules/mod_mime.so
     LoadModule mpm_event_module modules/mod_mpm_event.so
-    LoadModule proxy_module modules/mod_proxy.so
-    LoadModule proxy_http_module modules/mod_proxy_http.so
-    LoadModule rewrite_module modules/mod_rewrite.so
     LoadModule setenvif_module modules/mod_setenvif.so
     LoadModule socache_shmcb_module modules/mod_socache_shmcb.so
     LoadModule ssl_module modules/mod_ssl.so
     LoadModule deflate_module modules/mod_deflate.so
     LoadModule filter_module modules/mod_filter.so
+    LoadModule wsgi_module modules/mod_wsgi.so
 
     User www-data
     Group www-data
@@ -40,16 +38,16 @@ data:
     KeepAlive Off
     MaxRequestWorkers 50
 
-    <Directory "/hosting">
-        Options -Indexes -FollowSymLinks
-        AllowOverride None
-        Require all granted
-        DirectoryIndex index.html
-    </Directory>
+    # Django via mod_wsgi — all requests go through Django
+    WSGIDaemonProcess landing processes=2 threads=15 maximum-requests=10000 display-name=%{GROUP} python-home=/usr
+    WSGIProcessGroup landing
+    WSGIScriptAlias / /app/beckcloud/wsgi.py process-group=landing
 
-    # API routes proxy to Django
-    RewriteEngine On
-    RewriteRule ^/api(/.*)$ http://127.0.0.1:8000/api$1 [P,L]
+    <Directory "/app/beckcloud">
+        <Files wsgi.py>
+            Require all granted
+        </Files>
+    </Directory>
 
     # Security headers
     Header always set X-Content-Type-Options nosniff
@@ -70,7 +68,7 @@ data:
         Header set Cache-Control "public, max-age=3600"
     </FilesMatch>
 
-    TypesConfig /usr/local/apache2/conf/mime.types
+    TypesConfig /etc/apache2/mime.types
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -81,7 +79,7 @@ data:
   settings.py: |
     import os
 
-    BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "beckcloud-landing-insecure-key")
     DEBUG = False
     ALLOWED_HOSTS = ["*"]
@@ -97,12 +95,12 @@ data:
         "django.middleware.clickjacking.XFrameOptionsMiddleware",
     ]
 
-    ROOT_URLCONF = "urls"
+    ROOT_URLCONF = "beckcloud.urls"
 
     TEMPLATES = [
         {
             "BACKEND": "django.template.backends.django.DjangoTemplates",
-            "DIRS": [],
+            "DIRS": [os.environ.get("HOSTING_DIR", "/hosting")],
             "APP_DIRS": True,
             "OPTIONS": {
                 "context_processors": [
@@ -112,7 +110,7 @@ data:
         },
     ]
 
-    WSGI_APPLICATION = "wsgi.application"
+    WSGI_APPLICATION = "beckcloud.wsgi.application"
     STATIC_URL = "/static/"
     DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
@@ -129,7 +127,12 @@ data:
     }
   urls.py: |
     from django.urls import path
+    from django.views.generic import TemplateView
+    from django.views.static import serve
     from django.http import JsonResponse
+    import os
+
+    hosting = os.environ.get("HOSTING_DIR", "/hosting")
 
     def health_check(request):
         return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
@@ -142,6 +145,11 @@ data:
         })
 
     urlpatterns = [
+        path("", TemplateView.as_view(template_name="index.html"), name="home"),
+        path("robots.txt", serve, {"path": "robots.txt", "document_root": hosting}, name="robots"),
+        path("favicon.svg", serve, {"path": "favicon.svg", "document_root": hosting}, name="favicon"),
+        path("css/<path:path>", serve, {"document_root": os.path.join(hosting, "css")}, name="css"),
+        path("js/<path:path>", serve, {"document_root": os.path.join(hosting, "js")}, name="js"),
         path("api/health/", health_check, name="health"),
         path("api/", index_api, name="index"),
         path("api", index_api, name="index-noslash"),
@@ -150,22 +158,10 @@ data:
     import os
     from django.core.wsgi import get_wsgi_application
 
-    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
     application = get_wsgi_application()
-  manage.py: |
-    #!/usr/bin/env python
-    import os, sys
-    def main():
-        os.environ.setdefault("DJANGO_SETTINGS_MODULE", "settings")
-        from django.core.management import execute_from_command_line
-        execute_from_command_line(sys.argv)
-    if __name__ == "__main__":
-        main()
-  start.sh: |
-    #!/bin/sh
-    pip install --quiet django==5.1 2>/dev/null
-    cd /app
-    exec python manage.py runserver 0.0.0.0:8000 --noreload
+  __init__.py: |
+    # BeckCloud landing page Django app
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -185,44 +181,11 @@ spec:
         app: landing-page
     spec:
       containers:
-        # Apache — serves static files, proxies /api/ to Django
-        - name: httpd
-          image: httpd:2.4-alpine
+        - name: landing
+          image: ghcr.io/yappingboy/becklab-landing:latest
           ports:
             - containerPort: 80
               name: http
-          resources:
-            limits:
-              memory: 64Mi
-              cpu: 100m
-          volumeMounts:
-            - name: httpd-config
-              mountPath: /usr/local/apache2/conf/httpd.conf
-              subPath: httpd.conf
-              readOnly: true
-            - name: hosting
-              mountPath: /hosting
-              readOnly: true
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 3
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 80
-            initialDelaySeconds: 5
-            periodSeconds: 30
-
-        # Django — handles /api/ routes
-        - name: django
-          image: python:3.12-slim
-          command: ["/app/start.sh"]
-          ports:
-            - containerPort: 8000
-              name: api
           resources:
             limits:
               memory: 128Mi
@@ -232,25 +195,44 @@ spec:
               value: "1"
             - name: PYTHONUNBUFFERED
               value: "1"
-            - name: PYTHONPATH
-              value: "/app"
+            - name: HOSTING_DIR
+              value: "/hosting"
           volumeMounts:
+            - name: httpd-config
+              mountPath: /etc/apache2/httpd.conf
+              subPath: httpd.conf
+              readOnly: true
             - name: django-config
-              mountPath: /app
+              mountPath: /app/beckcloud/settings.py
+              subPath: settings.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/urls.py
+              subPath: urls.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/wsgi.py
+              subPath: wsgi.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/__init__.py
+              subPath: __init__.py
+              readOnly: true
+            - name: hosting
+              mountPath: /hosting
               readOnly: true
           readinessProbe:
             httpGet:
               path: /api/health/
-              port: 8000
-            initialDelaySeconds: 10
+              port: 80
+            initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /api/health/
-              port: 8000
-            initialDelaySeconds: 15
+              port: 80
+            initialDelaySeconds: 10
             periodSeconds: 30
-
       volumes:
         - name: httpd-config
           configMap:
@@ -258,7 +240,7 @@ spec:
         - name: django-config
           configMap:
             name: landing-django
-            defaultMode: 0755
+            defaultMode: 0644
         - name: hosting
           persistentVolumeClaim:
             claimName: silex-hosting

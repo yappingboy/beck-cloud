@@ -1,0 +1,29 @@
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-landing-page
+  namespace: toolbox
+spec:
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=Dockerfile
+            - --context=https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=flux/infrastructure/webapps/landing-page
+            - --destination=ghcr.io/yappingboy/becklab-landing:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker/
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: ghcr-credentials
