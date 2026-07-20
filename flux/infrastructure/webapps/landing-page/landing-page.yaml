@@ -19,8 +19,8 @@ data:
     LoadModule ssl_module /usr/lib/apache2/modules/mod_ssl.so
     LoadModule socache_shmcb_module /usr/lib/apache2/modules/mod_socache_shmcb.so
 
-    User www-data
-    Group www-data
+    User root
+    Group root
 
     ServerAdmin admin@becklab.cloud
     ServerName becklab.cloud
@@ -36,7 +36,7 @@ data:
     MaxRequestWorkers 50
 
     # Django via mod_wsgi — all requests go through Django
-    WSGIDaemonProcess landing processes=2 threads=15 maximum-requests=10000 display-name=%{GROUP} python-path=/app:/usr/local/lib/python3.12/site-packages
+    WSGIDaemonProcess landing processes=2 threads=15 maximum-requests=10000 display-name=%{GROUP} python-path=/app:/usr/local/lib/python3.12/site-packages user=root group=root
     WSGIProcessGroup landing
     WSGIScriptAlias / /app/beckcloud/wsgi.py process-group=landing
 
