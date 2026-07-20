@@ -1,0 +1,302 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BeckCloud — A self-hosted homelab running K3s, serving real services to real people. Not AWS. Better.">
+  <meta name="theme-color" content="#0F1729">
+  <title>BeckCloud — Built by one. Running for all.</title>
+
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+
+  <link rel="stylesheet" href="css/dark.css">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+  <!-- ========== HEADER ========== -->
+  <header class="site-header">
+    <div class="container nav-inner">
+      <a href="#" class="nav-logo" aria-label="BeckCloud home">
+        <!-- Hexagon mark -->
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z"
+                fill="none" stroke="var(--brand-primary)" stroke-width="20"/>
+          <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130
+                   C95,130 88,120 85,105 C82,90 92,75 100,65 Z"
+                fill="var(--brand-primary)"/>
+        </svg>
+        <span class="wordmark">Beck<span class="gradient-text">Cloud</span></span>
+      </a>
+
+      <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+        <span></span><span></span><span></span>
+      </button>
+
+      <ul class="nav-links" id="nav-links">
+        <li><a href="#services">Services</a></li>
+        <li><a href="#about">About</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li>
+          <button class="theme-btn" id="theme-toggle" aria-label="Switch to light mode">
+            <!-- Sun icon (shown in dark mode) -->
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </button>
+        </li>
+        <li class="theme-btn-wrapper">
+          <button class="theme-btn" id="theme-toggle-mobile" aria-label="Switch to light mode">
+            <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="5"/>
+              <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+            </svg>
+          </button>
+        </li>
+      </ul>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- ========== HERO ========== -->
+    <section class="hero">
+      <div class="container">
+        <svg class="hero-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z"
+                fill="none" stroke="var(--brand-primary)" stroke-width="20"/>
+          <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130
+                   C95,130 88,120 85,105 C82,90 92,75 100,65 Z"
+                fill="var(--brand-primary)"/>
+        </svg>
+        <h1>Beck<span class="gradient-text">Cloud</span></h1>
+        <p class="tagline">Built by one. Running for all.</p>
+        <p class="subtitle">
+          A self-hosted homelab running K3s, serving real services to real people.
+          Not AWS. Better.
+        </p>
+        <a href="#services" class="btn-primary">
+          Explore Services
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M3 8h10M9 4l4 4-4 4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+    </section>
+
+    <!-- ========== SERVICES ========== -->
+    <section id="services">
+      <div class="container">
+        <p class="section-label">What's running</p>
+        <h2 class="section-title">Services</h2>
+        <p class="section-desc">
+          Twenty-odd containers humming along in a K3s cluster. Here's what's actually useful.
+        </p>
+
+
+
+        <!-- Infrastructure -->
+        <div class="services-category">
+          <h3 class="category-title">Infrastructure</h3>
+          <div class="services-grid">
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Traefik</h4>
+              </div>
+              <p>Reverse proxy and load balancer. Routes traffic to the right container, handles TLS.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Cilium / Hubble</h4>
+              </div>
+              <p>eBPF-based networking. Observability and security for the cluster mesh.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Velero</h4>
+              </div>
+              <p>Backup and disaster recovery for Kubernetes. Because even homelabs lose data.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>OpenNebula</h4>
+              </div>
+              <p>Virtualization layer. Runs the K3s nodes and manages the hypervisor fleet.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Security -->
+        <div class="services-category">
+          <h3 class="category-title">Security</h3>
+          <div class="services-grid">
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Keycloak</h4>
+                <span class="service-domain">auth.becklab.cloud</span>
+              </div>
+              <p>Identity and access management. SSO for everything that needs a login.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Bitwarden</h4>
+                <span class="service-domain">vault.becklab.cloud</span>
+              </div>
+              <p>Self-hosted password manager. Your secrets stay yours.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Wazuh</h4>
+              </div>
+              <p>SIEM and endpoint monitoring. Detects threats before they become stories.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Trivy</h4>
+              </div>
+              <p>Container and filesystem vulnerability scanner. Runs on every image before it ships.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Monitoring -->
+        <div class="services-category">
+          <h3 class="category-title">Monitoring</h3>
+          <div class="services-grid">
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Grafana</h4>
+                <span class="service-domain">grafana.becklab.cloud</span>
+              </div>
+              <p>Dashboards and visualizations. Makes the metrics actually readable.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Prometheus</h4>
+              </div>
+              <p>Metrics collection and alerting. Scrapes everything that exports a /metrics endpoint.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Apps -->
+        <div class="services-category">
+          <h3 class="category-title">Apps</h3>
+          <div class="services-grid">
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Directus</h4>
+                <span class="service-domain">cms.becklab.cloud</span>
+              </div>
+              <p>Headless CMS. Manages content for this site and whatever comes next.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Affine</h4>
+                <span class="service-domain">wiki.becklab.cloud</span>
+              </div>
+              <p>Self-hosted wiki and knowledge base. Documentation that doesn't live on Notion's servers.</p>
+            </div>
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Silex</h4>
+              </div>
+              <p>Self-hosted Figma alternative. Design files that stay on your infrastructure.</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Fun -->
+        <div class="services-category">
+          <h3 class="category-title">Fun</h3>
+          <div class="services-grid">
+            <div class="service-card">
+              <div class="service-card-header">
+                <h4>Minecraft Server</h4>
+              </div>
+              <p>Survival mode. The one service that actually exists for enjoyment. TPS is usually fine.</p>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ========== ABOUT ========== -->
+    <section id="about">
+      <div class="container">
+        <p class="section-label">About BeckCloud</p>
+        <h2 class="section-title">A homelab with opinions</h2>
+
+        <div class="about-content">
+          <div class="about-text">
+            <p>
+              BeckCloud is a personal homelab built around K3s running on OpenNebula.
+              It's not a startup, not a product, and definitely not a SaaS. It's one person's
+              attempt to make the kind of infrastructure they'd want to use — because the
+              cloud providers' terms of service always come first.
+            </p>
+            <p>
+              The stack runs roughly twenty services across a small Kubernetes cluster,
+              orchestrated with Flux for GitOps. Everything from identity management to
+              monitoring, from backups to development tools.
+              together with Cilium for networking, Traefik for routing, and Grafana for
+              making sure nothing's on fire.
+            </p>
+            <p>
+              It's complicated. It shouldn't be this complicated. But it works, and
+              understanding exactly how it works — and fixing it when it doesn't — is
+              the point.
+            </p>
+          </div>
+        </div>
+
+        <div class="stats-bar">
+          <div class="stat">
+            <span class="stat-value">20+</span>
+            <span class="stat-label">Services</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">99.9%</span>
+            <span class="stat-label">Uptime Target</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">140+ TB</span>
+            <span class="stat-label">Storage</span>
+          </div>
+          <div class="stat">
+            <span class="stat-value">100%</span>
+            <span class="stat-label">Self-Hosted</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CONTACT ========== -->
+    <section id="contact">
+      <div class="container">
+        <p class="section-label">Contact</p>
+        <h2 class="section-title">Got a question?</h2>
+        <p class="section-desc">
+          Reach out. I read everything. No automated replies, no ticket numbers,
+          just actual human responses.
+        </p>
+        <span class="contact-placeholder">Contact info coming soon</span>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
+    <div class="container">
+      <p>&copy; 2026 BeckCloud</p>
+      <p class="no-tracking">All services self-hosted. No tracking. No analytics.</p>
+    </div>
+  </footer>
+
+  <script src="js/main.js"></script>
+
+</body>
+</html>
