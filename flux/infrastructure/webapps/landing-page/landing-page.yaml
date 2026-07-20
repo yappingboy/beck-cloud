@@ -79,7 +79,11 @@ data:
         return httpReq('GET', '/items/pages', null, token).then((res) => {
           try {
             const json = JSON.parse(res.body);
-            if (json.data && Array.isArray(json.data)) return json.data;
+            if (json.data) {
+              // Directus returns either {data: [...]} or {data: {...}} for single item
+              var items = Array.isArray(json.data) ? json.data : [json.data];
+              if (items.length > 0) return items;
+            }
           } catch(e) {}
           return null;
         });
