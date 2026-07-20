@@ -60,6 +60,16 @@ spec:
               value: "https://cms.becklab.cloud"
             - name: SERVER_DOMAIN
               value: "cms.becklab.cloud"
+            - name: CORS_ENABLED
+              value: "true"
+            - name: CORS_ORIGIN
+              value: "https://silex.becklab.cloud"
+            - name: CORS_METHODS
+              value: "GET,POST,PATCH,DELETE,OPTIONS"
+            - name: CORS_ALLOWED_HEADERS
+              value: "Content-Type,Authorization,Accept"
+            - name: CORS_CREDENTIALS
+              value: "true"
           volumeMounts:
             - name: data
               mountPath: /directus/database
