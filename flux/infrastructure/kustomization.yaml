@@ -11,6 +11,7 @@ resources:
   - identity          # includes email (postfix-relay)
   - rbac
   - security          # includes trivy-operator
+  - crowdsec          # Crowdsec + Traefik bouncer
   - media             # includes qbit-gluetun, spotweb
   - monitoring
   - velero
