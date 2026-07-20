@@ -184,12 +184,20 @@ spec:
       labels:
         app: landing-page
     spec:
-      securityContext:
-        fsGroup: 1000
-        runAsUser: 1000
-        runAsGroup: 1000
       imagePullSecrets:
         - name: ghcr-credentials
+      initContainers:
+        - name: fix-permissions
+          image: ghcr.io/yappingboy/becklab-landing:latest
+          command: ["sh", "-c", "chmod -R a+r /hosting && chmod -R a+X /hosting"]
+          volumeMounts:
+            - name: hosting
+              mountPath: /hosting
+              readOnly: false
+          resources:
+            limits:
+              memory: 32Mi
+              cpu: 100m
       containers:
         - name: landing
           image: ghcr.io/yappingboy/becklab-landing:latest
