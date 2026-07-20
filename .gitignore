@@ -1,5 +1,26 @@
+# SOPS artifacts
 .sops-old.agekey
-.hermes/
 .sops.agekey
 .sops.yaml.bak
+
+# Secrets
 secrets/
+
+# IDE / editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Hermes (legacy)
+.hermes/

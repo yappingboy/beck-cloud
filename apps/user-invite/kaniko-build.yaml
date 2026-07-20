@@ -1,6 +1,9 @@
 # Kaniko build job — builds user-invite image and pushes to GHCR.
-# Run once: kubectl apply -f kaniko-build.yaml -n toolbox
-# The job creates namespace 'toolbox' if needed (create below separately).
+# Deployed by Flux alongside the rest of user-invite resources.
+# Delete old job before updating: kubectl delete job build-user-invite -n toolbox --force
+#
+# NOTE: This Job uses a timestamp tag for cache-busting on every change.
+# Update the IMAGE_TAG variable below or use kustomize replacements to rotate it.
 
 ---
 apiVersion: v1
@@ -25,26 +28,38 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: clone-source
+          image: bitnami/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              git clone --depth=1 https://github.com/yappingboy/beck-cloud.git
+              cp -r beck-cloud/apps/user-invite/* /workspace/
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=https://github.com/yappingboy/beck-cloud.git#ref=main#subpaths=apps/user-invite
+            - --context=dir:///workspace/
             - --destination=ghcr.io/yappingboy/becklab-user-invite:latest
-            - --destination=ghcr.io/yappingboy/becklab-user-invite:v1
-            - --cache=true
-            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --destination=ghcr.io/yappingboy/becklab-user-invite:v4.1783837566
+            - --cache=false
             - --skip-tls-verify
-          env:
-            - name: GOOGLE_APPLICATION_CREDENTIALS
-              value: "/etc/docker/cfg"  # dummy; kaniko uses .dockerconfigjson instead
           volumeMounts:
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
+            - name: workspace
+              mountPath: /workspace
       restartPolicy: Never
       volumes:
         - name: docker-config
           secret:
-            secretName: ghcr-credentials
+            secretName: ghcr-config
+        - name: workspace
+          emptyDir: {}

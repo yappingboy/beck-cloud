@@ -13,7 +13,7 @@ spec:
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=Dockerfile
-            - --context=dir:///workspace/flux/infrastructure/webapps/landing-page
+            - --context=dir:///workspace/apps/landing-page
             - --destination=ghcr.io/yappingboy/becklab-landing:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -33,9 +33,7 @@ spec:
             - sh
             - -c
             - |
-              git config --global --add safe.directory /repo
-              git clone https://github.com/yappingboy/beck-cloud.git /repo
-              cp -a /repo/. /workspace
+              git clone --depth=1 https://github.com/yappingboy/beck-cloud.git /workspace
           volumeMounts:
             - name: source
               mountPath: /workspace

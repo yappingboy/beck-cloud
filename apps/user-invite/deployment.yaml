@@ -21,7 +21,7 @@ spec:
         - name: ghcr-credentials
       containers:
         - name: user-invite
-          image: ghcr.io/yappingboy/becklab-user-invite:v4c.1783826900
+          image: ghcr.io/yappingboy/becklab-user-invite:v4.1783837566
           imagePullPolicy: Always
           resources:
             limits:
@@ -44,7 +44,7 @@ spec:
                   name: lldap-admin-password
                   key: admin-password
             - name: SMTP_HOST
-              value: "smtp-relay.email.svc.cluster.local"
+              value: "smtp-relay.identity.svc.cluster.local"
             - name: SMTP_PORT
               value: "25"
             - name: FROM_EMAIL

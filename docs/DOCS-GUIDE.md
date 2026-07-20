@@ -6,47 +6,60 @@ This file explains how the BeckCloud documentation is organized, formatted, and 
 
 ## Repository Structure
 
-```
+```  
 beck-cloud/
-├── README.md                    # Repo entry point (brief overview + links)
-├── ansible/                     # Ansible playbooks for bare-metal provisioning
-│   ├── docs/                    # Ansible-specific documentation
-│   │   └── SOPS-ROTATION.md     # How to rotate SOPS age keys
+├── README.md                    # Repo entry point
+├── ansible/                     # Bare-metal provisioning
+│   ├── docs/                    # Ansible-specific docs
+│   │   └── SOPS-ROTATION.md
 │   ├── inventory/               # Host inventories
 │   ├── playbooks/               # Numbered playbooks (00-prereqs → 99-uninstall)
-│   └── templates/               # Jinja2 templates for VM manifests, exports, etc.
-├── docs/                        # All operational documentation ← YOU ARE HERE
-│   ├── DOCS-GUIDE.md            # This file — how docs are organized and formatted
-│   ├── keycloak-setup.md        # Step-by-step Keycloak + LLDAP setup guide
-│   └── research/                # Auto-generated from live cluster data by Nova (AI sysadmin)
-│       ├── system-overview.md      # Executive summary, infrastructure stack, namespace map
-│       ├── services-catalog.md     # Per-service details (ports, images, PVCs, status)
-│       ├── networking-ingress.md   # Traefik routing, SSO middleware chains, TLS
-│       ├── storage-backups.md      # PVs, PVCs, Velero schedules, MinIO
-│       ├── gitops-automation.md    # Flux CD pipeline, Ansible playbooks, SOPS
-│       ├── procedures-runbook.md   # Operational procedures, troubleshooting, post-deploy checklist
-│       └── security-suite.md       # Security stack plan (Wazuh, Trivy, Falco, Suricata)
+│   │   └── templates/           # Jinja2 templates (sunbeam-manifest, etc.)
+│   └── templates/               # Root-level templates (sops.yaml.j2)
+├── apps/                        # Application source code
+│   ├── gridspace/               # Gridspace Dockerfile + build
+│   ├── landing-page/            # Landing page Dockerfile, Python, JS
+│   └── user-invite/             # User provisioning app
+├── brand/                       # Brand assets + landing page design
+├── docs/                        # All documentation ← YOU ARE HERE
+│   ├── DOCS-GUIDE.md            # This file
+│   ├── index.md                 # Documentation index
+│   ├── keycloak-setup.md        # IdP federation setup guide
+│   ├── research/                # Auto-generated cluster docs (by Nova)
+│   │   ├── system-overview.md
+│   │   ├── services-catalog.md
+│   │   ├── networking-ingress.md
+│   │   ├── storage-backups.md
+│   │   ├── gitops-automation.md
+│   │   ├── procedures-runbook.md
+│   │   └── security-suite.md
+│   └── archive/                 # Completed plans, removed code, audit reports
 ├── flux/                        # Flux CD GitOps manifests
-│   ├── kustomization.yaml               # Root Flux config
-│   ├── infrastructure/                  # Infrastructure Kustomization (syncs every 1m)
-│   │   ├── kustomization.yaml           # Root infra kustomization
-│   │   ├── <namespace>/                 # Per-namespace manifests
-│   │   │   ├── kustomization.yaml       # Namespace resources list
-│   │   │   ├── namespace.yaml           # Namespace definition
-│   │   │   ├── *.yaml                   # Deployments, Services, ConfigMaps, etc.
-│   │   │   └── secret-*.yaml            # SOPS-encrypted secrets
-│   │   ├── traefik-config/              # Traefik middleware, HTTPS redirect
-│   │   ├── cert-manager-config/         # ClusterIssuer for Let's Encrypt
-│   │   ├── configs/                     # CoreDNS custom config, etc.
-│   │   └── csi-snapshotter/             # Volume snapshot CRDs
-│   └── apps/                          # User-facing apps Kustomization (syncs every 5m)
-│       ├── kustomization.yaml           # Apps root
-│       ├── homepage/                    # Homepage dashboard HelmRelease
-│       ├── toolbox/                     # Build containers (Kaniko)
-│       └── user-invite/                 # Custom Python app + build config
-├── apps/                          # Application source code
-│   └── user-invite/                 # Python user provisioning app + Dockerfile
-└── .sops.yaml                     # SOPS encryption config (age keys)
+│   ├── flux-system/             # Flux bootstrap
+│   ├── infrastructure/          # Infrastructure manifests (syncs every 1m)
+│   │   ├── sources/             # HelmRepository definitions
+│   │   ├── controllers/         # Cilium, NVIDIA device plugin
+│   │   ├── configs/             # Storage classes, CoreDNS
+│   │   ├── csi-snapshotter/     # VolumeSnapshotClasses
+│   │   ├── cert-manager/        # cert-manager HelmRelease
+│   │   ├── cert-manager-config/ # ClusterIssuers
+│   │   ├── traefik/             # Traefik + middlewares + dashboard
+│   │   ├── identity/            # lldap, Keycloak, oauth2-proxy, SSO, email
+│   │   ├── security/            # Wazuh, Suricata, Trivy, Falco
+│   │   ├── crowdsec/            # Crowdsec LAPI + bouncer
+│   │   ├── monitoring/          # Prometheus, Grafana, Hubble
+│   │   ├── media/               # Jellyfin stack, downloaders
+│   │   ├── webapps/             # Affine, Bitwarden, Directus, HA, etc.
+│   │   ├── opennebula/          # Sunstone
+│   │   ├── velero/              # Velero + MinIO
+│   │   ├── rbac/                # Cluster roles
+│   │   ├── gaming/              # Crafty Controller
+│   │   ├── 3dprinting/          # 3D printing stack
+│   │   └── gridspace/           # Gridspace apps
+│   └── apps/                    # User-facing apps (syncs every 5m)
+│       ├── toolbox/             # Build containers (Kaniko)
+│       └── user-invite/         # K8s manifests (source in apps/)
+└── .sops.yaml                   # SOPS encryption config
 ```
 
 ---
@@ -89,6 +102,10 @@ These are **single-source-of-truth** documents. Each covers a specific domain:
 | Document | Purpose |
 |----------|---------|
 | `SOPS-ROTATION.md` | How to rotate SOPS age keys (critical security procedure) |
+
+### 4. Archive (`docs/archive/`)
+
+**Purpose:** Completed plans, removed code, and historical artifacts. Not referenced by active docs. See [Archive README](archive/README.md) for index.
 
 ---
 

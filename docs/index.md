@@ -19,7 +19,13 @@ All documentation for the BeckCloud homelab infrastructure.
 
 ### Operations
 - [Procedures & Runbook](research/procedures-runbook.md) — Common ops tasks, troubleshooting, post-deploy checklist
-- [Security Suite Plan](research/security-suite.md) — Wazuh, Trivy Operator, planned Falco/Suricata
+- [Security Suite Plan](research/security-suite.md) — Wazuh, Trivy Operator, Falco, Suricata
+
+### Ansible
+- [SOPS Key Rotation](../ansible/docs/SOPS-ROTATION.md) — How to rotate SOPS age keys
+
+### Archive
+- [Archive](archive/) — Completed plans, removed code, audit reports
 
 ---
 
