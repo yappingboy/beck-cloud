@@ -16,7 +16,7 @@ data:
     LoadModule headers_module modules/mod_headers.so
     LoadModule log_config_module modules/mod_log_config.so
     LoadModule mime_module modules/mod_mime.so
-    LoadModule mpm_prefork_module modules/mod_mpm_prefork.so
+    LoadModule mpm_event_module modules/mod_mpm_event.so
     LoadModule proxy_module modules/mod_proxy.so
     LoadModule proxy_http_module modules/mod_proxy_http.so
     LoadModule rewrite_module modules/mod_rewrite.so
@@ -39,7 +39,7 @@ data:
 
     KeepAlive Off
     MaxRequestWorkers 50
-    ThreadsPerChild 1
+    
 
     <Directory "/hosting">
         Options -Indexes -FollowSymLinks
@@ -165,6 +165,7 @@ data:
         main()
   start.sh: |
     #!/bin/sh
+    pip install --quiet django==5.1 2>/dev/null
     exec python /app/manage.py runserver 0.0.0.0:8000 --noreload
 ---
 apiVersion: apps/v1
