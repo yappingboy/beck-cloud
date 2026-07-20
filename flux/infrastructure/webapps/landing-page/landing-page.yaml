@@ -126,9 +126,8 @@ data:
     }
   urls.py: |
     from django.urls import path
-    from django.views.generic import TemplateView
     from django.views.static import serve
-    from django.http import JsonResponse
+    from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
     import os
 
     hosting = os.environ.get("HOSTING_DIR", "/hosting")
@@ -143,6 +142,16 @@ data:
             "description": "A self-hosted homelab running K3s.",
         })
 
+    def index_view(request):
+        """Serve /hosting/index.html as raw text, no template parsing."""
+        idx = os.path.join(hosting, "index.html")
+        try:
+            with open(idx, "r", encoding="utf-8") as f:
+                content = f.read()
+            return HttpResponse(content, content_type="text/html; charset=utf-8")
+        except FileNotFoundError:
+            return HttpResponseNotFound("<h1>404</h1>")
+
     urlpatterns = [
         path("", index_view, name="home"),
         path("robots.txt", serve, {"path": "robots.txt", "document_root": hosting}, name="robots"),
@@ -153,19 +162,6 @@ data:
         path("api/", index_api, name="index"),
         path("api", index_api, name="index-noslash"),
     ]
-
-    def index_view(request):
-        """Serve /hosting/index.html as raw text, no template parsing."""
-        from django.http import HttpResponse
-        import os
-        idx = os.path.join(hosting, "index.html")
-        try:
-            with open(idx, "r", encoding="utf-8") as f:
-                content = f.read()
-            return HttpResponse(content, content_type="text/html; charset=utf-8")
-        except FileNotFoundError:
-            from django.http import HttpResponseNotFound
-            return HttpResponseNotFound("<h1>404</h1>")
   wsgi.py: |
     import os
     from django.core.wsgi import get_wsgi_application
