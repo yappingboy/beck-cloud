@@ -182,10 +182,14 @@ spec:
           volumeMounts:
             - name: libraries
               mountPath: /data/libraries
+            - name: app-tmp
+              mountPath: /usr/src/app/tmp
       volumes:
         - name: libraries
           persistentVolumeClaim:
             claimName: manyfold-libraries
+        - name: app-tmp
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
