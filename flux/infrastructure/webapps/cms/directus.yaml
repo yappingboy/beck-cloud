@@ -92,6 +92,20 @@ spec:
       targetPort: 8055
 ---
 apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: directus-cors
+  namespace: webapps
+spec:
+  headers:
+    customResponseHeaders:
+      Access-Control-Allow-Origin: "https://silex.becklab.cloud"
+      Access-Control-Allow-Methods: "GET,POST,PATCH,DELETE,OPTIONS"
+      Access-Control-Allow-Headers: "Content-Type,Authorization,Accept"
+      Access-Control-Allow-Credentials: "true"
+      Access-Control-Max-Age: "86400"
+---
+apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: directus
@@ -101,8 +115,16 @@ spec:
     - websecure
   routes:
     - kind: Rule
+      match: Host(`cms.becklab.cloud`) && (Methods(`OPTIONS`))
+      middlewares:
+        - name: directus-cors
+      services:
+        - name: directus
+          port: 8055
+    - kind: Rule
       match: Host(`cms.becklab.cloud`)
       middlewares:
+        - name: directus-cors
         - name: sso-admin-chain
           namespace: identity
       services:
