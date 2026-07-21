@@ -115,7 +115,7 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`cms.becklab.cloud`) && (Methods(`OPTIONS`))
+      match: Host(`cms.becklab.cloud`) && Method(`OPTIONS`)
       middlewares:
         - name: directus-cors
       services:
