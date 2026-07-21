@@ -338,7 +338,7 @@ High-severity findings from any tool can trigger Alertmanager notifications to c
 - [ ] Verify all tools are reporting to Wazuh dashboard coherently
 - [ ] Create custom Grafana dashboards correlating security metrics across tools
 - [ ] Configure Alertmanager routing for critical security alerts
-- [ ] Document runbook procedures in `docs/research/procedures-runbook.md`
+- [ ] Document runbook procedures in `docs/runbooks/procedures-runbook.md`
 - [ ] Add network policies isolating `security` namespace traffic
 
 ### Phase 5: WAF + Edge Protection ✅ COMPLETE

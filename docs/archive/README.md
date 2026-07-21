@@ -1,6 +1,6 @@
 # Archived Files
 
-Files moved here during the 2026-07-20 repo restructure. Kept for reference; git history is the primary record.
+Files moved here during repo restructures. Kept for reference; git history is the primary record.
 
 ## Completed Plans
 
@@ -10,6 +10,7 @@ Files moved here during the 2026-07-20 repo restructure. Kept for reference; git
 | `2026-05-29-jellyfin-jellyseerr-true-ssso.md` | `docs/plans/` | Superseded SSO approach |
 | `2026-05-30-jellyfin-oauth2proxy-plugin.md` | `docs/plans/` | Superseded SSO approach |
 | `DOCS-AUDIT-2026-07-20.md` | `docs/DOCS-AUDIT-2026-07-20.md` | Audit report — no longer needed alongside active docs |
+| `repo-restructure-plan.md` | `docs/archive/` (created during restructure) | Restructure plan — executed and archived |
 
 ## Removed Code
 
@@ -24,12 +25,16 @@ Files moved here during the 2026-07-20 repo restructure. Kept for reference; git
 | Directory | Reason |
 |-----------|--------|
 | `k8s/` | Legacy — contained dead Jellyfin C# plugin + orphaned quota file |
+| `plan/` | Completed plans moved to `docs/archive/` |
+| `docs/plans/` | Old plans moved to `docs/archive/` |
 | `flux/infrastructure/llm/` | Rho disabled, npm package unavailable, LLM stack deferred |
 | `flux/infrastructure/llm-stack.disabled/` | Superseded by `llm/` (now also removed) |
 | `flux/infrastructure/rancher/` | Rancher removed from active kustomization |
 
-## Stale Config
+## Restructured (2026-07-21)
 
-| File | Original Path | Reason |
-|------|---------------|--------|
-| `AGENTS.md` | Repo root | Hermes AI config — references non-existent files (`system-topology.md`, `terraform/`, `skills/`) |
+| Moved From | Moved To | Reason |
+|------------|----------|--------|
+| `docs/research/` | `docs/reference/` + `docs/runbooks/` | "research" was a misnomer — these are reference docs and runbooks |
+| `brand/` | `docs/brand/` | Brand assets belong in documentation |
+| `ansible/docs/` | `docs/ansible/` | All documentation under `docs/` |

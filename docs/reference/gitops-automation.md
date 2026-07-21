@@ -152,7 +152,7 @@ All secrets in the repository are encrypted with SOPS using age keys:
 # Encrypted with age public key(s) for authorized decryptors
 ```
 
-- **Rotation documented** in `ansible/docs/SOPS-ROTATION.md`
+- **Rotation documented** in `docs/ansible/SOPS-ROTATION.md`
 - **Age keys** stored on the hypervisor host (`becklab`) and any machine that needs to decrypt secrets for GitOps operations
 - Secrets are committed encrypted — plaintext never leaves authorized machines
 
