@@ -20,3 +20,4 @@ resources:
   - secret-tdarr.yaml
   - homebox.yaml
   - spotweb
+  - swiparr.yaml
