@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeckCloud Image Editor</title>
+  <script src="https://cdn.jsdelivr.net/npm/fabric@5.3.0/dist/fabric.min.js"></script>
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, sans-serif; background: #1a1a2e; color: #e0e0e0; }
+    #app { display: flex; height: 100vh; }
+    .toolbar { width: 280px; background: #16213e; padding: 16px; overflow-y: auto; }
+    .toolbar h2 { margin-bottom: 12px; font-size: 16px; color: #00d4ff; }
+    .toolbar button, .toolbar label.btn { display: block; width: 100%; padding: 8px 12px; margin: 4px 0; background: #0f3460; color: #e0e0e0; border: none; border-radius: 4px; cursor: pointer; text-align: left; font-size: 13px; }
+    .toolbar button:hover { background: #00d4ff; color: #000; }
+    .toolbar select, .toolbar input[type="number"] { width: 100%; padding: 6px; margin: 4px 0; background: #0f3460; color: #e0e0e0; border: 1px solid #333; border-radius: 4px; }
+    .editor-area { flex: 1; display: flex; align-items: center; justify-content: center; background: #111; }
+    canvas { box-shadow: 0 0 20px rgba(0,0,0,0.5); }
+    .section { margin-top: 16px; padding-top: 12px; border-top: 1px solid #333; }
+    .section h3 { font-size: 13px; color: #888; margin-bottom: 8px; text-transform: uppercase; letter-spacing: 1px; }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="toolbar">
+      <h2>🎨 Image Editor</h2>
+      <label class="btn" for="fileInput">📁 Open Image</label>
+      <input type="file" id="fileInput" accept="image/*" style="display:none">
+      <button id="saveBtn">💾 Save</button>
+      <button id="downloadBtn">⬇️ Download</button>
+
+      <div class="section">
+        <h3>Transform</h3>
+        <button id="rotateLeft">↺ Rotate Left</button>
+        <button id="rotateRight">↻ Rotate Right</button>
+        <button id="flipH">↔ Flip Horizontal</button>
+        <button id="flipV">↕ Flip Vertical</button>
+      </div>
+
+      <div class="section">
+        <h3>Resize</h3>
+        <label>Width</label>
+        <input type="number" id="resizeW" min="1" max="4000">
+        <label>Height</label>
+        <input type="number" id="resizeH" min="1" max="4000">
+        <button id="resizeBtn">Apply Resize</button>
+      </div>
+
+      <div class="section">
+        <h3>Filters</h3>
+        <button id="grayscaleBtn">Grayscale</button>
+        <button id="sepiaBtn">Sepia</button>
+        <button id="invertBtn">Invert Colors</button>
+        <button id="clearFiltersBtn">Clear Filters</button>
+      </div>
+
+      <div class="section">
+        <h3>Text Overlay</h3>
+        <input type="text" id="textContent" placeholder="Enter text..." style="width:100%;padding:6px;margin:4px 0;background:#0f3460;color:#e0e0e0;border:1px solid #333;border-radius:4px">
+        <label>Font Size</label>
+        <input type="number" id="fontSize" value="24" min="8" max="200" style="width:100%;padding:6px;margin:4px 0;background:#0f3460;color:#e0e0e0;border:1px solid #333;border-radius:4px">
+        <button id="addTextBtn">Add Text</button>
+      </div>
+
+      <div class="section">
+        <h3>Canvas</h3>
+        <label>Background Color</label>
+        <input type="color" id="bgColor" value="#000000" style="width:100%">
+        <button id="setBgBtn">Set Background</button>
+      </div>
+    </div>
+
+    <div class="editor-area">
+      <canvas id="canvas"></canvas>
+    </div>
+  </div>
+
+  <script>
+    const canvas = new fabric.Canvas('canvas', { width: 800, height: 600 });
+
+    document.getElementById('fileInput').addEventListener('change', function(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(event) {
+        fabric.Image.fromURL(event.target.result, function(img) {
+          canvas.clear();
+          canvas.setWidth(img.width > 1200 ? 1200 : img.width);
+          canvas.setHeight(img.height > 900 ? 900 : img.height);
+          img.scaleToWidth(canvas.width);
+          img.scaleToHeight(canvas.height);
+          canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+          document.getElementById('resizeW').value = Math.round(img.width * img.scaleX);
+          document.getElementById('resizeH').value = Math.round(img.height * img.scaleY);
+        });
+      };
+      reader.readAsDataURL(file);
+    });
+
+    document.getElementById('saveBtn').addEventListener('click', async () => {
+      const dataURL = canvas.toDataURL({ format: 'png' });
+      const base64 = dataURL.split(',')[1];
+      await fetch('/api/v1/editor/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ data: base64, format: 'png' })
+      });
+      alert('Image saved!');
+    });
+
+    document.getElementById('downloadBtn').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = 'image.png';
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    });
+
+    document.getElementById('rotateLeft').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj) obj.rotate(obj.angle - 90);
+      canvas.renderAll();
+    });
+
+    document.getElementById('rotateRight').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj) obj.rotate(obj.angle + 90);
+      canvas.renderAll();
+    });
+
+    document.getElementById('flipH').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj) { obj.flipX = !obj.flipX; canvas.renderAll(); }
+    });
+
+    document.getElementById('flipV').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj) { obj.flipY = !obj.flipY; canvas.renderAll(); }
+    });
+
+    document.getElementById('resizeBtn').addEventListener('click', () => {
+      const w = parseInt(document.getElementById('resizeW').value) || 800;
+      const h = parseInt(document.getElementById('resizeH').value) || 600;
+      canvas.setWidth(w);
+      canvas.setHeight(h);
+      canvas.renderAll();
+    });
+
+    document.getElementById('grayscaleBtn').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj && obj.type === 'image') {
+        obj.filters.push(new fabric.Image.filters.Grayscale());
+        obj.applyFilters();
+        canvas.renderAll();
+      }
+    });
+
+    document.getElementById('sepiaBtn').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj && obj.type === 'image') {
+        obj.filters.push(new fabric.Image.filters.Sepia());
+        obj.applyFilters();
+        canvas.renderAll();
+      }
+    });
+
+    document.getElementById('invertBtn').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj && obj.type === 'image') {
+        obj.filters.push(new fabric.Image.filters.Invert());
+        obj.applyFilters();
+        canvas.renderAll();
+      }
+    });
+
+    document.getElementById('clearFiltersBtn').addEventListener('click', () => {
+      const obj = canvas.getActiveObject();
+      if (obj && obj.type === 'image') {
+        obj.filters = [];
+        obj.applyFilters();
+        canvas.renderAll();
+      }
+    });
+
+    document.getElementById('addTextBtn').addEventListener('click', () => {
+      const text = document.getElementById('textContent').value;
+      if (!text) return;
+      const fontSize = parseInt(document.getElementById('fontSize').value) || 24;
+      const t = new fabric.Text(text, { left: 50, top: 50, fontSize, fill: '#ffffff' });
+      canvas.add(t);
+      canvas.setActiveObject(t);
+      canvas.renderAll();
+    });
+
+    document.getElementById('setBgBtn').addEventListener('click', () => {
+      const color = document.getElementById('bgColor').value;
+      canvas.setBackgroundColor(color, canvas.renderAll.bind(canvas));
+    });
+  </script>
+</body>
+</html>

@@ -67,3 +67,23 @@ spec:
   rateLimit:
     average: 20
     burst: 20
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: qr-generator-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 10
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: image-editor-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 5
+    burst: 5

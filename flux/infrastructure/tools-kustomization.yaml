@@ -17,5 +17,10 @@ resources:
   - micro/services/webhook-relay/ingress.yaml
   - micro/services/yaml-json-tool/deployment.yaml
   - micro/services/yaml-json-tool/ingress.yaml
+  - micro/services/qr-generator/deployment.yaml
+  - micro/services/qr-generator/ingress.yaml
+  - micro/services/image-editor/frontend-deployment.yaml
+  - micro/services/image-editor/api-deployment.yaml
+  - micro/services/image-editor/ingress.yaml
   - micro/middlewares.yaml
   - micro/certificates.yaml

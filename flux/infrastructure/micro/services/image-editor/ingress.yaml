@@ -1,0 +1,21 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: image-editor
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`editor.tools.becklab.cloud`) && PathPrefix(`/api/`)
+      kind: Rule
+      services:
+        - name: image-editor-api
+          port: 80
+          sticky: false
+    - match: Host(`editor.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: image-editor-frontend
+          port: 80
+          sticky: false
