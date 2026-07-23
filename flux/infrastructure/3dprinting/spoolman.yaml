@@ -1,5 +1,5 @@
 # Spoolman — filament spool manager
-# ghcr.io/donkie/spoolman:latest, container port 8000
+# ghcr.io/donkie/spoolman:0.22.1, container port 8000
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -23,7 +23,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: filament-tracker
-          image: ghcr.io/donkie/spoolman:latest
+          image: ghcr.io/donkie/spoolman:0.22.1
           resources:
             limits:
               cpu: "1"

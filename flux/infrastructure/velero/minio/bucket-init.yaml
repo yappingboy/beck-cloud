@@ -11,7 +11,7 @@ spec:
       restartPolicy: Never
       containers:
         - name: mc
-          image: quay.io/minio/mc:latest
+          image: quay.io/minio/mc:RELEASE.2025-06-06T12:31:58Z
           command:
             - /bin/sh
             - -c

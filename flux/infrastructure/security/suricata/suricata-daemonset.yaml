@@ -29,7 +29,7 @@ spec:
       # Init container copies writable config from ConfigMap to emptyDir
       initContainers:
         - name: copy-config
-          image: busybox:latest
+          image: busybox:1.37
           command: ["sh", "-c", "cp /config/suricata.yaml /suricata-config/suricata.yaml"]
           volumeMounts:
             - name: config-src

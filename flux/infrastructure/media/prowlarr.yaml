@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: prowlarr
-          image: lscr.io/linuxserver/prowlarr:latest
+          image: lscr.io/linuxserver/prowlarr:1.29.4
           resources:
             limits:
               cpu: "1"

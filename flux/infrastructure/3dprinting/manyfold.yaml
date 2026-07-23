@@ -1,5 +1,5 @@
 # Manyfold — 3D model library manager
-# Uses ghcr.io/manyfold3d/manyfold:latest (Rails app, port 3214)
+# Uses ghcr.io/manyfold3d/manyfold:1.15.0 (Rails app, port 3214)
 # Requires PostgreSQL + Redis (provided by linuxserver images in this file)
 ---
 # PostgreSQL for Manyfold
@@ -153,7 +153,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: manyfold
-          image: ghcr.io/manyfold3d/manyfold:latest
+          ghcr.io/manyfold3d/manyfold:1.15.0
           resources:
             limits:
               cpu: "2"
@@ -172,7 +172,10 @@ spec:
             - name: REDIS_URL
               value: "redis://manyfold-redis.3dprinting.svc.cluster.local:6379"
             - name: SECRET_KEY_BASE
-              value: "3dprint-manyfold-secret-key-change-me"
+              valueFrom:
+                secretKeyRef:
+                  name: manyfold-secret-key
+                  key: secret-key-base
             - name: HOSTNAME
               value: "manyfold.becklab.cloud"
             - name: PUID

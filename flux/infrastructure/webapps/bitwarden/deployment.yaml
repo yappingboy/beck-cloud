@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: bitwarden-secrets-manager
-          image: vaultwarden/server:latest
+          image: vaultwarden/server:1.33.1
           resources:
             limits:
               cpu: 500m

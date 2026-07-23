@@ -19,7 +19,7 @@ spec:
             kubernetes.io/hostname: ip-192-168-100-11
           containers:
             - name: recyclarr
-              image: ghcr.io/recyclarr/recyclarr:latest
+              image: ghcr.io/recyclarr/recyclarr:7.4.0
               resources:
                 requests:
                   memory: "64Mi"

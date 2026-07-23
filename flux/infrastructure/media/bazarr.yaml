@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: bazarr
-          image: lscr.io/linuxserver/bazarr:latest
+          image: lscr.io/linuxserver/bazarr:1.4.5
           resources:
             limits:
               cpu: "1"

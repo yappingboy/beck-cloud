@@ -22,7 +22,7 @@ spec:
       dnsPolicy: ClusterFirstWithHostNet
       containers:
         - name: fdm-monster
-          image: docker.io/fdmmonster/fdm-monster:latest
+          image: docker.io/fdmmonster/fdm-monster:0.30.2
           resources:
             limits:
               cpu: "1"

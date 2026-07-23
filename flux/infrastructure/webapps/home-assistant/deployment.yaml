@@ -92,7 +92,7 @@ spec:
 
           # ── Mosquitto MQTT Broker ────────────────────────────
           - name: mosquitto
-            image: eclipse-mosquitto:latest
+            image: eclipse-mosquitto:2
             ports:
               - containerPort: 1883   # MQTT (local)
               - containerPort: 9001   # WebSocket (for HA frontend)
@@ -111,7 +111,7 @@ spec:
 
           # ── ESPHome Dashboard (compile & manage ESP devices) ──
           - name: esphome
-            image: ghcr.io/esphome/esphome:latest
+            image: ghcr.io/esphome/esphome:2025.2.0
             ports:
               - containerPort: 6052   # ESPHome dashboard
             resources:

@@ -14,7 +14,7 @@ spec:
           args:
             - --dockerfile=Dockerfile
             - --context=dir:///workspace/apps/landing-page
-            - --destination=ghcr.io/yappingboy/becklab-landing:latest
+            - --destination=ghcr.io/yappingboy/becklab-landing:0.8.0
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
@@ -28,7 +28,7 @@ spec:
               readOnly: true
       initContainers:
         - name: clone-source
-          image: alpine/git:latest
+          image: alpine/git:2.49.0
           command:
             - sh
             - -c

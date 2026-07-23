@@ -44,7 +44,7 @@ spec:
     spec:
       containers:
         - name: silex
-          image: silexlabs/silex:latest
+          image: silexlabs/silex:3.0.0
           resources:
             limits:
               memory: 512Mi

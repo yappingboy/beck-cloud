@@ -96,7 +96,7 @@ spec:
     spec:
       containers:
         - name: spotweb
-          image: jgeusebroek/spotweb:latest
+          image: jgeusebroek/spotweb:2025.1
           resources:
             limits:
               cpu: "1"

@@ -192,7 +192,7 @@ spec:
         - name: ghcr-credentials
       initContainers:
         - name: fix-permissions
-          image: ghcr.io/yappingboy/becklab-landing:latest
+          image: ghcr.io/yappingboy/becklab-landing:0.8.0
           command: ["sh", "-c", "chmod -R a+r /hosting && chmod -R a+X /hosting"]
           volumeMounts:
             - name: hosting
@@ -204,7 +204,7 @@ spec:
               cpu: 100m
       containers:
         - name: landing
-          image: ghcr.io/yappingboy/becklab-landing:latest
+          image: ghcr.io/yappingboy/becklab-landing:0.8.0
           ports:
             - containerPort: 80
               name: http

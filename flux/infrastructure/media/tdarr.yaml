@@ -18,7 +18,7 @@ spec:
     spec:
       containers:
         - name: tdarr
-          image: ghcr.io/haveagitgat/tdarr:latest
+          image: ghcr.io/haveagitgat/tdarr:2.5.0
           resources:
             limits:
               memory: 2Gi

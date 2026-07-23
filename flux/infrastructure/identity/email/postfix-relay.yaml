@@ -53,7 +53,7 @@ spec:
     spec:
       initContainers:
         - name: hash-sasl
-          image: mwader/postfix-relay:latest
+          image: mwader/postfix-relay:1.11.0
           command:
             - sh
             - -c
@@ -70,7 +70,7 @@ spec:
               mountPath: /tmp
       containers:
         - name: postfix
-          image: mwader/postfix-relay:latest
+          image: mwader/postfix-relay:1.11.0
           resources:
             limits:
               memory: 256Mi

@@ -30,7 +30,7 @@ spec:
       serviceAccountName: kaniko-builder
       initContainers:
         - name: clone-source
-          image: bitnami/git:latest
+          image: bitnami/git:2.49.0
           command:
             - sh
             - -c

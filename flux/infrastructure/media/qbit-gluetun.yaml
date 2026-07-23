@@ -22,7 +22,7 @@ spec:
       initContainers:
         - name: gluetun
           restartPolicy: Always
-          image: qmcgaw/gluetun:latest
+          image: qmcgaw/gluetun:v3.40.0
           resources:
             limits:
               cpu: "2"
@@ -90,7 +90,7 @@ spec:
 #            runAsUser: 0
       containers:
         - name: qbit
-          image: lscr.io/linuxserver/qbittorrent:latest
+          image: lscr.io/linuxserver/qbittorrent:2025.2.1
           resources:
             limits:
               cpu: "4"
