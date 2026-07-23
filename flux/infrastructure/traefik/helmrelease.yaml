@@ -24,7 +24,7 @@ spec:
           moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
           version: v1.4.5
     additionalArguments:
-      - "--serversTransport.insecureSkipVerify=true"
+      - "--serversTransport.insecureSkipVerify=false"
       - "--entrypoints.web.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
       - "--entrypoints.websecure.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
     logs:

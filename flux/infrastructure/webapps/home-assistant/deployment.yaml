@@ -29,7 +29,7 @@ spec:
         # Adds http: block if missing; skips if already present
         initContainers:
           - name: init-config
-            image: busybox:latest
+            image: busybox:1.37
             command:
               - sh
               - -c
