@@ -1,312 +1,468 @@
 {
-  "generated_at": "2026-07-20",
-  "total_resources_scanned": 37,
-  "total_patches": 37,
+  "generated_at": "2026-07-23",
+  "total_resources_scanned": 56,
+  "total_patches": 56,
   "services_by_group": {
-    "Identity": 5,
-    "3D Printing": 5,
-    "Gaming": 2,
-    "Apps": 9,
-    "Media": 11,
-    "Monitoring": 2,
+    "Media": 14,
+    "TV & Movies": 3,
+    "Indexing": 4,
+    "Requests": 1,
+    "3D Printing": 10,
+    "Apps": 6,
+    "Security": 2,
+    "Monitoring": 4,
+    "Identity": 8,
+    "Gaming": 1,
     "Infrastructure": 3
   },
   "services": [
     {
-      "name": "User Invite",
-      "group": "Identity",
-      "host": "admin.becklab.cloud",
-      "namespace": "identity",
-      "widget": null,
-      "icon": "mdi-account-plus"
-    },
-    {
-      "name": "Bumpmesh",
-      "group": "3D Printing",
-      "host": "bump.becklab.cloud",
-      "namespace": "3dprinting",
-      "widget": null,
-      "icon": "mdi-cube-scan"
-    },
-    {
-      "name": "FDM Monster",
-      "group": "3D Printing",
-      "host": "fdm.becklab.cloud",
-      "namespace": "3dprinting",
-      "widget": "customapi",
-      "icon": "si-bambulab"
-    },
-    {
-      "name": "Manyfold",
-      "group": "3D Printing",
-      "host": "manyfold.becklab.cloud",
-      "namespace": "3dprinting",
-      "widget": null,
-      "icon": "mdi-printer-3d"
-    },
-    {
-      "name": "Orca Slicer",
-      "group": "3D Printing",
-      "host": "slicer.becklab.cloud",
-      "namespace": "3dprinting",
-      "widget": null,
-      "icon": "si-bambulab"
-    },
-    {
-      "name": "Spoolman",
-      "group": "3D Printing",
-      "host": "spoolman.becklab.cloud",
-      "namespace": "3dprinting",
-      "widget": "spoolman",
-      "icon": "mdi-spool"
-    },
-    {
-      "name": "Crafty Controller",
-      "group": "Gaming",
-      "host": "crafty.becklab.cloud",
-      "namespace": "gaming",
-      "widget": "minecraft",
-      "icon": "crafty-controller"
-    },
-    {
-      "name": "Crafty Controller",
-      "group": "Gaming",
-      "host": "crafty.becklab.cloud",
-      "namespace": "gaming",
-      "widget": "minecraft",
-      "icon": "crafty-controller"
-    },
-    {
-      "name": "Kiri:Moto",
+      "name": "Affine",
       "group": "Apps",
-      "host": "kiri.becklab.cloud",
-      "namespace": "gridspace",
+      "host": "https://affine.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-printer-3d"
+      "icon": "affine.png"
     },
     {
-      "name": "Mesh:Tool",
-      "group": "Apps",
-      "host": "mesh.becklab.cloud",
-      "namespace": "gridspace",
+      "name": "Alertmanager",
+      "group": "Monitoring",
+      "host": "https://alertmanager.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-cube-outline"
-    },
-    {
-      "name": "Void:Form",
-      "group": "Apps",
-      "host": "void.becklab.cloud",
-      "namespace": "gridspace",
-      "widget": null,
-      "icon": "mdi-cube-unfolded"
-    },
-    {
-      "name": "Keycloak",
-      "group": "Identity",
-      "host": "keycloak.becklab.cloud",
-      "namespace": "identity",
-      "widget": "keycloak",
-      "icon": "keycloak.png"
-    },
-    {
-      "name": "LDAP",
-      "group": "Identity",
-      "host": "lldap.becklab.cloud",
-      "namespace": "identity",
-      "widget": null,
-      "icon": "mdi-account-group"
-    },
-    {
-      "name": "SSO Logout",
-      "group": "Identity",
-      "host": "logout.becklab.cloud",
-      "namespace": "identity",
-      "widget": null,
-      "icon": "mdi-logout-variant"
+      "icon": "alertmanager.png"
     },
     {
       "name": "Bazarr",
       "group": "Media",
-      "host": "bazarr.becklab.cloud",
+      "host": "https://bazarr.becklab.cloud/",
       "namespace": "media",
       "widget": "bazarr",
       "icon": "bazarr"
     },
     {
+      "name": "Bazarr",
+      "group": "TV & Movies",
+      "host": "https://bazarr.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "bazarr.png"
+    },
+    {
+      "name": "Bitwarden BSM",
+      "group": "Identity",
+      "host": "https://bw.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "bitwarden.png"
+    },
+    {
+      "name": "Bumpmesh",
+      "group": "3D Printing",
+      "host": "https://bump.becklab.cloud/",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "mdi-cube-scan"
+    },
+    {
+      "name": "Bumpmesh",
+      "group": "3D Printing",
+      "host": "https://bumpmesh.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "bumpmesh.png"
+    },
+    {
+      "name": "Crafty Controller",
+      "group": "Gaming",
+      "host": "https://crafty.becklab.cloud",
+      "namespace": "gaming",
+      "widget": "minecraft",
+      "icon": "crafty-controller"
+    },
+    {
+      "name": "Directus",
+      "group": "Apps",
+      "host": "https://cms.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "directus.png"
+    },
+    {
+      "name": "FDM Monster",
+      "group": "3D Printing",
+      "host": "https://fdm.becklab.cloud/",
+      "namespace": "3dprinting",
+      "widget": "customapi",
+      "icon": "si-bambulab"
+    },
+    {
+      "name": "FDM Monster",
+      "group": "3D Printing",
+      "host": "https://fdm-monster.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "fdmmonster.png"
+    },
+    {
+      "name": "Grafana",
+      "group": "Monitoring",
+      "host": "https://grafana.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "grafana.png"
+    },
+    {
+      "name": "Gridspace",
+      "group": "Apps",
+      "host": "https://gridspace.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "gridspace.png"
+    },
+    {
+      "name": "Home Assistant",
+      "group": "Apps",
+      "host": "https://homeassistant.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "home-assistant.png"
+    },
+    {
+      "name": "Homebox",
+      "group": "Media",
+      "host": "https://homebox.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "homebox.png"
+    },
+    {
       "name": "Homebox",
       "group": "Apps",
-      "host": "homebox.becklab.cloud",
+      "host": "https://homebox.becklab.cloud/",
       "namespace": "media",
       "widget": "homebox",
       "icon": "mdi-box"
     },
     {
+      "name": "Hubble",
+      "group": "Monitoring",
+      "host": "https://hubble.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "hubble.png"
+    },
+    {
       "name": "Jellyfin",
       "group": "Media",
-      "host": "jellyfin.becklab.cloud",
+      "host": "https://jellyfin.becklab.cloud/",
       "namespace": "media",
       "widget": "jellyfin",
       "icon": "si-jellyfin"
     },
     {
+      "name": "Jellyfin",
+      "group": "Media",
+      "host": "https://jellyfin.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "jellyfin.png"
+    },
+    {
       "name": "Jellyseerr",
       "group": "Media",
-      "host": "requests.becklab.cloud",
+      "host": "https://requests.becklab.cloud/",
       "namespace": "media",
       "widget": "seerr",
       "icon": "mdi-television-box"
     },
     {
+      "name": "Jellyseerr",
+      "group": "Requests",
+      "host": "https://requests.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "jellyseerr.png"
+    },
+    {
+      "name": "Keycloak",
+      "group": "Identity",
+      "host": "https://keycloak.becklab.cloud/",
+      "namespace": "identity",
+      "widget": "keycloak",
+      "icon": "keycloak.png"
+    },
+    {
+      "name": "Keycloak",
+      "group": "Identity",
+      "host": "https://keycloak.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "keycloak.png"
+    },
+    {
+      "name": "LDAP",
+      "group": "Identity",
+      "host": "https://lldap.becklab.cloud/",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-account-group"
+    },
+    {
+      "name": "LDAP",
+      "group": "Identity",
+      "host": "https://lldap.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "lldap.png"
+    },
+    {
+      "name": "Manyfold",
+      "group": "3D Printing",
+      "host": "https://manyfold.becklab.cloud/",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "mdi-printer-3d"
+    },
+    {
+      "name": "Manyfold",
+      "group": "3D Printing",
+      "host": "https://manyfold.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "manyfold.png"
+    },
+    {
       "name": "NZBGet",
       "group": "Media",
-      "host": "nzbget.becklab.cloud",
+      "host": "https://nzbget.becklab.cloud/",
       "namespace": "media",
       "widget": "nzbget",
       "icon": "mdi-download-circle"
     },
     {
+      "name": "NZBGet",
+      "group": "Indexing",
+      "host": "https://nzbget.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "nzbget.png"
+    },
+    {
+      "name": "OpenNebula",
+      "group": "Infrastructure",
+      "host": "https://one.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "server.png"
+    },
+    {
+      "name": "Orca Slicer",
+      "group": "3D Printing",
+      "host": "https://slicer.becklab.cloud/",
+      "namespace": "3dprinting",
+      "widget": null,
+      "icon": "si-bambulab"
+    },
+    {
+      "name": "Orca Slicer",
+      "group": "3D Printing",
+      "host": "https://orca-slicer.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "orcaslicer.png"
+    },
+    {
+      "name": "Prometheus",
+      "group": "Monitoring",
+      "host": "https://prometheus.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "prometheus.png"
+    },
+    {
       "name": "Prowlarr",
       "group": "Media",
-      "host": "prowlarr.becklab.cloud",
+      "host": "https://prowlarr.becklab.cloud/",
       "namespace": "media",
       "widget": "prowlarr",
       "icon": "mdi-rss"
     },
     {
-      "name": "qBittorrent",
-      "group": "Media",
-      "host": "qbit.becklab.cloud",
-      "namespace": "media",
-      "widget": "qbittorrent",
-      "icon": "si-qbittorrent"
+      "name": "Prowlarr",
+      "group": "Indexing",
+      "host": "https://prowlarr.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "prowlarr.png"
     },
     {
       "name": "Radarr",
       "group": "Media",
-      "host": "radarr.becklab.cloud",
+      "host": "https://radarr.becklab.cloud/",
       "namespace": "media",
       "widget": "radarr",
       "icon": "si-radarr"
     },
     {
+      "name": "Radarr",
+      "group": "TV & Movies",
+      "host": "https://radarr.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "radarr.png"
+    },
+    {
       "name": "SABnzbd",
-      "group": "Media",
-      "host": "sabnzbd.becklab.cloud",
-      "namespace": "media",
-      "widget": "sabnzbd",
-      "icon": "mdi-download"
+      "group": "Indexing",
+      "host": "https://sabnzbd.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "sabnzbd.png"
+    },
+    {
+      "name": "SSO Logout",
+      "group": "Identity",
+      "host": "https://logout.becklab.cloud/",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-logout-variant"
+    },
+    {
+      "name": "SSO Logout",
+      "group": "Identity",
+      "host": "https://logout.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "logout.png"
+    },
+    {
+      "name": "Silex",
+      "group": "Apps",
+      "host": "https://silex.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "silex.png"
     },
     {
       "name": "Sonarr",
       "group": "Media",
-      "host": "sonarr.becklab.cloud",
+      "host": "https://sonarr.becklab.cloud/",
       "namespace": "media",
       "widget": "sonarr",
       "icon": "si-sonarr"
     },
     {
+      "name": "Sonarr",
+      "group": "TV & Movies",
+      "host": "https://sonarr.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "sonarr.png"
+    },
+    {
+      "name": "Spoolman",
+      "group": "3D Printing",
+      "host": "https://spoolman.becklab.cloud/",
+      "namespace": "3dprinting",
+      "widget": "spoolman",
+      "icon": "mdi-spool"
+    },
+    {
+      "name": "Spoolman",
+      "group": "3D Printing",
+      "host": "https://spoolman.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "spoolman.png"
+    },
+    {
       "name": "Spotweb",
       "group": "Media",
-      "host": "spotweb.becklab.cloud",
+      "host": "https://spotweb.becklab.cloud/",
       "namespace": "media",
       "widget": null,
       "icon": "mdi-web"
     },
     {
+      "name": "Spotweb",
+      "group": "Indexing",
+      "host": "https://spotweb.becklab.cloud",
+      "namespace": "",
+      "widget": null,
+      "icon": "spotweb.png"
+    },
+    {
       "name": "Tdarr",
       "group": "Media",
-      "host": "tdarr.becklab.cloud",
+      "host": "https://tdarr.becklab.cloud/",
       "namespace": "media",
       "widget": "tdarr",
       "icon": "mdi-filmstrip-box"
     },
     {
-      "name": "Grafana",
-      "group": "Monitoring",
-      "host": "grafana.becklab.cloud",
-      "namespace": "monitoring",
-      "widget": "grafana",
-      "icon": "si-grafana"
-    },
-    {
-      "name": "Hubble",
-      "group": "Monitoring",
-      "host": "hubble.becklab.cloud",
-      "namespace": "monitoring",
+      "name": "Tdarr",
+      "group": "Media",
+      "host": "https://tdarr.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-network"
-    },
-    {
-      "name": "OpenNebula",
-      "group": "Infrastructure",
-      "host": "one.becklab.cloud",
-      "namespace": "opennebula",
-      "widget": null,
-      "icon": "si-opennebula"
+      "icon": "tdarr.png"
     },
     {
       "name": "Traefik",
       "group": "Infrastructure",
-      "host": "traefik.becklab.cloud",
-      "namespace": "traefik",
+      "host": "https://traefik.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-server"
+      "icon": "traefik.png"
     },
     {
-      "name": "Affine",
-      "group": "Apps",
-      "host": "affine.becklab.cloud",
-      "namespace": "webapps",
+      "name": "Trivy Operator",
+      "group": "Security",
+      "host": "https://trivy.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "si-affine"
+      "icon": "trivy.png"
     },
     {
-      "name": "Bitwarden BSM",
+      "name": "User Invite",
       "group": "Identity",
-      "host": "bw.becklab.cloud",
-      "namespace": "webapps",
+      "host": "https://admin.becklab.cloud/",
+      "namespace": "identity",
       "widget": null,
-      "icon": "si-bitwarden"
+      "icon": "mdi-account-plus"
     },
     {
-      "name": "Directus",
-      "group": "Apps",
-      "host": "cms.becklab.cloud",
-      "namespace": "webapps",
-      "widget": null,
-      "icon": "si-directus"
-    },
-    {
-      "name": "Home Assistant",
-      "group": "Apps",
-      "host": "ha.becklab.cloud",
-      "namespace": "webapps",
-      "widget": "homeassistant",
-      "icon": "si-homeassistant"
-    },
-    {
-      "name": "BeckCloud",
+      "name": "Velero",
       "group": "Infrastructure",
-      "host": "becklab.cloud",
-      "namespace": "webapps",
+      "host": "https://velero.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-domain"
+      "icon": "velero.png"
     },
     {
-      "name": "Silex",
-      "group": "Apps",
-      "host": "silex.becklab.cloud",
-      "namespace": "webapps",
+      "name": "Wazuh Dashboard",
+      "group": "Security",
+      "host": "https://wazuh.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-pencil-ruler"
+      "icon": "wazuh.png"
     },
     {
-      "name": "OpenClaw",
-      "group": "Apps",
-      "host": "nova.becklab.cloud",
-      "namespace": "webapps",
+      "name": "qBittorrent",
+      "group": "Media",
+      "host": "https://qbit.becklab.cloud/",
+      "namespace": "media",
+      "widget": "qbittorrent",
+      "icon": "si-qbittorrent"
+    },
+    {
+      "name": "qBittorrent",
+      "group": "Media",
+      "host": "https://qbit.becklab.cloud",
+      "namespace": "",
       "widget": null,
-      "icon": "mdi-robot"
+      "icon": "qbittorrent.png"
     }
   ]
 }
