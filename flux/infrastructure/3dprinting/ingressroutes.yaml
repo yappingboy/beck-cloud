@@ -1,0 +1,97 @@
+# 3D Printing IngressRoutes
+# Each service exposed via Traefik with its own subdomain and TLS cert
+
+---
+# Manyfold — 3D asset library / model repository
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: manyfold
+  namespace: 3dprinting
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`manyfold.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+  tls:
+    secretName: manyfold-tls
+
+---
+# Spoolman — Filament inventory tracker
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: spoolman
+  namespace: 3dprinting
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`spoolman.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: spoolman
+          port: 7912
+  tls:
+    secretName: spoolman-tls
+
+---
+# OrcaSlicer — Browser-based slicer (HTTPS port)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`slicer.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: orcaslicer
+          port: 3001
+  tls:
+    secretName: orcaslicer-tls
+
+---
+# FDM Monster — Slicing service
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fdm.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: fdmmonster
+          port: 4000
+  tls:
+    secretName: fdmmonster-tls
+
+---
+# BumpMesh — Mesh repair tool (nginx frontend)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: bumpmesh
+  namespace: 3dprinting
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`bump.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: bumpmesh
+          port: 80
+  tls:
+    secretName: bumpmesh-tls
