@@ -473,4 +473,94 @@ See [Storage & Backups Deep Dive](storage-backups.md) for full details.
 
 ---
 
+## Swiparr — Deployed Service (2026-07-23)
+
+> "Tinder for movies" — collaborative watch discovery.
+
+### Swiparr
+| Property | Value |
+|----------|-------|
+| Source | [m3sserstudi0s/swiparr](https://github.com/m3sserstudi0s/swiparr) |
+| Image | `ghcr.io/m3sserstudi0s/swiparr:latest` |
+| Port | `4321/TCP` |
+| Database | SQLite (`/app/data/swiparr.db`) or Turso (remote) |
+| Data volume | `2Gi` local-path PVC |
+| Provider modes | Jellyfin (full), Emby (experimental), Plex (experimental), TMDB (standalone) |
+| SSO | Optional — built-in auth + guest lending |
+| IngressRoute | `swiparr.becklab.cloud` (admin SSO, `sso-admin-chain`) |
+| TLS | `swiparr-tls` (letsencrypt-prod, auto-issued) |
+| Namespace | `swiparr` (standalone) |
+| Status | ✅ Running |
+
+#### Overview
+
+Swiparr turns "what should we watch?" into a collaborative swipe-based discovery experience. Users create or join sessions, swipe right/left on content from their media library (or TMDB), and get matched recommendations based on group preferences. Supports "any two people" or "unanimous" match strategies, max likes/nopes/matches limits, and guest lending (guests swipe using host's credentials).
+
+#### Architecture
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Swiparr (Node.js + Next.js)                           │
+│                                                         │
+│  PROVIDER_LOCK=true  →  Admin-configured single source  │
+│  PROVIDER_LOCK=false →  BYOP — each user connects own   │
+│                                                         │
+│  Providers: Jellyfin ★  |  Emby △  |  Plex △  |  TMDB  │
+│                                                         │
+│  Auth: iron-session + encrypted guest tokens            │
+│  DB: SQLite (file) or Turso (remote)                    │
+└──────────────────────────────┬──────────────────────────┘
+                               │
+                    Jellyfin/Emby/Plex/TMDB API
+```
+
+#### Environment Variables (Key)
+
+| Variable | Required | Default | Notes |
+|----------|----------|---------|-------|
+| `PROVIDER` | Yes | `jellyfin` | `jellyfin`, `tmdb`, `plex`, or `emby` |
+| `PROVIDER_LOCK` | No | `true` | `false` = BYOP mode |
+| `JELLYFIN_URL` | Yes* | — | Internal URL of media server |
+| `JELLYFIN_PUBLIC_URL` | No | — | Public URL (for client-side access) |
+| `TMDB_ACCESS_TOKEN` | Yes* | — | TMDB read-only API token |
+| `AUTH_SECRET` | No | Auto-gen | Min 32 chars; auto-generated on boot if missing |
+| `DATABASE_URL` | No | `file:/app/data/swiparr.db` | SQLite path or Turso URL |
+| `USE_SECURE_COOKIES` | No | `false` | Set `true` for HTTPS |
+| `URL_BASE_PATH` | No | — | Subpath deployment (build-time) |
+| `ADMIN_USERNAME` | No | — | Global admin username |
+| `ALLOW_PRIVATE_PROVIDER_URLS` | No | `false` | Block LAN URLs for BYOP |
+| `USE_STATIC_FILTERS` | No | `false` | Skip dynamic filter fetch (large libs) |
+
+> *Required when that provider is selected.
+
+#### Deployment Plan
+
+Deployed via K3s manifest in `flux/infrastructure/media/swiparr.yaml`. The K3s local-path provisioner was missing from the cluster (manifest existed but deployment was never created) — deployed manually on 2026-07-23.
+
+#### Status
+- Provisioner: `local-path-provisioner` (deployed from K3s bundled manifest)
+- PVC: `swiparr-data` (2Gi, local-path, bound)
+- Pod: `swiparr` (1/1 Running, Next.js 16.1.6)
+- IngressRoute: `swiparr.becklab.cloud` → `swiparr:4321` via `sso-admin-chain`
+- TLS: `swiparr-tls` issued by letsencrypt-prod (HTTP-01 challenge)
+- Auth: Built-in auth + Jellyfin provider. First login became admin automatically.
+- Provider: Jellyfin at `http://jellyfin.media.svc.cluster.local:8096`
+
+#### SSO Integration
+- Uses existing `sso-admin-chain` (oauth2-proxy + Keycloak `/admins` group)
+- BYOP mode or guest lending works without SSO
+- Match strategy: `"any two people"` recommended for group size
+
+#### Considerations
+- **Database**: SQLite by default — fine for single-instance, but consider Turso migration for HA
+- **PWA**: Ships as PWA — users can install as web app
+- **Guest Lending**: Host credentials encrypted at rest via `AUTH_SECRET` while enabled
+- **Experimental providers**: Emby and Plex support still improving — Jellyfin is the primary target
+- **TMDB mode**: No media server needed — works as standalone discovery tool
+- **Port**: Uses non-standard `4321` — not a well-known port
+- **local-path provisioner**: Was missing from cluster — deployed from K3s manifest `/var/lib/rancher/k3s/server/manifests/local-storage.yaml` on 2026-07-23
+- **AUTH_SECRET**: Auto-generated on first boot and stored in SQLite database (not env var)
+
+---
+
 *End of services catalog.*
