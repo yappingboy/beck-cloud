@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: converter
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`convert.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: converter
+          port: 80
+          sticky: false

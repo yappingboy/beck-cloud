@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: url-shortener
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`short.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: url-shortener
+          port: 80
+          sticky: false

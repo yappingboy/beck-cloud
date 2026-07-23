@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  - micro/namespace.yaml
+  - micro/services/hash/deployment.yaml
+  - micro/services/hash/ingress.yaml
+  - micro/services/url-shortener/deployment.yaml
+  - micro/services/url-shortener/ingress.yaml
+  - micro/services/base64/deployment.yaml
+  - micro/services/base64/ingress.yaml
+  - micro/middlewares.yaml
+  - micro/certificates.yaml
