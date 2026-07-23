@@ -180,6 +180,30 @@ Custom 3D design tools.
 | Mesh Tool | Mesh processing |
 | Void:Form | 3D form generation |
 
+### `micro`
+
+BeckCloud Micro — 13 stateless micro-services exposed to the internet under `*.tools.becklab.cloud`.
+
+| Service | Purpose |
+|---------|----------|
+| auth-micro | JWT/API key validation (Go, <5MB) |
+| hash-service | Hash generation (SHA-256, MD5, etc.) |
+| short-service | URL shortener |
+| base64-service | Base64 encode/decode |
+| markdown-service | Markdown/Pandoc conversion |
+| resize-service | Image resize (libvips) |
+| cron-service | Scheduled jobs |
+| dns-service | DNS monitoring |
+| webhook-service | Webhook relay |
+| fmt-service | YAML/JSON formatting |
+| qr-service | QR code generation |
+| editor-service | Image editor (browser-facing) |
+| beckflow-service | Workflow orchestration (browser-facing) |
+
+**Security:** Rate limiting per service, CORS for browser services, auth middleware for paid tier, IP whitelist for admin, request size limits (50MB image / 10MB default), shared 10 GiB PVC, 4 CPU / 2 GiB resource quota.
+
+---
+
 ### `rbac`
 
 Cluster-level RBAC roles and bindings (not a pod namespace, just policy definitions).

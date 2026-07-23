@@ -178,7 +178,47 @@ These services exist in the cluster but have no Traefik routes — accessible on
 | gaming/crafty | 8443, 8123 | Internal + Minecraft NodePort :31337→:25565 |
 | webapps/homepage | 3000 | Internal cluster only |
 
-### Certificates Without Routes (Pre-provisioned)
+### Micro Services Middlewares (NEW — 2026-07-23)
+
+| Middleware | Namespace | Type | Purpose |
+|-----------|-----------|------|----------|
+| `rate-limit-hash` | micro | RateLimit | Hash service: 100/min, burst 20 |
+| `rate-limit-short` | micro | RateLimit | URL shortener: 100/min, burst 20 |
+| `rate-limit-base64` | micro | RateLimit | Base64: 100/min, burst 20 |
+| `rate-limit-markdown` | micro | RateLimit | Markdown: 50/min, burst 10 |
+| `rate-limit-resize` | micro | RateLimit | Image resize: 100/min, burst 20 |
+| `rate-limit-cron` | micro | RateLimit | Cron jobs: 10/min, burst 5 |
+| `rate-limit-dns` | micro | RateLimit | DNS monitor: 50/min, burst 10 |
+| `rate-limit-webhook` | micro | RateLimit | Webhook relay: 100/min, burst 20 |
+| `rate-limit-fmt` | micro | RateLimit | YAML/JSON: 200/min, burst 40 |
+| `rate-limit-qr` | micro | RateLimit | QR code: 50/min, burst 10 |
+| `rate-limit-editor` | micro | RateLimit | Image editor: 10/min, burst 5 |
+| `rate-limit-beckflow` | micro | RateLimit | BeckFlow: 50/min, burst 10 |
+| `auth-micro-paid` | micro | ForwardAuth | API key validation via auth-micro |
+| `cors-editor` | micro | Headers | CORS for image editor |
+| `cors-beckflow` | micro | Headers | CORS for BeckFlow |
+| `micro-maxbody-image` | micro | Buffering | 50 MB request size limit (image services) |
+| `micro-maxbody-default` | micro | Buffering | 10 MB request size limit (other services) |
+| `micro-ip-whitelist` | micro | IPWhiteList | Admin page access control |
+| `micro-health` | micro | Headers | Health check response header |
+
+### Micro IngressRoutes (NEW — 2026-07-23)
+
+| Route Name | Namespace | Host | Middleware Chain | TLS Secret |
+|-----------|-----------|------|-----------------|------------|
+| hash | micro | `hash.tools.becklab.cloud` | security-headers + rate-limit-hash + maxbody-default | tools-tls |
+| short | micro | `short.tools.becklab.cloud` | security-headers + rate-limit-short + maxbody-default | tools-tls |
+| base64 | micro | `base64.tools.becklab.cloud` | security-headers + rate-limit-base64 + maxbody-default | tools-tls |
+| markdown | micro | `markdown.tools.becklab.cloud` | security-headers + rate-limit-markdown + maxbody-default | tools-tls |
+| resize | micro | `resize.tools.becklab.cloud` | security-headers + rate-limit-resize + maxbody-image | tools-tls |
+| cron | micro | `cron.tools.becklab.cloud` | security-headers + rate-limit-cron + auth-micro-paid + maxbody-default | tools-tls |
+| dns | micro | `dns.tools.becklab.cloud` | security-headers + rate-limit-dns + auth-micro-paid + maxbody-default | tools-tls |
+| webhook | micro | `webhook.tools.becklab.cloud` | security-headers + rate-limit-webhook + maxbody-default | tools-tls |
+| fmt | micro | `fmt.tools.becklab.cloud` | security-headers + rate-limit-fmt + maxbody-default | tools-tls |
+| qr | micro | `qr.tools.becklab.cloud` | security-headers + rate-limit-qr + maxbody-default | tools-tls |
+| editor | micro | `editor.tools.becklab.cloud` | security-headers + rate-limit-editor + cors-editor + maxbody-image | tools-tls |
+| beckflow | micro | `beckflow.tools.becklab.cloud` | security-headers + rate-limit-beckflow + cors-beckflow + maxbody-default | tools-tls |
+| auth-admin | micro | `auth.tools.becklab.cloud` | security-headers + rate-limit-hash + micro-ip-whitelist + maxbody-default | tools-tls |
 
 TLS certificates exist but no corresponding IngressRoutes are deployed yet — likely planned for future exposure:
 
@@ -232,6 +272,17 @@ No custom CiliumNetworkPolicies are currently visible — relying on standard na
 ## Known Issues (as of 2026-07-20)
 
 No known networking issues. All IngressRoutes serving healthy backends. oauth2-proxy CrashLoopBackOff from July 12 has been resolved.
+
+### Certificates Without Routes (Pre-provisioned)
+
+TLS certificates exist but no corresponding IngressRoutes are deployed yet — likely planned for future exposure:
+
+- **media:** bazarr-tls, homebox-tls, jellyfin-tls, jellyseerr-tls, nzbget-tls, prowlarr-tls, radarr-tls, sabnzbd-tls, sonarr-tls, tdarr-tls, spotweb-tls, qbit-tls
+- **gaming:** crafty-tls
+- **webapps:** homepage-tls, landing-tls
+- **identity:** logout-tls, oauth2-proxy-media-tls, oauth2-proxy-tls, user-invite-tls, mail-becklab
+- **monitoring:** alertmanager-tls, prometheus-tls
+- **security:** wazuh-becklab-cloud-tls
 
 ---
 
