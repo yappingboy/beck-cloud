@@ -9,5 +9,13 @@ resources:
   - micro/services/url-shortener/ingress.yaml
   - micro/services/base64/deployment.yaml
   - micro/services/base64/ingress.yaml
+  - micro/services/cron-jobs/deployment.yaml
+  - micro/services/cron-jobs/ingress.yaml
+  - micro/services/dns-monitor/deployment.yaml
+  - micro/services/dns-monitor/ingress.yaml
+  - micro/services/webhook-relay/deployment.yaml
+  - micro/services/webhook-relay/ingress.yaml
+  - micro/services/yaml-json-tool/deployment.yaml
+  - micro/services/yaml-json-tool/ingress.yaml
   - micro/middlewares.yaml
   - micro/certificates.yaml

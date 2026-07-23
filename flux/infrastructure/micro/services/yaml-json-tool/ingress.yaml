@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: yaml-json-tool
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fmt.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: yaml-json-tool
+          port: 80
+          sticky: false

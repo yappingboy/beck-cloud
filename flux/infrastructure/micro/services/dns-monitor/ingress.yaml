@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dns-monitor
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dns.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: dns-monitor
+          port: 80
+          sticky: false

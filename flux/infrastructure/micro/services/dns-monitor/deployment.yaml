@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-monitor
+  namespace: micro
+  labels:
+    app: dns-monitor
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns-monitor
+  template:
+    metadata:
+      labels:
+        app: dns-monitor
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: dns-monitor
+          image: registry.becklab.cloud/micro/dns-monitor:latest
+          ports:
+            - containerPort: 8080
+          resources:
+            requests:
+              cpu: 50m
+              memory: 32Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-monitor
+  namespace: micro
+spec:
+  selector:
+    app: dns-monitor
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP

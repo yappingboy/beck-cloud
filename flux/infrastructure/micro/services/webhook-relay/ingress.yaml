@@ -1,0 +1,15 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: webhook-relay
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`webhook.tools.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: webhook-relay
+          port: 80
+          sticky: false
