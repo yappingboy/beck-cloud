@@ -98,13 +98,31 @@
       changed_when: true
       failed_when: false
 
+    - name: Download K3s install script with checksum verification
+      when: k3s_role == 'server'
+      ansible.builtin.get_url:
+        url: https://get.k3s.io
+        dest: /usr/local/bin/k3s-install.sh
+        mode: '0755'
+
+    - name: Download K3s install script checksum
+      when: k3s_role == 'server'
+      ansible.builtin.get_url:
+        url: https://github.com/k3s-io/k3s/releases/latest/download/k3s-install.sh.sha256sum
+        dest: /tmp/k3s-install.sh.sha256sum
+        mode: '0644'
+
+    - name: Verify K3s install script checksum
+      when: k3s_role == 'server'
+      ansible.builtin.shell: |
+        sha256sum -c /tmp/k3s-install.sh.sha256sum < /usr/local/bin/k3s-install.sh
+      changed_when: false
+
     - name: Install K3s server
       when: k3s_role == 'server'
       ansible.builtin.shell: |
-        curl -sfL https://get.k3s.io | \
-          INSTALL_K3S_VERSION={{ k3s_version }} \
-          {% if k3s_token != '' %}K3S_TOKEN={{ k3s_token }} {% endif %}\
-          sh -s - server \
+        INSTALL_K3S_VERSION={{ k3s_version }} \
+        {% if k3s_token != '' %}K3S_TOKEN={{ k3s_token }} {% endif %}\sh /usr/local/bin/k3s-install.sh server \
           --write-kubeconfig-mode 600 \
           --node-ip {{ one_k3s_server_int_ip }} \
           --tls-san {{ one_k3s_server_ext_ip }} \
@@ -118,6 +136,12 @@
           {% endfor %}
       args:
         creates: /usr/local/bin/k3s
+
+    - name: Clean up checksum file
+      when: k3s_role == 'server'
+      ansible.builtin.file:
+        path: /tmp/k3s-install.sh.sha256sum
+        state: absent
 
     - name: Configure K3s OIDC for Keycloak
       when: k3s_role == 'server'

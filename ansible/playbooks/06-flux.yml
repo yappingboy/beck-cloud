@@ -34,9 +34,12 @@
       failed_when: false
       changed_when: false
 
-    - name: Download Flux CLI
+    - name: Download Flux CLI with checksum verification
       when: flux_version_check.rc != 0
-      ansible.builtin.command: "curl -fsSL https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz -o /tmp/flux.tar.gz"
+      ansible.builtin.shell: |
+        curl -fsSL https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_linux_amd64.tar.gz -o /tmp/flux.tar.gz
+        curl -fsSL https://github.com/fluxcd/flux2/releases/download/v{{ flux_version }}/flux_{{ flux_version }}_checksums.txt -o /tmp/flux_checksums.txt
+        echo "{{ flux_version }} flux_{{ flux_version }}_linux_amd64.tar.gz" | sha256sum -c --ignore-missing /tmp/flux_checksums.txt
       changed_when: true
 
     - name: Install Flux binary
