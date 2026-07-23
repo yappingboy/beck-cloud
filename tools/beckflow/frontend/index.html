@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>BeckFlow — Dashboard</title>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#0d1117;color:#c9d1d9;min-height:100vh}
+    .app{max-width:1200px;margin:0 auto;padding:24px}
+    header{display:flex;align-items:center;justify-content:space-between;padding-bottom:24px;border-bottom:1px solid #21262d;margin-bottom:32px}
+    header h1{font-size:24px;color:#58a6ff}
+    header h1 span{color:#f0883e}
+    .status-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px;margin-bottom:40px}
+    .status-card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px;transition:border-color .2s}
+    .status-card:hover{border-color:#30363d}
+    .status-card .name{font-size:13px;font-weight:600;text-transform:uppercase;letter-spacing:.5px;color:#8b949e;margin-bottom:8px}
+    .status-card .state{display:flex;align-items:center;gap:6px;font-size:14px}
+    .status-card .dot{width:8px;height:8px;border-radius:50%}
+    .dot.green{background:#3fb950;box-shadow:0 0 6px #3fb95080}
+    .dot.red{background:#f85149;box-shadow:0 0 6px #f8514980}
+    .dot.gray{background:#484f58}
+    .latency{font-size:11px;color:#484f58;margin-top:4px}
+    .section{margin-bottom:40px}
+    .section h2{font-size:16px;margin-bottom:16px;color:#c9d1d9;display:flex;align-items:center;gap:8px}
+    .tools-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px}
+    .tool-card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:14px;display:flex;align-items:center;gap:12px;text-decoration:none;color:#c9d1d9;transition:border-color .2s}
+    .tool-card:hover{border-color:#58a6ff;color:#58a6ff}
+    .tool-icon{font-size:24px;width:40px;height:40px;display:flex;align-items:center;justify-content:center;background:#21262d;border-radius:6px}
+    .tool-info h3{font-size:14px;font-weight:600}
+    .tool-info p{font-size:12px;color:#8b949e;margin-top:2px}
+    .workflow-list{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px}
+    .workflow-card{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px}
+    .workflow-card h3{font-size:14px;margin-bottom:8px;color:#f0883e}
+    .workflow-card p{font-size:12px;color:#8b949e;margin-bottom:12px}
+    .workflow-steps{font-size:11px;color:#484f58;line-height:1.8}
+    .workflow-steps .arrow{color:#f0883e;margin:0 4px}
+    .exec-section{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px}
+    .exec-section select,.exec-section button{background:#21262d;color:#c9d1d9;border:1px solid #30363d;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer}
+    .exec-section button:hover{background:#30363d}
+    .exec-section button.primary{background:#238636;border-color:#238636}
+    .exec-section button.primary:hover{background:#2ea043}
+    .exec-result{margin-top:12px;font-size:12px;line-height:1.8;white-space:pre-wrap;background:#0d1117;padding:12px;border-radius:6px;max-height:400px;overflow-y:auto;font-family:monospace}
+    .random-section{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px}
+    .random-section input{background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:8px;border-radius:6px;width:100px;font-size:13px}
+    .random-section button{background:#238636;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer}
+    .random-section button:hover{background:#2ea043}
+    .random-result{margin-top:12px;font-size:12px;font-family:monospace;line-height:2}
+    .key-section{background:#161b22;border:1px solid #21262d;border-radius:8px;padding:16px}
+    .key-section input{background:#0d1117;color:#c9d1d9;border:1px solid #30363d;padding:8px;border-radius:6px;font-size:13px;width:200px}
+    .key-section button{background:#238636;color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;cursor:pointer}
+    .key-section button:hover{background:#2ea043}
+    .api-key-display{margin-top:12px;padding:12px;background:#0d1117;border-radius:6px;font-family:monospace;font-size:12px;word-break:break-all;color:#58a6ff}
+    .loading{text-align:center;padding:40px;color:#484f58;font-size:14px}
+    .error{color:#f85149;font-size:13px;padding:8px}
+    .refresh-btn{background:#21262d;color:#8b949e;border:1px solid #30363d;padding:6px 12px;border-radius:6px;font-size:12px;cursor:pointer}
+    .refresh-btn:hover{color:#c9d1d9}
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useCallback } = React;
+
+function App() {
+  const [services, setServices] = useState([]);
+  const [workflows, setWorkflows] = useState([]);
+  const [selectedWorkflow, setSelectedWorkflow] = useState('');
+  const [execResult, setExecResult] = useState(null);
+  const [execStatus, setExecStatus] = useState(null);
+  const [randomResult, setRandomResult] = useState(null);
+  const [randomLength, setRandomLength] = useState(32);
+  const [apiKey, setApiKey] = useState(null);
+  const [apiKeyName, setApiKeyName] = useState('');
+  const [lastRefresh, setLastRefresh] = useState(null);
+
+  const API = '/api/v1';
+
+  const fetchStatus = useCallback(async () => {
+    try {
+      const r = await fetch(`${API}/status`);
+      const j = await r.json();
+      if (j.status === 'success') {
+        setServices(j.result);
+        setLastRefresh(new Date());
+      }
+    } catch(e) { setServices(prev => prev); }
+  }, []);
+
+  useEffect(() => { fetchStatus(); }, [fetchStatus]);
+
+  useEffect(() => {
+    const iv = setInterval(fetchStatus, 30000);
+    return () => clearInterval(iv);
+  }, [fetchStatus]);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const r = await fetch(`${API}/workflows`);
+        const j = await r.json();
+        if (j.status === 'success') setWorkflows(j.result);
+      } catch(e) {}
+    })();
+  }, []);
+
+  const executeWorkflow = async () => {
+    setExecStatus('running');
+    setExecResult(null);
+    try {
+      const r = await fetch(`${API}/workflow`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ workflowId: selectedWorkflow })
+      });
+      const j = await r.json();
+      if (j.status === 'success') {
+        setExecResult(j.result);
+        setExecStatus(j.result.status);
+      }
+    } catch(e) { setExecStatus('error'); }
+  };
+
+  const generateRandom = async () => {
+    try {
+      const r = await fetch(`${API}/random?length=${randomLength}`);
+      const j = await r.json();
+      if (j.status === 'success') setRandomResult(j.result);
+    } catch(e) {}
+  };
+
+  const createAPIKey = async () => {
+    try {
+      const r = await fetch(`${API}/apikeys`, {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ name: apiKeyName || 'unnamed' })
+      });
+      const j = await r.json();
+      if (j.status === 'success') setApiKey(j.result);
+    } catch(e) {}
+  };
+
+  const toolLinks = [
+    { name: 'Hasher', url: 'https://hash.tools.becklab.cloud', icon: '#', desc: 'SHA-256/512, MD5, HMAC, base64, hex' },
+    { name: 'URL Shortener', url: 'https://short.tools.becklab.cloud', icon: '🔗', desc: 'Custom short links, click tracking' },
+    { name: 'Converter', url: 'https://convert.tools.becklab.cloud', icon: '🔄', desc: 'Base64, rot13, UUID, random strings' },
+    { name: 'QR Generator', url: 'https://qr.tools.becklab.cloud', icon: '📱', desc: 'WiFi, vCard, email, SMS, geo' },
+    { name: 'DNS Monitor', url: 'https://dns.tools.becklab.cloud', icon: '🌐', desc: 'A/AAAA/MX/TXT, TLS checker' },
+    { name: 'Cron Jobs', url: 'https://cron.tools.becklab.cloud', icon: '⏰', desc: 'Schedule HTTP jobs' },
+    { name: 'Webhook Relay', url: 'https://webhook.tools.becklab.cloud', icon: '📡', desc: 'Receive, store, replay webhooks' },
+    { name: 'YAML/JSON Tool', url: 'https://fmt.tools.becklab.cloud', icon: '📝', desc: 'Format, validate, convert, diff' },
+    { name: 'Image Editor', url: 'https://editor.tools.becklab.cloud', icon: '🎨', desc: 'Canvas editor, filters, resize' },
+  ];
+
+  const healthy = services.filter(s => s.healthy).length;
+  const total = services.length;
+
+  return (
+    <div className="app">
+      <header>
+        <h1>Beck<span>Flow</span></h1>
+        <div style={{display:'flex',alignItems:'center',gap:12px}}>
+          <span style={{fontSize:13,color:'#8b949e'}}>
+            {healthy}/{total} services healthy
+          </span>
+          <button className="refresh-btn" onClick={fetchStatus}>↻ Refresh</button>
+        </div>
+      </header>
+
+      {/* Service Status */}
+      <div className="section">
+        <h2>⚡ Service Status</h2>
+        {services.length === 0 ? (
+          <div className="loading">Checking services...</div>
+        ) : (
+          <div className="status-grid">
+            {services.map(s => (
+              <div key={s.service} className="status-card">
+                <div className="name">{s.service}</div>
+                <div className="state">
+                  <div className={`dot ${s.healthy ? 'green' : 'red'}`} />
+                  <span>{s.healthy ? 'Online' : 'Offline'}</span>
+                </div>
+                {s.latency && <div className="latency">{s.latency}</div>}
+              </div>
+            ))}
+          </div>
+        )}
+        {lastRefresh && (
+          <div style={{fontSize:11,color:'#484f58',marginTop:8}}>
+            Last updated: {lastRefresh.toLocaleTimeString()}
+          </div>
+        )}
+      </div>
+
+      {/* Quick Tools */}
+      <div className="section">
+        <h2>🛠 Quick Tools</h2>
+        <div className="tools-grid">
+          {toolLinks.map(t => (
+            <a key={t.name} className="tool-card" href={t.url} target="_blank" rel="noopener">
+              <div className="tool-icon">{t.icon}</div>
+              <div className="tool-info">
+                <h3>{t.name}</h3>
+                <p>{t.desc}</p>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+
+      {/* Workflow Execution */}
+      <div className="section">
+        <h2>🔀 Workflow Execution</h2>
+        <div className="exec-section">
+          <div style={{display:'flex',gap:12px,flexWrap:'wrap',alignItems:'center'}}>
+            <select value={selectedWorkflow} onChange={e => setSelectedWorkflow(e.target.value)}>
+              <option value="">Select a workflow...</option>
+              {workflows.map(w => (
+                <option key={w.id} value={w.id}>{w.name}</option>
+              ))}
+            </select>
+            <button className="primary" onClick={executeWorkflow} disabled={!selectedWorkflow || execStatus === 'running'}>
+              {execStatus === 'running' ? 'Running...' : 'Execute'}
+            </button>
+          </div>
+          {execResult && (
+            <div className="exec-result">
+              <div style={{color: execStatus === 'success' ? '#3fb950' : '#f85149', marginBottom: 8, fontWeight: 'bold'}}>
+                Status: {execStatus}
+              </div>
+              <div>Workflow: {execResult.workflowId}</div>
+              <div>Started: {execResult.startedAt}</div>
+              <div>Finished: {execResult.finishedAt}</div>
+              <div style={{marginTop: 8, borderTop: '1px solid #21262d', paddingTop: 8}}>
+                {execResult.steps?.map((step, i) => (
+                  <div key={i} style={{
+                    color: step.status === 'success' ? '#3fb950' : '#f85149',
+                    marginBottom: 4
+                  }}>
+                    Step {step.step}: {step.service} → {step.action} ({step.duration})
+                    {step.error && <span style={{color:'#f85149'}}> — {step.error}</span>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Available Workflows */}
+      <div className="section">
+        <h2>📋 Available Workflows</h2>
+        <div className="workflow-list">
+          {workflows.map(w => (
+            <div key={w.id} className="workflow-card">
+              <h3>{w.name}</h3>
+              <p>Workflow ID: {w.id}</p>
+              <div className="workflow-steps">
+                {w.steps.map((s, i) => (
+                  <span key={i}>
+                    {i > 0 && <span className="arrow">→</span>}
+                    {s.service}
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      {/* Random String Generator */}
+      <div className="section">
+        <h2>🎲 Random String Generator</h2>
+        <div className="random-section">
+          <div style={{display:'flex',gap:12px,alignItems:'center'}}>
+            <label style={{fontSize:13}}>Length:</label>
+            <input type="number" min="8" max="128" value={randomLength}
+              onChange={e => setRandomLength(parseInt(e.target.value) || 32)} />
+            <button onClick={generateRandom}>Generate</button>
+          </div>
+          {randomResult && (
+            <div className="random-result">
+              <div><strong>String:</strong> {randomResult.string}</div>
+              <div><strong>Base64:</strong> {randomResult.base64}</div>
+              <div><strong>SHA256:</strong> {randomResult.sha256}</div>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* API Key Manager */}
+      <div className="section">
+        <h2>🔑 API Key Manager</h2>
+        <div className="key-section">
+          <div style={{display:'flex',gap:12px,alignItems:'center'}}>
+            <input placeholder="Key name (optional)" value={apiKeyName}
+              onChange={e => setApiKeyName(e.target.value)} />
+            <button onClick={createAPIKey}>Generate Key</button>
+          </div>
+          {apiKey && (
+            <div className="api-key-display">
+              <div style={{color:'#8b949e',fontSize:11,marginBottom:4}}>Key: {apiKey.key}</div>
+              <div style={{color:'#8b949e',fontSize:11}}>Name: {apiKey.name}</div>
+              <div style={{color:'#8b949e',fontSize:11}}>Created: {apiKey.created}</div>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>

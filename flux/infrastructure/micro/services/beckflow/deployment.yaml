@@ -1,0 +1,80 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beckflow
+  namespace: micro
+  labels:
+    app: beckflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beckflow
+  template:
+    metadata:
+      labels:
+        app: beckflow
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: beckflow
+          image: registry.becklab.cloud/micro/beckflow:latest
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: STATIC_DIR
+              value: "/app/frontend"
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 128Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          volumeMounts:
+            - name: frontend
+              mountPath: /app/frontend
+              readOnly: true
+      volumes:
+        - name: frontend
+          configMap:
+            name: beckflow-frontend
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beckflow-frontend
+  namespace: micro
+data:
+  index.html: |
+    EMBEDDED_FRONTEND_PLACEHOLDER
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beckflow
+  namespace: micro
+spec:
+  selector:
+    app: beckflow
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP

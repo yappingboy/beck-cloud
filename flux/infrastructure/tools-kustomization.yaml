@@ -22,5 +22,7 @@ resources:
   - micro/services/image-editor/frontend-deployment.yaml
   - micro/services/image-editor/api-deployment.yaml
   - micro/services/image-editor/ingress.yaml
+  - micro/services/beckflow/deployment.yaml
+  - micro/services/beckflow/ingress.yaml
   - micro/middlewares.yaml
   - micro/certificates.yaml
