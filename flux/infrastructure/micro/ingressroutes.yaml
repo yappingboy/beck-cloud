@@ -1,0 +1,428 @@
+# ============================================================
+# IngressRoute Templates for Micro Services
+# ============================================================
+# Pattern:
+#   - All services: security-headers + rate-limit-<svc> + micro-maxbody-default
+#   - Browser-facing (editor, beckflow): + cors-<svc>
+#   - Paid-tier services: + auth-micro-paid
+#   - Admin pages: + micro-ip-whitelist
+#   - Image services (resize, editor): micro-maxbody-image instead of default
+#
+# TLS uses the shared tools-tls secret (wildcard cert)
+# All routes use websecure entrypoint (HTTPS only)
+# HTTP→HTTPS redirect handled by Traefik's redirect-to-https middleware
+# ============================================================
+
+# -----------------------------------------------------------
+# 1. Hash Service
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hash
+  namespace: micro
+  labels:
+    app: hash
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`hash.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-hash
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: hash-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 2. URL Shortener
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: short
+  namespace: micro
+  labels:
+    app: short
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`short.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-short
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: short-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 3. Base64 Encoder/Decoder
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: base64
+  namespace: micro
+  labels:
+    app: base64
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`base64.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-base64
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: base64-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 4. Markdown Converter (Pandoc)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: markdown
+  namespace: micro
+  labels:
+    app: markdown
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`markdown.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-markdown
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: markdown-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 5. Image Resize (libvips)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: resize
+  namespace: micro
+  labels:
+    app: resize
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`resize.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-resize
+          namespace: micro
+        - name: micro-maxbody-image
+          namespace: micro
+      services:
+        - name: resize-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 6. Cron Jobs
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: cron
+  namespace: micro
+  labels:
+    app: cron
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`cron.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-cron
+          namespace: micro
+        - name: auth-micro-paid
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: cron-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 7. DNS Monitor
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dns
+  namespace: micro
+  labels:
+    app: dns
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`dns.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-dns
+          namespace: micro
+        - name: auth-micro-paid
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: dns-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 8. Webhook Relay
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: webhook
+  namespace: micro
+  labels:
+    app: webhook
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`webhook.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-webhook
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: webhook-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 9. YAML/JSON Formatter
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: fmt
+  namespace: micro
+  labels:
+    app: fmt
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fmt.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-fmt
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: fmt-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 10. QR Code Generator
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: qr
+  namespace: micro
+  labels:
+    app: qr
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`qr.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-qr
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: qr-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 11. Image Editor (browser-facing, CORS enabled)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: editor
+  namespace: micro
+  labels:
+    app: editor
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`editor.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-editor
+          namespace: micro
+        - name: cors-editor
+          namespace: micro
+        - name: micro-maxbody-image
+          namespace: micro
+      services:
+        - name: editor-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 12. BeckFlow (browser-facing, CORS enabled)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: beckflow
+  namespace: micro
+  labels:
+    app: beckflow
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`beckflow.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-beckflow
+          namespace: micro
+        - name: cors-beckflow
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: beckflow-service
+          port: 8080
+  tls:
+    secretName: tools-tls
+
+# -----------------------------------------------------------
+# 13. Auth Service (admin page, IP allowlist)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: auth-admin
+  namespace: micro
+  labels:
+    app: auth-micro
+    service: micro
+    admin: "true"
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`auth.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-hash
+          namespace: micro
+        - name: micro-ip-whitelist
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: auth-micro
+          port: 8080
+  tls:
+    secretName: tools-tls

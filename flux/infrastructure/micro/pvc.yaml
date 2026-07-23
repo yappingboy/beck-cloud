@@ -1,0 +1,15 @@
+# Shared PVC for paid-tier persistent data (image saves, BeckFlow outputs, etc.)
+# Note: local-path provisioner supports ReadWriteOnly; services mount as subPath
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: micro-storage
+  namespace: micro
+  labels:
+    app: micro-storage
+spec:
+  accessModes: ["ReadWriteOnce"]
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi

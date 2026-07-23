@@ -1,0 +1,324 @@
+# ============================================================
+# Micro Services Middleware Stack
+# ============================================================
+# All middlewares live in the `micro` namespace.
+# `security-headers` is in `traefik` namespace (already exists).
+#
+# Middleware chain per service:
+#   1. security-headers (traefik ns) — HSTS, X-Frame-Deny, etc.
+#   2. rate-limit-<service> (micro ns) — per-service rate limit
+#   3. auth-micro-paid (micro ns) — optional, for paid-tier services
+#   4. cors-<service> (micro ns) — optional, for browser-facing services
+#   5. micro-ip-whitelist (micro ns) — optional, for admin pages
+#   6. micro-maxbody-image or micro-maxbody-default — request size limit
+# ============================================================
+
+# -----------------------------------------------------------
+# 1. RATE LIMITING MIDDLEWARES (12 services)
+# Based on free-tier limits from security audit:
+#   avg = requests per minute, burst = burst allowance, period = 60s
+# -----------------------------------------------------------
+
+# Hash: 100/day ≈ 100/1440min → avg=100 (daily cap via burst control)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-hash
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+
+# URL Shortener: 100 links/day
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-short
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+
+# Base64: 100/day
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-base64
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+
+# Markdown: 50/day (Pandoc is heavier)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-markdown
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+
+# Image Resize: 100/day (libvips + disk I/O)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-resize
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+
+# Cron Jobs: 10 jobs/day (background process overhead)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-cron
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 5
+    period: 60s
+
+# DNS Monitor: 50 checks/day
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-dns
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+
+# Webhook Relay: 100/day
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-webhook
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+
+# YAML/JSON: 200/day (near-zero cost)
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-fmt
+  namespace: micro
+spec:
+  rateLimit:
+    average: 200
+    burst: 40
+    period: 60s
+
+# QR Code: 50/month → ~0.5/day, rounded to 50/day for simplicity
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-qr
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+
+# Image Editor: 10 saves/day
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-editor
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 5
+    period: 60s
+
+# BeckFlow: 50 runs/month → ~2/day, rounded to 50/day for simplicity
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-beckflow
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+
+# -----------------------------------------------------------
+# 2. AUTH MIDDLEWARE (ForwardAuth to auth-micro)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: auth-micro-paid
+  namespace: micro
+spec:
+  forwardAuth:
+    address: "http://auth-micro.micro.svc.cluster.local:8080/auth"
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-User-Id
+      - X-User-Tier
+      - X-Quota-Remaining
+      - X-Auth-Error
+    authResponseHeadersRegex: "^(X-User-Id|X-User-Tier|X-Quota-Remaining|X-Auth-Error)$"
+
+# -----------------------------------------------------------
+# 3. CORS MIDDLEWARES (browser-facing services)
+# -----------------------------------------------------------
+
+# Image Editor CORS
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: cors-editor
+  namespace: micro
+spec:
+  headers:
+    accessControlAllowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    accessControlAllowHeaders:
+      - "*"
+    accessControlAllowOriginList:
+      - https://editor.tools.becklab.cloud
+      - https://tools.becklab.cloud
+    accessControlMaxAge: 3600
+    addVaryHeader: true
+
+# BeckFlow CORS
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: cors-beckflow
+  namespace: micro
+spec:
+  headers:
+    accessControlAllowMethods:
+      - GET
+      - POST
+      - PUT
+      - DELETE
+      - OPTIONS
+    accessControlAllowHeaders:
+      - "*"
+    accessControlAllowOriginList:
+      - https://beckflow.tools.becklab.cloud
+      - https://tools.becklab.cloud
+    accessControlMaxAge: 3600
+    addVaryHeader: true
+
+# -----------------------------------------------------------
+# 4. REQUEST SIZE LIMITS
+# -----------------------------------------------------------
+
+# Image services: 50MB
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: micro-maxbody-image
+  namespace: micro
+spec:
+  buffering:
+    maxRequestBodyBytes: 52428800  # 50 MB
+    memRequestBodyBytes: 2097152   # 2 MB buffer in memory before spooling to disk
+
+# Default services: 10MB
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: micro-maxbody-default
+  namespace: micro
+spec:
+  buffering:
+    maxRequestBodyBytes: 10485760  # 10 MB
+    memRequestBodyBytes: 1048576   # 1 MB buffer in memory before spooling to disk
+
+# -----------------------------------------------------------
+# 5. IP ALLOWLIST (admin pages)
+# Stephen's home IP needs to be filled in.
+# Cloudflare proxy IPs are included for admin access via CF tunnel.
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: micro-ip-whitelist
+  namespace: micro
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 192.168.100.0/24    # Home LAN (internal)
+      - 172.16.0.0/12       # OpenNebula internal network
+      # TODO: Add Stephen's public IP once identified
+      # - <stephen-public-ip>
+      # Cloudflare proxy IP ranges (for admin access via CF Tunnel)
+      - 173.245.48.0/20
+      - 103.21.244.0/22
+      - 103.22.200.0/22
+      - 103.31.4.0/22
+      - 141.101.64.0/18
+      - 104.16.0.0/13
+      - 104.24.0.0/14
+      - 172.64.0.0/13
+      - 131.0.72.0/22
+      - 2400:cb00::/32
+      - 2606:4700::/32
+      - 2803:f800::/32
+      - 2405:b500::/32
+      - 2405:8100::/32
+      - 2a06:98c0::/29
+      - 2c0f:f248::/32
+
+# -----------------------------------------------------------
+# 6. HEALTH CHECK MIDDLEWARE
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: micro-health
+  namespace: micro
+spec:
+  headers:
+    customResponseHeaders:
+      X-Powered-By: "BeckCloud Micro"

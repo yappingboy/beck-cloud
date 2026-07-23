@@ -1,0 +1,27 @@
+# Single certificate covering all *.tools.becklab.cloud subdomains
+# 13 subdomains total — well under Let's Encrypt 300/week limit
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: tools-certificate
+  namespace: micro
+spec:
+  secretName: tools-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: tools.becklab.cloud
+  dnsNames:
+    - tools.becklab.cloud
+    - hash.tools.becklab.cloud
+    - short.tools.becklab.cloud
+    - base64.tools.becklab.cloud
+    - markdown.tools.becklab.cloud
+    - resize.tools.becklab.cloud
+    - cron.tools.becklab.cloud
+    - dns.tools.becklab.cloud
+    - webhook.tools.becklab.cloud
+    - fmt.tools.becklab.cloud
+    - qr.tools.becklab.cloud
+    - editor.tools.becklab.cloud
+    - beckflow.tools.becklab.cloud

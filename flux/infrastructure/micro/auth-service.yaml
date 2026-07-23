@@ -1,0 +1,171 @@
+# Auth service for micro tier authentication
+# Validates API keys against Redis (identity namespace, read-only access)
+# Endpoints: POST /auth → validates API key, returns tier + quota
+#
+# ConfigMap holds the auth service configuration
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: auth-micro-config
+  namespace: micro
+data:
+  REDIS_HOST: "redis.identity.svc.cluster.local"
+  REDIS_PORT: "6379"
+  REDIS_DB: "0"
+  # Redis auth key prefix for micro API keys
+  API_KEY_PREFIX: "micro:apikeys:"
+  # Default rate limits (per minute, applied at middleware layer)
+  FREE_TIER_RATE: "60"
+  PAID_TIER_RATE: "600"
+  # JWT signing key (placeholder — replaced by SOPS-encrypted secret)
+  JWT_KEY_FILE: "/etc/auth/jwt-key"
+  # Service port
+  PORT: "8080"
+  # Health check path
+  HEALTH_PATH: "/healthz"
+---
+# Secret for Redis password (read-only access to identity Redis)
+# In production, encrypt with SOPS + age
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-micro-secrets
+  namespace: micro
+type: Opaque
+stringData:
+  # REDIS_PASSWORD is synced from identity/redis-secrets
+  # For now, reference the identity namespace secret via a cross-namespace approach
+  # TODO: Replace with SOPS-encrypted value matching the actual Redis password
+  redis-password: "REPLACE_WITH_ACTUAL_REDIS_PASSWORD"
+  # JWT signing key for token generation
+  jwt-key: "REPLACE_WITH_ACTUAL_JWT_KEY"
+---
+# Service account for auth-micro (read-only access to identity Redis)
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: auth-micro
+  namespace: micro
+---
+# RBAC: allow auth-micro to read secrets in identity namespace (for Redis password)
+# Note: K8s RBAC doesn't support cross-namespace secret reads by default.
+# The Redis password is instead embedded in the auth-micro-secrets secret above.
+# This Role is a placeholder for future expansion (e.g., reading API key DB).
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: auth-micro-role
+  namespace: micro
+rules:
+  - apiGroups: [""]
+    resources: ["secrets"]
+    resourceNames: ["auth-micro-secrets"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: auth-micro-rolebinding
+  namespace: micro
+subjects:
+  - kind: ServiceAccount
+    name: auth-micro
+    namespace: micro
+roleRef:
+  kind: Role
+  name: auth-micro-role
+  apiGroup: rbac.authorization.k8s.io
+---
+# Deployment for auth-micro
+# Uses a lightweight Go binary (distroless base, <5MB image)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-micro
+  namespace: micro
+  labels:
+    app: auth-micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-micro
+  template:
+    metadata:
+      labels:
+        app: auth-micro
+    spec:
+      serviceAccountName: auth-micro
+      containers:
+        - name: auth
+          image: becklab/auth-micro:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/auth-micro"]
+          args:
+            - "--port=8080"
+            - "--redis-host=$(REDIS_HOST)"
+            - "--redis-port=$(REDIS_PORT)"
+            - "--redis-password-file=/etc/auth/redis-password"
+            - "--jwt-key-file=/etc/auth/jwt-key"
+            - "--api-key-prefix=micro:apikeys:"
+          env:
+            - name: REDIS_HOST
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-micro-config
+                  key: REDIS_HOST
+            - name: REDIS_PORT
+              valueFrom:
+                configMapKeyRef:
+                  name: auth-micro-config
+                  key: REDIS_PORT
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 25m
+            limits:
+              memory: 64Mi
+              cpu: 100m
+          volumeMounts:
+            - name: secrets
+              mountPath: /etc/auth
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: secrets
+          secret:
+            secretName: auth-micro-secrets
+---
+# Internal service for auth-micro (ClusterIP, not exposed externally)
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-micro
+  namespace: micro
+  labels:
+    app: auth-micro
+spec:
+  selector:
+    app: auth-micro
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
