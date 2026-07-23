@@ -97,9 +97,86 @@ BeckCloud is a homelab running ~45 services across a K3s cluster, backed by 140+
 #### 10. Base64 / URL Encode / Hex Converter
 **What:** Simple encoding/decoding service. Base64, URL encode/decode, hex to ASCII, ASCII to hex.
 **Why it works:** One binary, <1MB RAM. Can serve thousands of requests per second.
-**Price:** Free. ($1/month for branded custom domain per customer.)
+**Price:** Free tier (100 req/day) + $1/month for unlimited + API key.
 **Target:** Devs, sysadmins, anyone who needs quick conversions.
 **Effort:** ~30 minutes.
+
+#### 11. QR Code Generator
+**What:** Text → QR code. Also: URL → QR code, WiFi config → QR code, vCard → QR code.
+**Why it works:** `qrencode` or `qrcode` npm package — one binary, <5MB RAM. Returns PNG/SVG over HTTP. Free tier: standard QR. Paid tier: high-res (print quality), batch generation, SVG output.
+**Price:** Free tier (50 QR/month, PNG, standard size) + $1/month for unlimited, SVG, high-res (600dpi), batch generate.
+**Target:** Small businesses (WiFi QR for customers), devs (API keys in QR), event organizers.
+**Effort:** ~1 hour.
+**Differentiation:** SVG output for print, WiFi config QR (connect without typing password), batch mode.
+
+#### 12. Image Editor (Browser-Based)
+**What:** Lightweight image editor in the browser. Cropping, resizing, filters, text overlay, basic compositing. Think Photopea but simpler.
+**Why it works:** Browser-based with `canvas` API — no server-side processing for basic edits. Server only handles saving/loading (free tier: 24h ephemeral storage, paid: persistent).
+**Price:** Free tier (basic tools, 24h ephemeral saves) + $3/month for layers, history, persistent storage, batch processing.
+**Target:** Non-designers who need quick edits without Photoshop. Bloggers, social media managers.
+**Effort:** ~3 hours (UI work is the bulk; backend is just save/load via S3/local storage).
+**Differentiation:** No signup required, works offline (PWA), runs in browser.
+
+### The Interconnectivity Layer — "BeckFlow"
+
+This is what ties the micro-services together and makes them more valuable than the sum of their parts.
+
+**Concept:** A single dashboard where services can chain together. One workflow, multiple services, no leaving the page.
+
+**How it works:** Each service exposes a REST API endpoint. The dashboard provides a visual workflow builder:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  BeckFlow Workflow: "Scan to Print-Ready"                   │
+│                                                              │
+│  [Upload Photo]                                             │
+│        │                                                     │
+│        ▼                                                     │
+│  ┌─────────────┐                                            │
+│  │ Resize      │ → 800x600, WebP convert                    │
+│  │ (Image Svc) │                                            │
+│  └──────┬──────┘                                            │
+│         ▼                                                    │
+│  ┌─────────────┐                                            │
+│  │ Hash        │ → SHA-256 checksum for integrity           │
+│  │ (Hash Svc)  │                                            │
+│  └──────┬──────┘                                            │
+│         ▼                                                    │
+│  ┌─────────────┐                                            │
+│  │ QR Code     │ → QR of the hash (verify file authenticity)│
+│  │ (QR Svc)    │                                            │
+│  └──────┬──────┘                                            │
+│         ▼                                                    │
+│  [Download: WebP + QR + Hash]                               │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Pre-built workflows (sell these):**
+
+| Workflow | Services Used | Who Buys It |
+|----------|--------------|-------------|
+| **Scan to Print-Ready** | Image resize → sharpen → WebP convert → QR code (hash of image) | Libraries, museums, archives |
+| **Blog Post Pipeline** | Markdown render → resize embedded images → generate OG image (via image editor overlay) → hash | Bloggers, content creators |
+| **Deploy Check** | YAML validate → hash config files → cron trigger (daily re-check) → webhook alert on change | DevOps, sysadmins |
+| **QR Business Card** | vCard input → QR code → resize QR → PNG to WebP → URL shortener (shareable link) | Small businesses, networking |
+| **API Key Generator** | Generate random string → hash → QR code → base64 encode → store in cron (rotate monthly) | Dev teams |
+| **Document Scanner** | Image resize → sharpen → contrast → OCR (via pandoc) → Markdown → PDF | Students, researchers |
+| **CI Artifact** | Build output → hash → upload to static site → generate QR (link to artifact) | Dev teams, QA |
+
+**Pricing via workflows:**
+- Free: Run any single service, no chaining
+- $3/mo (Starter): Up to 3 workflows, 50 runs/month
+- $7/mo (Builder): Unlimited workflows, 500 runs/month, persistent history
+- $12/mo (Pro): Everything + webhook notifications on workflow completion, API access
+
+**Technical implementation:**
+- Single React app (the dashboard) with API calls to each service
+- Each service gets a standardized response format (JSON with result URL)
+- Redis stores workflow state between steps (already deployed)
+- One new IngressRoute: `tools.becklab.cloud` → dashboard + APIs
+- The real value is in the workflow builder UI — the services themselves are already built
+
+**Why people pay:** Running `curl hash.becklab.cloud | curl qr.becklab.cloud` manually is fine for power users. But a non-technical person needs a single button that "makes a QR code for their business card." The workflow layer turns technical services into productized solutions.
 
 ### Tier 1b — Bundled Offer: "BeckCloud Micro"
 
@@ -228,10 +305,13 @@ Bundle 3+ of the above into a single subscription. Most customers want 2–3 ser
 | Image Resize | ~2 | $5–30 | <5 min | ★★★ |
 | DNS Monitor | ~2 | $5–20 | <10 min | ★★★ |
 | YAML/JSON Tool | ~1 | $5–20 | <5 min | ★★★ |
+| QR Code Generator | ~1 | $3–15 | <5 min | ★★★★ |
+| Image Editor | ~3 | $5–30 | <10 min | ★★★ |
 | 3D Printing (BYOD) | ~2 | $10–50 | 10 min | ★★★ |
 | LLM API (RTX Titan) | ~2 | $15–90 | 10 min | ★★★ |
 | Cron Service | ~2 | $10–40 | <10 min | ★★★ |
 | Webhook Relay | ~3 | $10–50 | <15 min | ★★★ |
+| BeckFlow (workflow layer) | ~4 | $15–60 | 15 min | ★★ |
 | OpenNebula VMs | ~3 | $12–100 | 30 min | ★★ |
 | SaaS Hosting | ~2 | $15–90 | 30 min | ★★ |
 | K3s-as-a-Service | ~4 | $25–225 | 1 hr | ★ |
