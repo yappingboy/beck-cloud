@@ -31,7 +31,7 @@
     nfs_allowed_networks:
       - "192.168.100.0/24"   # k3s internal VM network
       - "172.16.0.0/16"      # k3s external (LAN) VM network
-    nfs_export_opts: "rw,sync,no_subtree_check,no_root_squash"
+    nfs_export_opts: "rw,sync,no_subtree_check,root_squash"
 
   pre_tasks:
     - name: Require backup_drive_uuid

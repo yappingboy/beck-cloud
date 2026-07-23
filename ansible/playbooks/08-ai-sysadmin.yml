@@ -165,8 +165,9 @@
             path: "/var/lib/llamactl/llamactl.db"
 
           auth:
-            require_inference_auth: false
-            require_management_auth: false
+            require_inference_auth: true
+            require_management_auth: true
+            management_key: "{{ llm_llamactl_management_key }}"
       notify: restart llamactl
 
     # ── Systemd service ──────────────────────────────────────────────────

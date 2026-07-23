@@ -49,7 +49,10 @@ spec:
             - name: ADMIN_EMAIL
               value: "admin@becklab.cloud"
             - name: ADMIN_PASSWORD
-              value: "changeme"
+              valueFrom:
+                secretKeyRef:
+                  name: directus-admin-password
+                  key: admin-password
             - name: DB_CLIENT
               value: "sqlite3"
             - name: DB_FILENAME
