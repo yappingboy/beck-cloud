@@ -24,3 +24,4 @@ __pycache__/
 
 # Hermes (legacy)
 .hermes/
+.git-creds
