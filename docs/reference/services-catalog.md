@@ -475,7 +475,7 @@ See [Storage & Backups Deep Dive](storage-backups.md) for full details.
 
 ## Swiparr — Deployed Service (2026-07-23)
 
-> "Tinder for movies" — collaborative watch discovery.
+> "Tinder for movies" — collaborative watch discovery. In `media` namespace alongside Jellyfin stack.
 
 ### Swiparr
 | Property | Value |
@@ -486,10 +486,10 @@ See [Storage & Backups Deep Dive](storage-backups.md) for full details.
 | Database | SQLite (`/app/data/swiparr.db`) or Turso (remote) |
 | Data volume | `2Gi` local-path PVC |
 | Provider modes | Jellyfin (full), Emby (experimental), Plex (experimental), TMDB (standalone) |
-| SSO | Optional — built-in auth + guest lending |
-| IngressRoute | `swiparr.becklab.cloud` (admin SSO, `sso-admin-chain`) |
+| SSO | Media tier SSO via `sso-media-chain` |
+| IngressRoute | `swiparr.becklab.cloud` (media SSO, `identity-sso-media-chain`) |
 | TLS | `swiparr-tls` (letsencrypt-prod, auto-issued) |
-| Namespace | `swiparr` (standalone) |
+| Namespace | `media` |
 | Status | ✅ Running |
 
 #### Overview
@@ -541,13 +541,13 @@ Deployed via K3s manifest in `flux/infrastructure/media/swiparr.yaml`. The K3s l
 - Provisioner: `local-path-provisioner` (deployed from K3s bundled manifest)
 - PVC: `swiparr-data` (2Gi, local-path, bound)
 - Pod: `swiparr` (1/1 Running, Next.js 16.1.6)
-- IngressRoute: `swiparr.becklab.cloud` → `swiparr:4321` via `sso-admin-chain`
+- IngressRoute: `swiparr.becklab.cloud` → `swiparr:4321` via `sso-media-chain`
 - TLS: `swiparr-tls` issued by letsencrypt-prod (HTTP-01 challenge)
-- Auth: Built-in auth + Jellyfin provider. First login became admin automatically.
+- Auth: Built-in auth + Jellyfin provider. Media tier SSO (`sso-media-chain`) via Keycloak `/media` group.
 - Provider: Jellyfin at `http://jellyfin.media.svc.cluster.local:8096`
 
 #### SSO Integration
-- Uses existing `sso-admin-chain` (oauth2-proxy + Keycloak `/admins` group)
+- Uses `identity-sso-media-chain` middleware (oauth2-proxy + Keycloak `/media` group)
 - BYOP mode or guest lending works without SSO
 - Match strategy: `"any two people"` recommended for group size
 
