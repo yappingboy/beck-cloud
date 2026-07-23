@@ -246,23 +246,27 @@ def set_password(username, password, first_name="", last_name=""):
 # Default email HTML template (used when EMAIL_TEMPLATE is not set)
 DEFAULT_EMAIL_HTML = """\
 <!doctype html>
-<html><head><meta charset="utf-8"><title>Welcome to Becklab</title>
+<html><head><meta charset="utf-8"><title>Welcome to BeckCloud</title>
 <style>
-body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;margin:0;padding:40px 20px}
-.c{max-width:560px;margin:0 auto;background:#1e293b;border-radius:12px;padding:32px}
-h1{color:#38bdf8;margin-top:0}.creds{background:#0f172a;border-radius:8px;padding:16px;margin:20px 0;font-family:monospace;white-space:pre-line}
-a{color:#38bdf8;text-decoration:none}a:hover{text-decoration:underline}
-.btn{display:inline-block;background:#38bdf8;color:#0f172a;padding:12px 24px;border-radius:6px;font-weight:bold;margin-top:16px}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0F1729;color:#E2E8F0;margin:0;padding:40px 20px}
+.c{max-width:560px;margin:0 auto;background:#1E293B;border-radius:12px;padding:32px}
+h1{color:#E8A838;margin-top:0}
+.creds{background:#0F1729;border-radius:8px;padding:16px;margin:20px 0;font-family:monospace;white-space:pre-line;border:1px solid #334155}
+.creds strong{color:#E8A838}
+a{color:#7C5CFC;text-decoration:none}
+a:hover{text-decoration:underline}
+.btn{display:inline-block;background:#E8A838;color:#0F1729;padding:12px 24px;border-radius:6px;font-weight:bold;margin-top:16px;text-decoration:none}
+.btn:hover{background:#f0b848}
 </style></head><body>
 <div class="c">
-<h1>Welcome to Becklab! ⚡</h1>
-<p>You've been invited to join the Becklab services.</p>
+<h1>Welcome to BeckCloud ⚡</h1>
+<p>You've been invited to join the BeckCloud services.</p>
 <div class="creds"><strong>Username:</strong> {{username}}<br><strong>Password:</strong> {{password}}</div>
-{% if groups %}<p><strong>Groups:</strong> {{groups}}</p>{% endif %}
+{% if groups %}<p style="margin-top:12px"><strong style="color:#E8A838">Groups:</strong> {{groups}}</p>{% endif %}
 <a class="btn" href="{{account_url}}">Go to Account Settings →</a>
-<p style="margin-top:16px;font-size:.85em;color:#94a3b8">Log in and update your password right away.</p>
+<p style="margin-top:16px;font-size:.85em;color:#94A3B8">Log in and update your password right away.</p>
 <hr style="border-color:#334155;margin:24px 0">
-<p style="font-size:.8em;color:#64748b">Automated invitation from Becklab admin. Ignore if unexpected.</p>
+<p style="font-size:.8em;color:#64748B">Automated invitation from BeckCloud admin. Ignore if unexpected.</p>
 </div></body></html>"""
 
 DEFAULT_EMAIL_TEXT = """\
@@ -335,32 +339,33 @@ LAYOUT = """\
 <html lang="en"><head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>{{ title }} — Becklab</title>
+<title>{{ title }} — BeckCloud</title>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
-body{font-family:system-ui,-apple-system,sans-serif;background:#0f172a;color:#e2e8f0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
-.card{max-width:640px;width:100%;background:#1e293b;border-radius:12px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.3)}
-h1{color:#38bdf8;margin-bottom:8px;font-size:1.5em}
-.sub{color:#94a3b8;font-size:.9em;margin-bottom:24px}
-label.lbl{display:block;color:#94a3b8;font-size:.85em;margin-bottom:4px;margin-top:16px}
-input[type=text],input[type=email]{width:100%;padding:10px 12px;background:#0f172a;border:1px solid #334155;border-radius:6px;color:#e2e8f0;font-size:1em}
-input:focus{outline:none;border-color:#38bdf8}
+body{font-family:system-ui,-apple-system,sans-serif;background:#0F1729;color:#E2E8F0;min-height:100vh;display:flex;align-items:center;justify-content:center;padding:20px}
+.card{max-width:640px;width:100%;background:#1E293B;border-radius:12px;padding:32px;box-shadow:0 4px 24px rgba(0,0,0,.3)}
+h1{color:#E8A838;margin-bottom:8px;font-size:1.5em}
+.sub{color:#94A3B8;font-size:.9em;margin-bottom:24px}
+label.lbl{display:block;color:#94A3B8;font-size:.85em;margin-bottom:4px;margin-top:16px}
+input[type=text],input[type=email]{width:100%;padding:10px 12px;background:#0F1729;border:1px solid #334155;border-radius:6px;color:#E2E8F0;font-size:1em}
+input:focus{outline:none;border-color:#E8A838}
 .cbs{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px}
-.cb{background:#0f172a;border:1px solid #334155;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.9em;display:flex;align-items:center;gap:6px}
-.cb input{accent-color:#38bdf8}
-.btn{background:#38bdf8;color:#0f172a;border:none;padding:12px 24px;border-radius:6px;font-size:1em;font-weight:bold;cursor:pointer;margin-top:24px;width:100%}
-.btn:hover{background:#7dd3fc}
-.err{background:#7f1d1d;color:#fecaca;padding:12px;border-radius:6px;margin-top:16px;font-size:.9em}
-.ok{background:#14532d;color:#bbf7d0;padding:12px;border-radius:6px;margin-top:16px;font-size:.9em}
-.link{display:inline-block;margin-top:16px;color:#38bdf8;text-decoration:none;font-size:.9em}
+.cb{background:#0F1729;border:1px solid #334155;border-radius:6px;padding:6px 12px;cursor:pointer;font-size:.9em;display:flex;align-items:center;gap:6px}
+.cb input{accent-color:#E8A838}
+.btn{background:#E8A838;color:#0F1729;border:none;padding:12px 24px;border-radius:6px;font-size:1em;font-weight:bold;cursor:pointer;margin-top:24px;width:100%}
+.btn:hover{background:#f0b848}
+.err{background:#7F1D1D;color:#FECACA;padding:12px;border-radius:6px;margin-top:16px;font-size:.9em}
+.ok{background:#14532D;color:#BBF7D0;padding:12px;border-radius:6px;margin-top:16px;font-size:.9em}
+.link{display:inline-block;margin-top:16px;color:#7C5CFC;text-decoration:none;font-size:.9em}
+.link:hover{text-decoration:underline}
 
 /* User table styles */
 .user-table{width:100%;border-collapse:collapse;margin-top:16px;font-size:.9em}
-.user-table th{text-align:left;padding:8px 12px;border-bottom:2px solid #334155;color:#38bdf8;font-weight:600}
-.user-table td{padding:8px 12px;border-bottom:1px solid #1e293b;color:#cbd5e1}
-.user-table tr:hover td{background:#0f172a}
-.badge{display:inline-block;background:#0f172a;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:.8em;margin-right:4px;color:#94a3b8}
-.no-users{text-align:center;color:#64748b;padding:24px;font-style:italic}
+.user-table th{text-align:left;padding:8px 12px;border-bottom:2px solid #334155;color:#E8A838;font-weight:600}
+.user-table td{padding:8px 12px;border-bottom:1px solid #1E293B;color:#CBD5E1}
+.user-table tr:hover td{background:#0F1729}
+.badge{display:inline-block;background:#0F1729;border:1px solid #334155;border-radius:4px;padding:2px 8px;font-size:.8em;margin-right:4px;color:#94A3B8}
+.no-users{text-align:center;color:#64748B;padding:24px;font-style:italic}
 .section{margin-top:24px;padding-top:24px;border-top:1px solid #334155}
 </style>
 </head><body>
