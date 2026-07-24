@@ -111,5 +111,14 @@ spec:
         users:
           auto_assign_org: true
           auto_assign_org_role: Editor
+        custom:
+          css_file: /etc/grafana/custom/grafana-brand.css
+      # Mount custom theme CSS (from separate ConfigMap).
+      extraConfigmapMounts:
+        - name: grafana-brand-theme
+          mountPath: /etc/grafana/custom
+          subPath: grafana-brand.css
+          configMap: grafana-brand-theme
+          readOnly: true
       ingress:
         enabled: false

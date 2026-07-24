@@ -1,0 +1,284 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-brand-theme
+  namespace: monitoring
+  labels:
+    kustomize.toolkit.fluxcd.io/name: infrastructure
+data:
+  grafana-brand.css: |
+    /* BeckCloud Brand Theme for Grafana
+     * Dark mode-first. Ember Gold #E8A838, Violet Haze #7C5CFC, Deep Space #0F1729
+     */
+
+    body {
+      background-color: #0F1729 !important;
+      color: #E2E8F0 !important;
+      font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+    }
+
+    /* Top Navigation Bar */
+    .grafana-toolbar,
+    [class*="navbar"],
+    [class*="header"],
+    [class*="app-toolbar"] {
+      background-color: #1E293B !important;
+      border-bottom: 1px solid #334155 !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3) !important;
+    }
+
+    [class*="navbar"] [class*="title"],
+    [class*="app-toolbar"] [class*="title"] {
+      color: #E8A838 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-weight: 700 !important;
+      letter-spacing: -0.5px !important;
+    }
+
+    /* Sidebar / Left Nav */
+    [class*="sidebar"],
+    [class*="left-nav"],
+    [class*="drawer"] {
+      background-color: #1E293B !important;
+      border-right: 1px solid #334155 !important;
+    }
+
+    [class*="sidebar"] [class*="item"],
+    [class*="left-nav"] [class*="item"],
+    [class*="drawer"] [class*="item"] {
+      color: #94A3B8 !important;
+      transition: background-color 0.2s ease, color 0.2s ease !important;
+    }
+
+    [class*="sidebar"] [class*="item"]:hover,
+    [class*="left-nav"] [class*="item"]:hover,
+    [class*="drawer"] [class*="item"]:hover {
+      background-color: #283548 !important;
+      color: #E2E8F0 !important;
+    }
+
+    [class*="sidebar"] [class*="item"][class*="active"],
+    [class*="left-nav"] [class*="item"][class*="active"],
+    [class*="drawer"] [class*="item"][class*="active"] {
+      color: #E8A838 !important;
+      border-left: 3px solid #E8A838 !important;
+      background-color: rgba(232, 168, 56, 0.08) !important;
+    }
+
+    /* Cards / Panels */
+    [class*="panel"],
+    [class*="card"],
+    [class*="widget"] {
+      background-color: #1E293B !important;
+      border: 1px solid #334155 !important;
+      border-radius: 8px !important;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2) !important;
+    }
+
+    /* Buttons */
+    [class*="btn"],
+    button[type="submit"],
+    button[type="button"] {
+      background: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%) !important;
+      color: #0F1729 !important;
+      border: none !important;
+      border-radius: 6px !important;
+      font-weight: 600 !important;
+      font-family: 'Inter', sans-serif !important;
+      transition: transform 0.15s ease, box-shadow 0.2s ease !important;
+    }
+
+    [class*="btn"]:hover,
+    button[type="submit"]:hover,
+    button[type="button"]:hover {
+      transform: translateY(-1px) !important;
+      box-shadow: 0 4px 16px rgba(232, 168, 56, 0.3) !important;
+    }
+
+    /* Primary Action Buttons */
+    [class*="primary"],
+    [class*="action"] {
+      background: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%) !important;
+      color: #0F1729 !important;
+    }
+
+    /* Inputs */
+    input[type="text"],
+    input[type="search"],
+    input[type="password"],
+    [class*="input"],
+    [class*="textfield"] {
+      background-color: #0F1729 !important;
+      border: 1px solid #334155 !important;
+      color: #E2E8F0 !important;
+      border-radius: 6px !important;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease !important;
+    }
+
+    input[type="text"]:focus,
+    input[type="search"]:focus,
+    input[type="password"]:focus,
+    [class*="input"]:focus,
+    [class*="textfield"]:focus {
+      border-color: #E8A838 !important;
+      box-shadow: 0 0 0 2px rgba(232, 168, 56, 0.15) !important;
+      outline: none !important;
+    }
+
+    /* Status Colors */
+    [class*="ok"],
+    [class*="healthy"],
+    [class*="success"] {
+      color: #4ADE80 !important;
+    }
+
+    [class*="warning"] {
+      color: #FBBF24 !important;
+    }
+
+    [class*="error"],
+    [class*="critical"],
+    [class*="alert"] {
+      color: #EF4444 !important;
+    }
+
+    /* Modal/Dialog */
+    [class*="modal"],
+    [class*="dialog"],
+    [class*="overlay"] {
+      background-color: #1E293B !important;
+      border: 1px solid #334155 !important;
+      border-radius: 10px !important;
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 8px; height: 8px; }
+    ::-webkit-scrollbar-track { background: #1E293B; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+
+    /* Table */
+    table, [class*="table"] {
+      background-color: transparent !important;
+      color: #E2E8F0 !important;
+    }
+
+    [class*="table"] th, [class*="table-header"] {
+      color: #E8A838 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-size: 0.75rem !important;
+      text-transform: uppercase !important;
+      letter-spacing: 0.06em !important;
+      border-bottom: 2px solid #334155 !important;
+    }
+
+    [class*="table"] tr:nth-child(even),
+    [class*="table"] tbody tr:nth-child(even) {
+      background-color: rgba(30, 41, 59, 0.5) !important;
+    }
+
+    [class*="table"] tr:hover,
+    [class*="table"] tbody tr:hover {
+      background-color: rgba(232, 168, 56, 0.04) !important;
+    }
+
+    /* Legend/Labels */
+    [class*="legend"], [class*="label"] {
+      color: #94A3B8 !important;
+      font-size: 0.8125rem !important;
+    }
+
+    /* Query Editor */
+    [class*="query-editor"], [class*="promql"] {
+      background-color: #0F1729 !important;
+      border: 1px solid #334155 !important;
+      color: #E2E8F0 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
+
+    /* Time Picker */
+    [class*="time-picker"], [class*="relative-time"] {
+      color: #94A3B8 !important;
+    }
+
+    /* Alerts */
+    [class*="alert-list"] li {
+      border-left: 3px solid #334155 !important;
+      padding-left: 0.75rem !important;
+      margin-bottom: 0.5rem !important;
+    }
+    [class*="alert-list"] li[class*="alerting"] {
+      border-left-color: #EF4444 !important;
+      background-color: rgba(239, 68, 68, 0.05) !important;
+    }
+    [class*="alert-list"] li[class*="pending"] {
+      border-left-color: #FBBF24 !important;
+      background-color: rgba(251, 191, 36, 0.05) !important;
+    }
+
+    /* Dashboard Row */
+    [class*="dashboard-row"] {
+      border-bottom: 1px solid #283548 !important;
+    }
+
+    /* Tooltip */
+    [class*="tooltip"] {
+      background-color: #1E293B !important;
+      border: 1px solid #334155 !important;
+      color: #E2E8F0 !important;
+      border-radius: 6px !important;
+      font-size: 0.8125rem !important;
+    }
+
+    /* Toast/Notification */
+    [class*="toast"], [class*="notification"] {
+      background-color: #1E293B !important;
+      border: 1px solid #334155 !important;
+      border-radius: 8px !important;
+      color: #E2E8F0 !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4) !important;
+    }
+
+    /* Selects */
+    select, [class*="select"] {
+      background-color: #0F1729 !important;
+      border: 1px solid #334155 !important;
+      color: #E2E8F0 !important;
+      border-radius: 6px !important;
+    }
+    select option {
+      background-color: #1E293B !important;
+      color: #E2E8F0 !important;
+    }
+
+    /* Tabs */
+    [class*="tabs"] [class*="tab"][class*="active"] {
+      color: #E8A838 !important;
+      border-bottom: 2px solid #E8A838 !important;
+    }
+    [class*="tabs"] [class*="tab"] {
+      color: #94A3B8 !important;
+      transition: color 0.2s ease !important;
+    }
+    [class*="tabs"] [class*="tab"]:hover {
+      color: #E2E8F0 !important;
+    }
+
+    /* Loading */
+    [class*="spinner"], [class*="loading"] {
+      color: #E8A838 !important;
+    }
+
+    /* Panel Title */
+    [class*="panel-title"], [class*="panel-header"] {
+      color: #E2E8F0 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+      font-weight: 600 !important;
+    }
+
+    /* Config Header */
+    [class*="config-header"] {
+      color: #E8A838 !important;
+      font-family: 'JetBrains Mono', monospace !important;
+    }
