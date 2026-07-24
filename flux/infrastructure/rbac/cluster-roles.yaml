@@ -1,3 +1,13 @@
+# BeckCloud RBAC — Cluster Roles
+#
+# Current: Only /admins group → cluster-admin
+# Future: Service-level roles enforced by role-enforcer (not K8s RBAC)
+# The role-enforcer middleware reads JWT roles from Traefik headers.
+#
+# Kubernetes RBAC mappings:
+# - keycloak:/admins → cluster-admin (existing)
+# - keycloak:/monitoring → (future) monitoring namespace access
+# - keycloak:/dev → (future) dev namespace access
 ---
 # Bind the Keycloak 'admins' group to cluster-admin.
 # K3s is configured with --kube-apiserver-arg=oidc-groups-prefix=keycloak:

@@ -1,0 +1,179 @@
+# ── BeckCloud Role Enforcer ──────────────────────────────────────
+# Lightweight Go service that:
+#   1. Validates JWT bearer tokens (from oauth2-proxy)
+#   2. Extracts client roles from JWT
+#   3. Checks required roles against a per-route policy
+#   4. Returns 403 if roles don't match, 200 with role headers if OK
+#   5. Logs permission checks to Loki/Fluent Bit (optional)
+#
+# This is deployed as a HelmRelease in the identity namespace.
+# Traefik forwards auth requests to this service for role-enforced chains.
+#
+# Usage: Add a role-enforcer middleware + chain to ingress routes.
+# ─────────────────────────────────────────────────────────────────
+
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: role-enforcer
+  labels:
+    app: role-enforcer
+---
+# Service account for the role enforcer
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: role-enforcer
+  namespace: role-enforcer
+  labels:
+    app: role-enforcer
+---
+# ConfigMap with the role enforcement policy
+# Format: YAML key=value pairs
+# Each key is a service identifier, value is a comma-separated list of allowed roles
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: role-enforcer-policy
+  namespace: role-enforcer
+  labels:
+    app: role-enforcer
+data:
+  policy.yaml: |
+    # BeckCloud Role Enforcement Policy
+    # Format: service_name: allowed_roles
+    # Roles must be present in JWT resource_access.beckcloud-services.roles
+    # 
+    # Services requiring ADMIN role only:
+    grafana-admin: admin
+    prometheus-admin: admin
+    alertmanager-admin: admin
+    keycloak-admin: admin
+    affine-admin: admin
+    one-admin: admin
+    silex-admin: admin
+    trivy-admin: admin
+    velero-admin: admin
+    directus-admin: admin
+    homepage-admin: admin
+    # 
+    # Services requiring MONITOR role:
+    prometheus: monitor
+    grafana: monitor
+    hubble: monitor
+    alertmanager: monitor
+    # 
+    # Services requiring DOWNLOAD or MEDIA_VIEW role:
+    qbittorrent: download,media-view
+    radarr: media-view
+    sonarr: media-view
+    prowlarr: media-view
+    bazarr: media-view
+    jellyfin: media-view
+    jellyseerr: media-view
+    tdarr: media-manage
+    # 
+    # Services requiring DOWNLOAD role:
+    sabnzbd: download
+    nzbget: download
+    # 
+    # Services requiring DEV role:
+    auth-service: dev
+    beckflow: dev
+    cron-jobs: dev
+    dns-monitor: dev
+    image-editor-api: dev
+    image-editor: dev
+    # 
+    # Services requiring CMS role:
+    directus: cms
+    manyfold: cms
+    affine: cms,user
+    # 
+    # Services requiring MEDIA_VIEW role:
+    tautulli: media-view
+    # 
+    # Services requiring USER role (authenticated):
+    homepage: user
+    oauth2-becklab: user
+    user-invite: user
+    logout-page: user
+    # 
+    # Public services (no role required):
+    # (not listed in policy — any request is accepted)
+
+---
+# The role enforcer deployment
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: role-enforcer
+  namespace: role-enforcer
+  labels:
+    app: role-enforcer
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: role-enforcer
+  template:
+    metadata:
+      labels:
+        app: role-enforcer
+    spec:
+      serviceAccountName: role-enforcer
+      containers:
+        - name: role-enforcer
+          image: quay.io/beckcloud/role-enforcer:latest
+          imagePullPolicy: Always
+          ports:
+            - name: http
+              containerPort: 8080
+          resources:
+            limits:
+              cpu: "200m"
+              memory: 128Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          env:
+            - name: POLICY_PATH
+              value: "/etc/role-enforcer/policy.yaml"
+            - name: JWKS_URL
+              value: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/certs"
+            - name: REALM
+              value: "homelab"
+            - name: CLIENT_ID
+              value: "beckcloud-services"
+            - name: LOG_FORMAT
+              value: "json"
+            - name: LOG_LEVEL
+              value: "info"
+          volumeMounts:
+            - name: policy
+              mountPath: /etc/role-enforcer/policy.yaml
+              subPath: policy.yaml
+              readOnly: true
+      volumes:
+        - name: policy
+          configMap:
+            name: role-enforcer-policy
+
+---
+# Service exposing the role enforcer
+apiVersion: v1
+kind: Service
+metadata:
+  name: role-enforcer
+  namespace: role-enforcer
+  labels:
+    app: role-enforcer
+spec:
+  selector:
+    app: role-enforcer
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+  type: ClusterIP
