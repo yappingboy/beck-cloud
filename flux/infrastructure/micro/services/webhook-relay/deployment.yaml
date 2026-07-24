@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: webhook-relay
-          image: registry.becklab.cloud/micro/webhook-relay:latest
+          image: ghcr.io/yappingboy/micro/webhook-relay:v1.0.0
           ports:
             - containerPort: 8080
           resources:

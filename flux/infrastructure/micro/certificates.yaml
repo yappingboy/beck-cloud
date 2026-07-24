@@ -14,3 +14,10 @@ spec:
     - hash.tools.becklab.cloud
     - short.tools.becklab.cloud
     - convert.tools.becklab.cloud
+    - qr.tools.becklab.cloud
+    - cron.tools.becklab.cloud
+    - dns.tools.becklab.cloud
+    - webhook.tools.becklab.cloud
+    - fmt.tools.becklab.cloud
+    - editor.tools.becklab.cloud
+    - dashboard.tools.becklab.cloud

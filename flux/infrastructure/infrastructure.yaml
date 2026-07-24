@@ -56,29 +56,4 @@ spec:
     - name: infrastructure-configs
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
-  postBuild:
-    substituteFrom:
-      - kind: ConfigMap
-        name: beck-cloud-config
-  healthChecks:
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cilium
-      namespace: kube-system
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: traefik
-      namespace: traefik
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: cert-manager
-      namespace: cert-manager
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: keycloak
-      namespace: identity
-    - apiVersion: helm.toolkit.fluxcd.io/v2
-      kind: HelmRelease
-      name: lldap
-      namespace: identity
+    name: flux-system

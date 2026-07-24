@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: qr-generator
-          image: registry.becklab.cloud/micro/qr-generator:latest
+          image: ghcr.io/yappingboy/micro/qr-generator:v1.0.0
           ports:
             - containerPort: 8080
           resources:

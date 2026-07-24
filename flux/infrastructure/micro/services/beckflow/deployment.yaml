@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: beckflow
-          image: registry.becklab.cloud/micro/beckflow:latest
+          image: ghcr.io/yappingboy/micro/beckflow:v1.0.0
           ports:
             - containerPort: 8080
           env:

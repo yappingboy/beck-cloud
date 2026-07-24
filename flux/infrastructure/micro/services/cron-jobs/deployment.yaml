@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: cron-jobs
-          image: registry.becklab.cloud/micro/cron-jobs:latest
+          image: ghcr.io/yappingboy/micro/cron-jobs:v1.0.0
           ports:
             - containerPort: 8080
           resources:
