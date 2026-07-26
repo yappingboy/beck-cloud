@@ -23,7 +23,7 @@ apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: role-enforcer
-  namespace: role-enforcer
+  namespace: identity
   labels:
     app: role-enforcer
 ---
@@ -99,7 +99,7 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: role-enforcer
-  namespace: role-enforcer
+  namespace: identity
   labels:
     app: role-enforcer
 spec:
