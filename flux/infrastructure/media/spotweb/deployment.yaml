@@ -1,0 +1,88 @@
+# Auto-split from cluster files
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spotweb
+  namespace: media
+  labels:
+    app: spotweb
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: spotweb
+  template:
+    metadata:
+      labels:
+        app: spotweb
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: spotweb
+        image: jgeusebroek/spotweb:2025.1
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        env:
+        - name: TZ
+          value: America/New_York
+        - name: SPOTWEB_DB_TYPE
+          value: pdo_mysql
+        - name: SPOTWEB_DB_HOST
+          value: mariadb
+        - name: SPOTWEB_DB_PORT
+          value: '3306'
+        - name: SPOTWEB_DB_NAME
+          value: spotweb
+        - name: SPOTWEB_DB_USER
+          value: spotweb
+        - name: SPOTWEB_DB_PASS
+          valueFrom:
+            secretKeyRef:
+              name: spotweb-secrets
+              key: db_password
+        - name: SPOTWEB_CRON_RETRIEVE
+          value: '*/15 * * * *'
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        startupProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          failureThreshold: 30
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 15
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 80
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          failureThreshold: 5
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: spotweb-config

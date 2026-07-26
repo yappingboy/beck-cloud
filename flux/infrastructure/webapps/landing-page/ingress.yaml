@@ -1,0 +1,25 @@
+# Auto-split from cluster files
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing-page
+  namespace: webapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+  - hosts:
+    - becklab.cloud
+    secretName: landing-tls
+  rules:
+  - host: becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: landing-page
+            port:
+              number: 80

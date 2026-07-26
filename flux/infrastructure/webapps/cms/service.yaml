@@ -1,0 +1,13 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: directus
+  namespace: webapps
+spec:
+  selector:
+    app: directus
+  ports:
+  - name: http
+    port: 8055
+    targetPort: 8055

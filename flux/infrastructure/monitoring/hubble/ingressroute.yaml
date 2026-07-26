@@ -1,0 +1,21 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hubble-ui
+  namespace: monitoring
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - kind: Rule
+    match: Host(`hubble.becklab.cloud`)
+    middlewares:
+    - name: sso-admin-chain
+      namespace: identity
+    services:
+    - name: hubble-ui
+      namespace: kube-system
+      port: 80
+  tls:
+    secretName: hubble-tls

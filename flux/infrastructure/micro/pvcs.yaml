@@ -1,0 +1,12 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: micro-storage
+  namespace: micro
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi

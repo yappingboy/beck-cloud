@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -121,7 +122,7 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: affine-config
----
+# ---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -182,3 +183,90 @@ spec:
           capabilities:
             drop:
             - ALL
+# ---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: affine-postgres
+  namespace: webapps
+  labels:
+    app: affine-postgres
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: affine-postgres
+  template:
+    metadata:
+      labels:
+        app: affine-postgres
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      containers:
+      - name: postgres
+        image: pgvector/pgvector:pg16
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 256Mi
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: affine-db
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: affine-db
+              key: password
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: affine-db
+              key: database-name
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgres
+          protocol: TCP
+        volumeMounts:
+        - name: pgdata
+          mountPath: /var/lib/postgresql/data
+        livenessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - affine
+            - -d
+            - affine
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - pg_isready
+            - -U
+            - affine
+            - -d
+            - affine
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: pgdata
+        persistentVolumeClaim:
+          claimName: affine-postgres-data

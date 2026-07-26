@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -55,20 +56,3 @@ spec:
       - name: data
         persistentVolumeClaim:
           claimName: micro-storage
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: webhook-relay
-  namespace: micro
-spec:
-  selector:
-    app: webhook-relay
-  ports:
-  - port: 80
-    targetPort: 8080
-    protocol: TCP
-  - name: metrics
-    port: 9090
-    targetPort: 8080
-    protocol: TCP

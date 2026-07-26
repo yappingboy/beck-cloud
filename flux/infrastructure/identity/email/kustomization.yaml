@@ -3,7 +3,9 @@ kind: Kustomization
 
 
 resources:
-  - postfix-relay.yaml
-  - secret-mailgun.yaml
+  - configmap.yaml
+  - deployment.yaml
+  - service.yuml
+  - secret.yaml
   - certificate.yaml
   # secret-mailu.yaml — saved for future Mailu full-stack deployment

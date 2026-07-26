@@ -1,0 +1,14 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbit-gluetun
+  namespace: media
+spec:
+  selector:
+    app: qbit-gluetun
+  ports:
+  - name: qbit-webui
+    port: 8080
+    targetPort: 8080
+    protocol: TCP

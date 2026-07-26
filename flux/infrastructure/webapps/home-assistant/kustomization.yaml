@@ -1,11 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
-
-namespace: webapps
-
 resources:
-  - pvc.yaml
-  - deployment.yaml
-  - services.yaml
-  - ingress.yaml
-  - mosquitto-configmap.yaml
+- certificate.yaml
+- configmap.yaml
+- deployment.yaml
+- ingressroute.yaml
+- middleware.yaml
+- service.yaml

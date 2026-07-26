@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: helm.toolkit.fluxcd.io/v2
 kind: HelmRelease
 metadata:
@@ -64,4 +65,3 @@ spec:
           \ duckduckgo\\n  target: _blank\\n\"\n  services.yaml: ''\n  bookmarks.yaml:\
           \ '[]\n\n    '\n  kubernetes.yaml: 'mode: cluster\n\n    ingress: true\n\
           \n    traefik: true\n\n    '\n  docker.yaml: '{}\n\n    '\n"
-

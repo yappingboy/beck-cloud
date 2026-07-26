@@ -1,6 +1,9 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-  - landing-page.yaml
-  - silex.yaml
-  - secret-landing-directus.yaml
+- configmap.yaml
+- deployment.yaml
+- ingress.yaml
+- job.yaml
+- secret.yaml
+- service.yaml

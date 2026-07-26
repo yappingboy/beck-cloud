@@ -1,0 +1,74 @@
+# Auto-split from cluster files
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: jellyfin
+  namespace: media
+  labels:
+    app: jellyfin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: jellyfin
+  template:
+    metadata:
+      labels:
+        app: jellyfin
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        runAsGroup: 1000
+        supplementalGroups:
+        - 1000
+      containers:
+      - name: jellyfin
+        image: lscr.io/linuxserver/jellyfin:1.11.3
+        resources:
+          limits:
+            cpu: '8'
+            memory: 8Gi
+          requests:
+            cpu: 1
+            memory: 2Gi
+        env:
+        - name: PUID
+          value: '1000'
+        - name: PGID
+          value: '1000'
+        - name: TZ
+          value: America/New_York
+        ports:
+        - containerPort: 8096
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        - name: media-movies
+          mountPath: /data/movies
+        - name: media-shows
+          mountPath: /data/shows
+        - name: media-anime
+          mountPath: /data/anime
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: jellyfin-config
+      - name: media-movies
+        persistentVolumeClaim:
+          claimName: media-movies
+      - name: media-shows
+        persistentVolumeClaim:
+          claimName: media-shows
+      - name: media-anime
+        persistentVolumeClaim:
+          claimName: media-anime

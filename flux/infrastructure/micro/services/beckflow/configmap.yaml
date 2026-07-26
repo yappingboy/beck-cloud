@@ -1,0 +1,10 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beckflow-frontend
+  namespace: micro
+data:
+  index.html: 'EMBEDDED_FRONTEND_PLACEHOLDER
+
+    '

@@ -221,4 +221,31 @@ spec:
   resources:
     requests:
       storage: 5Gi
-
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: spotweb-config
+  namespace: media
+  labels:
+    app: spotweb
+spec:
+  accessModes:
+  - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: swiparr-data
+  namespace: media
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+  storageClassName: local-path

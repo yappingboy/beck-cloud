@@ -1,0 +1,22 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: esphome-strip-prefix
+  namespace: webapps
+spec:
+  stripPrefix:
+    forceSlash: false
+    prefixes:
+    - /esphome
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: mqtt-strip-prefix
+  namespace: webapps
+spec:
+  stripPrefix:
+    forceSlash: false
+    prefixes:
+    - /mqtt

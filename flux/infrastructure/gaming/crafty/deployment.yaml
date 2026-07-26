@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crafty
+  template:
+    metadata:
+      labels:
+        app: crafty
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: crafty
+        image: registry.gitlab.com/crafty-controller/crafty-4:1.5.0
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8443
+          name: https
+          protocol: TCP
+        - containerPort: 8123
+          name: dynmap
+          protocol: TCP
+        - containerPort: 25565
+          name: minecraft
+          protocol: TCP
+        env:
+        - name: TZ
+          value: America/New_York
+        resources:
+          limits:
+            cpu: 3000m
+            memory: 8Gi
+          requests:
+            cpu: 500m
+            memory: 4Gi
+        volumeMounts:
+        - name: config
+          mountPath: /crafty/app/config
+        - name: world
+          mountPath: /crafty/servers
+        - name: logs
+          mountPath: /crafty/logs
+        - name: import
+          mountPath: /crafty/import
+        - name: backup
+          mountPath: /crafty/backups
+        livenessProbe:
+          httpGet:
+            path: /
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 150
+          periodSeconds: 30
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: https
+            scheme: HTTPS
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: crafty-config
+      - name: world
+        persistentVolumeClaim:
+          claimName: crafty-world
+      - name: logs
+        persistentVolumeClaim:
+          claimName: crafty-logs
+      - name: backup
+        persistentVolumeClaim:
+          claimName: crafty-backup
+      - name: import
+        persistentVolumeClaim:
+          claimName: crafty-import

@@ -1,8 +1,4 @@
-# Prometheus ServiceMonitors for micro services
-# Requires Prometheus Operator (kube-prometheus-stack) installed
-# Each service exposes /metrics on port 8080
-
----
+# Auto-split from cluster files
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
@@ -13,22 +9,12 @@ metadata:
 spec:
   selector:
     matchLabels:
-      monitoring: "true"
+      monitoring: 'true'
   namespaceSelector:
     matchNames:
-      - micro
+    - micro
   endpoints:
-    - port: metrics
-      path: /metrics
-      interval: 15s
-      scrapeTimeout: 10s
----
-# Add monitoring label to all micro service definitions
-# Each service's Deployment needs this label:
-#   spec.template.metadata.labels:
-#     monitoring: "true"
-# And Service needs a metrics port:
-#   spec.ports:
-#     - name: metrics
-#       port: 8080
-#       targetPort: 8080
+  - port: metrics
+    path: /metrics
+    interval: 15s
+    scrapeTimeout: 10s

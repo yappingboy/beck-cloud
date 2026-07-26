@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: logout-page
+  namespace: identity
+spec:
+  selector:
+    app: logout-page
+  ports:
+  - port: 80
+    targetPort: 80

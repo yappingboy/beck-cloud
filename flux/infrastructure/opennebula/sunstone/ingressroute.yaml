@@ -1,0 +1,28 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: opennebula
+  namespace: opennebula
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`one.becklab.cloud`) && PathPrefix(`/fireedge/`)
+    kind: Rule
+    middlewares:
+    - name: sso-admin-chain
+      namespace: identity
+    services:
+    - name: opennebula-sunstone
+      port: 2616
+  - match: Host(`one.becklab.cloud`)
+    kind: Rule
+    middlewares:
+    - name: sso-admin-chain
+      namespace: identity
+    services:
+    - name: opennebula-sunstone
+      port: 2616
+  tls:
+    secretName: one-tls

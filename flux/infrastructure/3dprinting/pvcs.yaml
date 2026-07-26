@@ -72,8 +72,18 @@ metadata:
   name: bumpmesh-html
   namespace: 3dprinting
 spec:
-  accessModes:
-  - ReadWriteOnce
+  accessModes: ["ReadWriteOnce"]
   resources:
     requests:
       storage: 200Mi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gridspace-data
+  namespace: 3dprinting
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 2Gi

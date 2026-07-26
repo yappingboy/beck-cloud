@@ -1,0 +1,129 @@
+# Auto-split from cluster files
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: wazuh
+  namespace: security
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: wazuh
+      version: 2.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: wazuh-helm
+        namespace: flux-system
+  timeout: 15m
+  install:
+    remediation:
+      retries: 5
+  upgrade:
+    cleanupOnFail: true
+    remediation:
+      retries: 5
+  values:
+    fullnameOverride: wazuh
+    indexer:
+      enabled: true
+      replicas: 1
+      images:
+        repository: wazuh/wazuh-indexer
+        tag: 4.14.3
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 500m
+          memory: 2Gi
+        limits:
+          cpu: '1'
+          memory: 3Gi
+      storage:
+        size: 50Gi
+      nodeSelector:
+        kubernetes.io/hostname: ip-172-16-0-20
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      config:
+        internalUsers: "---\n_meta:\n  type: \"internalusers\"\n  config_version:\
+          \ 2\nadmin:\n  hash: \"$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO\"\
+          \n  reserved: true\n  backend_roles:\n    - \"admin\"\nkibanaserver:\n \
+          \ hash: \"$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO\"\
+          \n  reserved: true\n"
+    wazuh:
+      replicas: 1
+      images:
+        repository: wazuh/wazuh-manager
+        tag: 4.14.3
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 250m
+          memory: 1Gi
+        limits:
+          cpu: '1'
+          memory: 2Gi
+      storage:
+        size: 10Gi
+      nodeSelector:
+        kubernetes.io/hostname: ip-172-16-0-20
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+      master:
+        additionalVolumes:
+        - name: filebeat-config
+          configMap:
+            name: wazuh-filebeat-config
+        additionalVolumeMounts:
+        - name: filebeat-config
+          readOnly: true
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+      worker:
+        replicas: 2
+        additionalVolumes:
+        - name: filebeat-config
+          configMap:
+            name: wazuh-filebeat-config
+        additionalVolumeMounts:
+        - name: filebeat-config
+          readOnly: true
+          mountPath: /etc/filebeat/filebeat.yml
+          subPath: filebeat.yml
+    dashboard:
+      enabled: true
+      replicas: 1
+      images:
+        repository: wazuh/wazuh-dashboard
+        tag: 4.14.3
+        pullPolicy: IfNotPresent
+      resources:
+        requests:
+          cpu: 250m
+          memory: 512Mi
+        limits:
+          cpu: '1'
+          memory: 1Gi
+      ingress:
+        enabled: true
+        className: traefik
+        host: wazuh.becklab.cloud
+        tls:
+        - hosts:
+          - wazuh.becklab.cloud
+          secretName: wazuh-becklab-cloud-tls
+        annotations:
+          cert-manager.io/cluster-issuer: letsencrypt-prod
+          traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+      nodeSelector:
+        kubernetes.io/hostname: ip-172-16-0-20
+      tolerations:
+      - key: node-role.kubernetes.io/control-plane
+        operator: Exists
+        effect: NoSchedule
+    certificates:
+      enabled: false

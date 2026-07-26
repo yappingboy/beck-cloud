@@ -1,0 +1,15 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: prowlarr
+  namespace: media
+spec:
+  selector:
+    app: prowlarr
+  ports:
+  - name: http
+    port: 9696
+    targetPort: 9696
+    protocol: TCP
+  type: ClusterIP

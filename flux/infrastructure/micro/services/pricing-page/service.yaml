@@ -1,0 +1,12 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: pricing-page
+  namespace: micro
+spec:
+  selector:
+    app: pricing-page
+  ports:
+  - port: 80
+    targetPort: 80

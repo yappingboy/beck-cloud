@@ -1,0 +1,59 @@
+# Auto-split from cluster files
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: prowlarr
+  namespace: media
+  labels:
+    app: prowlarr
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: prowlarr
+  template:
+    metadata:
+      labels:
+        app: prowlarr
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        runAsGroup: 1000
+        supplementalGroups:
+        - 1000
+      containers:
+      - name: prowlarr
+        image: lscr.io/linuxserver/prowlarr:1.29.4
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 256Mi
+        env:
+        - name: PUID
+          value: '1000'
+        - name: PGID
+          value: '1000'
+        - name: TZ
+          value: America/New_York
+        ports:
+        - containerPort: 9696
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: config
+          mountPath: /config
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: prowlarr-config

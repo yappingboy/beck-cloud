@@ -1,0 +1,11 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: opennebula-sunstone
+  namespace: opennebula
+subsets:
+- addresses:
+  - ip: 172.16.0.7
+  ports:
+  - port: 2616

@@ -1,0 +1,22 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: status-page
+  namespace: micro
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`tools.becklab.cloud`) && PathPrefix(`/status`)
+    kind: Rule
+    services:
+    - name: status-page
+      port: 80
+  - match: Host(`status.tools.becklab.cloud`)
+    kind: Rule
+    services:
+    - name: status-page
+      port: 80
+  tls:
+    secretName: tools-becklab-cloud-tls

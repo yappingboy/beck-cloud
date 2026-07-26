@@ -1,0 +1,105 @@
+# Auto-split from cluster files
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: directus
+  namespace: webapps
+  labels:
+    app: directus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: directus
+  template:
+    metadata:
+      labels:
+        app: directus
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: directus
+        image: directus/directus:11
+        resources:
+          requests:
+            cpu: 250m
+            memory: 512Mi
+          limits:
+            cpu: '1'
+            memory: 1Gi
+        ports:
+        - containerPort: 8055
+        env:
+        - name: KEY
+          value: becklab-cms-secret-key
+        - name: SECRET
+          value: becklab-cms-secret
+        - name: ADMIN_EMAIL
+          value: admin@becklab.cloud
+        - name: ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: directus-admin-password
+              key: admin-password
+        - name: DB_CLIENT
+          value: sqlite3
+        - name: DB_FILENAME
+          value: /directus/database/data.db
+        - name: DB_AUTO_MIGRATE
+          value: 'true'
+        - name: PUBLIC_URL
+          value: https://cms.becklab.cloud
+        - name: SERVER_DOMAIN
+          value: cms.becklab.cloud
+        - name: CORS_ENABLED
+          value: 'true'
+        - name: CORS_ORIGIN
+          value: https://silex.becklab.cloud
+        - name: CORS_METHODS
+          value: GET,POST,PATCH,DELETE,OPTIONS
+        - name: CORS_ALLOWED_HEADERS
+          value: Content-Type,Authorization,Accept
+        - name: CORS_CREDENTIALS
+          value: 'true'
+        - name: DIRECTUS_BRAND_COLOR
+          value: '#E8A838'
+        - name: DIRECTUS_BRAND_NAME
+          value: BeckCloud
+        - name: DIRECTUS_BRAND_LOGO
+          value: https://becklab.cloud/logo.svg
+        volumeMounts:
+        - name: data
+          mountPath: /directus/database
+        - name: brand-theme
+          mountPath: /directus/public/brand.css
+          subPath: brand.css
+          readOnly: true
+        - name: brand-theme
+          mountPath: /directus/extensions/admin-ui/package.json
+          subPath: admin-ui-package.json
+          readOnly: true
+        - name: brand-theme
+          mountPath: /directus/extensions/admin-ui/index.js
+          subPath: admin-ui-index.js
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: directus-data
+      - name: brand-theme
+        configMap:
+          name: directus-brand-theme
+          items:
+          - key: brand.css
+            path: brand.css
+          - key: admin-ui-package.json
+            path: admin-ui-package.json
+          - key: admin-ui-index.js
+            path: admin-ui-index.js

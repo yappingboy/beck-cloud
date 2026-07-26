@@ -1,0 +1,17 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-relay
+  namespace: micro
+spec:
+  selector:
+    app: webhook-relay
+  ports:
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 8080
+    protocol: TCP

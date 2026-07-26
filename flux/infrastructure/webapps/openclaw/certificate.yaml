@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -5,7 +6,7 @@ metadata:
   namespace: webapps
 spec:
   dnsNames:
-    - nova.becklab.cloud
+  - nova.becklab.cloud
   issuerRef:
     kind: ClusterIssuer
     name: letsencrypt-prod

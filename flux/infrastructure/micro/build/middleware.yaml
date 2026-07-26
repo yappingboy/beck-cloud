@@ -1,0 +1,165 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: free-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 15
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: starter-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 60
+    burst: 80
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: builder-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 120
+    burst: 150
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: pro-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 300
+    burst: 400
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: auth-header-check
+  namespace: micro
+spec:
+  headers:
+    customRequestHeaders:
+      X-Auth-Required: 'true'
+    customResponseHeaders:
+      X-RateLimit-Policy: free,starter,builder,pro
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-allow
+  namespace: micro
+spec:
+  ipWhiteList:
+    sourceRange:
+    - 10.0.0.0/8
+    - 172.16.0.0/12
+    - 192.168.0.0/16
+    - 127.0.0.1/32
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: hasher-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 10
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: shortener-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 5
+    burst: 5
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: converter-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 20
+    burst: 20
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: cron-jobs-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 2
+    burst: 2
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: dns-monitor-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 10
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: webhook-relay-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 20
+    burst: 20
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: yaml-json-tool-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 20
+    burst: 20
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: qr-generator-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 10
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: image-editor-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 5
+    burst: 5
+# ---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: beckflow-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 10

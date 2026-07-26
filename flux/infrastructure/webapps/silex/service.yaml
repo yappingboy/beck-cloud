@@ -1,0 +1,16 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: silex
+  namespace: webapps
+spec:
+  selector:
+    app: silex
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+  - name: mcp
+    port: 6807
+    targetPort: 6807

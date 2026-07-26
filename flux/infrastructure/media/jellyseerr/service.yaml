@@ -1,0 +1,15 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: jellyseerr
+  namespace: media
+spec:
+  selector:
+    app: jellyseerr
+  ports:
+  - name: http
+    port: 5055
+    targetPort: 5055
+    protocol: TCP
+  type: ClusterIP

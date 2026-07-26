@@ -1,0 +1,22 @@
+# Auto-split from cluster files
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: pricing-page
+  namespace: micro
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`tools.becklab.cloud`) && PathPrefix(`/pricing`)
+    kind: Rule
+    services:
+    - name: pricing-page
+      port: 80
+  - match: Host(`pricing.tools.becklab.cloud`)
+    kind: Rule
+    services:
+    - name: pricing-page
+      port: 80
+  tls:
+    secretName: tools-becklab-cloud-tls

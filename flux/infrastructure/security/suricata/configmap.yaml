@@ -1,0 +1,33 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: suricata-config
+  namespace: security
+data:
+  suricata.yaml: "%YAML 1.1\n---\nvars:\n  address-groups:\n    HOME_NET: \"[10.42.0.0/16,\
+    \ 172.16.0.0/16, 192.168.100.0/24]\"\n    EXTERNAL_NET: \"!$HOME_NET\"\n    HTTP_SERVERS:\
+    \ \"$HOME_NET\"\n    SMTP_SERVERS: \"$HOME_NET\"\n    SQL_SERVERS: \"$HOME_NET\"\
+    \n    DNS_SERVERS: \"$HOME_NET\"\n    TELNET_SERVERS: \"$HOME_NET\"\n    AIM_SERVERS:\
+    \ \"$EXTERNAL_NET\"\n    DC_SERVERS: \"$HOME_NET\"\n    DNP3_SERVER: \"$HOME_NET\"\
+    \n    DNP3_CLIENT: \"$HOME_NET\"\n    MODBUS_CLIENT: \"$HOME_NET\"\n    MODBUS_SERVER:\
+    \ \"$HOME_NET\"\n    ENIP_SERVER: \"$HOME_NET\"\n    ENIP_CLIENT: \"$HOME_NET\"\
+    \n\ndefault-log-dir: /var/log/suricata/\n\nstats:\n  enabled: yes\n  interval:\
+    \ 8\n\noutputs:\n  - eve-log:\n      enabled: yes\n      filetype: regular\n \
+    \     filename: /var/log/suricata/eve.json\n      types:\n        - alert:\n \
+    \           payload: yes\n            payload-printable: yes\n            http-body:\
+    \ yes\n            http-body-printable: yes\n            xff:\n              enabled:\
+    \ no\n          event-type:\n            enabled: yes\n        - dns:\n      \
+    \      enabled: yes\n            pretty-print: yes\n        - tls:\n         \
+    \   enabled: yes\n            extended: yes\n            session: yes\n      \
+    \  - http:\n            enabled: yes\n            extended: yes\n        - files:\n\
+    \            enabled: no\n        - ftp:\n            enabled: yes\n        -\
+    \ smb:\n            enabled: yes\n        - rdp:\n            enabled: yes\n \
+    \       - tls-version:\n            enabled: yes\n\naf-packet:\n  - interface:\
+    \ cilium_host\n    threads: 2\n    cluster-type: cluster_flow\n    cluster-id:\
+    \ 99\n    defrag: yes\n    use-mmap: yes\n    tpacket-v3: yes\n    tsocket-defrag:\
+    \ yes\n\n# Disable features we don't need in IDS mode\ndetect:\n  profile: medium\n\
+    \  sga: auto\n\n# App-layer protocol configs (keep defaults for most)\napp-layer:\n\
+    \  protocols:\n    dns:\n      enabled: yes\n    http:\n      enabled: yes\n \
+    \   tls:\n      enabled: yes\n    ssh:\n      enabled: yes\n    smtp:\n      enabled:\
+    \ yes\n"

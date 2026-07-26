@@ -1,0 +1,14 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-gateway
+  namespace: webapps
+  annotations:
+    service.cilium.io/no-health-check: 'true'
+spec:
+  type: ClusterIP
+  ports:
+  - port: 18789
+    targetPort: 18789
+    protocol: TCP

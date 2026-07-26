@@ -1,0 +1,14 @@
+# Auto-split from cluster files
+apiVersion: v1
+kind: Service
+metadata:
+  name: homebox
+  namespace: media
+spec:
+  selector:
+    app: homebox
+  ports:
+  - name: http
+    port: 7745
+    targetPort: 7745
+    protocol: TCP

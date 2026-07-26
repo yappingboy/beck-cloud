@@ -1,0 +1,123 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: keycloak
+  namespace: identity
+  labels:
+    app: keycloak
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: keycloak
+  template:
+    metadata:
+      labels:
+        app: keycloak
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      initContainers:
+      - name: unpack-theme
+        image: busybox:1.37
+        command:
+        - sh
+        - -c
+        - mkdir -p /opt/keycloak/themes && tar xzf /theme/beckcloud.theme.tar.gz -C
+          /opt/keycloak/themes
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
+        - name: keycloak-theme-volume
+          mountPath: /theme
+        - name: keycloak-themes
+          mountPath: /opt/keycloak/themes
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.0
+        args:
+        - start
+        - --http-relative-path=/
+        - --spi-theme-static-max-age=-1
+        - --spi-theme-reload=true
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+          requests:
+            cpu: 200m
+            memory: 1Gi
+        env:
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://keycloak-postgresql:5432/keycloak
+        - name: KC_DB_USERNAME
+          value: keycloak
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-postgres-password
+              key: password
+        - name: KC_HOSTNAME
+          value: keycloak.becklab.cloud
+        - name: KC_HOSTNAME_STRICT
+          value: 'true'
+        - name: KC_HTTP_ENABLED
+          value: 'true'
+        - name: KC_PROXY_HEADERS
+          value: xforwarded
+        - name: KC_HEALTH_ENABLED
+          value: 'true'
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+          value: admin
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-password
+              key: admin-password
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9000
+          name: health
+        startupProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000
+          failureThreshold: 60
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 9000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        volumeMounts:
+        - name: keycloak-themes
+          mountPath: /opt/keycloak/themes/beckcloud
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: keycloak-theme-volume
+        secret:
+          secretName: beckcloud-keycloak-theme-tar
+      - name: keycloak-themes
+        emptyDir: {}

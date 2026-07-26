@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: logout-page-html
+  namespace: identity
+data:
+  index.html: '<!doctype html>
+
+    <html><head><meta http-equiv="refresh" content="0;url=https://home.becklab.cloud"></head>
+
+    <body>Redirecting...</body></html>
+
+    '
+  logout.html: "<!doctype html>\n<html><head>\n  <title>Logged Out</title>\n  <style>\n\
+    \    body{font-family:system-ui;margin:0;background:#0f172a;color:#e2e8f0;display:flex;align-items:center;justify-content:center;height:100vh;text-align:center}\n\
+    \    a{color:#38bdf8}\n  </style>\n</head><body>\n  <div>\n    <h1>Logged Out</h1>\n\
+    \    <p>You have been signed out of all Becklab services.</p>\n    <br><a href=\"\
+    https://home.becklab.cloud\">Return to Home</a>\n  </div>\n</body></html>\n"

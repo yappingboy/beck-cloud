@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -48,20 +49,3 @@ spec:
           capabilities:
             drop:
             - ALL
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: dns-monitor
-  namespace: micro
-spec:
-  selector:
-    app: dns-monitor
-  ports:
-  - port: 80
-    targetPort: 8080
-    protocol: TCP
-  - name: metrics
-    port: 9090
-    targetPort: 8080
-    protocol: TCP
