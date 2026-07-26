@@ -5,7 +5,7 @@ kind: Kustomization
 resources:
   - configmap.yaml
   - deployment.yaml
-  - service.yuml
+  - service.yaml
   - secret.yaml
   - certificate.yaml
   # secret-mailu.yaml — saved for future Mailu full-stack deployment
