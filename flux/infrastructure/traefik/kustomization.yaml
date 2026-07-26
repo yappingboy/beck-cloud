@@ -4,8 +4,4 @@ kind: Kustomization
 namespace: traefik
 
 resources:
-  - namespace.yaml
-  - helmrelease.yaml
-  - middlewares.yaml
-  - dashboard-ingress.yaml
-  - dashboard-certificate.yaml
+  - traefik

@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -7,15 +8,15 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   entryPoints:
-    - websecure
+  - websecure
   tls:
     secretName: traefik-dashboard-tls
   routes:
-    - match: Host(`traefik.becklab.cloud`)
-      kind: Rule
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
-      services:
-        - name: api@internal
-          kind: TraefikService
+  - match: Host(`traefik.becklab.cloud`)
+    kind: Rule
+    middlewares:
+    - name: sso-admin-chain
+      namespace: identity
+    services:
+    - name: api@internal
+      kind: TraefikService

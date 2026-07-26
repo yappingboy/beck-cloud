@@ -1,3 +1,4 @@
+# Auto-split from cluster files
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -9,4 +10,4 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - traefik.becklab.cloud
+  - traefik.becklab.cloud
