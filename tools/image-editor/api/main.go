@@ -8,7 +8,35 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	ieRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "image_editor", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	ieDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "image_editor", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	ieActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "image_editor", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func ieWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); ieActive.Inc(); defer ieActive.Dec()
+		sw := &ieSW{w, http.StatusOK}; h(sw, r)
+		ieRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		ieDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type ieSW struct{ http.ResponseWriter; c int }
+func (s *ieSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
 
 type saveRequest struct {
 	Data   string `json:"data"`
@@ -76,8 +104,10 @@ func main() {
 		port = "8080"
 	}
 
-	http.HandleFunc("/api/v1/editor/save", saveHandler)
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/editor/save", ieWrap(saveHandler))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("image-editor-api listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, nil))

@@ -1,0 +1,61 @@
+openapi: 3.1.0
+info:
+  title: BeckLab Hash Service
+  version: 1.0.0
+  description: Hash, encode, and decode data. Supports SHA-256, SHA-512, HMAC-SHA256, MD5, Base64, and Hex encoding/decoding.
+servers:
+  - url: https://hash.tools.becklab.cloud
+    description: Production
+paths:
+  /api/v1/hash:
+    post:
+      summary: Hash or encode/decode input data
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [algo, input]
+              properties:
+                algo:
+                  type: string
+                  enum: [sha256, sha512, sha256-hmac, md5, base64_encode, base64_decode, hex_encode, hex_decode]
+                  example: sha256
+                input:
+                  type: string
+                  example: Hello, World!
+                key:
+                  type: string
+                  description: Required for sha256-hmac
+      responses:
+        '200':
+          description: Successful hash/encode/decode
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  result:
+                    type: object
+                    properties:
+                      hash: { type: string }
+                  meta:
+                    type: object
+                    properties:
+                      requestId: { type: string }
+        '400':
+          description: Bad request (missing input, invalid algo, etc.)
+        '405':
+          description: Method not allowed
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: Service healthy }
+  /metrics:
+    get:
+      summary: Prometheus metrics endpoint
+      responses:
+        '200': { description: Prometheus text format metrics }

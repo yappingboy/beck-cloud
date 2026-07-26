@@ -172,7 +172,7 @@ spec:
       - name: monitor-role-check
         namespace: identity
 
-# qBittorrent: SSO admin + (download OR media-view) role
+# qBittorrent: SSO admin + download OR media-view role
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -185,9 +185,7 @@ spec:
         namespace: identity
       - name: keycloak-forwardauth-admin
         namespace: identity
-      - name: download-role-check
-        namespace: identity
-      - name: media-view-role-check
+      - name: qbit-anyrole-check
         namespace: identity
 
 # Directus: SSO admin + cms role
@@ -451,7 +449,7 @@ spec:
       - name: media-view-role-check
         namespace: identity
 
-# Jellyseerr: SSO media + media-view
+# Jellyseerr: SSO media + media-manage role (request management)
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -464,7 +462,7 @@ spec:
         namespace: identity
       - name: keycloak-forwardauth-media
         namespace: identity
-      - name: media-view-role-check
+      - name: media-manage-role-check
         namespace: identity
 
 # Tdarr (media-manage): SSO media + media-manage
@@ -481,4 +479,58 @@ spec:
       - name: keycloak-forwardauth-media
         namespace: identity
       - name: media-manage-role-check
+        namespace: identity
+
+# ── OR-Logic Role Checkers ──────────────────────────────────────
+# These check if ANY of the listed roles is present (OR logic)
+# Used for services where multiple roles grant access
+
+# qBittorrent: accepts download OR media-view
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: qbit-anyrole-check
+  namespace: identity
+spec:
+  plugin:
+    role-enforcer:
+      service: "qbittorrent"
+      roles: "download,media-view"
+      required: false
+      jwksUrl: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/certs"
+      realm: "homelab"
+      clientId: "beckcloud-services"
+      failStatus: 403
+
+# NZBGet: download role
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: nzbget-role-check
+  namespace: identity
+spec:
+  plugin:
+    role-enforcer:
+      service: "nzbget"
+      roles: "download"
+      required: true
+      jwksUrl: "https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/certs"
+      realm: "homelab"
+      clientId: "beckcloud-services"
+      failStatus: 403
+
+# ── NZBGet Chain ────────────────────────────────────────────────
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: nzbget-role-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+      - name: nzbget-role-check
         namespace: identity

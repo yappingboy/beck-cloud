@@ -17,6 +17,9 @@ resources:
   - logout-page.yaml
   - sso-redirect.yaml
   - sso-middlewares.yaml
+  - sso-role-middlewares.yaml
   - email
+  - role-enforcer
+  - audit-sync-cronjob.yaml
 
 

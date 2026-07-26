@@ -2,12 +2,14 @@
 # Each service exposed via Traefik with its own subdomain and TLS cert
 
 ---
-# Manyfold — 3D asset library / model repository
+# Manyfold — 3D asset library / model repository (SSO protected)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: manyfold
   namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
   entryPoints:
     - websecure
@@ -21,12 +23,14 @@ spec:
     secretName: manyfold-tls
 
 ---
-# Spoolman — Filament inventory tracker
+# Spoolman — Filament inventory tracker (SSO protected)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: spoolman
   namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
   entryPoints:
     - websecure
@@ -40,12 +44,14 @@ spec:
     secretName: spoolman-tls
 
 ---
-# OrcaSlicer — Browser-based slicer (HTTPS port)
+# OrcaSlicer — Browser-based slicer (SSO protected)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: orcaslicer
   namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
   entryPoints:
     - websecure
@@ -59,12 +65,14 @@ spec:
     secretName: orcaslicer-tls
 
 ---
-# FDM Monster — Slicing service
+# FDM Monster — Slicing service (SSO protected)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: fdmmonster
   namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
   entryPoints:
     - websecure
@@ -78,7 +86,7 @@ spec:
     secretName: fdmmonster-tls
 
 ---
-# BumpMesh — Mesh repair tool (nginx frontend)
+# BumpMesh — Mesh repair tool (public, no SSO needed)
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:

@@ -14,6 +14,8 @@ spec:
     metadata:
       labels:
         app: beckflow
+        monitoring: "true"
+        monitoring: "true"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -76,5 +78,9 @@ spec:
     app: beckflow
   ports:
     - port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 9090
       targetPort: 8080
       protocol: TCP

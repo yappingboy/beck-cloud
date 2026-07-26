@@ -9,6 +9,9 @@ spec:
   routes:
     - match: Host(`dns.tools.becklab.cloud`)
       kind: Rule
+      middlewares:
+        - name: dns-monitor-role-chain
+          namespace: identity
       services:
         - name: dns-monitor
           port: 80

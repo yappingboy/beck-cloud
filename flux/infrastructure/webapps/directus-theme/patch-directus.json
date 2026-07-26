@@ -1,0 +1,9 @@
+[
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"DIRECTUS_BRAND_COLOR","value":"#E8A838"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"DIRECTUS_BRAND_NAME","value":"BeckCloud"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/env/-","value":{"name":"DIRECTUS_BRAND_LOGO","value":"https://becklab.cloud/logo.svg"}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/public/brand.css","subPath":"brand.css","readOnly":true}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/extensions/admin-ui/package.json","subPath":"admin-ui/package.json","readOnly":true}},
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/extensions/admin-ui/index.js","subPath":"admin-ui/index.js","readOnly":true}},
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"brand-theme","configMap":{"name":"directus-brand-theme","items":[{"key":"brand.css","path":"brand.css"},{"key":"admin-ui/package.json","path":"admin-ui/package.json"},{"key":"admin-ui/index.js","path":"admin-ui/index.js"}]}}}
+]

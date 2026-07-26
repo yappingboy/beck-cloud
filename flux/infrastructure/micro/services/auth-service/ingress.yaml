@@ -1,0 +1,20 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: auth-service
+  namespace: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`auth.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: auth-service-role-chain
+          namespace: identity
+      services:
+        - name: auth-service
+          port: 80
+          sticky: false
+  tls:
+    secretName: tools-becklab-cloud-tls

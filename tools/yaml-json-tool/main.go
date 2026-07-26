@@ -8,7 +8,11 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"gopkg.in/yaml.v3"
 )
 
@@ -187,15 +191,41 @@ func writeJSON(w http.ResponseWriter, code int, body interface{}) {
 	json.NewEncoder(w).Encode(body)
 }
 
+var (
+	yjRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "yaml_json", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	yjDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "yaml_json", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	yjActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "yaml_json", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func yjWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); yjActive.Inc(); defer yjActive.Dec()
+		sw := &yjSW{w, http.StatusOK}; h(sw, r)
+		yjRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		yjDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type yjSW struct{ http.ResponseWriter; c int }
+func (s *yjSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = "8080"
 	}
 
-	http.HandleFunc("/api/v1/fmt", formatHandler)
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/fmt", yjWrap(formatHandler))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("yaml-json-tool listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

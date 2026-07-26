@@ -1,0 +1,90 @@
+openapi: 3.1.0
+info:
+  title: BeckLab URL Shortener
+  version: 1.0.0
+  description: Create, redirect, and track shortened URLs with optional expiration.
+servers:
+  - url: https://short.tools.becklab.cloud
+    description: Production
+paths:
+  /api/v1/links:
+    post:
+      summary: Create a new short URL
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [originalUrl]
+              properties:
+                originalUrl:
+                  type: string
+                  example: https://example.com/very/long/url
+                customCode:
+                  type: string
+                  description: Custom short code (3-20 chars)
+                expiresIn:
+                  type: integer
+                  description: Expiration in seconds (0 = no expiry)
+                  example: 86400
+      responses:
+        '200':
+          description: Short URL created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  result:
+                    type: object
+                    properties:
+                      shortCode: { type: string }
+                      url: { type: string }
+                  meta:
+                    type: object
+                    properties:
+                      requestId: { type: string }
+  /api/v1/links/{code}:
+    get:
+      summary: Get click statistics for a short URL
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '200':
+          description: Click statistics
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  result:
+                    type: object
+                    properties:
+                      shortCode: { type: string }
+                      clicks: { type: integer }
+  /{code}:
+    get:
+      summary: Redirect to original URL (302)
+      parameters:
+        - name: code
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        '302': { description: Redirect to original URL }
+        '404': { description: Short code not found or expired }
+  /healthz:
+    get:
+      summary: Health check
+      responses:
+        '200': { description: Service healthy }
+  /metrics:
+    get:
+      summary: Prometheus metrics
+      responses:
+        '200': { description: Prometheus metrics }

@@ -1,18 +1,46 @@
 package main
 
 import (
+	"crypto/hmac"
 	"crypto/md5"
 	"crypto/sha256"
 	"crypto/sha512"
 	"encoding/base64"
 	"encoding/hex"
+	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
+)
+
+var (
+	requestTotal = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro",
+		Subsystem: "hasher",
+		Name:      "http_requests_total",
+		Help:      "Total HTTP requests by method and status.",
+	}, []string{"method", "status"})
+	requestDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro",
+		Subsystem: "hasher",
+		Name:      "http_request_duration_seconds",
+		Help:      "HTTP request duration in seconds.",
+		Buckets:   []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	activeRequests = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro",
+		Subsystem: "hasher",
+		Name:      "http_active_requests",
+		Help:      "Currently active HTTP requests.",
+	})
 )
 
 type request struct {
@@ -30,6 +58,32 @@ type response struct {
 
 type meta struct {
 	RequestID string `json:"requestId"`
+}
+
+func metricsMiddleware(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		start := time.Now()
+		activeRequests.Inc()
+		defer activeRequests.Dec()
+
+		// Wrap ResponseWriter to capture status code
+		wrapped := &statusCapture{ResponseWriter: w, status: http.StatusOK}
+		next(wrapped, r)
+
+		duration := time.Since(start).Seconds()
+		requestTotal.WithLabelValues(r.Method, fmt.Sprintf("%d", wrapped.status)).Inc()
+		requestDuration.WithLabelValues(r.Method, r.URL.Path).Observe(duration)
+	}
+}
+
+type statusCapture struct {
+	http.ResponseWriter
+	status int
+}
+
+func (s *statusCapture) WriteHeader(code int) {
+	s.status = code
+	s.ResponseWriter.WriteHeader(code)
 }
 
 func hashHandler(w http.ResponseWriter, r *http.Request) {
@@ -113,8 +167,12 @@ func main() {
 	if port == "" {
 		port = "8080"
 	}
+
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/hash", metricsMiddleware(hashHandler))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
+
 	log.Printf("hasher listening on :%s", port)
-	http.HandleFunc("/api/v1/hash", hashHandler)
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
-	http.ListenAndServe(":"+port, nil)
+	http.ListenAndServe(":"+port, mux)
 }

@@ -1,0 +1,76 @@
+# Tiered rate limiting middleware for micro services
+# Free tier: 10 req/min, Starter: 60 req/min, Builder: 120 req/min, Pro: 300 req/min
+# Applied per API key / JWT bearer token via auth-service validation
+# These are the baseline free-tier limits; paid tiers are enforced by auth-service
+
+---
+# Free tier default rate limits (applied when no API key present)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: free-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 15
+---
+# Starter tier rate limits ($3/mo) — 60 req/min
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: starter-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 60
+    burst: 80
+---
+# Builder tier rate limits ($7/mo) — 120 req/min
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: builder-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 120
+    burst: 150
+---
+# Pro tier rate limits ($12/mo) — 300 req/min
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: pro-tier-ratelimit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 300
+    burst: 400
+---
+# Auth header middleware — adds X-Auth-Required header for services to check
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: auth-header-check
+  namespace: micro
+spec:
+  headers:
+    customRequestHeaders:
+      X-Auth-Required: "true"
+    customResponseHeaders:
+      X-RateLimit-Policy: "free,starter,builder,pro"
+---
+# IP whitelist middleware for internal services (health checks, metrics)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: internal-allow
+  namespace: micro
+spec:
+  ipWhiteList:
+    sourceRange:
+      - 10.0.0.0/8
+      - 172.16.0.0/12
+      - 192.168.0.0/16
+      - 127.0.0.1/32

@@ -10,7 +10,35 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	dnsRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "dns_monitor", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	dnsDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "dns_monitor", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	dnsActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "dns_monitor", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func dnsWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); dnsActive.Inc(); defer dnsActive.Dec()
+		sw := &dnsSW{w, http.StatusOK}; h(sw, r)
+		dnsRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		dnsDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type dnsSW struct{ http.ResponseWriter; c int }
+func (s *dnsSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
 
 type dnsRequest struct {
 	Domain   string `json:"domain"`
@@ -217,10 +245,11 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/dns", dnsLookupHandler)
-	mux.HandleFunc("/api/v1/healthcheck", healthCheckHandler)
-	mux.HandleFunc("/api/v1/tls", tlsCheckHandler)
+	mux.HandleFunc("/api/v1/dns", dnsWrap(dnsLookupHandler))
+	mux.HandleFunc("/api/v1/healthcheck", dnsWrap(healthCheckHandler))
+	mux.HandleFunc("/api/v1/tls", dnsWrap(tlsCheckHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("dns-monitor listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

@@ -86,6 +86,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-jellyfin-role-chain@kubernetescrd
 spec:
   tls:
     - hosts:

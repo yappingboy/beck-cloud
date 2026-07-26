@@ -9,6 +9,9 @@ spec:
   routes:
     - match: Host(`cron.tools.becklab.cloud`)
       kind: Rule
+      middlewares:
+        - name: cron-jobs-role-chain
+          namespace: identity
       services:
         - name: cron-jobs
           port: 80

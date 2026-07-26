@@ -77,13 +77,41 @@ spec:
               value: "Content-Type,Authorization,Accept"
             - name: CORS_CREDENTIALS
               value: "true"
+            - name: DIRECTUS_BRAND_COLOR
+              value: "#E8A838"
+            - name: DIRECTUS_BRAND_NAME
+              value: "BeckCloud"
+            - name: DIRECTUS_BRAND_LOGO
+              value: "https://becklab.cloud/logo.svg"
           volumeMounts:
             - name: data
               mountPath: /directus/database
+            - name: brand-theme
+              mountPath: /directus/public/brand.css
+              subPath: brand.css
+              readOnly: true
+            - name: brand-theme
+              mountPath: /directus/extensions/admin-ui/package.json
+              subPath: admin-ui-package.json
+              readOnly: true
+            - name: brand-theme
+              mountPath: /directus/extensions/admin-ui/index.js
+              subPath: admin-ui-index.js
+              readOnly: true
       volumes:
         - name: data
           persistentVolumeClaim:
             claimName: directus-data
+        - name: brand-theme
+          configMap:
+            name: directus-brand-theme
+            items:
+              - key: brand.css
+                path: brand.css
+              - key: admin-ui-package.json
+                path: admin-ui-package.json
+              - key: admin-ui-index.js
+                path: admin-ui-index.js
 ---
 apiVersion: v1
 kind: Service

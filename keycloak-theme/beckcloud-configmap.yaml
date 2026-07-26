@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: beckcloud-keycloak-theme-files
+  namespace: identity
+  labels:
+    app: keycloak
+    theme: beckcloud
+# All theme files stored as individual keys.
+# Paths use / separators — Keycloak handles this when mounted as subPath entries.
+data:
+  theme.properties: |
+    parent=base
+    templates= freemarker
+    cacheEnabled=false

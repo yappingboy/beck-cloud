@@ -73,6 +73,7 @@ spec:
   clusterIP: None
 ---
 # Keycloak — official quay.io image (no Docker Hub rate limits)
+# Theme mounted via ConfigMap for BeckCloud login branding
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -90,10 +91,23 @@ spec:
       labels:
         app: keycloak
     spec:
+      initContainers:
+        - name: unpack-theme
+          image: busybox:1.37
+          command: ["sh", "-c", "mkdir -p /opt/keycloak/themes && tar xzf /theme/beckcloud.theme.tar.gz -C /opt/keycloak/themes"]
+          resources:
+            limits:
+              cpu: "100m"
+              memory: "64Mi"
+          volumeMounts:
+            - name: keycloak-theme-volume
+              mountPath: /theme
+            - name: keycloak-themes
+              mountPath: /opt/keycloak/themes
       containers:
         - name: keycloak
           image: quay.io/keycloak/keycloak:26.0
-          args: ["start"]
+          args: ["start", "--http-relative-path=/", "--spi-theme-static-max-age=-1", "--spi-theme-reload=true"]
           resources:
             limits:
               cpu: "2"
@@ -133,6 +147,8 @@ spec:
           ports:
             - containerPort: 8080
               name: http
+            - containerPort: 9000
+              name: health
           startupProbe:
             httpGet:
               path: /health/ready
@@ -151,6 +167,16 @@ spec:
               port: 9000
             initialDelaySeconds: 120
             periodSeconds: 30
+          volumeMounts:
+            - name: keycloak-themes
+              mountPath: /opt/keycloak/themes/beckcloud
+              readOnly: true
+      volumes:
+        - name: keycloak-theme-volume
+          secret:
+            secretName: beckcloud-keycloak-theme-tar
+        - name: keycloak-themes
+          emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -173,7 +199,7 @@ metadata:
   namespace: identity
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+    cert-manager.io.cluster-issuer: letsencrypt-prod
 
 spec:
   tls:

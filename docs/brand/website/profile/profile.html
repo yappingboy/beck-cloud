@@ -1,0 +1,2036 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#0F1729">
+  <title>Profile — BeckCloud</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* ============================================================
+       BeckCloud Profile Page — Stylesheet
+       Dark-mode-first. Brand: Ember Gold + Violet Haze + Coral Pulse.
+       ============================================================ */
+
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    :root {
+      --bg-primary: #0F1729;
+      --bg-secondary: #1E293B;
+      --bg-tertiary: #283548;
+      --surface-card: #1E293B;
+      --surface-hover: #334155;
+      --border-default: #334155;
+      --border-subtle: #283548;
+      --border-focus: #E8A838;
+      --text-primary: #E2E8F0;
+      --text-secondary: #94A3B8;
+      --text-tertiary: #64748B;
+      --text-inverse: #0F1729;
+      --brand-primary: #E8A838;
+      --brand-secondary: #7C5CFC;
+      --brand-accent: #FF6B4A;
+      --status-success: #4ADE80;
+      --status-warning: #FBBF24;
+      --status-error: #EF4444;
+      --status-info: #60A5FA;
+      --gradient-brand: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%);
+      --gradient-glow: radial-gradient(ellipse at center, rgba(232,168,56,0.10) 0%, transparent 70%);
+      --shadow-card: 0 2px 8px rgba(0,0,0,0.3);
+      --shadow-glow: 0 0 60px rgba(232,168,56,0.06);
+      --font-heading: "JetBrains Mono", Consolas, "Courier New", monospace;
+      --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      font-family: var(--font-body);
+      font-size: 16px;
+      line-height: 1.6;
+      color: var(--text-primary);
+      background: var(--bg-primary);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--brand-secondary); text-decoration: none; transition: color 0.2s ease; }
+    a:hover { color: var(--brand-primary); }
+    a:focus-visible, button:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 2px; }
+
+    ::selection { background: var(--brand-primary); color: var(--text-inverse); }
+
+    h1, h2, h3, h4, h5 {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      line-height: 1.2;
+      color: var(--text-primary);
+    }
+
+    /* ============================================================
+       LAYOUT
+       ============================================================ */
+    .page-layout {
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* ---- Sidebar ---- */
+    .sidebar {
+      width: 260px;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border-right: 1px solid var(--border-subtle);
+      display: flex;
+      flex-direction: column;
+      position: sticky;
+      top: 0;
+      height: 100vh;
+      overflow-y: auto;
+    }
+
+    .sidebar-brand {
+      display: flex;
+      align-items: center;
+      gap: 0.625rem;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      text-decoration: none;
+      color: var(--brand-primary);
+    }
+
+    .sidebar-brand svg { width: 28px; height: 28px; flex-shrink: 0; }
+    .sidebar-brand .wordmark {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.9375rem;
+      letter-spacing: -0.5px;
+    }
+
+    .sidebar-section-label {
+      font-family: var(--font-heading);
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-tertiary);
+      padding: 1.25rem 1.5rem 0.5rem;
+    }
+
+    .sidebar-nav { list-style: none; padding: 0; margin: 0; }
+
+    .sidebar-nav li a {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.625rem 1.5rem;
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      border-left: 2px solid transparent;
+      transition: all 0.2s ease;
+    }
+
+    .sidebar-nav li a:hover {
+      color: var(--text-primary);
+      background: var(--surface-hover);
+    }
+
+    .sidebar-nav li a.active {
+      color: var(--brand-primary);
+      border-left-color: var(--brand-primary);
+      background: rgba(232, 168, 56, 0.05);
+    }
+
+    .sidebar-nav li a svg {
+      width: 18px;
+      height: 18px;
+      flex-shrink: 0;
+      opacity: 0.7;
+    }
+
+    .sidebar-nav li a.active svg { opacity: 1; }
+
+    .sidebar-profile-mini {
+      margin-top: auto;
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .mini-avatar {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 0.8125rem;
+      font-weight: 700;
+      color: var(--text-inverse);
+      flex-shrink: 0;
+    }
+
+    .mini-info { min-width: 0; }
+
+    .mini-name {
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .mini-email {
+      font-size: 0.6875rem;
+      color: var(--text-tertiary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .sidebar-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .logout-btn {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      width: 100%;
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0.5rem 0;
+      transition: color 0.2s ease;
+    }
+
+    .logout-btn:hover { color: var(--status-error); }
+    .logout-btn svg { width: 16px; height: 16px; }
+
+    /* ---- Main content ---- */
+    .main-content {
+      flex: 1;
+      min-width: 0;
+      padding: 2rem;
+      max-width: 900px;
+    }
+
+    /* ============================================================
+       SECTION: Profile
+       ============================================================ */
+    .page-header {
+      margin-bottom: 2rem;
+    }
+
+    .page-header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.25rem;
+    }
+
+    .page-header p {
+      color: var(--text-secondary);
+      font-size: 0.9375rem;
+    }
+
+    .card {
+      background: var(--surface-card);
+      border: 1px solid var(--border-default);
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+      overflow: hidden;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+    }
+
+    .card-header h2 {
+      font-size: 1.0625rem;
+      font-weight: 600;
+    }
+
+    .card-header .card-subtitle {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+    }
+
+    .card-body { padding: 1.5rem; }
+
+    /* Avatar section */
+    .avatar-section {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+      padding-bottom: 1.5rem;
+      border-bottom: 1px solid var(--border-subtle);
+      margin-bottom: 1.5rem;
+    }
+
+    .avatar-display {
+      position: relative;
+      flex-shrink: 0;
+    }
+
+    .avatar-large {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: var(--gradient-brand);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: var(--font-heading);
+      font-size: 1.75rem;
+      font-weight: 700;
+      color: var(--text-inverse);
+    }
+
+    .avatar-edit-btn {
+      position: absolute;
+      bottom: 0;
+      right: 0;
+      width: 28px;
+      height: 28px;
+      border-radius: 50%;
+      background: var(--bg-secondary);
+      border: 2px solid var(--border-default);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+      color: var(--text-secondary);
+    }
+
+    .avatar-edit-btn:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+      background: rgba(232, 168, 56, 0.05);
+    }
+
+    .avatar-edit-btn svg { width: 14px; height: 14px; }
+
+    .avatar-actions h3 {
+      font-size: 0.9375rem;
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+    }
+
+    .avatar-actions p {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      margin-bottom: 0.75rem;
+    }
+
+    .btn-sm {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.375rem 0.875rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-default);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-sm:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+    }
+
+    .btn-sm.btn-primary-sm {
+      background: var(--gradient-brand);
+      border: none;
+      color: var(--text-inverse);
+    }
+
+    .btn-sm.btn-primary-sm:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(232, 168, 56, 0.2);
+    }
+
+    .btn-sm.btn-danger {
+      color: var(--status-error);
+      border-color: rgba(239, 68, 68, 0.3);
+    }
+
+    .btn-sm.btn-danger:hover {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: var(--status-error);
+    }
+
+    /* Form fields */
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .form-field { margin-bottom: 1rem; }
+    .form-field.full { grid-column: 1 / -1; }
+
+    .form-field label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 0.375rem;
+    }
+
+    .form-field input[type="text"],
+    .form-field input[type="email"],
+    .form-field input[type="password"],
+    .form-field input[type="url"],
+    .form-field textarea,
+    .form-field select {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      color: var(--text-primary);
+      font-family: var(--font-body);
+      font-size: 0.9375rem;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .form-field input:focus,
+    .form-field textarea:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: var(--border-focus);
+      box-shadow: 0 0 0 3px rgba(232, 168, 56, 0.15);
+    }
+
+    .form-field input::placeholder,
+    .form-field textarea::placeholder { color: var(--text-tertiary); }
+
+    .form-field textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-field select {
+      appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg width='12' height='12' viewBox='0 0 12 12' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M3 4.5L6 7.5L9 4.5' stroke='%2394A3B8' stroke-width='1.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 0.875rem center;
+      padding-right: 2.5rem;
+    }
+
+    .form-field-hint {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      margin-top: 0.375rem;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 0.75rem;
+      margin-top: 1.5rem;
+      padding-top: 1.5rem;
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .btn {
+      font-family: var(--font-body);
+      font-weight: 600;
+      font-size: 0.875rem;
+      padding: 0.625rem 1.5rem;
+      border-radius: 8px;
+      border: none;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-primary {
+      background: var(--gradient-brand);
+      color: var(--text-inverse);
+    }
+
+    .btn-primary:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 16px rgba(232, 168, 56, 0.25);
+    }
+
+    .btn-secondary {
+      background: transparent;
+      border: 1px solid var(--border-default);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+    }
+
+    /* ============================================================
+       SECTION: Password
+       ============================================================ */
+    .password-strength {
+      display: flex;
+      gap: 4px;
+      margin-top: 0.5rem;
+    }
+
+    .strength-bar {
+      flex: 1;
+      height: 3px;
+      border-radius: 2px;
+      background: var(--border-default);
+      transition: background 0.3s ease;
+    }
+
+    .strength-bar.active-weak { background: var(--status-error); }
+    .strength-bar.active-fair { background: var(--status-warning); }
+    .strength-bar.active-good { background: var(--status-info); }
+    .strength-bar.active-strong { background: var(--status-success); }
+
+    .strength-label {
+      font-size: 0.75rem;
+      margin-top: 0.25rem;
+      font-weight: 500;
+    }
+
+    .strength-label.weak { color: var(--status-error); }
+    .strength-label.fair { color: var(--status-warning); }
+    .strength-label.good { color: var(--status-info); }
+    .strength-label.strong { color: var(--status-success); }
+
+    /* ============================================================
+       SECTION: Groups
+       ============================================================ */
+    .group-list { list-style: none; }
+
+    .group-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .group-item:hover {
+      border-color: var(--border-subtle);
+      background: var(--bg-secondary);
+    }
+
+    .group-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .group-icon.admin { background: rgba(232, 168, 56, 0.12); color: var(--brand-primary); }
+    .group-icon.media { background: rgba(124, 92, 252, 0.12); color: var(--brand-secondary); }
+    .group-icon.dev { background: rgba(96, 165, 250, 0.12); color: var(--status-info); }
+    .group-icon.reporting { background: rgba(251, 191, 36, 0.12); color: var(--status-warning); }
+
+    .group-icon svg { width: 20px; height: 20px; }
+
+    .group-info { flex: 1; min-width: 0; }
+
+    .group-name {
+      font-family: var(--font-heading);
+      font-size: 0.9375rem;
+      font-weight: 600;
+      color: var(--text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .group-desc {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+    }
+
+    .group-badge {
+      font-family: var(--font-heading);
+      font-size: 0.6875rem;
+      font-weight: 600;
+      padding: 0.25rem 0.625rem;
+      border-radius: 100px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      flex-shrink: 0;
+    }
+
+    .badge-active {
+      background: rgba(74, 222, 128, 0.12);
+      color: var(--status-success);
+      border: 1px solid rgba(74, 222, 128, 0.25);
+    }
+
+    .badge-pending {
+      background: rgba(251, 191, 36, 0.12);
+      color: var(--status-warning);
+      border: 1px solid rgba(251, 191, 36, 0.25);
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 2rem 1rem;
+      color: var(--text-tertiary);
+    }
+
+    .empty-state svg {
+      width: 48px;
+      height: 48px;
+      margin-bottom: 1rem;
+      opacity: 0.4;
+    }
+
+    .empty-state p { font-size: 0.9375rem; margin-bottom: 0.25rem; }
+    .empty-state small { font-size: 0.8125rem; }
+
+    /* ============================================================
+       SECTION: Sessions
+       ============================================================ */
+    .session-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.2s ease;
+    }
+
+    .session-item:last-child { border-bottom: none; }
+    .session-item:hover { background: rgba(255,255,255,0.01); }
+
+    .session-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--text-secondary);
+    }
+
+    .session-icon svg { width: 18px; height: 18px; }
+
+    .session-icon.current {
+      border-color: var(--status-success);
+      color: var(--status-success);
+      background: rgba(74, 222, 128, 0.06);
+    }
+
+    .session-info { flex: 1; min-width: 0; }
+
+    .session-device {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-primary);
+    }
+
+    .session-meta {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      display: flex;
+      gap: 1rem;
+      margin-top: 0.125rem;
+    }
+
+    .session-meta span { display: flex; align-items: center; gap: 0.25rem; }
+    .session-meta svg { width: 12px; height: 12px; opacity: 0.5; }
+
+    .session-badge {
+      font-family: var(--font-heading);
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      padding: 0.25rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .session-badge.current {
+      background: rgba(74, 222, 128, 0.12);
+      color: var(--status-success);
+    }
+
+    .btn-revoke {
+      font-family: var(--font-body);
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: none;
+      border: 1px solid var(--border-default);
+      border-radius: 6px;
+      padding: 0.375rem 0.75rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .btn-revoke:hover {
+      color: var(--status-error);
+      border-color: var(--status-error);
+      background: rgba(239, 68, 68, 0.05);
+    }
+
+    /* ============================================================
+       SECTION: Ticket History
+       ============================================================ */
+    .ticket-list { list-style: none; }
+
+    .ticket-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border-subtle);
+      transition: background 0.2s ease;
+    }
+
+    .ticket-item:last-child { border-bottom: none; }
+    .ticket-item:hover { background: rgba(255,255,255,0.01); }
+
+    .ticket-status-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      margin-top: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .ticket-status-dot.open { background: var(--status-warning); box-shadow: 0 0 0 3px rgba(251,191,36,0.2); }
+    .ticket-status-dot.resolved { background: var(--status-success); }
+    .ticket-status-dot.closed { background: var(--text-tertiary); }
+
+    .ticket-info { flex: 1; min-width: 0; }
+
+    .ticket-title {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.25rem;
+    }
+
+    .ticket-desc {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+      margin-bottom: 0.375rem;
+    }
+
+    .ticket-meta {
+      font-size: 0.75rem;
+      color: var(--text-tertiary);
+      display: flex;
+      gap: 1rem;
+    }
+
+    .ticket-tag {
+      font-family: var(--font-heading);
+      font-size: 0.625rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.125rem 0.5rem;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+
+    .tag-bug { background: rgba(239,68,68,0.12); color: var(--status-error); }
+    .tag-feature { background: rgba(124,92,252,0.12); color: var(--brand-secondary); }
+    .tag-service { background: rgba(96,165,250,0.12); color: var(--status-info); }
+    .tag-support { background: rgba(251,191,36,0.12); color: var(--status-warning); }
+
+    /* ============================================================
+       SECTION: Account Linking
+       ============================================================ */
+    .link-item {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 1rem 1.25rem;
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      margin-bottom: 0.75rem;
+      transition: border-color 0.2s ease;
+    }
+
+    .link-item:last-child { margin-bottom: 0; }
+    .link-item:hover { border-color: var(--border-subtle); }
+
+    .link-icon {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+    }
+
+    .link-icon svg { width: 22px; height: 22px; }
+
+    .link-icon.connected {
+      border-color: rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.06);
+      color: var(--status-success);
+    }
+
+    .link-icon.disconnected {
+      color: var(--text-tertiary);
+    }
+
+    .link-info { flex: 1; min-width: 0; }
+
+    .link-name {
+      font-size: 0.9375rem;
+      font-weight: 500;
+      color: var(--text-primary);
+      margin-bottom: 0.125rem;
+    }
+
+    .link-desc {
+      font-size: 0.8125rem;
+      color: var(--text-tertiary);
+    }
+
+    .link-action { flex-shrink: 0; }
+
+    .btn-connect {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid var(--border-default);
+      background: transparent;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+
+    .btn-connect:hover {
+      border-color: var(--brand-primary);
+      color: var(--brand-primary);
+    }
+
+    .btn-connected {
+      font-family: var(--font-body);
+      font-size: 0.8125rem;
+      font-weight: 500;
+      padding: 0.5rem 1rem;
+      border-radius: 6px;
+      border: 1px solid rgba(74, 222, 128, 0.3);
+      background: rgba(74, 222, 128, 0.08);
+      color: var(--status-success);
+      cursor: default;
+    }
+
+    /* ============================================================
+       SECTION: Request Groups
+       ============================================================ */
+    .request-form-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 0.75rem;
+    }
+
+    .request-item {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+      padding: 0.875rem 1rem;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border-default);
+      border-radius: 8px;
+      cursor: pointer;
+      transition: border-color 0.2s ease, background 0.2s ease;
+    }
+
+    .request-item:hover {
+      border-color: var(--border-subtle);
+      background: var(--bg-tertiary);
+    }
+
+    .request-item input[type="checkbox"] {
+      width: 18px;
+      height: 18px;
+      accent-color: var(--brand-primary);
+      cursor: pointer;
+      margin-top: 1px;
+      flex-shrink: 0;
+    }
+
+    .request-item label {
+      cursor: pointer;
+      font-size: 0.875rem;
+      color: var(--text-secondary);
+      line-height: 1.5;
+    }
+
+    .request-item label strong {
+      color: var(--text-primary);
+      display: block;
+      font-size: 0.875rem;
+    }
+
+    /* ============================================================
+       Tabs
+       ============================================================ */
+    .tab-bar {
+      display: flex;
+      gap: 0;
+      border-bottom: 1px solid var(--border-default);
+      margin-bottom: 1.5rem;
+      overflow-x: auto;
+    }
+
+    .tab-btn {
+      font-family: var(--font-body);
+      font-size: 0.875rem;
+      font-weight: 500;
+      color: var(--text-tertiary);
+      background: none;
+      border: none;
+      border-bottom: 2px solid transparent;
+      padding: 0.75rem 1rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .tab-btn:hover { color: var(--text-secondary); }
+
+    .tab-btn.active {
+      color: var(--brand-primary);
+      border-bottom-color: var(--brand-primary);
+    }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    /* ============================================================
+       Toast
+       ============================================================ */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.875rem 1.25rem;
+      background: var(--surface-card);
+      border: 1px solid var(--border-default);
+      border-radius: 10px;
+      box-shadow: var(--shadow-card);
+      font-size: 0.875rem;
+      color: var(--text-primary);
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success { border-left: 3px solid var(--status-success); }
+    .toast.error { border-left: 3px solid var(--status-error); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    @keyframes slideOut {
+      from { transform: translateX(0); opacity: 1; }
+      to { transform: translateX(100%); opacity: 0; }
+    }
+
+    /* ============================================================
+       Mobile sidebar toggle
+       ============================================================ */
+    .mobile-header {
+      display: none;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0.875rem 1rem;
+      background: var(--bg-secondary);
+      border-bottom: 1px solid var(--border-subtle);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .mobile-header .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      text-decoration: none;
+      color: var(--brand-primary);
+    }
+
+    .mobile-header .brand svg { width: 24px; height: 24px; }
+
+    .mobile-header .brand span {
+      font-family: var(--font-heading);
+      font-weight: 700;
+      font-size: 0.9375rem;
+    }
+
+    .menu-toggle {
+      background: none;
+      border: none;
+      color: var(--text-secondary);
+      cursor: pointer;
+      padding: 0.25rem;
+    }
+
+    .menu-toggle svg { width: 24px; height: 24px; }
+
+    .sidebar-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.5);
+      z-index: 40;
+    }
+
+    /* ============================================================
+       Responsive
+       ============================================================ */
+    @media (max-width: 900px) {
+      .page-layout { flex-direction: column; }
+
+      .sidebar {
+        position: fixed;
+        top: 0;
+        left: 0;
+        bottom: 0;
+        width: 280px;
+        z-index: 50;
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      .sidebar.open { transform: translateX(0); }
+      .sidebar-overlay.open { display: block; }
+
+      .mobile-header { display: flex; }
+
+      .main-content {
+        padding: 1.25rem;
+        max-width: none;
+      }
+
+      .form-row { grid-template-columns: 1fr; }
+
+      .session-meta { flex-direction: column; gap: 0.25rem; }
+      .session-item { flex-wrap: wrap; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Mobile header -->
+  <div class="mobile-header">
+    <a href="/" class="brand">
+      <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+        <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z" fill="none" stroke="currentColor" stroke-width="20"/>
+        <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130 C95,130 88,120 85,105 C82,90 92,75 100,65 Z" fill="currentColor"/>
+      </svg>
+      <span>BeckCloud</span>
+    </a>
+    <button class="menu-toggle" id="menu-toggle" aria-label="Open navigation">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+        <line x1="3" y1="6" x2="21" y2="6"/>
+        <line x1="3" y1="12" x2="21" y2="12"/>
+        <line x1="3" y1="18" x2="21" y2="18"/>
+      </svg>
+    </button>
+  </div>
+
+  <div class="page-layout">
+
+    <!-- ========== SIDEBAR ========== -->
+    <aside class="sidebar" id="sidebar">
+      <a href="/" class="sidebar-brand">
+        <svg viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" fill="currentColor">
+          <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z" fill="none" stroke="currentColor" stroke-width="20"/>
+          <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130 C95,130 88,120 85,105 C82,90 92,75 100,65 Z" fill="currentColor"/>
+        </svg>
+        <span class="wordmark">Beck<span class="gradient-text" style="background:var(--gradient-brand);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent;">Cloud</span></span>
+      </a>
+
+      <div class="sidebar-section-label">Profile</div>
+      <ul class="sidebar-nav">
+        <li><a href="#tab-profile" class="active" data-tab="tab-profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Profile Info
+        </a></li>
+        <li><a href="#tab-password" data-tab="tab-password">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Password
+        </a></li>
+        <li><a href="#tab-groups" data-tab="tab-groups">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+          Groups
+        </a></li>
+        <li><a href="#tab-sessions" data-tab="tab-sessions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Active Sessions
+        </a></li>
+        <li><a href="#tab-tickets" data-tab="tab-tickets">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+          Trouble Tickets
+        </a></li>
+      </ul>
+
+      <div class="sidebar-section-label">Integrations</div>
+      <ul class="sidebar-nav">
+        <li><a href="#tab-links" data-tab="tab-links">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          Account Links
+        </a></li>
+        <li><a href="#tab-request" data-tab="tab-request">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          Request Access
+        </a></li>
+      </ul>
+
+      <div class="sidebar-profile-mini">
+        <div class="mini-avatar" id="mini-avatar">SB</div>
+        <div class="mini-info">
+          <div class="mini-name">Stephen Beck</div>
+          <div class="mini-email">stephen@beckcloud.cloud</div>
+        </div>
+      </div>
+
+      <div class="sidebar-footer">
+        <button class="logout-btn">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
+          Sign out
+        </button>
+      </div>
+    </aside>
+
+    <div class="sidebar-overlay" id="sidebar-overlay"></div>
+
+    <!-- ========== MAIN ========== -->
+    <main class="main-content">
+
+      <!-- Tab bar (mobile-friendly) -->
+      <div class="tab-bar" role="tablist">
+        <button class="tab-btn active" data-tab="tab-profile" role="tab" aria-selected="true">Profile</button>
+        <button class="tab-btn" data-tab="tab-password" role="tab" aria-selected="false">Password</button>
+        <button class="tab-btn" data-tab="tab-groups" role="tab" aria-selected="false">Groups</button>
+        <button class="tab-btn" data-tab="tab-sessions" role="tab" aria-selected="false">Sessions</button>
+        <button class="tab-btn" data-tab="tab-tickets" role="tab" aria-selected="false">Tickets</button>
+        <button class="tab-btn" data-tab="tab-links" role="tab" aria-selected="false">Links</button>
+        <button class="tab-btn" data-tab="tab-request" role="tab" aria-selected="false">Request</button>
+      </div>
+
+      <!-- =============================================
+           TAB: Profile Info
+           ============================================= -->
+      <div class="tab-panel active" id="tab-profile">
+        <div class="page-header">
+          <h1>Profile Information</h1>
+          <p>Manage your name, email, and avatar.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Avatar</h2>
+              <span class="card-subtitle">This is how you'll appear across all services</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="avatar-section">
+              <div class="avatar-display">
+                <div class="avatar-large" id="avatar-display">SB</div>
+                <button class="avatar-edit-btn" id="avatar-upload-btn" aria-label="Change avatar">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="12" r="3"/></svg>
+                </button>
+                <input type="file" id="avatar-input" accept="image/*" style="display:none">
+              </div>
+              <div class="avatar-actions">
+                <h3>Profile Picture</h3>
+                <p>JPG, PNG, or GIF. Max 2MB. We'll show your initials if no image is uploaded.</p>
+                <button class="btn-sm btn-primary-sm" id="avatar-browse-btn">Choose File</button>
+                <button class="btn-sm btn-danger" id="avatar-remove-btn" style="margin-left:0.5rem;">Remove</button>
+              </div>
+            </div>
+
+            <form id="profile-form" onsubmit="return false;">
+              <div class="form-row">
+                <div class="form-field">
+                  <label for="profile-first-name">First name</label>
+                  <input type="text" id="profile-first-name" value="Stephen" placeholder="First name">
+                </div>
+                <div class="form-field">
+                  <label for="profile-last-name">Last name</label>
+                  <input type="text" id="profile-last-name" value="Beck" placeholder="Last name">
+                </div>
+              </div>
+              <div class="form-field">
+                <label for="profile-email">Email address</label>
+                <input type="email" id="profile-email" value="stephen@beckcloud.cloud" placeholder="you@example.com">
+                <span class="form-field-hint">This is your primary login email. Changes sync via Keycloak.</span>
+              </div>
+              <div class="form-field">
+                <label for="profile-display-name">Display name</label>
+                <input type="text" id="profile-display-name" value="Stephen Beck" placeholder="How you appear to others">
+                <span class="form-field-hint">This is what other users see in shared services.</span>
+              </div>
+              <div class="form-field">
+                <label for="profile-bio">Bio</label>
+                <textarea id="profile-bio" placeholder="A short bio...">Homelab operator. K3s enthusiast. Runs everything on ZFS.</textarea>
+                <span class="form-field-hint">Optional. Max 200 characters.</span>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="profile-save-btn">Save Changes</button>
+                <button type="button" class="btn btn-secondary" id="profile-reset-btn">Cancel</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Password (Keycloak)
+           ============================================= -->
+      <div class="tab-panel" id="tab-password">
+        <div class="page-header">
+          <h1>Password</h1>
+          <p>Change your password via Keycloak authentication.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Change Password</h2>
+              <span class="card-subtitle">Managed by Keycloak</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="password-form" onsubmit="return false;">
+              <div class="form-field">
+                <label for="current-password">Current password</label>
+                <input type="password" id="current-password" placeholder="Enter current password">
+              </div>
+              <div class="form-field">
+                <label for="new-password">New password</label>
+                <input type="password" id="new-password" placeholder="Enter new password" oninput="checkPasswordStrength(this.value)">
+                <div class="password-strength" id="password-strength">
+                  <div class="strength-bar" id="str-1"></div>
+                  <div class="strength-bar" id="str-2"></div>
+                  <div class="strength-bar" id="str-3"></div>
+                  <div class="strength-bar" id="str-4"></div>
+                </div>
+                <span class="strength-label" id="strength-label"></span>
+              </div>
+              <div class="form-field">
+                <label for="confirm-password">Confirm new password</label>
+                <input type="password" id="confirm-password" placeholder="Confirm new password">
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="password-save-btn">Update Password</button>
+              </div>
+            </form>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Keycloak Settings</h2>
+              <span class="card-subtitle">Authentication preferences</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="form-field">
+              <label>Session timeout</label>
+              <select id="session-timeout">
+                <option value="30">30 minutes</option>
+                <option value="60" selected>1 hour</option>
+                <option value="240">4 hours</option>
+                <option value="1440">24 hours</option>
+              </select>
+              <span class="form-field-hint">How long until your session expires when idle.</span>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary">Apply Settings</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Groups
+           ============================================= -->
+      <div class="tab-panel" id="tab-groups">
+        <div class="page-header">
+          <h1>Group Memberships</h1>
+          <p>Access groups control what you can see and do across all services.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Your Groups</h2>
+              <span class="card-subtitle">4 active memberships</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <ul class="group-list">
+              <li class="group-item">
+                <div class="group-icon admin">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="group-info">
+                  <div class="group-name">Admin</div>
+                  <div class="group-desc">Full access to all services, admin panels, and infrastructure</div>
+                </div>
+                <span class="group-badge badge-active">Active</span>
+              </li>
+              <li class="group-item">
+                <div class="group-icon media">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2"/></svg>
+                </div>
+                <div class="group-info">
+                  <div class="group-name">Media</div>
+                  <div class="group-desc">Jellyfin, Swiparr, Sonarr, Radarr, Bazarr, Tdarr</div>
+                </div>
+                <span class="group-badge badge-active">Active</span>
+              </li>
+              <li class="group-item">
+                <div class="group-icon dev">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+                </div>
+                <div class="group-info">
+                  <div class="group-name">Development</div>
+                  <div class="group-desc">Wiki, CMS, Silex, Affine, OpenClaw, and dev tools</div>
+                </div>
+                <span class="group-badge badge-active">Active</span>
+              </li>
+              <li class="group-item">
+                <div class="group-icon reporting">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 20V10"/><path d="M12 20V4"/><path d="M6 20v-6"/></svg>
+                </div>
+                <div class="group-info">
+                  <div class="group-name">Reporting</div>
+                  <div class="group-desc">Grafana dashboards, alertmanager, and log analysis</div>
+                </div>
+                <span class="group-badge badge-active">Active</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Active Sessions
+           ============================================= -->
+      <div class="tab-panel" id="tab-sessions">
+        <div class="page-header">
+          <h1>Active Sessions</h1>
+          <p>Devices where you're currently logged in. Revoke any session you don't recognize.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Current Sessions</h2>
+              <span class="card-subtitle">3 active sessions</span>
+            </div>
+            <button class="btn-sm" id="revoke-all-btn" style="color:var(--status-error);border-color:rgba(239,68,68,0.3);">
+              Revoke All Others
+            </button>
+          </div>
+          <div class="card-body" style="padding:0;">
+
+            <!-- Session 1: Current -->
+            <div class="session-item">
+              <div class="session-icon current">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+              </div>
+              <div class="session-info">
+                <div class="session-device">Chrome 126 — macOS 14.5</div>
+                <div class="session-meta">
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    Now
+                  </span>
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    192.168.1.42
+                  </span>
+                </div>
+              </div>
+              <span class="session-badge current">Current</span>
+            </div>
+
+            <!-- Session 2 -->
+            <div class="session-item">
+              <div class="session-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+              </div>
+              <div class="session-info">
+                <div class="session-device">Safari — iPhone 15 Pro</div>
+                <div class="session-meta">
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    2 hours ago
+                  </span>
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    73.162.89.201
+                  </span>
+                </div>
+              </div>
+              <button class="btn-revoke">Revoke</button>
+            </div>
+
+            <!-- Session 3 -->
+            <div class="session-item">
+              <div class="session-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+              </div>
+              <div class="session-info">
+                <div class="session-device">Firefox — Ubuntu 24.04</div>
+                <div class="session-meta">
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                    3 days ago
+                  </span>
+                  <span>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                    192.168.1.15
+                  </span>
+                </div>
+              </div>
+              <button class="btn-revoke">Revoke</button>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Trouble Ticket History
+           ============================================= -->
+      <div class="tab-panel" id="tab-tickets">
+        <div class="page-header">
+          <h1>Trouble Tickets</h1>
+          <p>History of support requests and issue reports.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Ticket History</h2>
+              <span class="card-subtitle">5 total tickets</span>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <ul class="ticket-list">
+
+              <li class="ticket-item">
+                <div class="ticket-status-dot open"></div>
+                <div class="ticket-info">
+                  <div class="ticket-title">Jellyfin transcoding failing on 4K content</div>
+                  <div class="ticket-desc">Hardware acceleration not kicking in, falling back to CPU. GPU passthrough appears configured.</div>
+                  <div class="ticket-meta">
+                    <span>Opened Jul 20, 2026</span>
+                    <span>by Admin</span>
+                  </div>
+                </div>
+                <span class="ticket-tag tag-service">Service</span>
+              </li>
+
+              <li class="ticket-item">
+                <div class="ticket-status-dot resolved"></div>
+                <div class="ticket-info">
+                  <div class="ticket-title">Grafana alert notifications delayed</div>
+                  <div class="ticket-desc">Alertmanager webhook delays of 5-10 minutes. Investigated and resolved — was a routing issue.</div>
+                  <div class="ticket-meta">
+                    <span>Resolved Jul 15, 2026</span>
+                    <span>by Admin</span>
+                  </div>
+                </div>
+                <span class="ticket-tag tag-support">Support</span>
+              </li>
+
+              <li class="ticket-item">
+                <div class="ticket-status-dot resolved"></div>
+                <div class="ticket-info">
+                  <div class="ticket-title">Add Bitwarden organization support</div>
+                  <div class="ticket-desc">Requested organization-level password sharing for team vault.</div>
+                  <div class="ticket-meta">
+                    <span>Resolved Jul 10, 2026</span>
+                    <span>by Admin</span>
+                  </div>
+                </div>
+                <span class="ticket-tag tag-feature">Feature</span>
+              </li>
+
+              <li class="ticket-item">
+                <div class="ticket-status-dot closed"></div>
+                <div class="ticket-info">
+                  <div class="ticket-title">Velero backup failure on PVC snapshots</div>
+                  <div class="ticket-desc">Velero couldn't snapshot ZFS-backed persistent volumes. Switched to restic strategy.</div>
+                  <div class="ticket-meta">
+                    <span>Closed Jun 28, 2026</span>
+                    <span>by Admin</span>
+                  </div>
+                </div>
+                <span class="ticket-tag tag-bug">Bug</span>
+              </li>
+
+              <li class="ticket-item">
+                <div class="ticket-status-dot closed"></div>
+                <div class="ticket-info">
+                  <div class="ticket-title">Keycloak SSO redirect loop on legacy service</div>
+                  <div class="ticket-desc">oauth2-proxy not forwarding correct headers for old Subsonic instance.</div>
+                  <div class="ticket-meta">
+                    <span>Closed Jun 15, 2026</span>
+                    <span>by Admin</span>
+                  </div>
+                </div>
+                <span class="ticket-tag tag-service">Service</span>
+              </li>
+
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: OAuth2/Keycloak Account Links
+           ============================================= -->
+      <div class="tab-panel" id="tab-links">
+        <div class="page-header">
+          <h1>Account Links</h1>
+          <p>Connect external OAuth2/Keycloak accounts for seamless single sign-on.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Connected Accounts</h2>
+              <span class="card-subtitle">Manage OAuth2 and external identity providers</span>
+            </div>
+          </div>
+          <div class="card-body">
+
+            <div class="link-item">
+              <div class="link-icon connected">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.477 2 12c0 4.42 2.865 8.166 6.839 9.489.5.092.682-.217.682-.482 0-.237-.008-.866-.013-1.7-2.782.604-3.369-1.34-3.369-1.34-.454-1.156-1.11-1.463-1.11-1.463-.908-.62.069-.608.069-.608 1.003.07 1.531 1.03 1.531 1.03.892 1.529 2.341 1.087 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.11-4.555-4.943 0-1.091.39-1.984 1.029-2.683-.103-.253-.446-1.27.098-2.647 0 0 .84-.269 2.75 1.025A9.578 9.578 0 0 1 12 6.836c.85.004 1.705.114 2.504.336 1.909-1.294 2.747-1.025 2.747-1.025.546 1.377.203 2.394.1 2.647.64.699 1.028 1.592 1.028 2.683 0 3.842-2.339 4.687-4.566 4.935.359.309.678.919.678 1.852 0 1.336-.012 2.415-.012 2.743 0 .267.18.578.688.48C19.138 20.161 22 16.416 22 12c0-5.523-4.477-10-10-10z"/></svg>
+              </div>
+              <div class="link-info">
+                <div class="link-name">GitHub</div>
+                <div class="link-desc">Used for repository access and OpenClaw AI integration</div>
+              </div>
+              <div class="link-action">
+                <span class="btn-connected">Connected</span>
+              </div>
+            </div>
+
+            <div class="link-item">
+              <div class="link-icon connected">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M22.675 0h-21.35C.6 0 0 .6 0 1.325v21.351C0 23.4.6 24 1.325 24H11.15v-9.274H8.076V11.15h3.074V8.53c0-3.04 1.832-4.717 4.558-4.717 1.3 0 2.655.232 2.655.232v2.923H16.65c-1.437 0-1.885.893-1.885 1.81V11.15h3.193l-.51 2.576h-2.683V24h4.573C23.4 24 24 23.4 24 22.675V1.325C24 .6 23.4 0 22.675 0z"/></svg>
+              </div>
+              <div class="link-info">
+                <div class="link-name">GitLab</div>
+                <div class="link-desc">CI/CD pipeline access and container registry</div>
+              </div>
+              <div class="link-action">
+                <span class="btn-connected">Connected</span>
+              </div>
+            </div>
+
+            <div class="link-item">
+              <div class="link-icon disconnected">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.953 4.57a10 10 0 01-2.825.775 4.958 4.958 0 002.163-2.723c-.956.556-2.01.96-3.127 1.184A4.92 4.92 0 0015.435 2c-2.742 0-4.963 2.22-4.963 4.96 0 .388.044.765.127 1.13C7.348 7.98 3.837 6.107 1.64 3.214a4.918 4.918 0 001.525 6.574 4.907 4.907 0 01-2.247-.622c-.056.212-.087.433-.087.656 0 2.397 1.716 4.39 4.078 4.84a5.064 5.064 0 01-2.234.084c.63 1.967 2.456 3.4 4.613 3.436A9.874 9.874 0 010 19.544a13.94 13.94 0 007.548 2.212c9.057 0 14.01-7.503 14.01-14.01 0-.213-.005-.425-.014-.636A9.935 9.935 0 0024 4.593l-.047-.023z"/></svg>
+              </div>
+              <div class="link-info">
+                <div class="link-name">Twitter / X</div>
+                <div class="link-desc">Social feed integration and notification forwarding</div>
+              </div>
+              <div class="link-action">
+                <button class="btn-connect">Connect</button>
+              </div>
+            </div>
+
+            <div class="link-item">
+              <div class="link-icon disconnected">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 01-2.063-2.065 2.064 2.064 0 112.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg>
+              </div>
+              <div class="link-info">
+                <div class="link-name">LinkedIn</div>
+                <div class="link-desc">Professional profile and networking</div>
+              </div>
+              <div class="link-action">
+                <button class="btn-connect">Connect</button>
+              </div>
+            </div>
+
+            <div class="link-item">
+              <div class="link-icon disconnected">
+                <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 0C5.374 0 0 5.373 0 12c0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23A11.509 11.509 0 0112 5.803c1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576C20.566 21.797 24 17.3 24 12c0-6.627-5.373-12-12-12z"/></svg>
+              </div>
+              <div class="link-info">
+                <div class="link-name">GitHub (OAuth2)</div>
+                <div class="link-desc">OAuth2 login via GitHub — separate from the API link above</div>
+              </div>
+              <div class="link-action">
+                <button class="btn-connect">Connect</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Request Groups / Services
+           ============================================= -->
+      <div class="tab-panel" id="tab-request">
+        <div class="page-header">
+          <h1>Request Access</h1>
+          <p>Need access to a group or service not currently in your profile? Request it here.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>New Request</h2>
+              <span class="card-subtitle">Select what you need access to</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <form id="request-form" onsubmit="return false;">
+              <div class="form-field">
+                <label>Access groups</label>
+                <div class="request-form-grid">
+                  <div class="request-item">
+                    <input type="checkbox" id="req-llm" name="groups" value="llm">
+                    <label for="req-llm">
+                      <strong>LLM</strong>
+                      OpenClaw (Nova) AI endpoint access
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-3d" name="groups" value="3dprinting">
+                    <label for="req-3d">
+                      <strong>3D Printing</strong>
+                      Manyfold, FDM Monster, Gridspace, Spoolman
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-one" name="groups" value="opennebula">
+                    <label for="req-one">
+                      <strong>OpenNebula</strong>
+                      VM hosting and management platform
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-backup" name="groups" value="backup">
+                    <label for="req-backup">
+                      <strong>Backup</strong>
+                      Velero dashboard and backup history access
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label>Individual services</label>
+                <div class="request-form-grid">
+                  <div class="request-item">
+                    <input type="checkbox" id="req-jellyfin" name="services" value="jellyfin">
+                    <label for="req-jellyfin">
+                      <strong>Jellyfin</strong>
+                      Media streaming server
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-qbit" name="services" value="qbittorrent">
+                    <label for="req-qbit">
+                      <strong>qBittorrent</strong>
+                      Download manager with Gluetun proxy
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-homebox" name="services" value="homebox">
+                    <label for="req-homebox">
+                      <strong>Homebox</strong>
+                      Inventory and asset management
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-spotweb" name="services" value="spotweb">
+                    <label for="req-spotweb">
+                      <strong>Spotweb</strong>
+                      Usenet reader
+                    </label>
+                  </div>
+                  <div class="request-item">
+                    <input type="checkbox" id="req-beat" name="services" value="beats" checked>
+                    <label for="req-beat">
+                      <strong>Beats</strong>
+                      Micro service (URL shortener, hash, base64, converter, cron, image resize, markdown renderer, YAML/JSON tools, QR generator)
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="form-field">
+                <label for="request-reason">Reason</label>
+                <textarea id="request-reason" placeholder="Why do you need this access? (optional)"></textarea>
+                <span class="form-field-hint">Helps the admin prioritize and approve faster.</span>
+              </div>
+
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="request-submit-btn">Submit Request</button>
+                <button type="button" class="btn btn-secondary" id="request-reset-btn">Clear</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script>
+    /* ============================================================
+       BeckCloud Profile Page — Script
+       ============================================================ */
+
+    // ---- Mobile sidebar toggle ----
+    const menuToggle = document.getElementById('menu-toggle');
+    const sidebar = document.getElementById('sidebar');
+    const sidebarOverlay = document.getElementById('sidebar-overlay');
+
+    if (menuToggle) {
+      menuToggle.addEventListener('click', () => {
+        sidebar.classList.toggle('open');
+        sidebarOverlay.classList.toggle('open');
+      });
+    }
+
+    if (sidebarOverlay) {
+      sidebarOverlay.addEventListener('click', () => {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+      });
+    }
+
+    // ---- Tab switching ----
+    const tabBtns = document.querySelectorAll('.tab-btn, .sidebar-nav a[data-tab]');
+    const tabPanels = document.querySelectorAll('.tab-panel');
+
+    function activateTab(tabId) {
+      // Deactivate all tabs
+      document.querySelectorAll('.tab-btn, .sidebar-nav a[data-tab]').forEach(el => {
+        el.classList.remove('active');
+        el.setAttribute('aria-selected', 'false');
+      });
+
+      // Deactivate all panels
+      tabPanels.forEach(panel => panel.classList.remove('active'));
+
+      // Activate target
+      const targetPanel = document.getElementById(tabId);
+      if (targetPanel) targetPanel.classList.add('active');
+
+      // Activate matching buttons
+      document.querySelectorAll(`[data-tab="${tabId}"]`).forEach(el => {
+        el.classList.add('active');
+        el.setAttribute('aria-selected', 'true');
+      });
+
+      // Close mobile sidebar
+      if (window.innerWidth <= 900) {
+        sidebar.classList.remove('open');
+        sidebarOverlay.classList.remove('open');
+      }
+
+      // Update URL hash
+      history.replaceState(null, '', `#${tabId}`);
+    }
+
+    tabBtns.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const tabId = btn.getAttribute('data-tab');
+        if (tabId) activateTab(tabId);
+      });
+    });
+
+    // Handle initial hash
+    const initialHash = window.location.hash.replace('#', '');
+    if (initialHash && document.getElementById(initialHash)) {
+      activateTab(initialHash);
+    }
+
+    // ---- Avatar handling ----
+    const avatarInput = document.getElementById('avatar-input');
+    const avatarBrowseBtn = document.getElementById('avatar-browse-btn');
+    const avatarUploadBtn = document.getElementById('avatar-upload-btn');
+    const avatarRemoveBtn = document.getElementById('avatar-remove-btn');
+    const avatarDisplay = document.getElementById('avatar-display');
+
+    if (avatarBrowseBtn) {
+      avatarBrowseBtn.addEventListener('click', () => avatarInput.click());
+    }
+    if (avatarUploadBtn) {
+      avatarUploadBtn.addEventListener('click', () => avatarInput.click());
+    }
+
+    if (avatarInput) {
+      avatarInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.size > 2 * 1024 * 1024) {
+            showToast('File too large. Max 2MB.', 'error');
+            return;
+          }
+          const reader = new FileReader();
+          reader.onload = (ev) => {
+            avatarDisplay.innerHTML = '';
+            avatarDisplay.style.backgroundImage = `url(${ev.target.result})`;
+            avatarDisplay.style.backgroundSize = 'cover';
+            avatarDisplay.style.backgroundPosition = 'center';
+            showToast('Avatar updated!', 'success');
+          };
+          reader.readAsDataURL(file);
+        }
+      });
+    }
+
+    if (avatarRemoveBtn) {
+      avatarRemoveBtn.addEventListener('click', () => {
+        avatarDisplay.style.backgroundImage = '';
+        const initials = document.getElementById('profile-first-name')?.value?.[0] +
+                         document.getElementById('profile-last-name')?.value?.[0] || 'SB';
+        avatarDisplay.textContent = initials.toUpperCase();
+        avatarInput.value = '';
+        showToast('Avatar removed.', 'success');
+      });
+    }
+
+    // ---- Profile form ----
+    const profileForm = document.getElementById('profile-form');
+    const profileSaveBtn = document.getElementById('profile-save-btn');
+    const profileResetBtn = document.getElementById('profile-reset-btn');
+    const profileFields = ['profile-first-name', 'profile-last-name', 'profile-email', 'profile-display-name', 'profile-bio'];
+
+    if (profileSaveBtn) {
+      profileSaveBtn.addEventListener('click', () => {
+        const firstName = document.getElementById('profile-first-name').value.trim();
+        const lastName = document.getElementById('profile-last-name').value.trim();
+        const initials = (firstName?.[0] || '') + (lastName?.[0] || '');
+
+        // Update avatars
+        if (avatarDisplay) {
+          avatarDisplay.style.backgroundImage = '';
+          avatarDisplay.textContent = initials.toUpperCase();
+        }
+        const miniAvatar = document.getElementById('mini-avatar');
+        if (miniAvatar) miniAvatar.textContent = initials.toUpperCase();
+
+        const miniName = document.querySelector('.mini-name');
+        if (miniName) miniName.textContent = document.getElementById('profile-display-name').value || `${firstName} ${lastName}`;
+
+        showToast('Profile saved successfully.', 'success');
+      });
+    }
+
+    if (profileResetBtn) {
+      profileResetBtn.addEventListener('click', () => {
+        document.getElementById('profile-first-name').value = 'Stephen';
+        document.getElementById('profile-last-name').value = 'Beck';
+        document.getElementById('profile-email').value = 'stephen@beckcloud.cloud';
+        document.getElementById('profile-display-name').value = 'Stephen Beck';
+        document.getElementById('profile-bio').value = 'Homelab operator. K3s enthusiast. Runs everything on ZFS.';
+        showToast('Form reset.', 'success');
+      });
+    }
+
+    // ---- Password strength checker ----
+    function checkPasswordStrength(password) {
+      const bars = [
+        document.getElementById('str-1'),
+        document.getElementById('str-2'),
+        document.getElementById('str-3'),
+        document.getElementById('str-4')
+      ];
+      const label = document.getElementById('strength-label');
+
+      // Reset
+      bars.forEach(b => {
+        b.className = 'strength-bar';
+      });
+      label.className = 'strength-label';
+      label.textContent = '';
+
+      if (!password) return;
+
+      let score = 0;
+      if (password.length >= 8) score++;
+      if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+      if (/\d/.test(password)) score++;
+      if (/[^A-Za-z0-9]/.test(password)) score++;
+
+      const levels = ['weak', 'fair', 'good', 'strong'];
+      const levelClass = levels[score - 1];
+
+      for (let i = 0; i < score; i++) {
+        bars[i].classList.add(`active-${levelClass}`);
+      }
+
+      if (levelClass) {
+        label.textContent = `${levelClass.charAt(0).toUpperCase() + levelClass.slice(1)} password`;
+        label.classList.add(levelClass);
+      }
+    }
+
+    // ---- Password form ----
+    const passwordSaveBtn = document.getElementById('password-save-btn');
+    if (passwordSaveBtn) {
+      passwordSaveBtn.addEventListener('click', () => {
+        const newPass = document.getElementById('new-password').value;
+        const confirm = document.getElementById('confirm-password').value;
+
+        if (!newPass || !confirm) {
+          showToast('Please fill in all password fields.', 'error');
+          return;
+        }
+
+        if (newPass !== confirm) {
+          showToast('Passwords do not match.', 'error');
+          return;
+        }
+
+        if (newPass.length < 8) {
+          showToast('Password must be at least 8 characters.', 'error');
+          return;
+        }
+
+        // Simulate Keycloak redirect
+        showToast('Redirecting to Keycloak for password change...', 'success');
+        setTimeout(() => {
+          showToast('Password changed via Keycloak.', 'success');
+          document.getElementById('current-password').value = '';
+          document.getElementById('new-password').value = '';
+          document.getElementById('confirm-password').value = '';
+          document.getElementById('strength-label').textContent = '';
+          document.querySelectorAll('#password-strength .strength-bar').forEach(b => b.className = 'strength-bar');
+        }, 1500);
+      });
+    }
+
+    // ---- Session revoke ----
+    document.querySelectorAll('.btn-revoke').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const sessionItem = btn.closest('.session-item');
+        const device = sessionItem?.querySelector('.session-device')?.textContent || 'this session';
+        btn.textContent = 'Revoked';
+        btn.style.opacity = '0.4';
+        btn.style.pointerEvents = 'none';
+        showToast(`${device} revoked.`, 'success');
+      });
+    });
+
+    const revokeAllBtn = document.getElementById('revoke-all-btn');
+    if (revokeAllBtn) {
+      revokeAllBtn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-revoke').forEach(btn => {
+          const sessionItem = btn.closest('.session-item');
+          const device = sessionItem?.querySelector('.session-device')?.textContent || 'a session';
+          btn.textContent = 'Revoked';
+          btn.style.opacity = '0.4';
+          btn.style.pointerEvents = 'none';
+        });
+        showToast('All other sessions revoked.', 'success');
+      });
+    }
+
+    // ---- Request form ----
+    const requestSubmitBtn = document.getElementById('request-submit-btn');
+    if (requestSubmitBtn) {
+      requestSubmitBtn.addEventListener('click', () => {
+        const checked = document.querySelectorAll('#request-form input[type="checkbox"]:checked');
+        if (checked.length === 0) {
+          showToast('Select at least one group or service.', 'error');
+          return;
+        }
+        showToast('Access request submitted!', 'success');
+        checked.forEach(cb => cb.checked = false);
+        document.getElementById('request-reason').value = '';
+      });
+    }
+
+    const requestResetBtn = document.getElementById('request-reset-btn');
+    if (requestResetBtn) {
+      requestResetBtn.addEventListener('click', () => {
+        document.querySelectorAll('#request-form input[type="checkbox"]').forEach(cb => cb.checked = false);
+        document.getElementById('request-reason').value = '';
+      });
+    }
+
+    // ---- Toast notifications ----
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+
+      setTimeout(() => {
+        toast.style.animation = 'slideOut 0.3s ease forwards';
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+  </script>
+</body>
+</html>

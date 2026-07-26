@@ -4,7 +4,7 @@
 # Non-root requests pass through unchanged to the app server.
 
 ---
-# Kiri:Moto — 3D Slicer for printers, CNC mills, and laser cutters
+# Kiri:Moto — 3D Slicer for printers, CNC mills, and laser cutters (public)
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -36,7 +36,7 @@ spec:
     secretName: kiri-tls
 
 ---
-# Mesh:Tool — Browser-based mesh repair and editing tool
+# Mesh:Tool — Browser-based mesh repair and editing tool (public)
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -68,7 +68,7 @@ spec:
     secretName: mesh-tls
 
 ---
-# Void:Form — Generative design / form-finding tool
+# Void:Form — Generative design / form-finding tool (public)
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

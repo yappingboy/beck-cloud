@@ -40,12 +40,14 @@
         <ul class="nav-links" id="nav-links">
           <li><a href="#what">What It Does</a></li>
           <li><a href="#services">Services</a></li>
+          <li><a href="#pricing">Pricing</a></li>
           <li><a href="#about">About</a></li>
         </ul>
       </nav>
 
       <div class="nav-actions">
         <a href="https://wiki.becklab.cloud" class="btn-ghost" target="_blank" rel="noopener">Services</a>
+        <a href="portal.html" class="btn-ghost" rel="noopener">Portal</a>
         <a href="https://auth.becklab.cloud" class="btn-ghost" target="_blank" rel="noopener">Login</a>
         <a href="#contact" class="btn-primary-sm">Request Account</a>
         <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
@@ -361,26 +363,300 @@
       </div>
     </section>
 
-    <!-- ========== CONTACT / ACCOUNT REQUEST ========== -->
+    <!-- ========== PRICING TIER SECTION ========== -->
+    <section id="pricing" class="pricing-section">
+      <div class="container">
+        <p class="section-label reveal">Pricing</p>
+        <h2 class="section-title reveal">Simple tiers, real value</h2>
+        <p class="section-desc reveal">
+          Three tiers. Pick what fits. Everything includes SSO, 20+ services,
+          and direct access to the operator.
+        </p>
+
+        <div class="pricing-grid">
+          <!-- Starter -->
+          <div class="pricing-card reveal">
+            <div class="pricing-badge">Most popular</div>
+            <div class="pricing-header">
+              <h3>Builder</h3>
+              <div class="pricing-price">
+                <span class="price-currency">$</span><span class="price-amount">7</span>
+                <span class="price-period">/month</span>
+              </div>
+            </div>
+            <ul class="pricing-features">
+              <li>Static sites + URL shortener</li>
+              <li>Hash service + Base64/Converter</li>
+              <li>Cron jobs + Image resize</li>
+              <li>Markdown renderer + YAML tools</li>
+              <li>SSO across all services</li>
+              <li>Direct email support</li>
+            </ul>
+            <a href="#contact" class="btn-primary btn-full">Get Started</a>
+          </div>
+
+          <!-- Pro -->
+          <div class="pricing-card reveal pricing-card-featured">
+            <div class="pricing-badge pricing-badge-pro">Pro</div>
+            <div class="pricing-header">
+              <h3>Pro</h3>
+              <div class="pricing-price">
+                <span class="price-currency">$</span><span class="price-amount">12</span>
+                <span class="price-period">/month</span>
+              </div>
+            </div>
+            <ul class="pricing-features">
+              <li>Everything in Builder</li>
+              <li>Webhook relay + DNS monitor</li>
+              <li>QR code generator</li>
+              <li>Browser image editor</li>
+              <li>Priority support</li>
+              <li>BeckFlow workflows (unlimited)</li>
+            </ul>
+            <a href="#contact" class="btn-primary btn-full">Get Started</a>
+          </div>
+
+          <!-- Custom -->
+          <div class="pricing-card reveal">
+            <div class="pricing-badge pricing-badge-custom">Custom</div>
+            <div class="pricing-header">
+              <h3>Enterprise</h3>
+              <div class="pricing-price">
+                <span class="price-amount" style="font-size:2rem;">Custom</span>
+              </div>
+            </div>
+            <ul class="pricing-features">
+              <li>Dedicated VM hosting</li>
+              <li>Managed K3s cluster</li>
+              <li>LLM API endpoint access</li>
+              <li>3D printing BYOD suite</li>
+              <li>Custom SaaS hosting</li>
+              <li>Built-in email relay</li>
+            </ul>
+            <a href="#contact" class="btn-secondary btn-full">Contact Us</a>
+          </div>
+        </div>
+
+        <div class="pricing-note reveal">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true" style="vertical-align: -2px; margin-right: 0.375rem;">
+            <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M8 5v3M8 10v1" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+          </svg>
+          All prices are per service tier. Bundle discounts available for multiple services.
+          Founding members get 50% off forever — first 10 customers.
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== COMPLETE SERVICES LIST ========== -->
+    <section id="services-list" class="services-list-section">
+      <div class="container">
+        <p class="section-label reveal">Services</p>
+        <h2 class="section-title reveal">Every service included</h2>
+        <p class="section-desc reveal">
+          Full catalog of running services. Access levels depend on your tier.
+        </p>
+
+        <div class="services-table-wrapper reveal">
+          <table class="services-table">
+            <thead>
+              <tr>
+                <th scope="col">Service</th>
+                <th scope="col">Category</th>
+                <th scope="col">URL</th>
+                <th scope="col">Access</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr><td><strong>SSO Platform</strong></td><td>Identity</td><td><code>auth.becklab.cloud</code></td><td>All tiers</td></tr>
+              <tr><td><strong>Password Vault</strong></td><td>Security</td><td><code>bw.becklab.cloud</code></td><td>All tiers</td></tr>
+              <tr><td><strong>Grafana Dashboards</strong></td><td>Monitoring</td><td><code>grafana.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Wazuh Security</strong></td><td>Security</td><td><code>wazuh.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Wiki &amp; Docs</strong></td><td>Knowledge</td><td><code>wiki.becklab.cloud</code></td><td>All tiers</td></tr>
+              <tr><td><strong>CMS Platform</strong></td><td>Development</td><td><code>cms.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Affine Workspace</strong></td><td>Productivity</td><td><code>affine.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Home Assistant</strong></td><td>IoT</td><td><code>ha.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Jellyfin Media</strong></td><td>Media</td><td><code>jellyfin.becklab.cloud</code></td><td>Media</td></tr>
+              <tr><td><strong>Swiparr</strong></td><td>Media</td><td><code>swiparr.becklab.cloud</code></td><td>Media</td></tr>
+              <tr><td><strong>Silex Editor</strong></td><td>Development</td><td><code>silex.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>OpenClaw (Nova)</strong></td><td>AI</td><td><code>nova.becklab.cloud</code></td><td>Admin</td></tr>
+              <tr><td><strong>Manyfold</strong></td><td>3D Printing</td><td><code>manyfold.becklab.cloud</code></td><td>3D Tier</td></tr>
+              <tr><td><strong>FDM Monster</strong></td><td>3D Printing</td><td><code>fdm.becklab.cloud</code></td><td>3D Tier</td></tr>
+              <tr><td><strong>Gridspace</strong></td><td>3D Printing</td><td><code>gridspace.becklab.cloud</code></td><td>3D Tier</td></tr>
+              <tr><td><strong>Hash Service</strong></td><td>Micro</td><td><code>hash.becklab.cloud</code></td><td>Public</td></tr>
+              <tr><td><strong>URL Shortener</strong></td><td>Micro</td><td><code>short.becklab.cloud</code></td><td>Public</td></tr>
+              <tr><td><strong>QR Generator</strong></td><td>Micro</td><td><code>qr.becklab.cloud</code></td><td>Public</td></tr>
+              <tr><td><strong>Static Sites</strong></td><td>Micro</td><td><code>site.becklab.cloud</code></td><td>Public</td></tr>
+              <tr><td><strong>OpenNebula</strong></td><td>Infrastructure</td><td><code>one.becklab.cloud</code></td><td>Admin</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== CONTACT / ACCOUNT REQUEST FLOW ========== -->
     <section id="contact" class="contact-section">
       <div class="container">
         <div class="contact-inner reveal">
           <p class="section-label">Get access</p>
           <h2 class="section-title">Request an account</h2>
           <p class="contact-desc">
-            BeckCloud access is by application. Tell us who you are and what you need,
-            and we'll get back to you. No forms, no bots, just email.
+            Tell us who you are and what you need. We'll set up your access
+            and send you the details. No forms, no bots — just a real conversation.
           </p>
-          <a href="mailto:contact@beckcloud.cloud?subject=Account%20Request" class="btn-primary btn-large">
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-              <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
-              <polyline points="22,6 12,13 2,6"/>
-            </svg>
-            Send Request
-          </a>
-          <p class="contact-note">
-            Or reach out at <a href="mailto:contact@beckcloud.cloud">contact@beckcloud.cloud</a>
-          </p>
+
+          <!-- Step indicator -->
+          <div class="step-indicator" id="step-indicator" aria-label="Form steps">
+            <div class="step-dot step-dot-active" data-step="1" aria-current="step">
+              <span class="step-number">1</span>
+              <span class="step-label">Info</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-dot" data-step="2">
+              <span class="step-number">2</span>
+              <span class="step-label">Services</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-dot" data-step="3">
+              <span class="step-number">3</span>
+              <span class="step-label">Groups</span>
+            </div>
+            <div class="step-connector"></div>
+            <div class="step-dot" data-step="4">
+              <span class="step-number">4</span>
+              <span class="step-label">Confirm</span>
+            </div>
+          </div>
+
+          <!-- Form -->
+          <form id="account-form" class="account-form" novalidate>
+            <!-- Step 1: Basic Info -->
+            <div class="form-step form-step-active" data-form-step="1">
+              <div class="form-step-title">Step 1: Your details</div>
+              <div class="form-step-desc">Just the basics so we know who you are.</div>
+              <div class="form-field">
+                <label for="form-name">Full name <span class="required">*</span></label>
+                <input type="text" id="form-name" name="name" required autocomplete="name" placeholder="Stephen Beck" />
+                <span class="form-error" id="name-error"></span>
+              </div>
+              <div class="form-field">
+                <label for="form-email">Email address <span class="required">*</span></label>
+                <input type="email" id="form-email" name="email" required autocomplete="email" placeholder="you@example.com" />
+                <span class="form-error" id="email-error"></span>
+              </div>
+              <div class="form-field">
+                <label for="form-purpose">What do you need BeckCloud for?</label>
+                <textarea id="form-purpose" name="purpose" rows="3" placeholder="e.g. Media streaming, development tools, static site hosting..."></textarea>
+              </div>
+            </div>
+
+            <!-- Step 2: Services needed -->
+            <div class="form-step" data-form-step="2">
+              <div class="form-step-title">Step 2: Services</div>
+              <div class="form-step-desc">Pick the services you want. Select at least one.</div>
+              <div class="service-category">
+                <h4 class="service-category-title">Security &amp; Identity</h4>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="sso" /> SSO Platform</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="vault" /> Password Vault (Bitwarden)</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="wazuh" /> Wazuh Security</label>
+              </div>
+              <div class="service-category">
+                <h4 class="service-category-title">Development</h4>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="wiki" /> Wiki &amp; Docs</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="cms" /> CMS Platform (Directus)</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="affine" /> Affine Workspace</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="silex" /> Silex Editor</label>
+              </div>
+              <div class="service-category">
+                <h4 class="service-category-title">Media</h4>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="jellyfin" /> Jellyfin Media</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="swiparr" /> Swiparr</label>
+              </div>
+              <div class="service-category">
+                <h4 class="service-category-title">3D Printing</h4>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="manyfold" /> Manyfold (Model Library)</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="fdm" /> FDM Monster (Cloud Slicing)</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="gridspace" /> Gridspace (3D Design)</label>
+              </div>
+              <div class="service-category">
+                <h4 class="service-category-title">Micro Services</h4>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="static-sites" /> Static Site Hosting</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="url-shortener" /> URL Shortener</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="qr" /> QR Code Generator</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="hash" /> Hash Service</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="cron" /> Cron Jobs</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="image-resize" /> Image Resize</label>
+                <label class="service-checkbox"><input type="checkbox" name="services" value="markdown" /> Markdown Renderer</label>
+              </div>
+              <span class="form-error" id="services-error"></span>
+            </div>
+
+            <!-- Step 3: Group access -->
+            <div class="form-step" data-form-step="3">
+              <div class="form-step-title">Step 3: Access groups</div>
+              <div class="form-step-desc">Groups control what you can see and do.</div>
+              <div class="group-option">
+                <input type="checkbox" id="group-admin" name="groups" value="admins" />
+                <label for="group-admin"><strong>Admin</strong> — Full access to all services and admin panels</label>
+              </div>
+              <div class="group-option">
+                <input type="checkbox" id="group-media" name="groups" value="media" />
+                <label for="group-media"><strong>Media</strong> — Jellyfin, Swiparr, Sonarr, Radarr, and related</label>
+              </div>
+              <div class="group-option">
+                <input type="checkbox" id="group-3d" name="groups" value="3dprinting" />
+                <label for="group-3d"><strong>3D Printing</strong> — Manyfold, FDM Monster, Gridspace, Spoolman</label>
+              </div>
+              <div class="group-option">
+                <input type="checkbox" id="group-llm" name="groups" value="llm" />
+                <label for="group-llm"><strong>LLM</strong> — OpenClaw (Nova) AI endpoint access</label>
+              </div>
+              <div class="group-option">
+                <input type="checkbox" id="group-opennebula" name="groups" value="opennebula" />
+                <label for="group-opennebula"><strong>OpenNebula</strong> — VM hosting and management</label>
+              </div>
+              <span class="form-error" id="groups-error"></span>
+            </div>
+
+            <!-- Step 4: Confirmation -->
+            <div class="form-step" data-form-step="4">
+              <div class="form-step-title">Step 4: Review &amp; Submit</div>
+              <div class="form-step-desc">Check everything looks right, then hit send.</div>
+              <div class="confirmation-summary" id="confirmation-summary">
+                <!-- Filled by JS -->
+              </div>
+              <button type="submit" class="btn-primary btn-full btn-large">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M22 2L11 13"/>
+                  <path d="M22 2L15 22l-4-9-9-4z"/>
+                </svg>
+                Send Request
+              </button>
+              <p class="confirmation-note">
+                This will open your email client with a pre-filled request.
+                You can also just email <a href="mailto:contact@beckcloud.cloud">contact@beckcloud.cloud</a>.
+              </p>
+            </div>
+
+            <!-- Navigation buttons -->
+            <div class="form-nav" id="form-nav">
+              <button type="button" class="btn-back" id="btn-back" disabled>Back</button>
+              <button type="button" class="btn-next" id="btn-next">Next Step</button>
+            </div>
+          </form>
+
+          <!-- Confirmation message (hidden) -->
+          <div class="form-success" id="form-success" style="display:none;">
+            <div class="success-icon" aria-hidden="true">
+              <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+                <polyline points="22 4 12 14.01 9 11.01"/>
+              </svg>
+            </div>
+            <h3 style="font-size:1.25rem; margin-bottom:0.5rem;">Request sent!</h3>
+            <p style="color:var(--text-secondary);">Your account request has been sent. Stephen will review it and get back to you via email.</p>
+            <p style="color:var(--text-tertiary); font-size:0.875rem; margin-top:1rem;">If you don't hear back within 24 hours, email <a href="mailto:contact@beckcloud.cloud">contact@beckcloud.cloud</a> directly.</p>
+          </div>
         </div>
       </div>
     </section>
@@ -404,6 +680,7 @@
         <nav class="footer-nav" aria-label="Footer navigation">
           <a href="#what">What It Does</a>
           <a href="#services">Services</a>
+          <a href="#pricing">Pricing</a>
           <a href="#about">About</a>
           <a href="#legal">Legal</a>
           <a href="https://wiki.becklab.cloud" target="_blank" rel="noopener">Services Page</a>

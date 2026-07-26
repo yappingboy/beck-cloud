@@ -9,12 +9,18 @@ spec:
   routes:
     - match: Host(`editor.tools.becklab.cloud`) && PathPrefix(`/api/`)
       kind: Rule
+      middlewares:
+        - name: image-editor-api-role-chain
+          namespace: identity
       services:
         - name: image-editor-api
           port: 80
           sticky: false
     - match: Host(`editor.tools.becklab.cloud`)
       kind: Rule
+      middlewares:
+        - name: image-editor-api-role-chain
+          namespace: identity
       services:
         - name: image-editor-frontend
           port: 80

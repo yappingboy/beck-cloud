@@ -4,19 +4,17 @@
 #   2. Extracts client roles from JWT
 #   3. Checks required roles against a per-route policy
 #   4. Returns 403 if roles don't match, 200 with role headers if OK
-#   5. Logs permission checks to Loki/Fluent Bit (optional)
+#   5. Logs permission checks for audit
 #
 # This is deployed as a HelmRelease in the identity namespace.
 # Traefik forwards auth requests to this service for role-enforced chains.
-#
-# Usage: Add a role-enforcer middleware + chain to ingress routes.
 # ─────────────────────────────────────────────────────────────────
 
 ---
 apiVersion: v1
 kind: Namespace
 metadata:
-  name: role-enforcer
+  name: identity
   labels:
     app: role-enforcer
 ---
@@ -36,72 +34,64 @@ apiVersion: v1
 kind: ConfigMap
 metadata:
   name: role-enforcer-policy
-  namespace: role-enforcer
+  namespace: identity
   labels:
     app: role-enforcer
 data:
   policy.yaml: |
     # BeckCloud Role Enforcement Policy
-    # Format: service_name: allowed_roles
+    # Format: service_name: allowed_roles (comma-separated)
     # Roles must be present in JWT resource_access.beckcloud-services.roles
-    # 
+    #
     # Services requiring ADMIN role only:
-    grafana-admin: admin
-    prometheus-admin: admin
-    alertmanager-admin: admin
     keycloak-admin: admin
+    traefik-admin: admin
     affine-admin: admin
     one-admin: admin
     silex-admin: admin
-    trivy-admin: admin
-    velero-admin: admin
-    directus-admin: admin
-    homepage-admin: admin
-    # 
+    #
     # Services requiring MONITOR role:
     prometheus: monitor
     grafana: monitor
     hubble: monitor
     alertmanager: monitor
-    # 
-    # Services requiring DOWNLOAD or MEDIA_VIEW role:
+    #
+    # Services requiring DOWNLOAD or MEDIA_VIEW role (OR logic):
     qbittorrent: download,media-view
+    #
+    # Services requiring DOWNLOAD role:
+    sabnzbd: download
+    nzbget: download
+    #
+    # Services requiring MEDIA_VIEW role:
     radarr: media-view
     sonarr: media-view
     prowlarr: media-view
     bazarr: media-view
     jellyfin: media-view
-    jellyseerr: media-view
+    swiparr: media-view
+    homebox: media-view
+    #
+    # Services requiring MEDIA-MANAGE role:
     tdarr: media-manage
-    # 
-    # Services requiring DOWNLOAD role:
-    sabnzbd: download
-    nzbget: download
-    # 
+    jellyseerr: media-manage
+    #
     # Services requiring DEV role:
     auth-service: dev
     beckflow: dev
     cron-jobs: dev
     dns-monitor: dev
     image-editor-api: dev
-    image-editor: dev
-    # 
+    #
     # Services requiring CMS role:
     directus: cms
     manyfold: cms
-    affine: cms,user
-    # 
-    # Services requiring MEDIA_VIEW role:
-    tautulli: media-view
-    # 
+    #
     # Services requiring USER role (authenticated):
     homepage: user
-    oauth2-becklab: user
-    user-invite: user
-    logout-page: user
-    # 
-    # Public services (no role required):
-    # (not listed in policy — any request is accepted)
+    #
+    # Services requiring CMS or USER role (OR logic):
+    affine: cms,user
 
 ---
 # The role enforcer deployment
@@ -146,10 +136,10 @@ spec:
               value: "homelab"
             - name: CLIENT_ID
               value: "beckcloud-services"
-            - name: LOG_FORMAT
-              value: "json"
             - name: LOG_LEVEL
               value: "info"
+            - name: PORT
+              value: "8080"
           volumeMounts:
             - name: policy
               mountPath: /etc/role-enforcer/policy.yaml
@@ -166,7 +156,7 @@ apiVersion: v1
 kind: Service
 metadata:
   name: role-enforcer
-  namespace: role-enforcer
+  namespace: identity
   labels:
     app: role-enforcer
 spec:

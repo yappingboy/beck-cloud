@@ -14,6 +14,7 @@ spec:
     metadata:
       labels:
         app: qr-generator
+        monitoring: "true"
     spec:
       securityContext:
         runAsNonRoot: true
@@ -54,5 +55,9 @@ spec:
     app: qr-generator
   ports:
     - port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 9090
       targetPort: 8080
       protocol: TCP

@@ -1,0 +1,118 @@
+# API Key Auth Service — JWT stored in Redis
+# Validates API keys, returns JWT tokens, manages tier-based rate limits
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: auth-service
+  namespace: micro
+  labels:
+    app: auth-service
+    monitoring: "true"
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: auth-service
+  template:
+    metadata:
+      labels:
+        app: auth-service
+        monitoring: "true"
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+        - name: auth-service
+          image: ghcr.io/yappingboy/micro/auth-service:v1.0.0
+          ports:
+            - containerPort: 8080
+          env:
+            - name: PORT
+              value: "8080"
+            - name: REDIS_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-redis
+                  key: host
+            - name: REDIS_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-redis
+                  key: port
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-redis
+                  key: password
+            - name: JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: auth-service-jwt
+                  key: secret
+            - name: JWT_EXPIRY_HOURS
+              value: "720" # 30 days
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 200m
+              memory: 256Mi
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: auth-service
+  namespace: micro
+  labels:
+    app: auth-service
+    monitoring: "true"
+spec:
+  selector:
+    app: auth-service
+  ports:
+    - name: http
+      port: 80
+      targetPort: 8080
+      protocol: TCP
+    - name: metrics
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+# Redis connection config
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-service-redis
+  namespace: micro
+type: Opaque
+stringData:
+  host: "redis-becklab-redis.redis.svc.cluster.local"
+  port: "6379"
+  password: "" # Update with actual Redis password
+---
+# JWT signing secret — generate with: openssl rand -hex 32
+apiVersion: v1
+kind: Secret
+metadata:
+  name: auth-service-jwt
+  namespace: micro
+type: Opaque
+stringData:
+  secret: "REPLACE_WITH_64_CHAR_HEX_STRING"

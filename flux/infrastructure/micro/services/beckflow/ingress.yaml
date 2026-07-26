@@ -9,6 +9,9 @@ spec:
   routes:
     - match: Host(`dashboard.tools.becklab.cloud`)
       kind: Rule
+      middlewares:
+        - name: beckflow-role-chain
+          namespace: identity
       services:
         - name: beckflow
           port: 80

@@ -1,0 +1,82 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: micro-services-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "true"
+data:
+  micro-services.json: |
+    {
+      "annotations": {"list": []},
+      "editable": true,
+      "fiscalYearStartMonth": 0,
+      "graphTooltip": 1,
+      "id": null,
+      "links": [],
+      "liveNow": false,
+      "panels": [
+        {
+          "title": "Request Rate",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+          "targets": [
+            {"expr": "sum(rate(micro_http_requests_total{namespace=\"micro\"}[5m])) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "reqps"}}
+        },
+        {
+          "title": "Request Duration (p99)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+          "targets": [
+            {"expr": "histogram_quantile(0.99, rate(micro_http_request_duration_seconds_bucket{namespace=\"micro\"}[5m])) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "s"}}
+        },
+        {
+          "title": "Active Requests",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+          "targets": [
+            {"expr": "micro_http_active_requests{namespace=\"micro\"}", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"color": {"mode": "palette-classic"}, "unit": "req"}}
+        },
+        {
+          "title": "Error Rate (5xx)",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+          "targets": [
+            {"expr": "sum(rate(micro_http_requests_total{namespace=\"micro\",status=~\"5..\"}[5m])) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "red"}, "unit": "reqps"}}
+        },
+        {
+          "title": "4xx Responses",
+          "type": "timeseries",
+          "gridPos": {"h": 8, "w": 12, "x": 0, "y": 16},
+          "targets": [
+            {"expr": "sum(rate(micro_http_requests_total{namespace=\"micro\",status=~\"4..\"}[5m])) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"color": {"mode": "fixed", "fixedColor": "orange"}, "unit": "reqps"}}
+        },
+        {
+          "title": "Total Requests by Service",
+          "type": "stat",
+          "gridPos": {"h": 8, "w": 12, "x": 12, "y": 16},
+          "targets": [
+            {"expr": "increase(micro_http_requests_total{namespace=\"micro\"}[1h]) by (pod)", "legendFormat": "{{pod}}", "refId": "A"}
+          ],
+          "fieldConfig": {"defaults": {"unit": "req"}}
+        }
+      ],
+      "schemaVersion": 39,
+      "style": "dark",
+      "tags": ["micro", "becklab"],
+      "templating": {"list": []},
+      "time": {"from": "now-6h", "to": "now"},
+      "title": "Micro Services Overview",
+      "uid": "micro-services-overview",
+      "version": 1
+    }

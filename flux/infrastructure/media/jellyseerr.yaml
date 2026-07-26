@@ -67,7 +67,7 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-media-chain@kubernetescrd
+    traefik.ingress.kubernetes.io/router.middlewares: identity-jellyseerr-role-chain@kubernetescrd
 spec:
   tls:
     - hosts:

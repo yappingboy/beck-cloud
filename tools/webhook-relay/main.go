@@ -15,7 +15,34 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	whRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "webhook_relay", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	whDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "webhook_relay", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	whActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "webhook_relay", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func whWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); whActive.Inc(); defer whActive.Dec()
+		sw := &whSW{w, http.StatusOK}; h(sw, r)
+		whRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		whDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type whSW struct{ http.ResponseWriter; c int }
+func (s *whSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
 
 type endpoint struct {
 	ID         string `json:"id"`
@@ -229,10 +256,11 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/endpoints", endpointsHandler)
-	mux.HandleFunc("/api/v1/endpoints/", endpointHandler)
-	mux.HandleFunc("/api/v1/webhook/", webhookIngestHandler)
+	mux.HandleFunc("/api/v1/endpoints", whWrap(endpointsHandler))
+	mux.HandleFunc("/api/v1/endpoints/", whWrap(endpointHandler))
+	mux.HandleFunc("/api/v1/webhook/", whWrap(webhookIngestHandler))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("webhook-relay listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

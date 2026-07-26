@@ -16,7 +16,35 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	bfRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "beckflow", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	bfDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "beckflow", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	bfActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "beckflow", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func bfWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); bfActive.Inc(); defer bfActive.Dec()
+		sw := &bfSW{w, http.StatusOK}; h(sw, r)
+		bfRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		bfDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type bfSW struct{ http.ResponseWriter; c int }
+func (s *bfSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
 
 // --- Shared types ---
 
@@ -457,33 +485,38 @@ func main() {
 		port = "8080"
 	}
 
+	mux := http.NewServeMux()
+
 	// Proxy routes to micro services
-	http.HandleFunc("/api/v1/hash", hashHandler)
-	http.HandleFunc("/api/v1/shortener", shortenerHandler)
-	http.HandleFunc("/api/v1/converter", converterHandler)
-	http.HandleFunc("/api/v1/qr", qrHandler)
-	http.HandleFunc("/api/v1/dns", dnsHandler)
-	http.HandleFunc("/api/v1/cron", cronHandler)
-	http.HandleFunc("/api/v1/webhook", webhookHandler)
-	http.HandleFunc("/api/v1/yaml", yamlHandler)
+	mux.HandleFunc("/api/v1/hash", bfWrap(hashHandler))
+	mux.HandleFunc("/api/v1/shortener", bfWrap(shortenerHandler))
+	mux.HandleFunc("/api/v1/converter", bfWrap(converterHandler))
+	mux.HandleFunc("/api/v1/qr", bfWrap(qrHandler))
+	mux.HandleFunc("/api/v1/dns", bfWrap(dnsHandler))
+	mux.HandleFunc("/api/v1/cron", bfWrap(cronHandler))
+	mux.HandleFunc("/api/v1/webhook", bfWrap(webhookHandler))
+	mux.HandleFunc("/api/v1/yaml", bfWrap(yamlHandler))
 
 	// BeckFlow-specific endpoints
-	http.HandleFunc("/api/v1/status", statusHandler)
-	http.HandleFunc("/api/v1/workflow", executeWorkflow)
-	http.HandleFunc("/api/v1/workflows", workflowListHandler)
-	http.HandleFunc("/api/v1/random", randomStringHandler)
-	http.HandleFunc("/api/v1/apikeys", apiKeysHandler)
+	mux.HandleFunc("/api/v1/status", bfWrap(statusHandler))
+	mux.HandleFunc("/api/v1/workflow", bfWrap(executeWorkflow))
+	mux.HandleFunc("/api/v1/workflows", bfWrap(workflowListHandler))
+	mux.HandleFunc("/api/v1/random", bfWrap(randomStringHandler))
+	mux.HandleFunc("/api/v1/apikeys", bfWrap(apiKeysHandler))
 
 	// Health check
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+
+	// Prometheus metrics
+	mux.Handle("/metrics", promhttp.Handler())
 
 	// Serve frontend from embedded filesystem or static dir
 	staticDir := os.Getenv("STATIC_DIR")
 	if staticDir == "" {
 		staticDir = "/app/frontend"
 	}
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
+	mux.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir(staticDir))))
 
 	log.Printf("beckflow listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }

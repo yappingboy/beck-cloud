@@ -1,0 +1,359 @@
+openapi: 3.1.0
+info:
+  title: BeckLab Tools — Full API Reference
+  version: 1.0.0
+  description: Complete API reference for all BeckLab micro-services. Each service is independently accessible at its own subdomain.
+  contact:
+    name: BeckLab
+    url: https://tools.becklab.cloud
+servers:
+  - url: https://hash.tools.becklab.cloud
+    description: Hash Service
+  - url: https://short.tools.becklab.cloud
+    description: URL Shortener
+  - url: https://convert.tools.becklab.cloud
+    description: Base64/Converter
+  - url: https://cron.tools.becklab.cloud
+    description: Cron Jobs
+  - url: https://dns.tools.becklab.cloud
+    description: DNS Monitor
+  - url: https://webhook.tools.becklab.cloud
+    description: Webhook Relay
+  - url: https://fmt.tools.becklab.cloud
+    description: YAML/JSON Tool
+  - url: https://qr.tools.becklab.cloud
+    description: QR Generator
+  - url: https://editor.tools.becklab.cloud
+    description: Image Editor
+  - url: https://dashboard.tools.becklab.cloud
+    description: BeckFlow Gateway
+  - url: https://auth.tools.becklab.cloud
+    description: Auth Service
+components:
+  responses:
+    Healthz:
+      description: Service healthy
+      content:
+        text/plain:
+          schema: { type: string, example: "ok" }
+    Metrics:
+      description: Prometheus metrics
+      content:
+        text/plain:
+          schema: { type: string }
+    BadRequest:
+      description: Invalid request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              status: { type: string, example: error }
+              result:
+                type: object
+                properties:
+                  error: { type: string }
+              meta:
+                type: object
+                properties:
+                  requestId: { type: string }
+paths:
+  # === Base64/Converter ===
+  /api/v1/convert:
+    post:
+      summary: Convert/encode/decode data
+      description: Supports base64_encode, base64_decode, url_encode, url_decode, html_encode, html_decode, hex_encode, hex_decode, rot13, uuid_v4, random_string, ascii_to_hex, hex_to_ascii
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operation, input]
+              properties:
+                operation:
+                  type: string
+                  enum: [base64_encode, base64_decode, url_encode, url_decode, html_encode, html_decode, hex_encode, hex_decode, rot13, uuid_v4, random_string, ascii_to_hex, hex_to_ascii]
+                input: { type: string }
+                length:
+                  type: integer
+                  description: Length for random_string
+      responses:
+        '200':
+          description: Conversion result
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  result:
+                    type: object
+                    properties:
+                      result: { type: string }
+        '400':
+          description: Bad request
+  # === Cron Jobs ===
+  /api/v1/jobs:
+    get:
+      summary: List all cron jobs
+      responses:
+        '200':
+          description: List of jobs
+    post:
+      summary: Create a new cron job
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [name, cronExpr, url]
+              properties:
+                name: { type: string }
+                cronExpr: { type: string, example: "*/5 * * * *" }
+                url: { type: string }
+                method: { type: string, default: POST }
+                headers: { type: object }
+                body: { type: string }
+      responses:
+        '201': { description: Job created }
+  /api/v1/jobs/{id}:
+    get:
+      summary: Get job details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+    put:
+      summary: Update a cron job
+    delete:
+      summary: Delete a cron job
+    post:
+      summary: Manually trigger a cron job
+  # === DNS Monitor ===
+  /api/v1/dns:
+    post:
+      summary: Perform DNS lookup
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain]
+              properties:
+                domain: { type: string, example: "example.com" }
+                recordType:
+                  type: string
+                  enum: [A, AAAA, MX, TXT, CNAME, NS, SOA]
+                  default: A
+      responses:
+        '200': { description: DNS lookup results }
+  /api/v1/healthcheck:
+    post:
+      summary: Check HTTP(S) endpoint health
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string }
+                expectedStatus: { type: integer }
+                timeout: { type: integer, default: 10 }
+      responses:
+        '200': { description: Health check result }
+  /api/v1/tls:
+    post:
+      summary: Check TLS certificate details
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [domain]
+              properties:
+                domain: { type: string, example: "example.com" }
+                port: { type: integer, default: 443 }
+      responses:
+        '200': { description: TLS certificate details }
+  # === Webhook Relay ===
+  /api/v1/endpoints:
+    get:
+      summary: List webhook endpoints
+    post:
+      summary: Create a webhook relay endpoint
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [url]
+              properties:
+                url: { type: string }
+                secret: { type: string }
+                headers: { type: object }
+      responses:
+        '201': { description: Endpoint created }
+  /api/v1/endpoints/{id}:
+    get:
+      summary: Get endpoint details
+    put:
+      summary: Update endpoint
+    delete:
+      summary: Delete endpoint
+  /api/v1/webhook/{secret}:
+    post:
+      summary: Ingest a webhook (relay to registered endpoints)
+      parameters:
+        - name: secret
+          in: path
+          required: true
+          schema: { type: string }
+  # === YAML/JSON Tool ===
+  /api/v1/fmt:
+    post:
+      summary: Format, convert, validate, or diff JSON/YAML
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [operation, input]
+              properties:
+                operation:
+                  type: string
+                  enum: [json_pretty, json_minify, yaml_pretty, yaml_to_json, json_to_yaml, json_validate, yaml_validate, json_get, json_diff]
+                input: { type: string }
+                path: { type: string, description: JSONPath for json_get }
+                second: { type: string, description: Second JSON for json_diff }
+                schema: { description: JSON Schema for validation }
+      responses:
+        '200': { description: Operation result }
+  # === QR Generator ===
+  /api/v1/qr:
+    post:
+      summary: Generate QR code
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { type: string }
+                format: { type: string, enum: [png, svg], default: png }
+                size: { type: integer, default: 256 }
+                errorCorrection: { type: string, enum: [L, M, Q, H], default: M }
+                template: { type: string, enum: [none, wifi, vcard, email, sms, geo] }
+      responses:
+        '200': { description: QR code image }
+  # === Image Editor API ===
+  /api/v1/editor/save:
+    post:
+      summary: Save processed image
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [data]
+              properties:
+                data: { type: string, description: Base64-encoded image }
+                filename: { type: string }
+      responses:
+        '200': { description: Image saved }
+  # === BeckFlow Gateway ===
+  /api/v1/status:
+    get:
+      summary: Health status of all micro-services
+      responses:
+        '200':
+          description: Status of all proxied services
+  /api/v1/workflow:
+    post:
+      summary: Execute a BeckFlow workflow
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [steps]
+              properties:
+                steps:
+                  type: array
+                  items:
+                    type: object
+                    required: [service, endpoint, method, body]
+                    properties:
+                      service: { type: string }
+                      endpoint: { type: string }
+                      method: { type: string }
+                      body: { type: object }
+                      usePrevious: { type: boolean }
+      responses:
+        '200': { description: Workflow execution results }
+  /api/v1/workflows:
+    get:
+      summary: List pre-built workflows
+  # === Auth Service ===
+  /api/v1/keys:
+    post:
+      summary: Create an API key
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [userId]
+              properties:
+                userId: { type: string }
+                tier:
+                  type: string
+                  enum: [free, starter, builder, pro]
+                  default: free
+                note: { type: string }
+                expiry: { type: string, format: date-time }
+      responses:
+        '201':
+          description: API key created (key shown once)
+  /api/v1/validate:
+    post:
+      summary: Validate API key and get JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [apiKey]
+              properties:
+                apiKey: { type: string }
+      responses:
+        '200':
+          description: JWT token returned
+        '401':
+          description: Invalid API key
+  /api/v1/token:
+    get:
+      summary: Validate a JWT token
+      parameters:
+        - name: Authorization
+          in: header
+          required: true
+          schema: { type: string }
+          description: Bearer <jwt-token>
+      responses:
+        '200': { description: Token is valid, claims returned }
+        '401': { description: Invalid or missing token }

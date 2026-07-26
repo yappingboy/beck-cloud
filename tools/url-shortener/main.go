@@ -12,7 +12,36 @@ import (
 	"time"
 
 	_ "modernc.org/sqlite"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	shortenerRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "shortener", Name: "http_requests_total",
+		Help: "Total HTTP requests by method and status.",
+	}, []string{"method", "status"})
+	shortenerDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "shortener", Name: "http_request_duration_seconds",
+		Help: "HTTP request duration in seconds.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	shortenerActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "shortener", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func metricsWrap(h http.HandlerFunc, svc string) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); shortenerActive.Inc(); defer shortenerActive.Dec()
+		sw := &sw{w, http.StatusOK}; h(sw, r)
+		shortenerRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.code)).Inc()
+		shortenerDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type sw struct{ http.ResponseWriter; code int }
+func (s *sw) WriteHeader(c int) { s.code = c; s.ResponseWriter.WriteHeader(c) }
 
 type link struct {
 	ID          string `json:"id"`
@@ -211,10 +240,11 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/api/v1/links", shortenerHandler)
-	mux.HandleFunc("/api/v1/links/", statsHandler)
+	mux.HandleFunc("/api/v1/links", metricsWrap(shortenerHandler, "shortener"))
+	mux.HandleFunc("/api/v1/links/", metricsWrap(statsHandler, "shortener"))
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
-	mux.HandleFunc("/", redirectHandler)
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/", metricsWrap(redirectHandler, "shortener"))
 
 	log.Printf("shortener listening on :%s", port)
 	log.Fatal(http.ListenAndServe(":"+port, mux))

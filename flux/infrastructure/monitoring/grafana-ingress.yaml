@@ -27,7 +27,7 @@ spec:
     - match: Host(`grafana.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: sso-admin-chain
+        - name: grafana-role-chain
           namespace: identity
       services:
         - name: kube-prometheus-stack-grafana

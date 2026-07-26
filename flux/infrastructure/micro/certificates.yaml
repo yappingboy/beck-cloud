@@ -1,23 +1,20 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: tools-becklab-cloud
+  name: tools-becklab-cloud-wildcard
   namespace: micro
 spec:
   secretName: tools-becklab-cloud-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
-  commonName: tools.becklab.cloud
   dnsNames:
+    - "*.tools.becklab.cloud"
     - tools.becklab.cloud
-    - hash.tools.becklab.cloud
-    - short.tools.becklab.cloud
-    - convert.tools.becklab.cloud
-    - qr.tools.becklab.cloud
-    - cron.tools.becklab.cloud
-    - dns.tools.becklab.cloud
-    - webhook.tools.becklab.cloud
-    - fmt.tools.becklab.cloud
-    - editor.tools.becklab.cloud
-    - dashboard.tools.becklab.cloud
+  renewBefore: 360h # 15 days
+  privateKey:
+    algorithm: ECDSA
+    size: 256
+  usages:
+    - digital signature
+    - key encipherment

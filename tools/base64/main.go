@@ -9,9 +9,37 @@ import (
 	"net/http"
 	"os"
 	"strings"
+	"time"
 
 	"github.com/google/uuid"
+	"github.com/prometheus/client_golang/prometheus"
+	"github.com/prometheus/client_golang/prometheus/promauto"
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 )
+
+var (
+	convRequests = promauto.NewCounterVec(prometheus.CounterOpts{
+		Namespace: "micro", Subsystem: "converter", Name: "http_requests_total", Help: "Total HTTP requests.",
+	}, []string{"method", "status"})
+	convDuration = promauto.NewHistogramVec(prometheus.HistogramOpts{
+		Namespace: "micro", Subsystem: "converter", Name: "http_request_duration_seconds", Help: "Request duration.",
+		Buckets: []float64{0.005, 0.01, 0.025, 0.05, 0.1, 0.25, 0.5, 1.0},
+	}, []string{"method", "endpoint"})
+	convActive = promauto.NewGauge(prometheus.GaugeOpts{
+		Namespace: "micro", Subsystem: "converter", Name: "http_active_requests", Help: "Active requests.",
+	})
+)
+
+func convWrap(h http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		t := time.Now(); convActive.Inc(); defer convActive.Dec()
+		sw := &convSW{w, http.StatusOK}; h(sw, r)
+		convRequests.WithLabelValues(r.Method, fmt.Sprintf("%d", sw.c)).Inc()
+		convDuration.WithLabelValues(r.Method, r.URL.Path).Observe(time.Since(t).Seconds())
+	}
+}
+type convSW struct{ http.ResponseWriter; c int }
+func (s *convSW) WriteHeader(code int) { s.c = code; s.ResponseWriter.WriteHeader(code) }
 
 type request struct {
 	Operation string `json:"operation"`
@@ -171,7 +199,10 @@ func main() {
 		port = "8080"
 	}
 	log.Printf("converter listening on :%s", port)
-	http.HandleFunc("/api/v1/convert", convertHandler)
-	http.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
-	http.ListenAndServe(":"+port, nil)
+	mux := http.NewServeMux()
+	mux.HandleFunc("/api/v1/convert", convWrap(convertHandler))
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { fmt.Fprintln(w, "ok") })
+	mux.Handle("/metrics", promhttp.Handler())
+	log.Printf("converter listening on :%s", port)
+	http.ListenAndServe(":"+port, mux)
 }

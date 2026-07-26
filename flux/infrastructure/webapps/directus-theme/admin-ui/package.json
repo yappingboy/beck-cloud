@@ -1,0 +1,11 @@
+{
+  "name": "beckcloud-brand",
+  "version": "1.0.0",
+  "description": "BeckCloud brand theme for Directus",
+  "keywords": ["directus-extension"],
+  "directus": {
+    "type": "ui",
+    "endpoint": "admin"
+  },
+  "main": "index.js"
+}
