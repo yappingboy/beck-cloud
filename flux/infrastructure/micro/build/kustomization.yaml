@@ -4,5 +4,4 @@ resources:
 - certificate.yaml
 - job.yaml
 - middleware.yaml
-- namespace.yaml
 - resourcequota.yaml
