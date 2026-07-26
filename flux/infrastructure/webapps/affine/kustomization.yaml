@@ -4,6 +4,5 @@ resources:
 - certificate.yaml
 - deployment.yaml
 - ingressroute.yaml
-- persistentvolumeclaim.yaml
 - secret.yaml
 - service.yaml
