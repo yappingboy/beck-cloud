@@ -1,0 +1,19 @@
+# FDM Monster — Slicing service (SSO protected)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: fdmmonster
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fdm.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: fdmmonster
+          port: 4000
+  tls:
+    secretName: fdmmonster-tls

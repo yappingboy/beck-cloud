@@ -1,0 +1,19 @@
+# OrcaSlicer — Browser-based slicer (SSO protected)
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`slicer.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: orcaslicer
+          port: 3001
+  tls:
+    secretName: orcaslicer-tls
