@@ -10,7 +10,7 @@ resources:
   - keycloak
   - lldap
   - logout-page
-  - oauth2poxy
+  - oauth2proxy
   - rbac
   - redis
   - role-enforcer
