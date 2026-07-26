@@ -1,4 +1,3 @@
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,68 +15,75 @@ spec:
       labels:
         app: tdarr
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
-        - name: tdarr
-          image: ghcr.io/haveagitgat/tdarr:2.5.0
-          resources:
-            limits:
-              memory: 2Gi
-            requests:
-              memory: 1Gi
-          env:
-            - name: TZ
-              value: America/New_York
-            - name: PUIG
-              value: "1000"
-            - name: PGID
-              value: "1000"
-            - name: serverIP
-              value: "0.0.0.0"
-            - name: serverPort
-              value: "8266"
-            - name: webUIPort
-              value: "8265"
-            - name: internalNode
-              value: "true"
-            - name: inContainer
-              value: "true"
-            - name: ffmpegVersion
-              value: "7"
-            - name: nodeName
-              value: "MyInternalNode"
-            - name: auth
-              value: "false"
-            - name: openBrowser
-              value: "true"
-            - name: maxLogSizeMB
-              value: "10"
-          ports:
-            - containerPort: 8265
-              name: http
-              protocol: TCP
-          volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: media-shows
-              mountPath: /data/shows
-            - name: media-anime
-              mountPath: /data/anime
-            - name: media-movies
-              mountPath: /data/movies
-      volumes:
+      - name: tdarr
+        image: ghcr.io/haveagitgat/tdarr:2.5.0
+        resources:
+          limits:
+            memory: 2Gi
+          requests:
+            memory: 1Gi
+        env:
+        - name: TZ
+          value: America/New_York
+        - name: PUIG
+          value: '1000'
+        - name: PGID
+          value: '1000'
+        - name: serverIP
+          value: 0.0.0.0
+        - name: serverPort
+          value: '8266'
+        - name: webUIPort
+          value: '8265'
+        - name: internalNode
+          value: 'true'
+        - name: inContainer
+          value: 'true'
+        - name: ffmpegVersion
+          value: '7'
+        - name: nodeName
+          value: MyInternalNode
+        - name: auth
+          value: 'false'
+        - name: openBrowser
+          value: 'true'
+        - name: maxLogSizeMB
+          value: '10'
+        ports:
+        - containerPort: 8265
+          name: http
+          protocol: TCP
+        volumeMounts:
         - name: config
-          persistentVolumeClaim:
-            claimName: tdarr-config
+          mountPath: /config
         - name: media-shows
-          persistentVolumeClaim:
-            claimName: media-shows
+          mountPath: /data/shows
         - name: media-anime
-          persistentVolumeClaim:
-            claimName: media-anime
+          mountPath: /data/anime
         - name: media-movies
-          persistentVolumeClaim:
-            claimName: media-movies
-
+          mountPath: /data/movies
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: tdarr-config
+      - name: media-shows
+        persistentVolumeClaim:
+          claimName: media-shows
+      - name: media-anime
+        persistentVolumeClaim:
+          claimName: media-anime
+      - name: media-movies
+        persistentVolumeClaim:
+          claimName: media-movies
 ---
 apiVersion: v1
 kind: Service
@@ -88,25 +94,12 @@ spec:
   selector:
     app: tdarr
   ports:
-    - name: http
-      port: 8265
-      targetPort: 8265
-      protocol: TCP
+  - name: http
+    port: 8265
+    targetPort: 8265
+    protocol: TCP
   type: ClusterIP
 ---
-#apiVersion: cert-manager.io/v1
-#kind: Certificate
-#metadata:
-#  name: tdarr
-#  namespace: media
-#spec:
-#  secretName: tdarr-tls
-#  issuerRef:
-#    name: letsencrypt-prod
-#    kind: ClusterIssuer
-#  dnsNames:
-#    - tdarr.becklab.cloud
-#---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -118,17 +111,17 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: identity-tdarr-role-chain@kubernetescrd
 spec:
   tls:
-    - hosts:
-        - tdarr.becklab.cloud
-      secretName: tdarr-tls
+  - hosts:
+    - tdarr.becklab.cloud
+    secretName: tdarr-tls
   rules:
-    - host: tdarr.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: tdarr
-                port:
-                  number: 8265
+  - host: tdarr.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: tdarr
+            port:
+              number: 8265

@@ -1,6 +1,3 @@
----
-# Postgres for Keycloak — uses official postgres image (docker.io/library/postgres)
-# which is publicly available without Docker Hub rate limits.
 apiVersion: apps/v1
 kind: StatefulSet
 metadata:
@@ -19,44 +16,52 @@ spec:
       labels:
         app: keycloak-postgresql
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
       containers:
-        - name: postgres
-          image: postgres:16
-          resources:
-            limits:
-              cpu: "1"
-              memory: 1Gi
-            requests:
-              cpu: 100m
-              memory: 256Mi
-          env:
-            - name: POSTGRES_DB
-              value: keycloak
-            - name: POSTGRES_USER
-              value: keycloak
-            - name: POSTGRES_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: keycloak-postgres-password
-                  key: password
-            - name: PGDATA
-              value: /var/lib/postgresql/data/pgdata
-          ports:
-            - containerPort: 5432
-              name: postgres
-          volumeMounts:
-            - name: data
-              mountPath: /var/lib/postgresql/data
-  volumeClaimTemplates:
-    - metadata:
-        name: data
-      spec:
-        accessModes:
-          - ReadWriteOnce
-        storageClassName: local-path
+      - name: postgres
+        image: postgres:16
         resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
           requests:
-            storage: 10Gi
+            cpu: 100m
+            memory: 256Mi
+        env:
+        - name: POSTGRES_DB
+          value: keycloak
+        - name: POSTGRES_USER
+          value: keycloak
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-postgres-password
+              key: password
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        ports:
+        - containerPort: 5432
+          name: postgres
+        volumeMounts:
+        - name: data
+          mountPath: /var/lib/postgresql/data
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+  volumeClaimTemplates:
+  - metadata:
+      name: data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      storageClassName: local-path
+      resources:
+        requests:
+          storage: 10Gi
 ---
 apiVersion: v1
 kind: Service
@@ -67,13 +72,11 @@ spec:
   selector:
     app: keycloak-postgresql
   ports:
-    - name: postgres
-      port: 5432
-      targetPort: 5432
+  - name: postgres
+    port: 5432
+    targetPort: 5432
   clusterIP: None
 ---
-# Keycloak — official quay.io image (no Docker Hub rate limits)
-# Theme mounted via ConfigMap for BeckCloud login branding
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -91,92 +94,112 @@ spec:
       labels:
         app: keycloak
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       initContainers:
-        - name: unpack-theme
-          image: busybox:1.37
-          command: ["sh", "-c", "mkdir -p /opt/keycloak/themes && tar xzf /theme/beckcloud.theme.tar.gz -C /opt/keycloak/themes"]
-          resources:
-            limits:
-              cpu: "100m"
-              memory: "64Mi"
-          volumeMounts:
-            - name: keycloak-theme-volume
-              mountPath: /theme
-            - name: keycloak-themes
-              mountPath: /opt/keycloak/themes
-      containers:
-        - name: keycloak
-          image: quay.io/keycloak/keycloak:26.0
-          args: ["start", "--http-relative-path=/", "--spi-theme-static-max-age=-1", "--spi-theme-reload=true"]
-          resources:
-            limits:
-              cpu: "2"
-              memory: 4Gi
-            requests:
-              cpu: 200m
-              memory: 1Gi
-          env:
-            - name: KC_DB
-              value: postgres
-            - name: KC_DB_URL
-              value: jdbc:postgresql://keycloak-postgresql:5432/keycloak
-            - name: KC_DB_USERNAME
-              value: keycloak
-            - name: KC_DB_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: keycloak-postgres-password
-                  key: password
-            - name: KC_HOSTNAME
-              value: keycloak.becklab.cloud
-            - name: KC_HOSTNAME_STRICT
-              value: "true"
-            - name: KC_HTTP_ENABLED
-              value: "true"
-            - name: KC_PROXY_HEADERS
-              value: xforwarded
-            - name: KC_HEALTH_ENABLED
-              value: "true"
-            - name: KC_BOOTSTRAP_ADMIN_USERNAME
-              value: admin
-            - name: KC_BOOTSTRAP_ADMIN_PASSWORD
-              valueFrom:
-                secretKeyRef:
-                  name: keycloak-admin-password
-                  key: admin-password
-          ports:
-            - containerPort: 8080
-              name: http
-            - containerPort: 9000
-              name: health
-          startupProbe:
-            httpGet:
-              path: /health/ready
-              port: 9000
-            failureThreshold: 60
-            periodSeconds: 5
-          readinessProbe:
-            httpGet:
-              path: /health/ready
-              port: 9000
-            initialDelaySeconds: 60
-            periodSeconds: 10
-          livenessProbe:
-            httpGet:
-              path: /health/live
-              port: 9000
-            initialDelaySeconds: 120
-            periodSeconds: 30
-          volumeMounts:
-            - name: keycloak-themes
-              mountPath: /opt/keycloak/themes/beckcloud
-              readOnly: true
-      volumes:
+      - name: unpack-theme
+        image: busybox:1.37
+        command:
+        - sh
+        - -c
+        - mkdir -p /opt/keycloak/themes && tar xzf /theme/beckcloud.theme.tar.gz -C
+          /opt/keycloak/themes
+        resources:
+          limits:
+            cpu: 100m
+            memory: 64Mi
+        volumeMounts:
         - name: keycloak-theme-volume
-          secret:
-            secretName: beckcloud-keycloak-theme-tar
+          mountPath: /theme
         - name: keycloak-themes
-          emptyDir: {}
+          mountPath: /opt/keycloak/themes
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      containers:
+      - name: keycloak
+        image: quay.io/keycloak/keycloak:26.0
+        args:
+        - start
+        - --http-relative-path=/
+        - --spi-theme-static-max-age=-1
+        - --spi-theme-reload=true
+        resources:
+          limits:
+            cpu: '2'
+            memory: 4Gi
+          requests:
+            cpu: 200m
+            memory: 1Gi
+        env:
+        - name: KC_DB
+          value: postgres
+        - name: KC_DB_URL
+          value: jdbc:postgresql://keycloak-postgresql:5432/keycloak
+        - name: KC_DB_USERNAME
+          value: keycloak
+        - name: KC_DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-postgres-password
+              key: password
+        - name: KC_HOSTNAME
+          value: keycloak.becklab.cloud
+        - name: KC_HOSTNAME_STRICT
+          value: 'true'
+        - name: KC_HTTP_ENABLED
+          value: 'true'
+        - name: KC_PROXY_HEADERS
+          value: xforwarded
+        - name: KC_HEALTH_ENABLED
+          value: 'true'
+        - name: KC_BOOTSTRAP_ADMIN_USERNAME
+          value: admin
+        - name: KC_BOOTSTRAP_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: keycloak-admin-password
+              key: admin-password
+        ports:
+        - containerPort: 8080
+          name: http
+        - containerPort: 9000
+          name: health
+        startupProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000
+          failureThreshold: 60
+          periodSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /health/ready
+            port: 9000
+          initialDelaySeconds: 60
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health/live
+            port: 9000
+          initialDelaySeconds: 120
+          periodSeconds: 30
+        volumeMounts:
+        - name: keycloak-themes
+          mountPath: /opt/keycloak/themes/beckcloud
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: keycloak-theme-volume
+        secret:
+          secretName: beckcloud-keycloak-theme-tar
+      - name: keycloak-themes
+        emptyDir: {}
 ---
 apiVersion: v1
 kind: Service
@@ -187,9 +210,9 @@ spec:
   selector:
     app: keycloak
   ports:
-    - name: http
-      port: 8080
-      targetPort: 8080
+  - name: http
+    port: 8080
+    targetPort: 8080
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -200,20 +223,19 @@ metadata:
   annotations:
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
     cert-manager.io.cluster-issuer: letsencrypt-prod
-
 spec:
   tls:
-    - hosts:
-        - keycloak.becklab.cloud
-      secretName: keycloak-tls
+  - hosts:
+    - keycloak.becklab.cloud
+    secretName: keycloak-tls
   rules:
-    - host: keycloak.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: keycloak
-                port:
-                  number: 8080
+  - host: keycloak.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: keycloak
+            port:
+              number: 8080

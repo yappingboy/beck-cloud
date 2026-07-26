@@ -6,24 +6,32 @@ metadata:
 spec:
   template:
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
-        - name: directus
-          env:
-            - name: DIRECTUS_BRAND_COLOR
-              value: "#E8A838"
-            - name: DIRECTUS_BRAND_NAME
-              value: "BeckCloud"
-            - name: DIRECTUS_BRAND_LOGO
-              value: "https://becklab.cloud/logo.svg"
-          volumeMounts:
-            - name: brand-theme
-              mountPath: /directus/public/brand.css
-              subPath: brand.css
-              readOnly: true
-      volumes:
+      - name: directus
+        env:
+        - name: DIRECTUS_BRAND_COLOR
+          value: '#E8A838'
+        - name: DIRECTUS_BRAND_NAME
+          value: BeckCloud
+        - name: DIRECTUS_BRAND_LOGO
+          value: https://becklab.cloud/logo.svg
+        volumeMounts:
         - name: brand-theme
-          configMap:
-            name: directus-brand-theme
-            items:
-              - key: brand.css
-                path: brand.css
+          mountPath: /directus/public/brand.css
+          subPath: brand.css
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: brand-theme
+        configMap:
+          name: directus-brand-theme
+          items:
+          - key: brand.css
+            path: brand.css

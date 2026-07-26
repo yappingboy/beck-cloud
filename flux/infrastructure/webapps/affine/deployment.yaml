@@ -16,113 +16,111 @@ spec:
       labels:
         app: affine
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
       initContainers:
-        - name: affine-migration
-          image: ghcr.io/toeverything/affine:stable
-          command:
-            - sh
-            - -c
-            - |
-              # Wait for Postgres using Node.js (dash doesn't support /dev/tcp)
-              node -e "
-                const net = require('net');
-                let attempts = 0;
-                const maxAttempts = 60;
-                function tryConnect() {
-                  attempts++;
-                  const c = new net.Socket();
-                  c.setTimeout(3000);
-                  c.on('connect', () => { c.destroy(); runMigrations(); });
-                  c.on('timeout', () => { c.destroy(); onFail(); });
-                  c.on('error', () => { onFail(); });
-                  c.connect(5432, process.env.PGHOST || 'affine-postgres.webapps.svc.cluster.local');
-                }
-                function onFail() {
-                  console.log('Waiting for postgres... (' + attempts + ')');
-                  if (attempts < maxAttempts) setTimeout(tryConnect, 3000);
-                  else process.exit(1);
-                }
-                function runMigrations() {
-                  console.log('Postgres ready after ' + attempts + ' attempt(s)');
-                  const { execSync } = require('child_process');
-                  try { execSync('node ./scripts/self-host-predeploy.js', { stdio: 'inherit' }); }
-                  catch(e) { console.error('Migration failed:', e.message); process.exit(1); }
-                }
-                tryConnect();
-              "
-          env:
-            - name: AFFINE_REVISION
-              value: stable
-            - name: AFFINE_SERVER_PORT
-              value: "3010"
-            - name: AFFINE_SERVER_EXTERNAL_URL
-              value: https://affine.becklab.cloud
-            - name: REDIS_SERVER_HOST
-              value: affine-redis.webapps.svc.cluster.local
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: affine-db
-                  key: database-url
-            - name: AFFINE_INDEXER_ENABLED
-              value: "false"
-          volumeMounts:
-            - name: storage
-              mountPath: /app/data
-      containers:
-        - name: affine
-          image: ghcr.io/toeverything/affine:stable
-          resources:
-            limits:
-              cpu: "1"
-              memory: 1Gi
-            requests:
-              cpu: 200m
-              memory: 512Mi
-          env:
-            - name: AFFINE_REVISION
-              value: stable
-            - name: AFFINE_SERVER_PORT
-              value: "3010"
-            - name: REDIS_SERVER_HOST
-              value: affine-redis.webapps.svc.cluster.local
-            - name: DATABASE_URL
-              valueFrom:
-                secretKeyRef:
-                  name: affine-db
-                  key: database-url
-            - name: AFFINE_INDEXER_ENABLED
-              value: "false"
-            - name: AFFINE_SERVER_EXTERNAL_URL
-              value: https://affine.becklab.cloud
-          ports:
-            - containerPort: 3010
-              name: http
-              protocol: TCP
-          volumeMounts:
-            - name: storage
-              mountPath: /app/data
-          livenessProbe:
-            httpGet:
-              path: /
-              port: 3010
-            initialDelaySeconds: 30
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /
-              port: 3010
-            initialDelaySeconds: 15
-            periodSeconds: 5
-      volumes:
+      - name: affine-migration
+        image: ghcr.io/toeverything/affine:stable
+        command:
+        - sh
+        - -c
+        - "# Wait for Postgres using Node.js (dash doesn't support /dev/tcp)\nnode\
+          \ -e \"\n  const net = require('net');\n  let attempts = 0;\n  const maxAttempts\
+          \ = 60;\n  function tryConnect() {\n    attempts++;\n    const c = new net.Socket();\n\
+          \    c.setTimeout(3000);\n    c.on('connect', () => { c.destroy(); runMigrations();\
+          \ });\n    c.on('timeout', () => { c.destroy(); onFail(); });\n    c.on('error',\
+          \ () => { onFail(); });\n    c.connect(5432, process.env.PGHOST || 'affine-postgres.webapps.svc.cluster.local');\n\
+          \  }\n  function onFail() {\n    console.log('Waiting for postgres... ('\
+          \ + attempts + ')');\n    if (attempts < maxAttempts) setTimeout(tryConnect,\
+          \ 3000);\n    else process.exit(1);\n  }\n  function runMigrations() {\n\
+          \    console.log('Postgres ready after ' + attempts + ' attempt(s)');\n\
+          \    const { execSync } = require('child_process');\n    try { execSync('node\
+          \ ./scripts/self-host-predeploy.js', { stdio: 'inherit' }); }\n    catch(e)\
+          \ { console.error('Migration failed:', e.message); process.exit(1); }\n\
+          \  }\n  tryConnect();\n\"\n"
+        env:
+        - name: AFFINE_REVISION
+          value: stable
+        - name: AFFINE_SERVER_PORT
+          value: '3010'
+        - name: AFFINE_SERVER_EXTERNAL_URL
+          value: https://affine.becklab.cloud
+        - name: REDIS_SERVER_HOST
+          value: affine-redis.webapps.svc.cluster.local
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: affine-db
+              key: database-url
+        - name: AFFINE_INDEXER_ENABLED
+          value: 'false'
+        volumeMounts:
         - name: storage
-          persistentVolumeClaim:
-            claimName: affine-storage
-        - name: config
-          persistentVolumeClaim:
-            claimName: affine-config
+          mountPath: /app/data
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      containers:
+      - name: affine
+        image: ghcr.io/toeverything/affine:stable
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+        env:
+        - name: AFFINE_REVISION
+          value: stable
+        - name: AFFINE_SERVER_PORT
+          value: '3010'
+        - name: REDIS_SERVER_HOST
+          value: affine-redis.webapps.svc.cluster.local
+        - name: DATABASE_URL
+          valueFrom:
+            secretKeyRef:
+              name: affine-db
+              key: database-url
+        - name: AFFINE_INDEXER_ENABLED
+          value: 'false'
+        - name: AFFINE_SERVER_EXTERNAL_URL
+          value: https://affine.becklab.cloud
+        ports:
+        - containerPort: 3010
+          name: http
+          protocol: TCP
+        volumeMounts:
+        - name: storage
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 3010
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 3010
+          initialDelaySeconds: 15
+          periodSeconds: 5
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: storage
+        persistentVolumeClaim:
+          claimName: affine-storage
+      - name: config
+        persistentVolumeClaim:
+          claimName: affine-config
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -143,35 +141,44 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 999
+        fsGroup: 999
+        runAsGroup: 999
       containers:
-        - name: redis
-          image: redis:7-alpine
-          resources:
-            limits:
-              cpu: 500m
-              memory: 256Mi
-            requests:
-              cpu: 50m
-              memory: 64Mi
-          ports:
-            - containerPort: 6379
-              name: redis
-              protocol: TCP
-          livenessProbe:
-            exec:
-              command:
-                - redis-cli
-                - --raw
-                - incr
-                - ping
-            initialDelaySeconds: 10
-            periodSeconds: 10
-          readinessProbe:
-            exec:
-              command:
-                - redis-cli
-                - --raw
-                - incr
-                - ping
-            initialDelaySeconds: 5
-            periodSeconds: 5
+      - name: redis
+        image: redis:7-alpine
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 50m
+            memory: 64Mi
+        ports:
+        - containerPort: 6379
+          name: redis
+          protocol: TCP
+        livenessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
+          initialDelaySeconds: 10
+          periodSeconds: 10
+        readinessProbe:
+          exec:
+            command:
+            - redis-cli
+            - --raw
+            - incr
+            - ping
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        securityContext:
+          capabilities:
+            drop:
+            - ALL

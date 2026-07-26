@@ -4,106 +4,79 @@ metadata:
   name: pricing-page-html
   namespace: micro
 data:
-  index.html: |
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>BeckLab Tools — Pricing</title>
-      <style>
-        :root { --bg: #0a0a0f; --card: #12121a; --border: #1e1e2e; --text: #e0e0e8; --muted: #6b6b80; --accent: #818cf8; --accent2: #a78bfa; --green: #4ade80; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-        .container { max-width: 1100px; margin: 0 auto; padding: 2rem 1rem; }
-        header { text-align: center; padding: 4rem 0 2rem; }
-        h1 { font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin-bottom: 0.75rem; }
-        .subtitle { color: var(--muted); font-size: 1.1rem; max-width: 600px; margin: 0 auto; }
-        .founding { background: linear-gradient(135deg, rgba(129,140,248,0.1), rgba(167,139,250,0.1)); border: 1px solid rgba(129,140,248,0.3); border-radius: 16px; padding: 1.25rem; text-align: center; margin: 2rem auto; max-width: 600px; }
-        .founding h3 { color: var(--accent); margin-bottom: 0.5rem; }
-        .founding p { color: var(--muted); font-size: 0.9rem; }
-        .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.5rem; margin-top: 3rem; }
-        .plan { background: var(--card); border: 1px solid var(--border); border-radius: 16px; padding: 2rem; position: relative; transition: border-color 0.2s; }
-        .plan:hover { border-color: var(--accent); }
-        .plan.featured { border-color: var(--accent); box-shadow: 0 0 40px rgba(129,140,248,0.1); }
-        .plan-badge { position: absolute; top: -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg, var(--accent), var(--accent2)); color: white; padding: 0.25rem 1rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
-        .plan-name { font-size: 1.1rem; font-weight: 600; margin-bottom: 0.5rem; }
-        .plan-price { font-size: 3rem; font-weight: 800; }
-        .plan-price span { font-size: 1rem; color: var(--muted); font-weight: 400; }
-        .plan-desc { color: var(--muted); font-size: 0.85rem; margin: 0.75rem 0 1.5rem; }
-        .features { list-style: none; margin-bottom: 2rem; }
-        .features li { padding: 0.5rem 0; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem; }
-        .features li::before { content: "✓"; color: var(--green); font-weight: 700; }
-        .cta { display: block; width: 100%; padding: 0.75rem; border: 1px solid var(--accent); background: transparent; color: var(--accent); border-radius: 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all 0.2s; text-align: center; text-decoration: none; }
-        .cta:hover { background: var(--accent); color: var(--bg); }
-        .plan.featured .cta { background: linear-gradient(135deg, var(--accent), var(--accent2)); border: none; color: white; }
-        footer { text-align: center; padding: 3rem 0; color: var(--muted); font-size: 0.8rem; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <header>
-          <h1>Simple, Transparent Pricing</h1>
-          <p class="subtitle">Self-hosted micro-services for developers. Start free, upgrade when you need more.</p>
-        </header>
-        <div class="founding">
-          <h3>🎉 Founding Member Pricing</h3>
-          <p>First 10 customers get <strong>50% off</strong> any plan — locked in for life. That's Starter for $1.50/mo, Builder for $3.50/mo, Pro for $6/mo.</p>
-        </div>
-        <div class="pricing">
-          <div class="plan">
-            <div class="plan-name">Starter</div>
-            <div class="plan-price">$3<span>/mo</span></div>
-            <p class="plan-desc">For personal projects and light usage.</p>
-            <ul class="features">
-              <li>60 requests/minute</li>
-              <li>10,000 requests/month</li>
-              <li>All 10 micro-services</li>
-              <li>API key access</li>
-              <li>Community support</li>
-              <li>BeckFlow: 3 workflows</li>
-            </ul>
-            <a href="#" class="cta">Get Started</a>
-          </div>
-          <div class="plan featured">
-            <div class="plan-badge">Most Popular</div>
-            <div class="plan-name">Builder</div>
-            <div class="plan-price">$7<span>/mo</span></div>
-            <p class="plan-desc">For active developers and small teams.</p>
-            <ul class="features">
-              <li>120 requests/minute</li>
-              <li>50,000 requests/month</li>
-              <li>All 10 micro-services</li>
-              <li>API key access</li>
-              <li>Priority support</li>
-              <li>BeckFlow: 20 workflows</li>
-              <li>Custom webhooks</li>
-              <li>Usage analytics</li>
-            </ul>
-            <a href="#" class="cta">Get Started</a>
-          </div>
-          <div class="plan">
-            <div class="plan-name">Pro</div>
-            <div class="plan-price">$12<span>/mo</span></div>
-            <p class="plan-desc">For teams and production workloads.</p>
-            <ul class="features">
-              <li>300 requests/minute</li>
-              <li>200,000 requests/month</li>
-              <li>All 10 micro-services</li>
-              <li>API key access</li>
-              <li>Priority support</li>
-              <li>Unlimited BeckFlow workflows</li>
-              <li>Custom webhooks & cron jobs</li>
-              <li>Usage analytics & logs</li>
-              <li>SLA guarantee</li>
-            </ul>
-            <a href="#" class="cta">Get Started</a>
-          </div>
-        </div>
-        <footer>All plans include TLS, 99.9% uptime SLA, and access to all BeckLab Tools services.</footer>
-      </div>
-    </body>
-    </html>
+  index.html: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\"\
+    >\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"\
+    >\n  <title>BeckLab Tools \u2014 Pricing</title>\n  <style>\n    :root { --bg:\
+    \ #0a0a0f; --card: #12121a; --border: #1e1e2e; --text: #e0e0e8; --muted: #6b6b80;\
+    \ --accent: #818cf8; --accent2: #a78bfa; --green: #4ade80; }\n    * { margin:\
+    \ 0; padding: 0; box-sizing: border-box; }\n    body { font-family: 'Inter', -apple-system,\
+    \ system-ui, sans-serif; background: var(--bg); color: var(--text); min-height:\
+    \ 100vh; }\n    .container { max-width: 1100px; margin: 0 auto; padding: 2rem\
+    \ 1rem; }\n    header { text-align: center; padding: 4rem 0 2rem; }\n    h1 {\
+    \ font-size: 2.5rem; font-weight: 800; background: linear-gradient(135deg, var(--accent),\
+    \ var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent;\
+    \ margin-bottom: 0.75rem; }\n    .subtitle { color: var(--muted); font-size: 1.1rem;\
+    \ max-width: 600px; margin: 0 auto; }\n    .founding { background: linear-gradient(135deg,\
+    \ rgba(129,140,248,0.1), rgba(167,139,250,0.1)); border: 1px solid rgba(129,140,248,0.3);\
+    \ border-radius: 16px; padding: 1.25rem; text-align: center; margin: 2rem auto;\
+    \ max-width: 600px; }\n    .founding h3 { color: var(--accent); margin-bottom:\
+    \ 0.5rem; }\n    .founding p { color: var(--muted); font-size: 0.9rem; }\n   \
+    \ .pricing { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px,\
+    \ 1fr)); gap: 1.5rem; margin-top: 3rem; }\n    .plan { background: var(--card);\
+    \ border: 1px solid var(--border); border-radius: 16px; padding: 2rem; position:\
+    \ relative; transition: border-color 0.2s; }\n    .plan:hover { border-color:\
+    \ var(--accent); }\n    .plan.featured { border-color: var(--accent); box-shadow:\
+    \ 0 0 40px rgba(129,140,248,0.1); }\n    .plan-badge { position: absolute; top:\
+    \ -12px; left: 50%; transform: translateX(-50%); background: linear-gradient(135deg,\
+    \ var(--accent), var(--accent2)); color: white; padding: 0.25rem 1rem; border-radius:\
+    \ 9999px; font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing:\
+    \ 0.05em; }\n    .plan-name { font-size: 1.1rem; font-weight: 600; margin-bottom:\
+    \ 0.5rem; }\n    .plan-price { font-size: 3rem; font-weight: 800; }\n    .plan-price\
+    \ span { font-size: 1rem; color: var(--muted); font-weight: 400; }\n    .plan-desc\
+    \ { color: var(--muted); font-size: 0.85rem; margin: 0.75rem 0 1.5rem; }\n   \
+    \ .features { list-style: none; margin-bottom: 2rem; }\n    .features li { padding:\
+    \ 0.5rem 0; font-size: 0.9rem; display: flex; align-items: center; gap: 0.5rem;\
+    \ }\n    .features li::before { content: \"\u2713\"; color: var(--green); font-weight:\
+    \ 700; }\n    .cta { display: block; width: 100%; padding: 0.75rem; border: 1px\
+    \ solid var(--accent); background: transparent; color: var(--accent); border-radius:\
+    \ 10px; font-size: 0.9rem; font-weight: 600; cursor: pointer; transition: all\
+    \ 0.2s; text-align: center; text-decoration: none; }\n    .cta:hover { background:\
+    \ var(--accent); color: var(--bg); }\n    .plan.featured .cta { background: linear-gradient(135deg,\
+    \ var(--accent), var(--accent2)); border: none; color: white; }\n    footer {\
+    \ text-align: center; padding: 3rem 0; color: var(--muted); font-size: 0.8rem;\
+    \ }\n  </style>\n</head>\n<body>\n  <div class=\"container\">\n    <header>\n\
+    \      <h1>Simple, Transparent Pricing</h1>\n      <p class=\"subtitle\">Self-hosted\
+    \ micro-services for developers. Start free, upgrade when you need more.</p>\n\
+    \    </header>\n    <div class=\"founding\">\n      <h3>\U0001F389 Founding Member\
+    \ Pricing</h3>\n      <p>First 10 customers get <strong>50% off</strong> any plan\
+    \ \u2014 locked in for life. That's Starter for $1.50/mo, Builder for $3.50/mo,\
+    \ Pro for $6/mo.</p>\n    </div>\n    <div class=\"pricing\">\n      <div class=\"\
+    plan\">\n        <div class=\"plan-name\">Starter</div>\n        <div class=\"\
+    plan-price\">$3<span>/mo</span></div>\n        <p class=\"plan-desc\">For personal\
+    \ projects and light usage.</p>\n        <ul class=\"features\">\n          <li>60\
+    \ requests/minute</li>\n          <li>10,000 requests/month</li>\n          <li>All\
+    \ 10 micro-services</li>\n          <li>API key access</li>\n          <li>Community\
+    \ support</li>\n          <li>BeckFlow: 3 workflows</li>\n        </ul>\n    \
+    \    <a href=\"#\" class=\"cta\">Get Started</a>\n      </div>\n      <div class=\"\
+    plan featured\">\n        <div class=\"plan-badge\">Most Popular</div>\n     \
+    \   <div class=\"plan-name\">Builder</div>\n        <div class=\"plan-price\"\
+    >$7<span>/mo</span></div>\n        <p class=\"plan-desc\">For active developers\
+    \ and small teams.</p>\n        <ul class=\"features\">\n          <li>120 requests/minute</li>\n\
+    \          <li>50,000 requests/month</li>\n          <li>All 10 micro-services</li>\n\
+    \          <li>API key access</li>\n          <li>Priority support</li>\n    \
+    \      <li>BeckFlow: 20 workflows</li>\n          <li>Custom webhooks</li>\n \
+    \         <li>Usage analytics</li>\n        </ul>\n        <a href=\"#\" class=\"\
+    cta\">Get Started</a>\n      </div>\n      <div class=\"plan\">\n        <div\
+    \ class=\"plan-name\">Pro</div>\n        <div class=\"plan-price\">$12<span>/mo</span></div>\n\
+    \        <p class=\"plan-desc\">For teams and production workloads.</p>\n    \
+    \    <ul class=\"features\">\n          <li>300 requests/minute</li>\n       \
+    \   <li>200,000 requests/month</li>\n          <li>All 10 micro-services</li>\n\
+    \          <li>API key access</li>\n          <li>Priority support</li>\n    \
+    \      <li>Unlimited BeckFlow workflows</li>\n          <li>Custom webhooks &\
+    \ cron jobs</li>\n          <li>Usage analytics & logs</li>\n          <li>SLA\
+    \ guarantee</li>\n        </ul>\n        <a href=\"#\" class=\"cta\">Get Started</a>\n\
+    \      </div>\n    </div>\n    <footer>All plans include TLS, 99.9% uptime SLA,\
+    \ and access to all BeckLab Tools services.</footer>\n  </div>\n</body>\n</html>\n"
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -126,25 +99,29 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       containers:
-        - name: pricing-page
-          image: nginx:1.25-alpine
-          ports:
-            - containerPort: 80
-          resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              cpu: 50m
-              memory: 64Mi
-          volumeMounts:
-            - name: html
-              mountPath: /usr/share/nginx/html
-              readOnly: true
-      volumes:
+      - name: pricing-page
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
         - name: html
-          configMap:
-            name: pricing-page-html
+          mountPath: /usr/share/nginx/html
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: html
+        configMap:
+          name: pricing-page-html
 ---
 apiVersion: v1
 kind: Service
@@ -155,8 +132,8 @@ spec:
   selector:
     app: pricing-page
   ports:
-    - port: 80
-      targetPort: 80
+  - port: 80
+    targetPort: 80
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -165,17 +142,17 @@ metadata:
   namespace: micro
 spec:
   entryPoints:
-    - websecure
+  - websecure
   routes:
-    - match: Host(`tools.becklab.cloud`) && PathPrefix(`/pricing`)
-      kind: Rule
-      services:
-        - name: pricing-page
-          port: 80
-    - match: Host(`pricing.tools.becklab.cloud`)
-      kind: Rule
-      services:
-        - name: pricing-page
-          port: 80
+  - match: Host(`tools.becklab.cloud`) && PathPrefix(`/pricing`)
+    kind: Rule
+    services:
+    - name: pricing-page
+      port: 80
+  - match: Host(`pricing.tools.becklab.cloud`)
+    kind: Rule
+    services:
+    - name: pricing-page
+      port: 80
   tls:
     secretName: tools-becklab-cloud-tls

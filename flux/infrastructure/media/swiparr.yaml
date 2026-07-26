@@ -1,7 +1,3 @@
-# Swiparr — "Tinder for movies" collaborative watch discovery
-# Deployed in media namespace alongside Jellyfin stack
-# Ingress: swiparr.becklab.cloud (media SSO via sso-media-chain)
-
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -9,12 +5,11 @@ metadata:
   namespace: media
 spec:
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   resources:
     requests:
       storage: 2Gi
   storageClassName: local-path
-
 ---
 apiVersion: v1
 kind: Secret
@@ -25,15 +20,14 @@ stringData:
   PROVIDER: jellyfin
   JELLYFIN_URL: http://jellyfin.media.svc.cluster.local:8096
   JELLYFIN_PUBLIC_URL: https://jellyfin.becklab.cloud
-  PROVIDER_LOCK: "true"
-  USE_SECURE_COOKIES: "true"
-  PORT: "4321"
+  PROVIDER_LOCK: 'true'
+  USE_SECURE_COOKIES: 'true'
+  PORT: '4321'
   HOSTNAME: 0.0.0.0
   DATABASE_URL: file:/app/data/swiparr.db
-  USE_STATIC_FILTERS: "false"
-  ALLOW_PRIVATE_PROVIDER_URLS: "true"
+  USE_STATIC_FILTERS: 'false'
+  ALLOW_PRIVATE_PROVIDER_URLS: 'true'
 type: Opaque
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -55,46 +49,54 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
         fsGroup: 1000
+        runAsGroup: 1000
+        supplementalGroups:
+        - 1000
       containers:
-        - name: swiparr
-          image: ghcr.io/m3sserstudi0s/swiparr:0.5.0
-          resources:
-            limits:
-              cpu: "500m"
-              memory: 512Mi
-            requests:
-              cpu: 50m
-              memory: 128Mi
-          ports:
-            - containerPort: 4321
-              name: http
-              protocol: TCP
-          envFrom:
-            - secretRef:
-                name: swiparr-env
-          volumeMounts:
-            - name: data
-              mountPath: /app/data
-          livenessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 5
-          readinessProbe:
-            httpGet:
-              path: /
-              port: http
-            initialDelaySeconds: 10
-            periodSeconds: 10
-            timeoutSeconds: 3
-      volumes:
+      - name: swiparr
+        image: ghcr.io/m3sserstudi0s/swiparr:0.5.0
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 50m
+            memory: 128Mi
+        ports:
+        - containerPort: 4321
+          name: http
+          protocol: TCP
+        envFrom:
+        - secretRef:
+            name: swiparr-env
+        volumeMounts:
         - name: data
-          persistentVolumeClaim:
-            claimName: swiparr-data
-
+          mountPath: /app/data
+        livenessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 30
+          periodSeconds: 15
+          timeoutSeconds: 5
+        readinessProbe:
+          httpGet:
+            path: /
+            port: http
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: swiparr-data
 ---
 apiVersion: v1
 kind: Service
@@ -105,12 +107,11 @@ spec:
   selector:
     app: swiparr
   ports:
-    - name: http
-      port: 4321
-      targetPort: 4321
-      protocol: TCP
+  - name: http
+    port: 4321
+    targetPort: 4321
+    protocol: TCP
   type: ClusterIP
-
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate
@@ -121,11 +122,10 @@ spec:
   secretName: swiparr-tls
   commonName: swiparr.becklab.cloud
   dnsNames:
-    - swiparr.becklab.cloud
+  - swiparr.becklab.cloud
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
-
 ---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
@@ -139,17 +139,17 @@ metadata:
 spec:
   ingressClassName: traefik
   rules:
-    - host: swiparr.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: swiparr
-                port:
-                  number: 4321
+  - host: swiparr.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: swiparr
+            port:
+              number: 4321
   tls:
-    - hosts:
-        - swiparr.becklab.cloud
-      secretName: swiparr-tls
+  - hosts:
+    - swiparr.becklab.cloud
+    secretName: swiparr-tls

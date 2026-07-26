@@ -15,54 +15,62 @@ spec:
       labels:
         app: lldap
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       containers:
-        - name: lldap
-          image: lldap/lldap:stable
-          resources:
-            limits:
-              cpu: "1"
-              memory: 512Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          env:
-            - name: LLDAP_LDAP_BASE_DN
-              value: dc=becklab,dc=cloud
-            - name: LLDAP_LDAP_USER_DN
-              value: admin
-            - name: LLDAP_LDAP_USER_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: lldap-admin-password
-                  key: admin-password
-            - name: LLDAP_KEY_SEED
-              valueFrom:
-                secretKeyRef:
-                  name: lldap-admin-password
-                  key: key-seed
-            - name: LLDAP_JWT_SECRET
-              valueFrom:
-                secretKeyRef:
-                  name: lldap-admin-password
-                  key: jwt-secret
-            - name: LLDAP_DATABASE_URL
-              value: sqlite:///data/users.db?mode=rwc
-            - name: LLDAP_HTTP_URL
-              value: https://lldap.becklab.cloud
-          ports:
-            - containerPort: 3890
-              name: ldap
-              protocol: TCP
-            - containerPort: 17170
-              name: web
-              protocol: TCP
-          volumeMounts:
-            - name: data
-              mountPath: /data
-      volumes:
+      - name: lldap
+        image: lldap/lldap:stable
+        resources:
+          limits:
+            cpu: '1'
+            memory: 512Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        env:
+        - name: LLDAP_LDAP_BASE_DN
+          value: dc=becklab,dc=cloud
+        - name: LLDAP_LDAP_USER_DN
+          value: admin
+        - name: LLDAP_LDAP_USER_PASS
+          valueFrom:
+            secretKeyRef:
+              name: lldap-admin-password
+              key: admin-password
+        - name: LLDAP_KEY_SEED
+          valueFrom:
+            secretKeyRef:
+              name: lldap-admin-password
+              key: key-seed
+        - name: LLDAP_JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: lldap-admin-password
+              key: jwt-secret
+        - name: LLDAP_DATABASE_URL
+          value: sqlite:///data/users.db?mode=rwc
+        - name: LLDAP_HTTP_URL
+          value: https://lldap.becklab.cloud
+        ports:
+        - containerPort: 3890
+          name: ldap
+          protocol: TCP
+        - containerPort: 17170
+          name: web
+          protocol: TCP
+        volumeMounts:
         - name: data
-          persistentVolumeClaim:
-            claimName: lldap-data
+          mountPath: /data
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: data
+        persistentVolumeClaim:
+          claimName: lldap-data
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -71,7 +79,7 @@ metadata:
   namespace: identity
 spec:
   accessModes:
-    - ReadWriteOnce
+  - ReadWriteOnce
   storageClassName: local-path
   resources:
     requests:
@@ -86,17 +94,16 @@ spec:
   selector:
     app: lldap
   ports:
-    - name: ldap
-      port: 389
-      targetPort: 3890
-      protocol: TCP
-    - name: web
-      port: 17170
-      targetPort: 17170
-      protocol: TCP
+  - name: ldap
+    port: 389
+    targetPort: 3890
+    protocol: TCP
+  - name: web
+    port: 17170
+    targetPort: 17170
+    protocol: TCP
   type: ClusterIP
 ---
-# NodePort for external LDAP access (hypervisor → OpenNebula)
 apiVersion: v1
 kind: Service
 metadata:
@@ -106,11 +113,11 @@ spec:
   selector:
     app: lldap
   ports:
-    - name: ldap
-      port: 389
-      targetPort: 3890
-      protocol: TCP
-      nodePort: 31389
+  - name: ldap
+    port: 389
+    targetPort: 3890
+    protocol: TCP
+    nodePort: 31389
   type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
@@ -123,17 +130,17 @@ metadata:
     cert-manager.io/cluster-issuer: letsencrypt-prod
 spec:
   tls:
-    - hosts:
-        - lldap.becklab.cloud
-      secretName: lldap-tls
+  - hosts:
+    - lldap.becklab.cloud
+    secretName: lldap-tls
   rules:
-    - host: lldap.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: lldap
-                port:
-                  number: 17170
+  - host: lldap.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: lldap
+            port:
+              number: 17170

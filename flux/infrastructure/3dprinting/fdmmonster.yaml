@@ -1,6 +1,3 @@
-# FDM Monster — 3D print farm manager
-# fdmmonster/fdm-monster:2, port 4000
----
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -18,37 +15,45 @@ spec:
       labels:
         app: fdmmonster
     spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       containers:
-        - name: fdm-monster
-          image: docker.io/fdmmonster/fdm-monster:0.30.2
-          resources:
-            limits:
-              cpu: "1"
-              memory: 1Gi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          ports:
-            - containerPort: 4000
-              name: http
-              protocol: TCP
-          env:
-            - name: TZ
-              value: America/New_York
-          volumeMounts:
-            - name: database
-              mountPath: /app/database
-            - name: media
-              mountPath: /app/media
-      volumes:
-        - name: media
-          persistentVolumeClaim:
-            claimName: fdm-monster-media
+      - name: fdm-monster
+        image: docker.io/fdmmonster/fdm-monster:0.30.2
+        resources:
+          limits:
+            cpu: '1'
+            memory: 1Gi
+          requests:
+            cpu: 100m
+            memory: 128Mi
+        ports:
+        - containerPort: 4000
+          name: http
+          protocol: TCP
+        env:
+        - name: TZ
+          value: America/New_York
+        volumeMounts:
         - name: database
-          persistentVolumeClaim:
-            claimName: fdm-monster-database
+          mountPath: /app/database
+        - name: media
+          mountPath: /app/media
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: media
+        persistentVolumeClaim:
+          claimName: fdm-monster-media
+      - name: database
+        persistentVolumeClaim:
+          claimName: fdm-monster-database
 ---
 apiVersion: v1
 kind: Service
@@ -59,8 +64,8 @@ spec:
   selector:
     app: fdmmonster
   ports:
-    - port: 4000
-      targetPort: 4000
+  - port: 4000
+    targetPort: 4000
   type: NodePort
 ---
 apiVersion: networking.k8s.io/v1
@@ -74,17 +79,17 @@ metadata:
     traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
 spec:
   tls:
-    - hosts:
-        - fdm.becklab.cloud
-      secretName: fdmmonster-tls
+  - hosts:
+    - fdm.becklab.cloud
+    secretName: fdmmonster-tls
   rules:
-    - host: fdm.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: fdmmonster
-                port:
-                  number: 4000
+  - host: fdm.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: fdmmonster
+            port:
+              number: 4000

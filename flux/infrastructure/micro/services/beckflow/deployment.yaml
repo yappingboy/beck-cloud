@@ -14,50 +14,53 @@ spec:
     metadata:
       labels:
         app: beckflow
-        monitoring: "true"
-        monitoring: "true"
+        monitoring: 'true'
     spec:
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
         fsGroup: 1000
       containers:
-        - name: beckflow
-          image: ghcr.io/yappingboy/micro/beckflow:v1.0.0
-          ports:
-            - containerPort: 8080
-          env:
-            - name: PORT
-              value: "8080"
-            - name: STATIC_DIR
-              value: "/app/frontend"
-          resources:
-            requests:
-              cpu: 50m
-              memory: 64Mi
-            limits:
-              cpu: 200m
-              memory: 128Mi
-          livenessProbe:
-            httpGet:
-              path: /healthz
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          readinessProbe:
-            httpGet:
-              path: /healthz
-              port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
-          volumeMounts:
-            - name: frontend
-              mountPath: /app/frontend
-              readOnly: true
-      volumes:
+      - name: beckflow
+        image: ghcr.io/yappingboy/micro/beckflow:v1.0.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: PORT
+          value: '8080'
+        - name: STATIC_DIR
+          value: /app/frontend
+        resources:
+          requests:
+            cpu: 50m
+            memory: 64Mi
+          limits:
+            cpu: 200m
+            memory: 128Mi
+        livenessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /healthz
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        volumeMounts:
         - name: frontend
-          configMap:
-            name: beckflow-frontend
+          mountPath: /app/frontend
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: frontend
+        configMap:
+          name: beckflow-frontend
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -65,8 +68,9 @@ metadata:
   name: beckflow-frontend
   namespace: micro
 data:
-  index.html: |
-    EMBEDDED_FRONTEND_PLACEHOLDER
+  index.html: 'EMBEDDED_FRONTEND_PLACEHOLDER
+
+    '
 ---
 apiVersion: v1
 kind: Service
@@ -77,10 +81,10 @@ spec:
   selector:
     app: beckflow
   ports:
-    - port: 80
-      targetPort: 8080
-      protocol: TCP
-    - name: metrics
-      port: 9090
-      targetPort: 8080
-      protocol: TCP
+  - port: 80
+    targetPort: 8080
+    protocol: TCP
+  - name: metrics
+    port: 9090
+    targetPort: 8080
+    protocol: TCP

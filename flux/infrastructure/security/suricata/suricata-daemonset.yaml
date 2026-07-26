@@ -1,6 +1,3 @@
-# Suricata IDS DaemonSet — detect-only mode on all nodes.
-# Captures on cilium_host for full visibility (external + pod traffic).
-# EVE JSON logs forwarded to wazuh-manager-worker:514/TCP via log-forwarder sidecar.
 apiVersion: apps/v1
 kind: DaemonSet
 metadata:
@@ -24,73 +21,88 @@ spec:
       hostNetwork: true
       dnsPolicy: ClusterFirstWithHostNet
       tolerations:
-        - operator: Exists
-
-      # Init container copies writable config from ConfigMap to emptyDir
+      - operator: Exists
       initContainers:
-        - name: copy-config
-          image: busybox:1.37
-          command: ["sh", "-c", "cp /config/suricata.yaml /suricata-config/suricata.yaml"]
-          volumeMounts:
-            - name: config-src
-              mountPath: /config
-              readOnly: true
-            - name: suricata-config
-              mountPath: /suricata-config
-
-      containers:
-
-        # ── Suricata IDS ────────────────────────────────────────
-        - name: suricata
-          image: jasonish/suricata:8.0.6-amd64
-          args: ["-i", "cilium_host"]
-          resources:
-            requests:
-              cpu: 100m
-              memory: 256Mi
-            limits:
-              cpu: "1"
-              memory: 2Gi
-          securityContext:
-            capabilities:
-              add: ["NET_ADMIN", "NET_RAW", "SYS_NICE"]
-          volumeMounts:
-            - name: logs
-              mountPath: /var/log/suricata
-            - name: suricata-config
-              mountPath: /etc/suricata/suricata.yaml
-              subPath: suricata.yaml
-
-        # ── EVE JSON → Wazuh forwarder ──────────────────────────
-        # Tails eve.json and forwards each line to wazuh-manager-worker:514/TCP.
-        - name: log-forwarder
-          image: alpine:3.20
-          command:
-            - /bin/sh
-            - -c
-            - |
-              until [ -s /var/log/suricata/eve.json ]; do sleep 2; done
-              tail -n +1 -F /var/log/suricata/eve.json 2>/dev/null | \
-                while IFS= read -r line; do
-                  echo "$line" | nc -w1 wazuh-manager-worker.security.svc.cluster.local 514 || sleep 2
-                done
-          resources:
-            requests:
-              cpu: 10m
-              memory: 32Mi
-            limits:
-              cpu: 50m
-              memory: 64Mi
-          volumeMounts:
-            - name: logs
-              mountPath: /var/log/suricata
-              readOnly: true
-
-      volumes:
-        - name: logs
-          emptyDir: {}
+      - name: copy-config
+        image: busybox:1.37
+        command:
+        - sh
+        - -c
+        - cp /config/suricata.yaml /suricata-config/suricata.yaml
+        volumeMounts:
         - name: config-src
-          configMap:
-            name: suricata-config
+          mountPath: /config
+          readOnly: true
         - name: suricata-config
-          emptyDir: {}
+          mountPath: /suricata-config
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      containers:
+      - name: suricata
+        image: jasonish/suricata:8.0.6-amd64
+        args:
+        - -i
+        - cilium_host
+        resources:
+          requests:
+            cpu: 100m
+            memory: 256Mi
+          limits:
+            cpu: '1'
+            memory: 2Gi
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+          runAsGroup: 0
+          capabilities:
+            drop:
+            - ALL
+            add:
+            - NET_ADMIN
+            - NET_RAW
+            - SYS_NICE
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/suricata
+        - name: suricata-config
+          mountPath: /etc/suricata/suricata.yaml
+          subPath: suricata.yaml
+      - name: log-forwarder
+        image: alpine:3.20
+        command:
+        - /bin/sh
+        - -c
+        - "until [ -s /var/log/suricata/eve.json ]; do sleep 2; done\ntail -n +1 -F\
+          \ /var/log/suricata/eve.json 2>/dev/null | \\\n  while IFS= read -r line;\
+          \ do\n    echo \"$line\" | nc -w1 wazuh-manager-worker.security.svc.cluster.local\
+          \ 514 || sleep 2\n  done\n"
+        resources:
+          requests:
+            cpu: 10m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
+        - name: logs
+          mountPath: /var/log/suricata
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: logs
+        emptyDir: {}
+      - name: config-src
+        configMap:
+          name: suricata-config
+      - name: suricata-config
+        emptyDir: {}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+        runAsGroup: 1000

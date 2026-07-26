@@ -18,31 +18,40 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
         fsGroup: 1000
+        runAsGroup: 1000
+        supplementalGroups:
+        - 1000
       containers:
-        - name: jellyseerr
-          image: seerr/seerr:1.21.0
-          resources:
-            limits:
-              cpu: "1"
-              memory: 2Gi
-            requests:
-              cpu: 200m
-              memory: 512Mi
-          env:
-            - name: LOG_LEVEL
-              value: debug
-          ports:
-            - containerPort: 5055
-              name: http
-              protocol: TCP
-          volumeMounts:
-            - name: config
-              mountPath: /app/config
-      volumes:
+      - name: jellyseerr
+        image: seerr/seerr:1.21.0
+        resources:
+          limits:
+            cpu: '1'
+            memory: 2Gi
+          requests:
+            cpu: 200m
+            memory: 512Mi
+        env:
+        - name: LOG_LEVEL
+          value: debug
+        ports:
+        - containerPort: 5055
+          name: http
+          protocol: TCP
+        volumeMounts:
         - name: config
-          persistentVolumeClaim:
-            claimName: jellyseerr-config
+          mountPath: /app/config
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: config
+        persistentVolumeClaim:
+          claimName: jellyseerr-config
 ---
 apiVersion: v1
 kind: Service
@@ -53,10 +62,10 @@ spec:
   selector:
     app: jellyseerr
   ports:
-    - name: http
-      port: 5055
-      targetPort: 5055
-      protocol: TCP
+  - name: http
+    port: 5055
+    targetPort: 5055
+    protocol: TCP
   type: ClusterIP
 ---
 apiVersion: networking.k8s.io/v1
@@ -70,17 +79,17 @@ metadata:
     traefik.ingress.kubernetes.io/router.middlewares: identity-jellyseerr-role-chain@kubernetescrd
 spec:
   tls:
-    - hosts:
-        - requests.becklab.cloud
-      secretName: jellyseerr-tls
+  - hosts:
+    - requests.becklab.cloud
+    secretName: jellyseerr-tls
   rules:
-    - host: requests.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: jellyseerr
-                port:
-                  number: 5055
+  - host: requests.becklab.cloud
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: jellyseerr
+            port:
+              number: 5055

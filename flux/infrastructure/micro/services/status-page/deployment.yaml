@@ -19,25 +19,29 @@ spec:
         runAsNonRoot: true
         runAsUser: 1000
       containers:
-        - name: status-page
-          image: nginx:1.25-alpine
-          ports:
-            - containerPort: 80
-          resources:
-            requests:
-              cpu: 10m
-              memory: 16Mi
-            limits:
-              cpu: 50m
-              memory: 64Mi
-          volumeMounts:
-            - name: html
-              mountPath: /usr/share/nginx/html
-              readOnly: true
-      volumes:
+      - name: status-page
+        image: nginx:1.25-alpine
+        ports:
+        - containerPort: 80
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+        volumeMounts:
         - name: html
-          configMap:
-            name: status-page-html
+          mountPath: /usr/share/nginx/html
+          readOnly: true
+        securityContext:
+          capabilities:
+            drop:
+            - ALL
+      volumes:
+      - name: html
+        configMap:
+          name: status-page-html
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -45,69 +49,77 @@ metadata:
   name: status-page-html
   namespace: micro
 data:
-  index.html: |
-    <!DOCTYPE html>
-    <html lang="en">
-    <head>
-      <meta charset="UTF-8">
-      <meta name="viewport" content="width=device-width, initial-scale=1.0">
-      <title>BeckLab Tools — Service Status</title>
-      <style>
-        :root { --bg: #0a0a0f; --card: #12121a; --border: #1e1e2e; --text: #e0e0e8; --muted: #6b6b80; --green: #4ade80; --red: #f87171; --yellow: #fbbf24; --accent: #818cf8; }
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
-        .container { max-width: 800px; margin: 0 auto; padding: 2rem 1rem; }
-        header { text-align: center; padding: 3rem 0 2rem; }
-        h1 { font-size: 1.75rem; font-weight: 700; color: var(--text); margin-bottom: 0.5rem; }
-        .subtitle { color: var(--muted); font-size: 0.95rem; }
-        .overall { display: inline-flex; align-items: center; gap: 0.5rem; background: rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); border-radius: 9999px; padding: 0.4rem 1rem; margin-top: 1rem; font-size: 0.85rem; color: var(--green); }
-        .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); animation: pulse 2s infinite; }
-        @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
-        .services { margin-top: 2rem; }
-        .service { display: flex; align-items: center; justify-content: space-between; padding: 1rem 1.25rem; background: var(--card); border: 1px solid var(--border); border-radius: 12px; margin-bottom: 0.5rem; }
-        .service-name { font-weight: 500; }
-        .service-url { color: var(--muted); font-size: 0.8rem; margin-left: 0.75rem; }
-        .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 600; }
-        .status-ok { background: rgba(74,222,128,0.1); color: var(--green); }
-        .status-warn { background: rgba(251,191,36,0.1); color: var(--yellow); }
-        .status-err { background: rgba(248,113,113,0.1); color: var(--red); }
-        .uptime { margin-top: 2rem; display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }
-        .uptime-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 1.25rem; text-align: center; }
-        .uptime-value { font-size: 2rem; font-weight: 700; color: var(--accent); }
-        .uptime-label { font-size: 0.8rem; color: var(--muted); margin-top: 0.25rem; }
-        footer { text-align: center; padding: 3rem 0; color: var(--muted); font-size: 0.8rem; }
-      </style>
-    </head>
-    <body>
-      <div class="container">
-        <header>
-          <h1>BeckLab Tools</h1>
-          <p class="subtitle">Service Status Dashboard</p>
-          <div class="overall"><span class="dot"></span> All Systems Operational</div>
-        </header>
-        <div class="services">
-          <div class="service"><span><span class="service-name">Hash Service</span><span class="service-url">hash.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">URL Shortener</span><span class="service-url">short.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">Base64/Converter</span><span class="service-url">convert.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">Cron Jobs</span><span class="service-url">cron.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">DNS Monitor</span><span class="service-url">dns.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">Webhook Relay</span><span class="service-url">webhook.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">YAML/JSON Tool</span><span class="service-url">fmt.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">QR Generator</span><span class="service-url">qr.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">Image Editor</span><span class="service-url">editor.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">BeckFlow</span><span class="service-url">dashboard.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-          <div class="service"><span><span class="service-name">Auth Service</span><span class="service-url">auth.tools.becklab.cloud</span></span><span class="status-badge status-ok">Operational</span></div>
-        </div>
-        <div class="uptime">
-          <div class="uptime-card"><div class="uptime-value">99.9%</div><div class="uptime-label">30-day uptime</div></div>
-          <div class="uptime-card"><div class="uptime-value">&lt;50ms</div><div class="uptime-label">Avg response</div></div>
-          <div class="uptime-card"><div class="uptime-value">10</div><div class="uptime-label">Services online</div></div>
-        </div>
-        <footer>Last updated: <span id="updated"></span> — tools.becklab.cloud/status</footer>
-      </div>
-      <script>document.getElementById('updated').textContent = new Date().toLocaleString('en-US', {dateStyle:'full', timeStyle:'short'});</script>
-    </body>
-    </html>
+  index.html: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n  <meta charset=\"UTF-8\"\
+    >\n  <meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\"\
+    >\n  <title>BeckLab Tools \u2014 Service Status</title>\n  <style>\n    :root\
+    \ { --bg: #0a0a0f; --card: #12121a; --border: #1e1e2e; --text: #e0e0e8; --muted:\
+    \ #6b6b80; --green: #4ade80; --red: #f87171; --yellow: #fbbf24; --accent: #818cf8;\
+    \ }\n    * { margin: 0; padding: 0; box-sizing: border-box; }\n    body { font-family:\
+    \ 'Inter', -apple-system, system-ui, sans-serif; background: var(--bg); color:\
+    \ var(--text); min-height: 100vh; }\n    .container { max-width: 800px; margin:\
+    \ 0 auto; padding: 2rem 1rem; }\n    header { text-align: center; padding: 3rem\
+    \ 0 2rem; }\n    h1 { font-size: 1.75rem; font-weight: 700; color: var(--text);\
+    \ margin-bottom: 0.5rem; }\n    .subtitle { color: var(--muted); font-size: 0.95rem;\
+    \ }\n    .overall { display: inline-flex; align-items: center; gap: 0.5rem; background:\
+    \ rgba(74,222,128,0.1); border: 1px solid rgba(74,222,128,0.2); border-radius:\
+    \ 9999px; padding: 0.4rem 1rem; margin-top: 1rem; font-size: 0.85rem; color: var(--green);\
+    \ }\n    .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green);\
+    \ animation: pulse 2s infinite; }\n    @keyframes pulse { 0%,100% { opacity: 1;\
+    \ } 50% { opacity: 0.4; } }\n    .services { margin-top: 2rem; }\n    .service\
+    \ { display: flex; align-items: center; justify-content: space-between; padding:\
+    \ 1rem 1.25rem; background: var(--card); border: 1px solid var(--border); border-radius:\
+    \ 12px; margin-bottom: 0.5rem; }\n    .service-name { font-weight: 500; }\n  \
+    \  .service-url { color: var(--muted); font-size: 0.8rem; margin-left: 0.75rem;\
+    \ }\n    .status-badge { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size:\
+    \ 0.75rem; font-weight: 600; }\n    .status-ok { background: rgba(74,222,128,0.1);\
+    \ color: var(--green); }\n    .status-warn { background: rgba(251,191,36,0.1);\
+    \ color: var(--yellow); }\n    .status-err { background: rgba(248,113,113,0.1);\
+    \ color: var(--red); }\n    .uptime { margin-top: 2rem; display: grid; grid-template-columns:\
+    \ repeat(auto-fit, minmax(120px, 1fr)); gap: 0.75rem; }\n    .uptime-card { background:\
+    \ var(--card); border: 1px solid var(--border); border-radius: 12px; padding:\
+    \ 1.25rem; text-align: center; }\n    .uptime-value { font-size: 2rem; font-weight:\
+    \ 700; color: var(--accent); }\n    .uptime-label { font-size: 0.8rem; color:\
+    \ var(--muted); margin-top: 0.25rem; }\n    footer { text-align: center; padding:\
+    \ 3rem 0; color: var(--muted); font-size: 0.8rem; }\n  </style>\n</head>\n<body>\n\
+    \  <div class=\"container\">\n    <header>\n      <h1>BeckLab Tools</h1>\n   \
+    \   <p class=\"subtitle\">Service Status Dashboard</p>\n      <div class=\"overall\"\
+    ><span class=\"dot\"></span> All Systems Operational</div>\n    </header>\n  \
+    \  <div class=\"services\">\n      <div class=\"service\"><span><span class=\"\
+    service-name\">Hash Service</span><span class=\"service-url\">hash.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n      <div class=\"\
+    service\"><span><span class=\"service-name\">URL Shortener</span><span class=\"\
+    service-url\">short.tools.becklab.cloud</span></span><span class=\"status-badge\
+    \ status-ok\">Operational</span></div>\n      <div class=\"service\"><span><span\
+    \ class=\"service-name\">Base64/Converter</span><span class=\"service-url\">convert.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n      <div class=\"\
+    service\"><span><span class=\"service-name\">Cron Jobs</span><span class=\"service-url\"\
+    >cron.tools.becklab.cloud</span></span><span class=\"status-badge status-ok\"\
+    >Operational</span></div>\n      <div class=\"service\"><span><span class=\"service-name\"\
+    >DNS Monitor</span><span class=\"service-url\">dns.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n      <div class=\"\
+    service\"><span><span class=\"service-name\">Webhook Relay</span><span class=\"\
+    service-url\">webhook.tools.becklab.cloud</span></span><span class=\"status-badge\
+    \ status-ok\">Operational</span></div>\n      <div class=\"service\"><span><span\
+    \ class=\"service-name\">YAML/JSON Tool</span><span class=\"service-url\">fmt.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n      <div class=\"\
+    service\"><span><span class=\"service-name\">QR Generator</span><span class=\"\
+    service-url\">qr.tools.becklab.cloud</span></span><span class=\"status-badge status-ok\"\
+    >Operational</span></div>\n      <div class=\"service\"><span><span class=\"service-name\"\
+    >Image Editor</span><span class=\"service-url\">editor.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n      <div class=\"\
+    service\"><span><span class=\"service-name\">BeckFlow</span><span class=\"service-url\"\
+    >dashboard.tools.becklab.cloud</span></span><span class=\"status-badge status-ok\"\
+    >Operational</span></div>\n      <div class=\"service\"><span><span class=\"service-name\"\
+    >Auth Service</span><span class=\"service-url\">auth.tools.becklab.cloud</span></span><span\
+    \ class=\"status-badge status-ok\">Operational</span></div>\n    </div>\n    <div\
+    \ class=\"uptime\">\n      <div class=\"uptime-card\"><div class=\"uptime-value\"\
+    >99.9%</div><div class=\"uptime-label\">30-day uptime</div></div>\n      <div\
+    \ class=\"uptime-card\"><div class=\"uptime-value\">&lt;50ms</div><div class=\"\
+    uptime-label\">Avg response</div></div>\n      <div class=\"uptime-card\"><div\
+    \ class=\"uptime-value\">10</div><div class=\"uptime-label\">Services online</div></div>\n\
+    \    </div>\n    <footer>Last updated: <span id=\"updated\"></span> \u2014 tools.becklab.cloud/status</footer>\n\
+    \  </div>\n  <script>document.getElementById('updated').textContent = new Date().toLocaleString('en-US',\
+    \ {dateStyle:'full', timeStyle:'short'});</script>\n</body>\n</html>\n"
 ---
 apiVersion: v1
 kind: Service
@@ -118,9 +130,9 @@ spec:
   selector:
     app: status-page
   ports:
-    - port: 80
-      targetPort: 80
-      protocol: TCP
+  - port: 80
+    targetPort: 80
+    protocol: TCP
 ---
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
@@ -129,17 +141,17 @@ metadata:
   namespace: micro
 spec:
   entryPoints:
-    - websecure
+  - websecure
   routes:
-    - match: Host(`tools.becklab.cloud`) && PathPrefix(`/status`)
-      kind: Rule
-      services:
-        - name: status-page
-          port: 80
-    - match: Host(`status.tools.becklab.cloud`)
-      kind: Rule
-      services:
-        - name: status-page
-          port: 80
+  - match: Host(`tools.becklab.cloud`) && PathPrefix(`/status`)
+    kind: Rule
+    services:
+    - name: status-page
+      port: 80
+  - match: Host(`status.tools.becklab.cloud`)
+    kind: Rule
+    services:
+    - name: status-page
+      port: 80
   tls:
     secretName: tools-becklab-cloud-tls
