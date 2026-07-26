@@ -11,7 +11,7 @@ spec:
     - name: flux-system
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -26,7 +26,7 @@ spec:
     - name: infrastructure-sources
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
@@ -41,7 +41,7 @@ spec:
     - name: infrastructure-controllers
   sourceRef:
     kind: GitRepository
-    name: beck-cloud
+    name: flux-system
 ---
 apiVersion: kustomize.toolkit.fluxcd.io/v1
 kind: Kustomization
