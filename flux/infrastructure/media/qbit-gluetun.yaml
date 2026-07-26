@@ -22,7 +22,7 @@ spec:
       initContainers:
       - name: gluetun
         restartPolicy: Always
-        image: qmcgaw/gluetun:v3.40.2
+        image: qmcgaw/gluetun:latest
         resources:
           limits:
             cpu: '2'
@@ -69,19 +69,12 @@ spec:
         - name: tun
           mountPath: /dev/net/tun
         securityContext:
-          runAsNonRoot: true
-          runAsUser: 1000
-          runAsGroup: 1000
-          capabilities:
-            add:
-            - NET_ADMIN
-            - NET_RAW
-            - SYS_PTRACE
-            drop:
-            - ALL
-        sysctls:
-        - name: net.ipv4.conf.all.src_valid_mark
-          value: '1'
+          privileged: true
+          seccompProfile:
+            type: Unconfined
+          runAsNonRoot: false
+          runAsUser: 0
+          runAsGroup: 0
       containers:
       - name: qbit
         securityContext:
@@ -92,7 +85,7 @@ spec:
           capabilities:
             drop:
             - ALL
-        image: lscr.io/linuxserver/qbittorrent:2025.2.1
+        image: lscr.io/linuxserver/qbittorrent:latest
         resources:
           limits:
             cpu: '4'
