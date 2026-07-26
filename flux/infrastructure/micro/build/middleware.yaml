@@ -8,7 +8,7 @@ spec:
   rateLimit:
     average: 10
     burst: 15
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -18,7 +18,7 @@ spec:
   rateLimit:
     average: 60
     burst: 80
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -28,7 +28,7 @@ spec:
   rateLimit:
     average: 120
     burst: 150
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -38,7 +38,7 @@ spec:
   rateLimit:
     average: 300
     burst: 400
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -50,7 +50,7 @@ spec:
       X-Auth-Required: 'true'
     customResponseHeaders:
       X-RateLimit-Policy: free,starter,builder,pro
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -63,7 +63,7 @@ spec:
     - 172.16.0.0/12
     - 192.168.0.0/16
     - 127.0.0.1/32
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -73,7 +73,7 @@ spec:
   rateLimit:
     average: 10
     burst: 10
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -83,7 +83,7 @@ spec:
   rateLimit:
     average: 5
     burst: 5
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -93,7 +93,7 @@ spec:
   rateLimit:
     average: 20
     burst: 20
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -103,7 +103,7 @@ spec:
   rateLimit:
     average: 2
     burst: 2
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -113,7 +113,7 @@ spec:
   rateLimit:
     average: 10
     burst: 10
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -123,7 +123,7 @@ spec:
   rateLimit:
     average: 20
     burst: 20
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -133,7 +133,7 @@ spec:
   rateLimit:
     average: 20
     burst: 20
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -143,7 +143,7 @@ spec:
   rateLimit:
     average: 10
     burst: 10
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -153,7 +153,7 @@ spec:
   rateLimit:
     average: 5
     burst: 5
-# ---
+---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:

@@ -15,7 +15,7 @@ spec:
     targetPort: 3306
     protocol: TCP
   type: ClusterIP
-# ---
+---
 apiVersion: v1
 kind: Service
 metadata:

@@ -122,7 +122,7 @@ spec:
       - name: config
         persistentVolumeClaim:
           claimName: affine-config
-# ---
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -183,7 +183,7 @@ spec:
           capabilities:
             drop:
             - ALL
-# ---
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:

@@ -31,7 +31,7 @@ data:
     >\n    Header set Cache-Control \"public, max-age=86400\"\n</FilesMatch>\n\n<FilesMatch\
     \ \"^robots\\.txt$\">\n    Header set Cache-Control \"public, max-age=3600\"\n\
     </FilesMatch>\n"
-# ---
+---
 apiVersion: v1
 kind: ConfigMap
 metadata:
