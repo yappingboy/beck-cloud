@@ -8,6 +8,6 @@ resources:
   - crowdsec
   - wazuh
   - suricata
-  - trivy-operator
+  # - trivy-operator - Disabled to free resources to bring Crowdsec back up.
   # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
   # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.
