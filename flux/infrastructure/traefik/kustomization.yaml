@@ -5,3 +5,4 @@ namespace: traefik
 
 resources:
   - traefik
+  - namespace.yaml
