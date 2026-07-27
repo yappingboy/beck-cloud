@@ -19,12 +19,12 @@ spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
+#        runAsNonRoot: true
+#        runAsUser: 1000
         fsGroup: 1000
-        runAsGroup: 1000
-        supplementalGroups:
-        - 1000
+#        runAsGroup: 1000
+#        supplementalGroups:
+#        - 1000
       containers:
       - name: prowlarr
         image: lscr.io/linuxserver/prowlarr:1.29.4
