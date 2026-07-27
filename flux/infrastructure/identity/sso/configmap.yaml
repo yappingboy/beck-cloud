@@ -4,15 +4,44 @@ metadata:
   name: sso-redirect-html
   namespace: identity
 data:
-  admin-index.html: "<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><title>Signing\
-    \ in...</title></head>\n<body><p>Signing in, please wait...</p>\n<script>\n(function()\
-    \ {\n  var rd = encodeURIComponent(window.location.href);\n  window.location.replace('https://oauth2.becklab.cloud/oauth2/start?rd='\
-    \ + rd);\n})();\n</script>\n</body>\n</html>\n"
-  media-index.html: "<!DOCTYPE html>\n<html>\n<head><meta charset=\"utf-8\"><title>Signing\
-    \ in...</title></head>\n<body><p>Signing in, please wait...</p>\n<script>\n(function()\
-    \ {\n  var rd = encodeURIComponent(window.location.href);\n  window.location.replace('https://oauth2-media.becklab.cloud/oauth2/start?rd='\
-    \ + rd);\n})();\n</script>\n</body>\n</html>\n"
-  default.conf: "server {\n    listen 80;\n    location / {\n        root /usr/share/nginx/html/admin;\n\
-    \        index index.html;\n    }\n    location /media {\n        alias /usr/share/nginx/html/media/;\n\
-    \        index index.html;\n        try_files $uri $uri/ /media/index.html;\n\
-    \    }\n}\n"
+  admin-index.html: "
+  <!DOCTYPE html>
+  <html>
+  <head><meta charset=\"utf-8\"><title>Signing in...</title></head>
+  <body><p>Signing in, please wait...</p>
+  <script>
+  (function()
+    {
+      var rd = encodeURIComponent(window.location.href);
+      window.location.replace('https://oauth2.becklab.cloud/oauth2/start?rd=' + rd);
+    })();
+    </script>
+    </body>
+    </html>"
+  media-index.html: "
+  <!DOCTYPE html>
+  <html>
+  <head><meta charset=\"utf-8\"><title>Signing in...</title></head>
+  <body><p>Signing in, please wait...</p>
+  <script>
+  (function()
+    {
+      var rd = encodeURIComponent(window.location.href);
+      window.location.replace('https://oauth2-media.becklab.cloud/oauth2/start?rd=' + rd);
+    })();
+  </script>
+  </body>
+  </html>"
+  default.conf: "
+  server {
+       listen 80;
+       location / {
+            root /usr/share/nginx/html/admin;
+            index index.html;\n    
+            }    
+       location /media {
+            alias /usr/share/nginx/html/media/;
+            index index.html;
+            try_files $uri $uri/ /media/index.html;
+        }
+    }"
