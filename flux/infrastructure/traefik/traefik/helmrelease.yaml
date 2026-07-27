@@ -18,7 +18,7 @@ spec:
     crds: CreateReplace
   upgrade:
     crds: CreateReplace
-#  values:
+  values:
 #    experimental:
 #      plugins:
 #        bouncer:
