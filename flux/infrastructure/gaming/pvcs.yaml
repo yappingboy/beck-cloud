@@ -72,6 +72,7 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
+  volumeName: pvc-ef1808b6-407c-4d62-9836-592b91d26241
   storageClassName: local-path
   resources:
     requests:
