@@ -6,14 +6,14 @@ namespace: identity
 resources:
   - namespace.yaml
   - pvcs.yaml
-  - audit-sync
+#  - audit-sync
   - email
   - keycloak
   - lldap
-  - logout-page
+#  - logout-page
   - oauth2proxy
-  - rbac
+#  - rbac
   - redis
-  - role-enforcer
+#  - role-enforcer
   - sso
   
