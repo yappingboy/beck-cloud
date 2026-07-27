@@ -1,0 +1,134 @@
+# Velero — K8s resource + volume backup
+#
+# Backup strategy:
+#   - K8s resources: backed up to backupStorageLocation (configure below)
+#   - Volumes: restic/node-agent filesystem backup (no CSI snapshots needed)
+#
+# Backup storage: configure a backupStorageLocation pointing to one of:
+#   A) MinIO on tank/backup (self-hosted S3, recommended)
+#      helm install minio ... --set persistence.storageClass=nfs-bulk
+#   B) Backblaze B2 or AWS S3 for offsite backup
+#
+# Until configured, uncomment the 'configuration' block and fill in credentials.
+# Create the velero-credentials secret first:
+#   kubectl create secret generic velero-credentials -n velero \
+#     --from-literal=cloud='[default]\naws_access_key_id=<id>\naws_secret_access_key=<key>'
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: velero
+  namespace: velero
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: velero
+      version: 8.0.0
+      sourceRef:
+        kind: HelmRepository
+        name: vmware-tanzu
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    fullnameOverride: velero
+
+    # Skip CRD upgrade job — bitnami/kubectl:1.32 image doesn't exist.
+    # CRDs are managed by install.crds: CreateReplace instead.
+    # Chart v8.x uses 'upgradeCRDs', not 'enableCRDUpgrade'.
+    upgradeCRDs: false
+
+    # restic/node-agent does filesystem-level backup of PV contents.
+    # Chart v8 splits toggle from config: deployNodeAgent enables the daemonset.
+    deployNodeAgent: true
+    nodeAgent:
+      podVolumePath: /var/lib/kubelet/pods
+
+    configuration:
+      defaultVolumesToFsBackup: true
+      uploaderType: restic
+
+      # VolumeSnapshotLocation must have a provider even when unused.
+      # All schedules use snapshotVolumes: false (restic), so VSL is never triggered.
+      volumeSnapshotLocation:
+        - name: default
+          provider: aws
+          config:
+            region: us-east-1
+
+      backupStorageLocation:
+        - name: default
+          provider: aws
+          bucket: velero-backups
+          default: true
+          config:
+            region: us-east-1
+            s3ForcePathStyle: "true"
+            s3Url: http://minio.velero.svc.cluster.local:9000
+          credential:
+            name: velero-credentials
+            key: cloud
+
+    initContainers:
+      - name: velero-plugin-for-aws
+        image: velero/velero-plugin-for-aws:v1.10.0
+        volumeMounts:
+          - name: plugins
+            mountPath: /target
+
+    # Backup schedules — volumes use restic (snapshotVolumes: false)
+    # Chart v8 uses 'schedules', not 'cronJobTemplates'.
+    schedules:
+      - name: identity-6h
+        schedule: "0 */6 * * *"
+        template:
+          ttl: "720h0m0s"
+          includedNamespaces:
+            - identity
+          storageLocation: default
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
+      - name: security-daily
+        schedule: "0 2 * * *"
+        template:
+          ttl: "2160h0m0s"
+          includedNamespaces:
+            - security
+          storageLocation: default
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
+      - name: media-daily
+        schedule: "0 1 * * *"
+        template:
+          ttl: "336h0m0s"
+          includedNamespaces:
+            - media
+            - torrent
+          excludedResources:
+            - persistentvolumeclaims
+          storageLocation: default
+          snapshotVolumes: false
+
+      - name: rancher-daily
+        schedule: "0 4 * * *"
+        template:
+          ttl: "720h0m0s"
+          includedNamespaces:
+            - cattle-system
+          storageLocation: default
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true
+
+      - name: full-cluster-weekly
+        schedule: "0 2 * * 0"
+        template:
+          ttl: "2160h0m0s"
+          excludedNamespaces:
+            - kube-system
+          storageLocation: default
+          snapshotVolumes: false
+          defaultVolumesToFsBackup: true

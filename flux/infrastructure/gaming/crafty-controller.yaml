@@ -1,0 +1,273 @@
+# Crafty Controller — server management dashboard + Minecraft server.
+# Single container: web UI, file manager, backups, task scheduler.
+# Image: registry.gitlab.com/crafty-controller/crafty-4 (official crafty-controller image)
+#
+# Mounts (per docs):
+#   /home/crafty/crafty/config  — crafty config + default credentials (config-pvc)
+#   /home/crafty/crafty/data    — server worlds + instance configs (world-pvc)
+#
+# Ports:
+#   8443 — crafty web dashboard (HTTPS, terminated by traefik)
+#   25565 — minecraft server (NodePort 30065 for external players)
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-config
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-world
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-import
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-logs
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: crafty-backup
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 20Gi
+---
+
+
+
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: crafty
+  template:
+    metadata:
+      labels:
+        app: crafty
+    spec:
+      containers:
+        - name: crafty
+          image: registry.gitlab.com/crafty-controller/crafty-4:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8443
+              name: https
+              protocol: TCP
+            - containerPort: 8123
+              name: dynmap
+              protocol: TCP
+            - containerPort: 25565
+              name: minecraft
+              protocol: TCP
+          env:
+            - name: TZ
+              value: America/New_York
+          resources:
+            limits:
+              cpu: "3000m"
+              memory: 8Gi
+            requests:
+              cpu: "500m"
+              memory: 4Gi
+          volumeMounts:
+            - name: config
+              mountPath: /crafty/app/config
+            - name: world
+              mountPath: /crafty/servers
+            - name: logs
+              mountPath: /crafty/logs
+            - name: import
+              mountPath: /crafty/import
+            - name: backup
+              mountPath: /crafty/backups
+          livenessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 150
+            periodSeconds: 30
+            timeoutSeconds: 5
+          readinessProbe:
+            httpGet:
+              path: /
+              port: https
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: crafty-config
+        - name: world
+          persistentVolumeClaim:
+            claimName: crafty-world
+        - name: logs
+          persistentVolumeClaim:
+            claimName: crafty-logs           
+        - name: backup
+          persistentVolumeClaim:
+            claimName: crafty-backup
+        - name: import
+          persistentVolumeClaim:
+            claimName: crafty-import
+               
+---
+
+# Services
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  selector:
+    app: crafty
+  ports:
+    - name: https
+      port: 8443
+      targetPort: 8443
+    - name: dynmap
+      port: 8123
+      targetPort: 8123
+  type: ClusterIP
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: crafty
+  namespace: gaming
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+      - crafty.becklab.cloud
+      secretName: crafty-tls
+  rules:
+    - host: crafty.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                 name: crafty
+                 port:
+                   number: 8443
+#---
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  name: crafty
+#  namespace: gaming
+#  annotations:
+#    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+#    cert-manager.io/cluster-issuer: letsencrypt-prod
+#    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+#spec:
+#  tls:
+#    - hosts:
+#      - dynmap.becklab.cloud
+#      secretName: dynmap-tls
+#  rules:
+#    - host: dynmap.becklab.cloud
+#      http:
+#        paths:
+#          - path: /
+#            pathType: Prefix
+#            backend:
+#              service:
+#                 name: crafty
+#                 port:
+#                   number: 8123
+---
+# NodePort — external minecraft players
+apiVersion: v1
+kind: Service
+metadata:
+  name: crafty-minecraft
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  selector:
+    app: crafty
+  ports:
+    - name: minecraft
+      protocol: TCP
+      port: 25565
+      targetPort: 25565
+      nodePort: 31337
+  type: NodePort

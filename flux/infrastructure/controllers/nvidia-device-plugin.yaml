@@ -1,0 +1,44 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: nvidia-device-plugin
+  namespace: nvidia
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: nvidia-device-plugin
+      version: 0.16.3
+      sourceRef:
+        kind: HelmRepository
+        name: nvidia
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    driver:
+      runtime: nvidia
+    plugin:
+      namespacedInstall: false
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      args:
+        - --time-slicing-config=/etc/nvidia-device-plugin/config.json
+      config:
+        default: "default"
+        defaultResource: "nvidia.com/gpu"
+        versions:
+          default:
+            resources:
+              - name: nvidia.com/gpu
+                replicas: 5
+      image:
+        repository: nvcr.io/nvidia/k8s-device-plugin
+        tag: v0.16.3
+    gpuDriver:
+      enabled: true
+      version: "550"
+    gpuOperator:
+      enabled: false

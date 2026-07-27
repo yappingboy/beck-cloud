@@ -1,0 +1,40 @@
+# Filebeat configuration for Wazuh managers.
+# Mounted as overlay over /etc/filebeat/filebeat.yml via additionalVolumeMounts in HelmRelease.
+# This prevents the s6 init scripts from overwriting the config with an empty file on fresh pods.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wazuh-filebeat-config
+  namespace: security
+data:
+  filebeat.yml: |
+    # Wazuh - Filebeat configuration file
+    filebeat.modules:
+      - module: wazuh
+        alerts:
+          enabled: true
+        archives:
+          enabled: false
+
+    setup.template.json.enabled: false
+    setup.template.overwrite: true
+    setup.template.json.path: '/etc/filebeat/wazuh-template.json'
+    setup.template.json.name: 'wazuh'
+    setup.ilm.enabled: false
+    output.elasticsearch:
+      hosts: ['https://wazuh-indexer:9200']
+      username: 'admin'
+      password: 'WazuhSecretPassword'
+      ssl.verification_mode: 'full'
+      ssl.certificate_authorities: ['/etc/ssl/root-ca.pem']
+      ssl.certificate: '/etc/ssl/filebeat.pem'
+      ssl.key: '/etc/ssl/filebeat.key'
+
+    logging.metrics.enabled: false
+
+    seccomp:
+      default_action: allow
+      syscalls:
+      - action: allow
+        names:
+        - rseq

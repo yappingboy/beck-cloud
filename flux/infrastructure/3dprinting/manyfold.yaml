@@ -1,0 +1,239 @@
+# Manyfold — 3D model library manager
+# Uses ghcr.io/manyfold3d/manyfold:latest (Rails app, port 3214)
+# Requires PostgreSQL + Redis (provided by linuxserver images in this file)
+---
+# PostgreSQL for Manyfold
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manyfold-db
+  namespace: 3dprinting
+  labels:
+    app: manyfold-db
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manyfold-db
+  template:
+    metadata:
+      labels:
+        app: manyfold-db
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      containers:
+        - name: postgresql
+          image: docker.io/library/postgres:17-alpine
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          env:
+            - name: POSTGRES_USER
+              value: manyfold
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: manyfold-db-secret
+                  key: password
+            - name: POSTGRES_DB
+              value: manyfold_production
+          ports:
+            - containerPort: 5432
+              name: tcp-postgresql
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /var/lib/postgresql/data
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: manyfold-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: manyfold-db
+  namespace: 3dprinting
+spec:
+  selector:
+    app: manyfold-db
+  ports:
+    - port: 5432
+      targetPort: 5432
+  type: ClusterIP
+---
+# Redis for Manyfold (Sidekiq)
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manyfold-redis
+  namespace: 3dprinting
+  labels:
+    app: manyfold-redis
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manyfold-redis
+  template:
+    metadata:
+      labels:
+        app: manyfold-redis
+    spec:
+      containers:
+        - name: redis
+          image: docker.io/valkey/valkey:8-alpine
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+            requests:
+              cpu: 50m
+              memory: 64Mi
+          ports:
+            - containerPort: 6379
+              name: redis
+              protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: manyfold-redis
+  namespace: 3dprinting
+spec:
+  selector:
+    app: manyfold-redis
+  ports:
+    - port: 6379
+      targetPort: 6379
+  type: ClusterIP
+---
+# Manyfold main app
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: manyfold
+  namespace: 3dprinting
+  labels:
+    app: manyfold
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: manyfold
+  template:
+    metadata:
+      labels:
+        app: manyfold
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      initContainers:
+        - name: init-permissions
+          image: docker.io/library/alpine:3.21
+          command: ["sh", "-c", "chown -R 1000:1000 /data/libraries /usr/src/app/tmp /usr/src/app/log"]
+          securityContext:
+            runAsUser: 0
+            runAsNonRoot: false
+          volumeMounts:
+            - name: libraries
+              mountPath: /data/libraries
+            - name: app-tmp
+              mountPath: /usr/src/app/tmp
+            - name: app-log
+              mountPath: /usr/src/app/log
+      securityContext:
+        runAsUser: 0
+        runAsGroup: 0
+        fsGroup: 1000
+      containers:
+        - name: manyfold
+          image: ghcr.io/manyfold3d/manyfold:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          env:
+            - name: RAILS_ENV
+              value: production
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: manyfold-db-secret
+                  key: database-url
+            - name: REDIS_URL
+              value: "redis://manyfold-redis.3dprinting.svc.cluster.local:6379"
+            - name: SECRET_KEY_BASE
+              value: "3dprint-manyfold-secret-key-change-me"
+            - name: HOSTNAME
+              value: "manyfold.becklab.cloud"
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+          ports:
+            - containerPort: 3214
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: libraries
+              mountPath: /data/libraries
+            - name: app-tmp
+              mountPath: /usr/src/app/tmp
+            - name: app-log
+              mountPath: /usr/src/app/log
+      volumes:
+        - name: libraries
+          persistentVolumeClaim:
+            claimName: manyfold-libraries
+        - name: app-tmp
+          emptyDir: {}
+        - name: app-log
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: manyfold
+  namespace: 3dprinting
+spec:
+  selector:
+    app: manyfold
+  ports:
+    - port: 3214
+      targetPort: 3214
+  type: ClusterIP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: manyfold
+  namespace: 3dprinting
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - manyfold.becklab.cloud
+      secretName: manyfold-tls
+  rules:
+    - host: manyfold.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: manyfold
+                port:
+                  number: 3214

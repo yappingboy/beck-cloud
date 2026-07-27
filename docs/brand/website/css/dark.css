@@ -1,0 +1,98 @@
+/* BeckCloud — Dark Mode Overrides
+   Dark mode is the DEFAULT. This file sets :root variables.
+   Light mode overrides are below under [data-theme="light"]. */
+
+/* ============================================================
+   DARK MODE (default)
+   ============================================================ */
+
+:root,
+[data-theme="dark"] {
+  /* Backgrounds */
+  --bg-primary:     #0F1729;
+  --bg-secondary:   #1E293B;
+  --bg-tertiary:    #283548;
+
+  /* Surfaces */
+  --surface-card:       #1E293B;
+  --surface-elevated:   #283548;
+  --surface-hover:      #334155;
+
+  /* Borders */
+  --border-default: #334155;
+  --border-subtle:  #283548;
+  --border-focus:   #E8A838;
+
+  /* Text */
+  --text-primary:   #E2E8F0;
+  --text-secondary: #94A3B8;
+  --text-tertiary:  #64748B;
+  --text-inverse:   #0F1729;
+
+  /* Brand */
+  --brand-primary:   #E8A838;
+  --brand-secondary: #7C5CFC;
+  --brand-accent:    #FF6B4A;
+
+  /* Status */
+  --status-success: #4ADE80;
+  --status-warning: #FBBF24;
+  --status-error:   #EF4444;
+  --status-info:    #60A5FA;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%);
+  --gradient-glow:  radial-gradient(ellipse at center, rgba(232,168,56,0.15) 0%, transparent 70%);
+  --gradient-violet: linear-gradient(135deg, #1E293B 0%, #2D1B69 100%);
+
+  /* Shadows */
+  --shadow-card: 0 2px 8px rgba(0,0,0,0.3);
+  --shadow-card-hover: 0 4px 16px rgba(232,168,56,0.12);
+}
+
+/* ============================================================
+   LIGHT MODE (override)
+   ============================================================ */
+
+[data-theme="light"] {
+  /* Backgrounds */
+  --bg-primary:   #F8FAFC;
+  --bg-secondary: #FFFFFF;
+  --bg-tertiary:  #F1F5F9;
+
+  /* Surfaces */
+  --surface-card:       #FFFFFF;
+  --surface-elevated:   #FFFFFF;
+  --surface-hover:      #F1F5F9;
+
+  /* Borders */
+  --border-default: #E2E8F0;
+  --border-subtle:  #F1F5F9;
+  --border-focus:   #B8860B;
+
+  /* Text */
+  --text-primary:   #0F1729;
+  --text-secondary: #475569;
+  --text-tertiary:  #94A3B8;
+  --text-inverse:   #FFFFFF;
+
+  /* Brand — darker for contrast on light backgrounds */
+  --brand-primary:   #B8860B;
+  --brand-secondary: #6344E0;
+  --brand-accent:    #E05536;
+
+  /* Status */
+  --status-success: #16A34A;
+  --status-warning: #D97706;
+  --status-error:   #DC2626;
+  --status-info:    #2563EB;
+
+  /* Gradients */
+  --gradient-brand: linear-gradient(90deg, #B8860B 0%, #E05536 100%);
+  --gradient-glow:  radial-gradient(ellipse at center, rgba(184,134,11,0.08) 0%, transparent 70%);
+  --gradient-violet: linear-gradient(135deg, #FFFFFF 0%, #EDE9FE 100%);
+
+  /* Shadows */
+  --shadow-card: 0 1px 3px rgba(0,0,0,0.08);
+  --shadow-card-hover: 0 4px 12px rgba(0,0,0,0.12);
+}

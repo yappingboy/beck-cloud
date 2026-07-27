@@ -1,0 +1,46 @@
+# Service pointing to OpenClaw Gateway on the sandbox VM
+# Gateway runs on 172.16.0.22:18789 (outside K8s) — Endpoints object provides the backing
+apiVersion: v1
+kind: Service
+metadata:
+  name: openclaw-gateway
+  namespace: webapps
+  annotations:
+    service.cilium.io/no-health-check: "true"
+spec:
+  type: ClusterIP
+  ports:
+    - port: 18789
+      targetPort: 18789
+      protocol: TCP
+---
+apiVersion: v1
+kind: Endpoints
+metadata:
+  name: openclaw-gateway
+  namespace: webapps
+subsets:
+  - addresses:
+      - ip: 172.16.0.22
+    ports:
+      - port: 18789
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: openclaw
+  namespace: webapps
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`nova.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: openclaw-gateway
+          port: 18789
+  tls:
+    secretName: nova-tls

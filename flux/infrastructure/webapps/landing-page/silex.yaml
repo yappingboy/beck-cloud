@@ -1,0 +1,139 @@
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silex-root
+  namespace: webapps
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 4Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: silex-hosting
+  namespace: webapps
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 4Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: silex
+  namespace: webapps
+  labels:
+    app: silex
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: silex
+  template:
+    metadata:
+      labels:
+        app: silex
+    spec:
+      containers:
+        - name: silex
+          image: silexlabs/silex:latest
+          resources:
+            limits:
+              memory: 512Mi
+          securityContext:
+            runAsUser: 1000
+            runAsGroup: 1000
+          env:
+            - name: PORT
+              value: "8080"
+            - name: SILEX_PORT
+              value: "8080"
+            - name: SILEX_FS_ROOT
+              value: "/silex/silex/storage/"
+            - name: SILEX_FS_HOSTING_ROOT
+              value: "/silex/silex/hosting/"
+            - name: SILEX_URL
+              value: "https://silex.becklab.cloud"
+            - name: SILEX_HOSTING_SILEX
+              value: "/silex/silex/hosting/"
+            - name: STORAGE_CONNECTORS
+              value: "fs,ftp"
+            - name: HOSTING_CONNECTORS
+              value: "fs,ftp"
+            - name: SILEX_HOST
+              value: "0.0.0.0"
+          ports:
+            - containerPort: 8080
+            - containerPort: 6807
+          volumeMounts:
+            - name: root
+              mountPath: /silex/silex/storage
+            - name: hosting
+              mountPath: /silex/silex/hosting
+      volumes:
+        - name: root
+          persistentVolumeClaim:
+            claimName: silex-root
+        - name: hosting
+          persistentVolumeClaim:
+            claimName: silex-hosting
+      securityContext:
+        fsGroup: 1000
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: silex
+  namespace: webapps
+spec:
+  selector:
+    app: silex
+  ports:
+    - name: http
+      port: 8080
+      targetPort: 8080
+    - name: mcp
+      port: 6807
+      targetPort: 6807
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: silex
+  namespace: webapps
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`silex.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: silex
+          port: 8080
+  tls:
+    secretName: silex-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: silex
+  namespace: webapps
+spec:
+  secretName: silex-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - silex.becklab.cloud

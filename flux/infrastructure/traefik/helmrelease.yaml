@@ -1,0 +1,73 @@
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: traefik
+  namespace: traefik
+spec:
+  interval: 1m
+  chart:
+    spec:
+      chart: traefik
+      version: 36.3.0
+      sourceRef:
+        kind: HelmRepository
+        name: traefik
+        namespace: flux-system
+  install:
+    crds: CreateReplace
+  upgrade:
+    crds: CreateReplace
+  values:
+    experimental:
+      plugins:
+        bouncer:
+          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+          version: v1.4.5
+    additionalArguments:
+      - "--serversTransport.insecureSkipVerify=true"
+      - "--entrypoints.web.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
+      - "--entrypoints.websecure.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
+    logs:
+      general:
+        level: INFO
+      access:
+        enabled: true
+        format: json
+    providers:
+      kubernetesCRD:
+        allowCrossNamespace: true
+      kubernetesIngress:
+        publishedService:
+          enabled: true
+        allowCrossNamespaceMiddlewares: true
+      kubernetesGateway:
+        enabled: true
+    ports:
+      web:
+        nodePort: 30080
+        exposed: true
+        exposedPort: 80
+        redirectEntryPoint:
+          to: websecure
+          scheme: https
+      websecure:
+        nodePort: 30443
+        exposed: true
+        exposedPort: 443
+        tls:
+          enabled: true
+    service:
+      enabled: true
+      type: NodePort
+      spec:
+        externalTrafficPolicy: Cluster
+    ingressRoute:
+      dashboard:
+        enabled: false
+    persistence:
+      enabled: false
+    volumes:
+      - name: crowdsec-bouncer-key
+        mountPath: /etc/traefik/crowdsec
+        type: secret
+        secretName: crowdsec-bouncer-key

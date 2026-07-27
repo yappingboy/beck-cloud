@@ -1,0 +1,176 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qbit-gluetun
+  namespace: media
+  labels:
+    app: qbit-gluetun
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qbit-gluetun
+  template:
+    metadata:
+      labels:
+        app: qbit-gluetun
+    spec:
+      dnsConfig:
+        options:
+          - name: ndots
+            value: "1"
+      initContainers:
+        - name: gluetun
+          restartPolicy: Always
+          image: qmcgaw/gluetun:latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          env:
+            - name: VPN_SERVICE_PROVIDER
+              value: private internet access
+            - name: VPN_TYPE
+              value: openvpn
+            - name: OPENVPN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-vpn-secret
+                  key: pia-username
+            - name: OPENVPN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: gluetun-vpn-secret
+                  key: pia-password
+            - name: SERVER_REGIONS
+              value: SE Stockholm
+            - name: TZ
+              value: America/New_York
+            - name: DOT
+              value: "on"
+            - name: DISABLE_UPDNGX
+              value: "on"
+
+         # Allow kubelet to reach qbit WebUI through Cilium (no gluetun firewall)
+            - name: FIREWALL
+              value: "off"
+            - name: FIREWALL_WORKING
+              value: "off"
+            - name: FIREWALL_INPUT_PORTS
+              value: "8080,8000"
+          ports:
+            - containerPort: 8000
+              name: gluetun-ctrl
+              protocol: TCP
+          volumeMounts:
+            - name: gluetun-config
+              mountPath: /etc/gluetun
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            runAsNonRoot: false
+            capabilities:
+              add:
+                - NET_ADMIN
+#        - name: route-fix
+#          image: alpine:latest
+#          command:
+#            - sh
+#            - -c
+#            - |
+#              ip route del 0.0.0.0/1 dev tun0 2>/dev/null || true
+#              ip route del 128.0.0.0/1 dev tun0 2>/dev/null || true
+#              ip route add 10.42.0.0/16 via 10.42.1.90 dev eth0 2>/dev/null || true
+#              ip route add 10.43.0.0/16 via 10.42.1.90 dev eth0 2>/dev/null || true
+#          securityContext:
+#            privileged: true
+#            runAsUser: 0
+      containers:
+        - name: qbit
+          image: lscr.io/linuxserver/qbittorrent:latest
+          resources:
+            limits:
+              cpu: "4"
+              memory: 4Gi
+            requests:
+              cpu: 200m
+              memory: 512Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+            - name: WEBUI_PORT
+              value: "8080"
+          ports:
+            - containerPort: 8080
+              name: qbit-webui
+              protocol: TCP
+          volumeMounts:
+            - name: downloads
+              mountPath: /downloads
+            - name: qbit-config
+              mountPath: /config
+          startupProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - nc -z localhost 8080
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 30
+      volumes:
+        - name: downloads
+          persistentVolumeClaim:
+            claimName: media-downloads
+        - name: gluetun-config
+          emptyDir: {}
+        - name: qbit-config
+          persistentVolumeClaim:
+            claimName: qbit-config
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qbit-gluetun
+  namespace: media
+spec:
+  selector:
+    app: qbit-gluetun
+  ports:
+    - name: qbit-webui
+      port: 8080
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: qbit-gluetun
+  namespace: media
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+spec:
+  tls:
+    - hosts:
+        - qbit.becklab.cloud
+      secretName: qbit-tls
+  rules:
+    - host: qbit.becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: qbit-gluetun
+                port:
+                  number: 8080

@@ -1,0 +1,36 @@
+---
+# Expose the existing Hubble UI (deployed by Cilium in kube-system)
+# behind Traefik with SSO protection.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: hubble-ui
+  namespace: monitoring
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`hubble.becklab.cloud`)
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+      services:
+        - name: hubble-ui
+          namespace: kube-system
+          port: 80
+  tls:
+    secretName: hubble-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: hubble
+  namespace: monitoring
+spec:
+  secretName: hubble-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - hubble.becklab.cloud

@@ -1,0 +1,121 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-redirect-admin
+  namespace: identity
+spec:
+  errors:
+    status:
+      - "401"
+    service:
+      name: sso-redirect
+      port: 80
+    query: "/"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-forwardauth-admin
+  namespace: identity
+spec:
+  forwardAuth:
+    address: http://oauth2-proxy.identity.svc.cluster.local/oauth2/auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Access-Token
+      - X-Auth-Request-Groups
+      - Authorization
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-admin-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# ── HA-compatible SSO chain (no Authorization header forwarded) ──
+# Home Assistant has its own auth layer that rejects oauth2-proxy's Bearer JWT.
+# This variant authenticates via forwardAuth but doesn't pass the Authorization
+# header upstream, letting HA handle onboarding / login / API tokens itself.
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-forwardauth-admin-no-auth-header
+  namespace: identity
+spec:
+  forwardAuth:
+    address: http://oauth2-proxy.identity.svc.cluster.local/oauth2/auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Access-Token
+      - X-Auth-Request-Groups
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-admin-chain-no-auth-header
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin-no-auth-header
+        namespace: identity
+
+# ── Media SSO chain ──────────────────────────────────────────────
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: oauth2-redirect-media
+  namespace: identity
+spec:
+  errors:
+    status:
+      - "401"
+    service:
+      name: sso-redirect
+      port: 80
+    query: "/media/"
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: keycloak-forwardauth-media
+  namespace: identity
+spec:
+  forwardAuth:
+    address: http://oauth2-proxy-media.identity.svc.cluster.local/oauth2/auth
+    trustForwardHeader: true
+    authResponseHeaders:
+      - X-Auth-Request-User
+      - X-Auth-Request-Email
+      - X-Auth-Request-Access-Token
+      - X-Auth-Request-Groups
+      - Authorization
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-media-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-media
+        namespace: identity
+      - name: keycloak-forwardauth-media
+        namespace: identity

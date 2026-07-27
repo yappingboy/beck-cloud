@@ -1,0 +1,306 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-httpd
+  namespace: webapps
+data:
+  apache2.conf: |
+    ServerRoot "/etc/apache2"
+    Listen 80
+
+    # Minimal modules for Debian Apache 2.4
+    LoadModule mpm_event_module /usr/lib/apache2/modules/mod_mpm_event.so
+    LoadModule authz_core_module /usr/lib/apache2/modules/mod_authz_core.so
+    LoadModule authz_host_module /usr/lib/apache2/modules/mod_authz_host.so
+    LoadModule headers_module /usr/lib/apache2/modules/mod_headers.so
+    LoadModule deflate_module /usr/lib/apache2/modules/mod_deflate.so
+    LoadModule filter_module /usr/lib/apache2/modules/mod_filter.so
+    LoadModule wsgi_module /usr/lib/apache2/modules/mod_wsgi.so
+    LoadModule ssl_module /usr/lib/apache2/modules/mod_ssl.so
+    LoadModule socache_shmcb_module /usr/lib/apache2/modules/mod_socache_shmcb.so
+
+    User www-data
+    Group www-data
+
+    ServerAdmin admin@becklab.cloud
+    ServerName becklab.cloud
+    DocumentRoot "/hosting"
+
+    ErrorLog /proc/self/fd/2
+    LogLevel warn
+    LogFormat "%h %l %u %t \"%r\" %>s %b \"%{Referer}i\" \"%{User-Agent}i\"" combined
+    CustomLog /proc/self/fd/1 combined
+
+    Timeout 300
+    KeepAlive Off
+    MaxRequestWorkers 50
+
+    # Django via mod_wsgi — all requests go through Django
+    WSGIDaemonProcess landing processes=2 threads=15 maximum-requests=10000 display-name=%{GROUP} python-path=/app:/usr/local/lib/python3.12/site-packages user=www-data group=www-data
+    WSGIProcessGroup landing
+    WSGIScriptAlias / /app/beckcloud/wsgi.py process-group=landing
+
+    <Directory "/app/beckcloud">
+        <Files wsgi.py>
+            Require all granted
+        </Files>
+    </Directory>
+
+    # Security headers
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options SAMEORIGIN
+    Header always set X-XSS-Protection "1; mode=block"
+    Header always set Referrer-Policy strict-origin-when-cross-origin
+    Header always unset X-Powered-By
+
+    # Compression
+    AddOutputFilterByType DEFLATE text/html text/css application/javascript application/json image/svg+xml
+
+    # Caching for static assets
+    <FilesMatch "\.(css|js|svg|ico|png|jpg|gif|webp|woff2|woff|ttf)$">
+        Header set Cache-Control "public, max-age=86400"
+    </FilesMatch>
+
+    <FilesMatch "^robots\.txt$">
+        Header set Cache-Control "public, max-age=3600"
+    </FilesMatch>
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-django
+  namespace: webapps
+data:
+  settings.py: |
+    import os
+
+    BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY", "beckcloud-landing-insecure-key")
+    DEBUG = False
+    ALLOWED_HOSTS = ["*"]
+
+    INSTALLED_APPS = [
+        "django.contrib.contenttypes",
+        "django.contrib.staticfiles",
+    ]
+
+    MIDDLEWARE = [
+        "django.middleware.security.SecurityMiddleware",
+        "django.middleware.common.CommonMiddleware",
+        "django.middleware.clickjacking.XFrameOptionsMiddleware",
+    ]
+
+    ROOT_URLCONF = "beckcloud.urls"
+
+    TEMPLATES = [
+        {
+            "BACKEND": "django.template.backends.django.DjangoTemplates",
+            "DIRS": [os.environ.get("HOSTING_DIR", "/hosting")],
+            "APP_DIRS": False,
+            "OPTIONS": {
+                "context_processors": [
+                    "django.template.context_processors.request",
+                ],
+            },
+        },
+    ]
+
+    WSGI_APPLICATION = "beckcloud.wsgi.application"
+    STATIC_URL = "/static/"
+    DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
+
+    LOGGING = {
+        "version": 1,
+        "disable_existing_loggers": False,
+        "handlers": {
+            "console": {"class": "logging.StreamHandler"},
+        },
+        "root": {"handlers": ["console"], "level": "WARNING"},
+        "loggers": {
+            "django": {"handlers": ["console"], "level": "WARNING", "propagate": False},
+        },
+    }
+  urls.py: |
+    from django.urls import path
+    from django.views.static import serve
+    from django.http import JsonResponse, HttpResponse, HttpResponseNotFound
+    import os
+
+    hosting = os.environ.get("HOSTING_DIR", "/hosting")
+
+    def health_check(request):
+        return JsonResponse({"status": "ok", "service": "beckcloud-landing"})
+
+    def index_api(request):
+        return JsonResponse({
+            "name": "BeckCloud",
+            "tagline": "Built by one. Running for all.",
+            "description": "A self-hosted homelab running K3s.",
+        })
+
+    def index_view(request):
+        """Serve /hosting/index.html as raw text, no template parsing.
+        Strips Silex YAML frontmatter (--- ... ---) from the beginning."""
+        import re
+        idx = os.path.join(hosting, "index.html")
+        try:
+            with open(idx, "r", encoding="utf-8") as f:
+                content = f.read()
+            # Strip leading YAML frontmatter: --- ... ---
+            content = re.sub(r'^---[\s\S]*?---\s*', '', content)
+            return HttpResponse(content, content_type="text/html; charset=utf-8")
+        except FileNotFoundError:
+            return HttpResponseNotFound("<h1>404</h1>")
+
+    urlpatterns = [
+        path("", index_view, name="home"),
+        path("robots.txt", serve, {"path": "robots.txt", "document_root": hosting}, name="robots"),
+        path("favicon.svg", serve, {"path": "favicon.svg", "document_root": hosting}, name="favicon"),
+        path("css/<path:path>", serve, {"document_root": os.path.join(hosting, "css")}, name="css"),
+        path("js/<path:path>", serve, {"document_root": os.path.join(hosting, "js")}, name="js"),
+        path("api/health/", health_check, name="health"),
+        path("api/", index_api, name="index"),
+        path("api", index_api, name="index-noslash"),
+    ]
+  wsgi.py: |
+    import os
+    from django.core.wsgi import get_wsgi_application
+
+    os.environ.setdefault("DJANGO_SETTINGS_MODULE", "beckcloud.settings")
+    application = get_wsgi_application()
+  __init__.py: |
+    # BeckCloud landing page Django app
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-page
+  namespace: webapps
+  labels:
+    app: landing-page
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-page
+  template:
+    metadata:
+      labels:
+        app: landing-page
+    spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      initContainers:
+        - name: fix-permissions
+          image: ghcr.io/yappingboy/becklab-landing:latest
+          command: ["sh", "-c", "chmod -R a+r /hosting && chmod -R a+X /hosting"]
+          volumeMounts:
+            - name: hosting
+              mountPath: /hosting
+              readOnly: false
+          resources:
+            limits:
+              memory: 32Mi
+              cpu: 100m
+      containers:
+        - name: landing
+          image: ghcr.io/yappingboy/becklab-landing:latest
+          ports:
+            - containerPort: 80
+              name: http
+          resources:
+            limits:
+              memory: 128Mi
+              cpu: 200m
+          env:
+            - name: PYTHONDONTWRITEBYTECODE
+              value: "1"
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: HOSTING_DIR
+              value: "/hosting"
+          volumeMounts:
+            - name: httpd-config
+              mountPath: /etc/apache2/apache2.conf
+              subPath: apache2.conf
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/settings.py
+              subPath: settings.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/urls.py
+              subPath: urls.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/wsgi.py
+              subPath: wsgi.py
+              readOnly: true
+            - name: django-config
+              mountPath: /app/beckcloud/__init__.py
+              subPath: __init__.py
+              readOnly: true
+            - name: hosting
+              mountPath: /hosting
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health/
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health/
+              port: 80
+            initialDelaySeconds: 10
+            periodSeconds: 30
+      volumes:
+        - name: httpd-config
+          configMap:
+            name: landing-httpd
+        - name: django-config
+          configMap:
+            name: landing-django
+            defaultMode: 0644
+        - name: hosting
+          persistentVolumeClaim:
+            claimName: silex-hosting
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-page
+  namespace: webapps
+spec:
+  selector:
+    app: landing-page
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: landing-page
+  namespace: webapps
+  annotations:
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+spec:
+  tls:
+    - hosts:
+        - becklab.cloud
+      secretName: landing-tls
+  rules:
+    - host: becklab.cloud
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: landing-page
+                port:
+                  number: 80

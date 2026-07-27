@@ -1,0 +1,19 @@
+# Mosquitto config — allows anonymous access on localhost (HA integrations)
+# WebSocket enabled for HA frontend MQTT add-on compatibility
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mosquitto-config
+  namespace: webapps
+data:
+  mosquitto.conf: |
+    listener 1883
+    protocol mqtt
+
+    listener 9001
+    protocol websockets
+
+    allow_anonymous true
+
+    # Persistence (disabled since we use emptyDir; enable if you add PVC)
+    persistence false

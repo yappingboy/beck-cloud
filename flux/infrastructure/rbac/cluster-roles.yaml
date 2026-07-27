@@ -1,0 +1,16 @@
+---
+# Bind the Keycloak 'admins' group to cluster-admin.
+# K3s is configured with --kube-apiserver-arg=oidc-groups-prefix=keycloak:
+# so the group name becomes keycloak:/admins in Kubernetes RBAC.
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-admins-cluster-admin
+subjects:
+  - kind: Group
+    name: "keycloak:/admins"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
