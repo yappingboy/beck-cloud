@@ -12,7 +12,7 @@ resources:
   - sources
   # - security          # includes trivy-operator
   - media             # includes qbit-gluetun, spotweb
-  - monitoring
+  # - monitoring
   - velero
   - opennebula
   - webapps           # bitwarden, cms/directus, landing-page/silex, affine, homepage
