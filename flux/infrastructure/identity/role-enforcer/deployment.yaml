@@ -24,7 +24,7 @@ spec:
       serviceAccountName: role-enforcer
       containers:
       - name: role-enforcer
-        image: quay.io/beckcloud/role-enforcer:latest
+        image: ghcr.io/yappingboy/role-enforcer:latest
         imagePullPolicy: Always
         ports:
         - name: http
