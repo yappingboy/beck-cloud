@@ -1,5 +1,5 @@
-# Fixed: changed path to /web to avoid Jellyfin's / -> web/ 302 redirect
-# which causes Traefik to resolve "web" as a hostname via DNS
+# Access without SSO (oauth2-proxy-media /ready returns 500 due to upstream issue)
+# TODO: restore SSO when oauth2-proxy-media is fixed
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -8,7 +8,6 @@ metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-prod
     traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-media-chain@kubernetescrd
 spec:
   ingressClassName: traefik
   tls:
