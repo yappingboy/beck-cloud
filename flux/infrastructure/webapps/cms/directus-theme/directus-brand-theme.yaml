@@ -1,24 +1,59 @@
 apiVersion: v1
 data:
-  admin-ui-index.js: |-
+  index.js: |-
     export default {
-      init() {
-        const link = document.createElement('link');
-        link.rel = 'stylesheet';
-        link.href = '/brand.css';
-        document.head.appendChild(link);
-      }
+      id: 'beckcloud-brand',
+      name: 'BeckCloud Brand',
+      appearance: 'dark',
+      theme: {
+        colors: {
+          primary: {
+            50: '#FFF8E1',
+            100: '#FFECB3',
+            200: '#FFE082',
+            300: '#FFD54F',
+            400: '#FFCA28',
+            500: '#E8A838',
+            600: '#D4922A',
+            700: '#A67220',
+            800: '#785216',
+            900: '#4A320C',
+          },
+          accent: {
+            500: '#FF6B4A',
+          },
+          foreground: '#E2E8F0',
+          foregroundSubdued: '#94A3B8',
+          foregroundAlternation: '#E8A838',
+          foregroundWarning: '#FBBF24',
+          foregroundError: '#EF4444',
+          foregroundSuccess: '#4ADE80',
+          background: '#0F1729',
+          backgroundSubdued: '#1E293B',
+          border: '#334155',
+        },
+        fonts: {
+          fontFamily: 'Inter, sans-serif',
+          codeFontFamily: 'JetBrains Mono, monospace',
+        },
+        rules: {
+          borderRadius: '8px',
+          borderWidth: '1px',
+          shadow: '0 2px 8px rgba(0,0,0,0.3)',
+        },
+      },
     };
-  admin-ui-package.json: |
+  package.json: |
     {
       "name": "beckcloud-brand",
       "version": "1.0.0",
       "description": "BeckCloud brand theme for Directus",
       "keywords": ["directus-extension"],
       "main": "index.js",
-      "directus": {
-        "type": "ui",
-        "endpoint": "admin"
+      "directus:extension": {
+        "type": "theme",
+        "path": "index.js",
+        "source": "javascript"
       }
     }
   brand.css: |
@@ -111,14 +146,9 @@ data:
     }
 kind: ConfigMap
 metadata:
-  annotations:
-    kubectl.kubernetes.io/last-applied-configuration: |
-      {"apiVersion":"v1","data":{"admin-ui-index.js":"export default {\n  init() {\n    const link = document.createElement('link');\n    link.rel = 'stylesheet';\n    link.href = '/brand.css';\n    document.head.appendChild(link);\n  }\n};","admin-ui-package.json":"{\n  \"name\": \"beckcloud-brand\",\n  \"version\": \"1.0.0\",\n  \"description\": \"BeckCloud brand theme for Directus\",\n  \"keywords\": [\"directus-extension\"],\n  \"main\": \"index.js\",\n  \"directus\": {\n    \"type\": \"ui\",\n    \"endpoint\": \"admin\"\n  }\n}\n","brand.css":"/* BeckCloud Brand Theme for Directus Admin */\n:root, body, .app, .v-application {\n  background-color: #0F1729 !important;\n  color: #E2E8F0 !important;\n}\n.v-application__wrap { background-color: #0F1729 !important; }\n[class*=\"app-header\"], [class*=\"header-bar\"], .v-app-bar, [class*=\"top-bar\"] {\n  background-color: #1E293B !important; border-bottom: 1px solid #334155 !important;\n  box-shadow: 0 2px 8px rgba(0,0,0,0.3) !important;\n}\n[class*=\"app-header\"] [class*=\"title\"], [class*=\"app-logo\"] {\n  color: #E8A838 !important; font-family: 'JetBrains Mono', monospace !important;\n  font-weight: 700 !important; letter-spacing: -0.5px !important;\n}\n[class*=\"sidebar\"], [class*=\"nav-drawer\"], .v-navigation-drawer {\n  background-color: #1E293B !important; border-right: 1px solid #334155 !important;\n}\n[class*=\"sidebar\"] [class*=\"item\"], [class*=\"nav-item\"], .v-list-item {\n  color: #94A3B8 !important; transition: background-color 0.2s ease, color 0.2s ease !important;\n}\n[class*=\"sidebar\"] [class*=\"item\"]:hover, [class*=\"nav-item\"]:hover, .v-list-item:hover {\n  background-color: #283548 !important; color: #E2E8F0 !important;\n}\n[class*=\"sidebar\"] [class*=\"item\"][class*=\"active\"], [class*=\"nav-item\"][class*=\"active\"], .v-list-item--active {\n  color: #E8A838 !important; background-color: rgba(232,168,56,0.08) !important; border-left: 3px solid #E8A838 !important;\n}\n[class*=\"card\"], [class*=\"panel\"], .v-card, [class*=\"collection-item\"] {\n  background-color: #1E293B !important; border: 1px solid #334155 !important;\n  border-radius: 8px !important; box-shadow: 0 2px 8px rgba(0,0,0,0.2) !important;\n}\n[class*=\"btn\"], button[class*=\"btn\"], .v-btn {\n  background: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%) !important;\n  color: #0F1729 !important; border: none !important; border-radius: 6px !important;\n  font-weight: 600 !important; font-family: 'Inter', sans-serif !important;\n  transition: transform 0.15s ease, box-shadow 0.2s ease !important;\n}\n[class*=\"btn\"]:hover, button[class*=\"btn\"]:hover, .v-btn:hover {\n  transform: translateY(-1px) !important; box-shadow: 0 4px 16px rgba(232,168,56,0.3) !important;\n}\n[class*=\"primary\"], [class*=\"action\"], [class*=\"save\"] {\n  background: linear-gradient(90deg, #E8A838 0%, #FF6B4A 100%) !important; color: #0F1729 !important;\n}\ninput[type=\"text\"], input[type=\"search\"], input[type=\"password\"], [class*=\"input\"], .v-text-field, .v-input {\n  background-color: #0F1729 !important; border: 1px solid #334155 !important;\n  color: #E2E8F0 !important; border-radius: 6px !important;\n}\ninput[type=\"text\"]:focus, [class*=\"input\"]:focus, .v-text-field--focused {\n  border-color: #E8A838 !important; box-shadow: 0 0 0 2px rgba(232,168,56,0.15) !important; outline: none !important;\n}\ntable, [class*=\"table\"], .v-data-table { background-color: transparent !important; color: #E2E8F0 !important; }\n[class*=\"table\"] th, [class*=\"table-header\"], .v-data-table th {\n  color: #E8A838 !important; font-family: 'JetBrains Mono', monospace !important;\n  font-size: 0.75rem !important; text-transform: uppercase !important;\n  letter-spacing: 0.06em !important; border-bottom: 2px solid #334155 !important;\n}\n[class*=\"table\"] tr:nth-child(even), [class*=\"table\"] tbody tr:nth-child(even) {\n  background-color: rgba(30,41,59,0.5) !important;\n}\n[class*=\"table\"] tr:hover, [class*=\"table\"] tbody tr:hover {\n  background-color: rgba(232,168,56,0.04) !important;\n}\n[class*=\"modal\"], [class*=\"dialog\"], [class*=\"overlay\"], .v-dialog, .v-overlay {\n  background-color: #1E293B !important; border: 1px solid #334155 !important;\n  border-radius: 10px !important; box-shadow: 0 8px 32px rgba(0,0,0,0.5) !important;\n}\n::-webkit-scrollbar { width: 8px; height: 8px; }\n::-webkit-scrollbar-track { background: #1E293B; }\n::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }\n::-webkit-scrollbar-thumb:hover { background: #475569; }\n[class*=\"success\"], [class*=\"ok\"] { color: #4ADE80 !important; }\n[class*=\"warning\"] { color: #FBBF24 !important; }\n[class*=\"error\"], [class*=\"critical\"] { color: #EF4444 !important; }\n[class*=\"spinner\"], [class*=\"loading\"] { color: #E8A838 !important; }\n[class*=\"tag\"], [class*=\"chip\"], .v-chip {\n  background-color: rgba(232,168,56,0.15) !important; color: #E8A838 !important;\n  border: 1px solid rgba(232,168,56,0.3) !important; border-radius: 4px !important;\n}\n[class*=\"empty\"], [class*=\"placeholder\"], [class*=\"no-data\"] { color: #64748B !important; font-style: italic !important; }\n[class*=\"label\"], .v-label { color: #E2E8F0 !important; font-weight: 500 !important; }\n[class*=\"helper\"], [class*=\"caption\"] { color: #94A3B8 !important; font-size: 0.8125rem !important; }\n[class*=\"search-bar\"], [class*=\"search-input\"] {\n  background-color: #0F1729 !important; border: 1px solid #334155 !important;\n  color: #E2E8F0 !important; border-radius: 6px !important;\n}\n[class*=\"search-bar\"]:focus-within, [class*=\"search-input\"]:focus {\n  border-color: #E8A838 !important; box-shadow: 0 0 0 2px rgba(232,168,56,0.15) !important;\n}\n"},"kind":"ConfigMap","metadata":{"annotations":{},"labels":{"app.kubernetes.io/component":"directus-brand","kustomize.toolkit.fluxcd.io/name":"infrastructure"},"name":"directus-brand-theme","namespace":"webapps"}}
-  creationTimestamp: "2026-07-25T02:56:35Z"
+  annotations: {}
   labels:
     app.kubernetes.io/component: directus-brand
     kustomize.toolkit.fluxcd.io/name: infrastructure
   name: directus-brand-theme
   namespace: webapps
-  resourceVersion: "9112520"
-  uid: de8e07b0-aea1-4788-87ef-464f12f264c9

@@ -78,12 +78,12 @@ spec:
           subPath: brand.css
           readOnly: true
         - name: brand-theme
-          mountPath: /directus/extensions/admin-ui/package.json
-          subPath: admin-ui-package.json
+          mountPath: /directus/extensions/beckcloud-brand/package.json
+          subPath: package.json
           readOnly: true
         - name: brand-theme
-          mountPath: /directus/extensions/admin-ui/index.js
-          subPath: admin-ui-index.js
+          mountPath: /directus/extensions/beckcloud-brand/index.js
+          subPath: index.js
           readOnly: true
         securityContext:
           capabilities:
@@ -99,7 +99,7 @@ spec:
           items:
           - key: brand.css
             path: brand.css
-          - key: admin-ui-package.json
-            path: admin-ui-package.json
-          - key: admin-ui-index.js
-            path: admin-ui-index.js
+          - key: package.json
+            path: package.json
+          - key: index.js
+            path: index.js
