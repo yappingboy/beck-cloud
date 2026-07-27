@@ -12,7 +12,7 @@ resources:
   - lldap
   - logout-page
   - oauth2proxy
-  # - rbac
+  - rbac
   - redis
   # - role-enforcer
   - sso
