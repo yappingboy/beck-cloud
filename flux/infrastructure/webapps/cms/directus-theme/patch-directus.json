@@ -5,5 +5,6 @@
   {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/public/brand.css","subPath":"brand.css","readOnly":true}},
   {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/extensions/beckcloud-brand/package.json","subPath":"package.json","readOnly":true}},
   {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/extensions/beckcloud-brand/index.js","subPath":"index.js","readOnly":true}},
-  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"brand-theme","configMap":{"name":"directus-brand-theme","items":[{"key":"brand.css","path":"brand.css"},{"key":"package.json","path":"package.json"},{"key":"index.js","path":"index.js"}]}}}
+  {"op":"add","path":"/spec/template/spec/containers/0/volumeMounts/-","value":{"name":"brand-theme","mountPath":"/directus/extensions/beckcloud-brand/host.html","subPath":"host.html","readOnly":true}},
+  {"op":"add","path":"/spec/template/spec/volumes/-","value":{"name":"brand-theme","configMap":{"name":"directus-brand-theme","items":[{"key":"brand.css","path":"brand.css"},{"key":"package.json","path":"package.json"},{"key":"index.js","path":"index.js"},{"key":"host.html","path":"host.html"}]}}}
 ]

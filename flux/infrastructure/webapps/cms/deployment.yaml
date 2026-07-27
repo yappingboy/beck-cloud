@@ -85,6 +85,10 @@ spec:
           mountPath: /directus/extensions/beckcloud-brand/index.js
           subPath: index.js
           readOnly: true
+        - name: brand-theme
+          mountPath: /directus/extensions/beckcloud-brand/host.html
+          subPath: host.html
+          readOnly: true
         securityContext:
           capabilities:
             drop:
@@ -103,3 +107,5 @@ spec:
             path: package.json
           - key: index.js
             path: index.js
+          - key: host.html
+            path: host.html

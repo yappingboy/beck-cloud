@@ -1,5 +1,11 @@
 apiVersion: v1
 data:
+  host.html: |
+    <!DOCTYPE html>
+    <html>
+    <head><style>body{margin:0;padding:0}</style></head>
+    <body></body>
+    </html>
   index.js: |-
     export default {
       id: 'beckcloud-brand',
@@ -53,7 +59,8 @@ data:
       "directus:extension": {
         "type": "theme",
         "path": "index.js",
-        "source": "javascript"
+        "source": "javascript",
+        "host": "./host.html"
       }
     }
   brand.css: |
