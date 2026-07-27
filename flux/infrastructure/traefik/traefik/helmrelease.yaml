@@ -19,15 +19,15 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
-    experimental:
-      plugins:
-        bouncer:
-          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
-          version: v1.4.5
+#    experimental:
+#      plugins:
+#        bouncer:
+#          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+#          version: v1.4.5
     additionalArguments:
     - --serversTransport.insecureSkipVerify=false
-    - --entrypoints.web.http.middlewares=crowdsec-bouncer@kubernetescrd
-    - --entrypoints.websecure.http.middlewares=crowdsec-bouncer@kubernetescrd
+#    - --entrypoints.web.http.middlewares=crowdsec-bouncer@kubernetescrd
+#    - --entrypoints.websecure.http.middlewares=crowdsec-bouncer@kubernetescrd
     logs:
       general:
         level: INFO
@@ -67,8 +67,8 @@ spec:
         enabled: false
     persistence:
       enabled: false
-    volumes:
-    - name: crowdsec-bouncer-key
-      mountPath: /etc/traefik/crowdsec
-      type: secret
-      secretName: crowdsec-bouncer-key
+#    volumes:
+#    - name: crowdsec-bouncer-key
+#      mountPath: /etc/traefik/crowdsec
+#      type: secret
+#      secretName: crowdsec-bouncer-key
