@@ -21,7 +21,7 @@ spec:
 #        fsGroup: 1000
       containers:
       - name: nginx
-        image: nginx:1.27-alpine
+        image: nginxinc/nginx-unprivileged:alpine3.24-perl
         ports:
         - containerPort: 80
         volumeMounts:
