@@ -15,10 +15,10 @@ spec:
       labels:
         app: postfix-relay
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+#      securityContext:
+#        runAsNonRoot: true
+#        runAsUser: 1000
+#        fsGroup: 1000
       initContainers:
       - name: hash-sasl
         image: mwader/postfix-relay:latest
