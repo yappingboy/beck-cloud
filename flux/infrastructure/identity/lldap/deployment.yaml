@@ -22,7 +22,7 @@ spec:
 # This container must start with root access, afterwords it downgrades itself.
       containers:
       - name: lldap
-        image: lldap/lldap:latest
+        image: lldap/lldap:latest-debian-rootless
         resources:
           limits:
             cpu: '1'
