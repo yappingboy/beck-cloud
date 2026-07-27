@@ -1,4 +1,3 @@
----
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -13,6 +12,7 @@ spec:
       port: 80
     query: "/"
 ---
+
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -29,6 +29,7 @@ spec:
       - X-Auth-Request-Groups
       - Authorization
 ---
+
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -130,7 +131,7 @@ spec:
 #   annotations:
 #     traefik.ingress.kubernetes.io/router.middlewares: identity,qwen-<service>-role@kubernetescrd
 # ─────────────────────────────────────────────────────────────────
-
+---
 # ── Admin Role Checker ──────────────────────────────────────────
 # Requires the user to have the 'admin' role in the JWT
 apiVersion: traefik.io/v1alpha1
@@ -148,6 +149,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Monitor Role Checker ────────────────────────────────────────
 # Requires 'monitor' role
@@ -166,6 +168,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Download Role Checker ───────────────────────────────────────
 # Requires 'download' role
@@ -184,6 +187,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Media View Role Checker ─────────────────────────────────────
 # Requires 'media-view' role
@@ -202,6 +206,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Media Manage Role Checker ───────────────────────────────────
 # Requires 'media-manage' role
@@ -220,6 +225,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Dev Role Checker ────────────────────────────────────────────
 # Requires 'dev' role
@@ -238,6 +244,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── CMS Role Checker ────────────────────────────────────────────
 # Requires 'cms' role
@@ -256,6 +263,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── User Role Checker ───────────────────────────────────────────
 # Requires any authenticated user (user role)
@@ -274,6 +282,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── Composite Chains ────────────────────────────────────────────
 # Chains that combine oauth2-proxy auth + role checking
@@ -293,6 +302,7 @@ spec:
         namespace: identity
       - name: monitor-role-check
         namespace: identity
+---
 
 # qBittorrent: SSO admin + download OR media-view role
 apiVersion: traefik.io/v1alpha1
@@ -325,6 +335,7 @@ spec:
         namespace: identity
       - name: cms-role-check
         namespace: identity
+---
 
 # Jellyfin: SSO media + media-view role
 apiVersion: traefik.io/v1alpha1
@@ -341,6 +352,7 @@ spec:
         namespace: identity
       - name: media-view-role-check
         namespace: identity
+---
 
 # Affine: SSO admin + (cms OR user) role
 apiVersion: traefik.io/v1alpha1
@@ -359,6 +371,7 @@ spec:
         namespace: identity
       - name: user-role-check
         namespace: identity
+---
 
 # Tdarr: SSO media + media-manage role
 apiVersion: traefik.io/v1alpha1
@@ -375,6 +388,7 @@ spec:
         namespace: identity
       - name: media-manage-role-check
         namespace: identity
+---
 
 # SABnzbd: SSO admin + download role
 apiVersion: traefik.io/v1alpha1
@@ -391,6 +405,7 @@ spec:
         namespace: identity
       - name: download-role-check
         namespace: identity
+---
 
 # Auth Service: SSO admin + dev role
 apiVersion: traefik.io/v1alpha1
@@ -407,6 +422,7 @@ spec:
         namespace: identity
       - name: dev-role-check
         namespace: identity
+---
 
 # BeckFlow: SSO admin + dev role
 apiVersion: traefik.io/v1alpha1
@@ -423,6 +439,7 @@ spec:
         namespace: identity
       - name: dev-role-check
         namespace: identity
+---
 
 # Cron Jobs: SSO admin + dev role
 apiVersion: traefik.io/v1alpha1
@@ -439,6 +456,7 @@ spec:
         namespace: identity
       - name: dev-role-check
         namespace: identity
+---
 
 # DNS Monitor: SSO admin + dev role
 apiVersion: traefik.io/v1alpha1
@@ -455,6 +473,7 @@ spec:
         namespace: identity
       - name: dev-role-check
         namespace: identity
+---
 
 # Image Editor API: SSO admin + dev role
 apiVersion: traefik.io/v1alpha1
@@ -471,6 +490,7 @@ spec:
         namespace: identity
       - name: dev-role-check
         namespace: identity
+---
 
 # Homepage: SSO admin + user role
 apiVersion: traefik.io/v1alpha1
@@ -490,6 +510,7 @@ spec:
 
 # ── Permissive Chains (accept ANY authenticated role) ───────────
 # For services where any authenticated user should have access
+---
 
 # Manyfold: SSO admin + cms role (or admin)
 apiVersion: traefik.io/v1alpha1
@@ -506,6 +527,7 @@ spec:
         namespace: identity
       - name: cms-role-check
         namespace: identity
+---
 
 # Sonarr: SSO media + media-view
 apiVersion: traefik.io/v1alpha1
@@ -522,6 +544,7 @@ spec:
         namespace: identity
       - name: media-view-role-check
         namespace: identity
+---
 
 # Radarr: SSO media + media-view
 apiVersion: traefik.io/v1alpha1
@@ -538,6 +561,7 @@ spec:
         namespace: identity
       - name: media-view-role-check
         namespace: identity
+---
 
 # Prowlarr: SSO media + media-view
 apiVersion: traefik.io/v1alpha1
@@ -554,6 +578,7 @@ spec:
         namespace: identity
       - name: media-view-role-check
         namespace: identity
+---
 
 # Bazarr: SSO media + media-view
 apiVersion: traefik.io/v1alpha1
@@ -570,6 +595,7 @@ spec:
         namespace: identity
       - name: media-view-role-check
         namespace: identity
+---
 
 # Jellyseerr: SSO media + media-manage role (request management)
 apiVersion: traefik.io/v1alpha1
@@ -586,6 +612,7 @@ spec:
         namespace: identity
       - name: media-manage-role-check
         namespace: identity
+---
 
 # Tdarr (media-manage): SSO media + media-manage
 apiVersion: traefik.io/v1alpha1
@@ -606,6 +633,7 @@ spec:
 # ── OR-Logic Role Checkers ──────────────────────────────────────
 # These check if ANY of the listed roles is present (OR logic)
 # Used for services where multiple roles grant access
+---
 
 # qBittorrent: accepts download OR media-view
 apiVersion: traefik.io/v1alpha1
@@ -623,6 +651,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # NZBGet: download role
 apiVersion: traefik.io/v1alpha1
@@ -640,6 +669,7 @@ spec:
       realm: "homelab"
       clientId: "beckcloud-services"
       failStatus: 403
+---
 
 # ── NZBGet Chain ────────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
