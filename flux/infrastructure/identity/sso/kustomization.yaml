@@ -3,7 +3,7 @@ kind: Kustomization
 
 
 resources:
-  - configmap.yaml
-  - deployment.yaml
+  # - configmap.yaml
+  # - deployment.yaml
   - middleware.yaml
-  - service.yaml
+  # - service.yaml
