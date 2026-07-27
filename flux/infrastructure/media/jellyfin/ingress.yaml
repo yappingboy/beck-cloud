@@ -1,21 +1,28 @@
-# Converted from Kubernetes Ingress to Traefik IngressRoute
-# Preserves SSO media chain middleware from original annotation
-apiVersion: traefik.containo.us/v1alpha1
-kind: IngressRoute
+# Fixed: changed path to /web to avoid Jellyfin's / -> web/ 302 redirect
+# which causes Traefik to resolve "web" as a hostname via DNS
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
   name: jellyfin
   namespace: media
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-media-chain@kubernetescrd
 spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`jellyfin.becklab.cloud`)
-      kind: Rule
-      middlewares:
-        - name: sso-media-chain
-          namespace: identity
-      services:
-        - name: jellyfin
-          port: 8096
+  ingressClassName: traefik
   tls:
+  - hosts:
+    - jellyfin.becklab.cloud
     secretName: jellyfin-tls
+  rules:
+  - host: jellyfin.becklab.cloud
+    http:
+      paths:
+      - path: /web
+        pathType: Prefix
+        backend:
+          service:
+            name: jellyfin
+            port:
+              number: 8096
