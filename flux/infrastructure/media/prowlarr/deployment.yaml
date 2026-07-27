@@ -27,7 +27,7 @@ spec:
 #        - 1000
       containers:
       - name: prowlarr
-        image: lscr.io/linuxserver/prowlarr:1.29.4
+        image: lscr.io/linuxserver/prowlarr:latest
         resources:
           limits:
             cpu: '1'
