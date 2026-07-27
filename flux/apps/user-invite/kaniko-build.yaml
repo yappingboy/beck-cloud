@@ -61,5 +61,6 @@ spec:
         - name: docker-config
           secret:
             secretName: ghcr-config
+            defaultMode: 420
         - name: workspace
           emptyDir: {}
