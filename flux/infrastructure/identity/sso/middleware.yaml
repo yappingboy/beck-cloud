@@ -29,7 +29,6 @@ spec:
       - X-Auth-Request-Groups
       - Authorization
 ---
-
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -319,7 +318,7 @@ spec:
         namespace: identity
       - name: qbit-anyrole-check
         namespace: identity
-
+---
 # Directus: SSO admin + cms role
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
