@@ -2,7 +2,7 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  - 3dprinting
+  # - 3dprinting
   - cert-manager
   - csi-snapshotter
   - flux-system
@@ -10,7 +10,7 @@ resources:
   - identity          # includes email (postfix-relay)
   - kube-system
   - sources
-  - security          # includes trivy-operator
+  # - security          # includes trivy-operator
   - media             # includes qbit-gluetun, spotweb
   - monitoring
   - velero
