@@ -15,10 +15,11 @@ spec:
       labels:
         app: lldap
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+#      securityContext:
+#        runAsNonRoot: true
+#        runAsUser: 1000
+#        fsGroup: 1000
+# This container must start with root access, afterwords it downgrades itself.
       containers:
       - name: lldap
         image: lldap/lldap:latest
