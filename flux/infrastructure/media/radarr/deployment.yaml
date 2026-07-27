@@ -27,7 +27,7 @@ spec:
         - 1000
       containers:
       - name: radarr
-        image: lscr.io/linuxserver/radarr:5.18.1
+        image: lscr.io/linuxserver/radarr:latest
         resources:
           limits:
             cpu: '4'
