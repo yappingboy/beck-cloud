@@ -5,9 +5,9 @@ namespace: security
 
 resources:
   - namespace.yaml
-  - crowdsec # Removed to try to bring the rest of the stack back up.
-  # - wazuh
-  # - suricata
-  # - trivy-operator - Disabled to free resources to bring Crowdsec back up.
+  - wazuh/filebeat-configmap.yaml
+  - wazuh/wazuh-values.yaml
+  - suricata
+  - trivy-operator
   # falco: deferred — ebpf/modern_ebpf drivers crash under KVM/Cilium.
   # Revisit with kmod driver + matching kernel headers, or layer Tetragon later.

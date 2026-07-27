@@ -5,7 +5,7 @@ metadata:
   namespace: flux-system
 spec:
   interval: 5m
-  path: ./flux/infrastructure/cert-manager/cert-manager-config
+  path: ./flux/infrastructure/cert-manager-config
   prune: true
   dependsOn:
     - name: infrastructure

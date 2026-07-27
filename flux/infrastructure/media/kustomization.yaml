@@ -3,19 +3,21 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
-  - pvcs.yaml
   - pvs-lvm.yaml
-  - bazarr
-  - homebox
-  - jellyfin
-  - jellyseerr
-  - nzbget
-  - prowlarr
-  - qbit-gluetun
-  - radarr
-  - recyclarr
-  - sabnzbd
-  - sonarr
+  - pvcs.yaml
+  - secret-gluetun.yaml
+  - secret-recyclarr.yaml
+  - jellyfin.yaml
+  - jellyseerr.yaml
+  - sonarr.yaml
+  - radarr.yaml
+  - prowlarr.yaml
+  - bazarr.yaml
+  - recyclarr.yaml
+  - qbit-gluetun.yaml
+  - nzbget.yaml
+  - tdarr.yaml
+  - secret-tdarr.yaml
+  - homebox.yaml
   - spotweb
-  - swiparr
-  - tdarr
+  - swiparr.yaml

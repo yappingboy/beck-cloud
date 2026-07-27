@@ -3,12 +3,10 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
-  # - bitwarden
+  - bitwarden
   - cms
-  # - landing-page
-  # - affine
+  - landing-page
+  - affine
   - homepage
-  # - home-assistant
+  - home-assistant
   - openclaw
-  - pvcs.yaml
-  - silex

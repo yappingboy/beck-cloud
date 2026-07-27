@@ -1,4 +1,3 @@
-# Auto-split from cluster files
 apiVersion: v1
 kind: Service
 metadata:
@@ -9,13 +8,13 @@ metadata:
 spec:
   type: ClusterIP
   ports:
-  - name: api
-    port: 9000
-    targetPort: 9000
-    protocol: TCP
-  - name: console
-    port: 9001
-    targetPort: 9001
-    protocol: TCP
+    - port: 9000
+      targetPort: 9000
+      protocol: TCP
+      name: api
+    - port: 9001
+      targetPort: 9001
+      protocol: TCP
+      name: console
   selector:
     app: minio

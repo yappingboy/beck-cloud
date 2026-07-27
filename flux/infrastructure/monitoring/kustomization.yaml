@@ -5,6 +5,6 @@ namespace: monitoring
 
 resources:
   - namespace.yaml
-  - prometheus
-  - grafana
-  - hubble
+  - kube-prometheus-stack.yaml
+  - hubble-ingress.yaml
+  - grafana-ingress.yaml

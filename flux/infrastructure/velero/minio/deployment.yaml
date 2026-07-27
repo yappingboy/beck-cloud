@@ -1,4 +1,3 @@
-# Auto-split from cluster files
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -16,63 +15,56 @@ spec:
       labels:
         app: minio
     spec:
+      # Pin to server node where NFS PV is mounted
       affinity:
         nodeAffinity:
           requiredDuringSchedulingIgnoredDuringExecution:
             nodeSelectorTerms:
-            - matchExpressions:
-              - key: kubernetes.io/hostname
-                operator: In
-                values:
-                - ip-172-16-0-20
-      securityContext:
-        runAsNonRoot: false
-        runAsUser: 0
-        fsGroup: 0
+              - matchExpressions:
+                  - key: kubernetes.io/hostname
+                    operator: In
+                    values:
+                      - ip-172-16-0-20
       containers:
-      - name: minio
-        image: quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
-        args:
-        - server
-        - /data
-        - --console-address
-        - :9001
-        ports:
-        - containerPort: 9000
-          name: api
-        - containerPort: 9001
-          name: console
-        env:
-        - name: MINIO_ROOT_USER
-          valueFrom:
-            secretKeyRef:
-              name: minio-credentials
-              key: accesskey
-        - name: MINIO_ROOT_PASSWORD
-          valueFrom:
-            secretKeyRef:
-              name: minio-credentials
-              key: secretkey
-        - name: MINIO_BROWSER
-          value: 'on'
-        volumeMounts:
-        - name: data
-          mountPath: /data
-        readinessProbe:
-          tcpSocket:
-            port: 9000
-          initialDelaySeconds: 5
-          periodSeconds: 5
-        livenessProbe:
-          tcpSocket:
-            port: 9000
-          initialDelaySeconds: 15
-          periodSeconds: 20
-        securityContext:
-          capabilities:
-            drop:
-            - ALL
+        - name: minio
+          image: quay.io/minio/minio:latest
+          args:
+            - server
+            - /data
+            - --console-address
+            - ":9001"
+          ports:
+            - containerPort: 9000
+              name: api
+            - containerPort: 9001
+              name: console
+          env:
+            - name: MINIO_ROOT_USER
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: accesskey
+            - name: MINIO_ROOT_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: minio-credentials
+                  key: secretkey
+            - name: MINIO_BROWSER
+              value: "on"
+          volumeMounts:
+            - name: data
+              mountPath: /data
+          readinessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          livenessProbe:
+            tcpSocket:
+              port: 9000
+            initialDelaySeconds: 15
+            periodSeconds: 20
       volumes:
-      - name: data
-        persistentVolumeClaim:
-          claimName: minio-data
+        - name: data
+          persistentVolumeClaim:
+            claimName: minio-data

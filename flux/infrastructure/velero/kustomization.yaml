@@ -5,5 +5,12 @@ namespace: velero
 
 resources:
   - namespace.yaml
-  - minio
-  - velero
+  - minio/pv.yaml
+  - minio/pvc.yaml
+  - minio/credentials.yaml
+  - minio/deployment.yaml
+  - minio/service.yaml
+  - minio/bucket-init.yaml
+  - credentials-secret.yaml
+  - velero.yaml
+  - ingressroute.yaml

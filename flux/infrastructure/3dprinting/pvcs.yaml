@@ -1,5 +1,4 @@
 # PVCs for 3D printing services
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -8,11 +7,9 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,11 +18,9 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 50Gi
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -34,11 +29,9 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -47,11 +40,9 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -60,11 +51,9 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi
-
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -73,35 +62,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: bumpmesh-html
-  namespace: 3dprinting
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 200Mi
-
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: gridspace-data
-  namespace: 3dprinting
-spec:
-  accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 2Gi
-
----

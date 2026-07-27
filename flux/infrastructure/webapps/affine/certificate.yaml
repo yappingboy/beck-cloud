@@ -1,4 +1,3 @@
-# Auto-split from cluster files
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
@@ -10,4 +9,4 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-  - affine.becklab.cloud
+    - affine.becklab.cloud

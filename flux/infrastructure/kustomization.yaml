@@ -2,28 +2,23 @@ apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-  # - 3dprinting
-  - cert-manager
+  - sources
+  - controllers
+  - configs
   - csi-snapshotter
-  - flux-system
+  - cert-manager
   - traefik
   - identity          # includes email (postfix-relay)
-  - kube-system
-  - sources
+  - rbac
   - security          # includes trivy-operator
+  - crowdsec          # Crowdsec + Traefik bouncer
   - media             # includes qbit-gluetun, spotweb
-  # - monitoring
+  - monitoring
   - velero
   - opennebula
   - webapps           # bitwarden, cms/directus, landing-page/silex, affine, homepage
-  - gaming
-  # - micro
-
-
-  # - configs         # moved into kube-system
-  # - rbac            # moved into identity
-  # - crowdsec        # Moved into security #Crowdsec + Traefik bouncer
   # - ticketing
   # - support
-  # - gridspace       # moved into 3d printing
-
+  - gaming
+  - 3dprinting
+  - gridspace
