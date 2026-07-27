@@ -17,7 +17,7 @@ resources:
   - opennebula
   - webapps           # bitwarden, cms/directus, landing-page/silex, affine, homepage
   - gaming
-  - micro
+  # - micro
 
 
   # - configs         # moved into kube-system
