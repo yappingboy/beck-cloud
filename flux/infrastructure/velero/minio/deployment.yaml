@@ -26,9 +26,9 @@ spec:
                 values:
                 - ip-172-16-0-20
       securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+        runAsNonRoot: false
+        runAsUser: 0
+        fsGroup: 0
       containers:
       - name: minio
         image: quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
