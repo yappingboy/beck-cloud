@@ -10,7 +10,7 @@ resources:
   - identity          # includes email (postfix-relay)
   - kube-system
   - sources
-  # - security          # includes trivy-operator
+  - security          # includes trivy-operator
   - media             # includes qbit-gluetun, spotweb
   # - monitoring
   - velero
