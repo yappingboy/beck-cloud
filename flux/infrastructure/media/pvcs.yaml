@@ -19,7 +19,6 @@ spec:
     - ReadWriteMany
   storageClassName: ""       # static binding — matches media-movies-lvm PV
   volumeName: media-movies-lvm
-  storageClassName: local-path
   resources:
     requests:
       storage: 45Ti
@@ -34,7 +33,6 @@ spec:
     - ReadWriteMany
   storageClassName: ""       # static binding — matches media-shows-lvm PV
   volumeName: media-shows-lvm
-  storageClassName: local-path
   resources:
     requests:
       storage: 45Ti
@@ -49,7 +47,6 @@ spec:
     - ReadWriteMany
   storageClassName: ""       # static binding — matches media-shows-lvm PV
   volumeName: media-anime-lvm
-  storageClassName: local-path
   resources:
     requests:
       storage: 45Ti
@@ -64,7 +61,6 @@ spec:
     - ReadWriteMany
   storageClassName: ""       # static binding — matches media-downloads-lvm PV
   volumeName: media-downloads-lvm
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Ti
@@ -79,7 +75,6 @@ spec:
     - ReadWriteMany
   storageClassName: ""       # static binding — matches media-downloads-lvm PV
   volumeName: torrent-downloads-lvm
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Ti
@@ -92,8 +87,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
@@ -106,8 +99,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -120,8 +111,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -134,8 +123,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
@@ -148,8 +135,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -162,8 +147,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -176,8 +159,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -190,8 +171,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -204,8 +183,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -218,11 +195,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
-  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -232,8 +207,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -248,8 +221,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 1Gi
@@ -262,8 +233,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi
-  storageClassName: local-path

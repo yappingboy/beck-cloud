@@ -11,7 +11,6 @@ spec:
   resources:
     requests:
       storage: 10Gi
-  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -21,11 +20,9 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
-  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -35,11 +32,9 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 1Gi
-  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -49,8 +44,6 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -63,11 +56,9 @@ metadata:
 spec:
   accessModes:
     - ReadWriteOnce
-  storageClassName: local-path
   resources:
     requests:
       storage: 10Gi
-  storageClassName: local-path
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -77,8 +68,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi
@@ -92,8 +81,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 4Gi
@@ -106,8 +93,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 4Gi

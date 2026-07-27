@@ -19,7 +19,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 50Gi
@@ -31,7 +30,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -43,7 +41,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -55,7 +52,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi
@@ -67,7 +63,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -79,7 +74,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 200Mi
@@ -91,7 +85,6 @@ metadata:
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
-  storageClassName: local-path
   resources:
     requests:
       storage: 2Gi

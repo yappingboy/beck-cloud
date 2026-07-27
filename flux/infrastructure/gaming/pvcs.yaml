@@ -9,7 +9,6 @@ spec:
   accessModes:
   - ReadWriteOnce
   storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 1Gi
@@ -24,8 +23,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
@@ -40,8 +37,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
@@ -56,8 +51,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 5Gi
@@ -72,8 +65,6 @@ metadata:
 spec:
   accessModes:
   - ReadWriteOnce
-  storageClassName: local-path
-  storageClassName: local-path
   resources:
     requests:
       storage: 20Gi
