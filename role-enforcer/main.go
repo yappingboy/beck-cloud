@@ -6,18 +6,12 @@
 //  2. Validates it against the Keycloak JWKS
 //  3. Checks that the required role(s) are present in the JWT
 //  4. Returns 200 (with role headers) or 403
-//
-// Usage via Traefik forwardAuth:
-//   - POST /check with Authorization: Bearer <token>
-//   - Body (form): service=<service_name>
-//   - Response: 200 OK with X-BeckRoles header if allowed, 403 if denied
 
 package main
 
 import (
 	"context"
 	"crypto/rsa"
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -27,10 +21,10 @@ import (
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
+	"github.com/lestrrat-go/jwx/v2/jws"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
-// Policy defines allowed roles per service.
 type Policy map[string][]string
 
 var (
@@ -51,8 +45,7 @@ func loadPolicy(path string) error {
 	}
 
 	p := make(Policy)
-	lines := strings.Split(string(data), "\n")
-	for _, line := range lines {
+	for _, line := range strings.Split(string(data), "\n") {
 		line = strings.TrimSpace(line)
 		if line == "" || strings.HasPrefix(line, "#") {
 			continue
@@ -63,7 +56,6 @@ func loadPolicy(path string) error {
 		}
 		service := strings.TrimSpace(parts[0])
 		roles := strings.Split(parts[1], ",")
-		// Trim whitespace from each role
 		trimmed := make([]string, len(roles))
 		for i, r := range roles {
 			trimmed[i] = strings.TrimSpace(r)
@@ -92,12 +84,11 @@ func fetchJWKS() error {
 }
 
 func refreshJWKSLoop() {
-	// Initial fetch
 	if err := fetchJWKS(); err != nil {
 		log.Printf("WARN: initial JWKS fetch failed: %v", err)
 	}
 
-	ticker := time.NewTicker(1 * time.Hour) // Refresh JWKS hourly
+	ticker := time.NewTicker(1 * time.Hour)
 	defer ticker.Stop()
 
 	for range ticker.C {
@@ -117,8 +108,15 @@ func findMatchingKey(token jwt.Token) (jwk.Key, error) {
 		return nil, fmt.Errorf("JWKS not loaded")
 	}
 
-	keyID := token.KeyID()
-	algorithm := token.Algorithm()
+	// Get key ID and algorithm from token headers
+	keyID := ""
+	alg := ""
+	if kid, ok := token.Get("kid"); ok {
+		keyID = fmt.Sprintf("%v", kid)
+	}
+	if a, ok := token.Get("alg"); ok {
+		alg = fmt.Sprintf("%v", a)
+	}
 
 	if keyID != "" {
 		keys, found := jwksSet.LookupKeyID(keyID)
@@ -127,21 +125,36 @@ func findMatchingKey(token jwt.Token) (jwk.Key, error) {
 		}
 	}
 
-	// Fallback: find first RSA public key
-	for _, key := range jwksSet {
-		if key.Algorithm() == algorithm {
-			pubKey := new(rsa.PublicKey)
-			if err := key.Raw(pubKey); err == nil {
+	// Fallback: find first RSA public key with matching algorithm
+	iter := jwksSet.Iterate(context.TODO())
+	for iter.Next(context.TODO()) == nil {
+		key := iter.Pair().Value.(jwk.Key)
+		if alg == "" || key.Algorithm() == alg {
+			var pubKey rsa.PublicKey
+			if err := key.Raw(&pubKey); err == nil {
+				_ = pubKey
 				return key, nil
 			}
 		}
 	}
+	iter.Close()
+
 	return nil, fmt.Errorf("no matching key found")
 }
 
 func checkRoles(token jwt.Token, requiredRoles []string) (bool, []string) {
-	// Check client roles in resource_access.beckcloud-services.roles
-	resourceAccess, ok := token.Audience()["resource_access"].(map[string]interface{})
+	aud := token.Audience()
+	if aud == nil || len(aud) == 0 {
+		return false, nil
+	}
+
+	// resource_access is a map inside the audience (Keycloak format)
+	resourceAccessRaw, ok := aud["resource_access"]
+	if !ok {
+		return false, nil
+	}
+
+	resourceAccess, ok := resourceAccessRaw.(map[string]interface{})
 	if !ok {
 		return false, nil
 	}
@@ -151,36 +164,33 @@ func checkRoles(token jwt.Token, requiredRoles []string) (bool, []string) {
 		return false, nil
 	}
 
-	clientRoles, ok := clientRolesRaw.(map[string]interface{})
-	if !ok {
-		// Try as array directly
-		rolesArr, ok := clientRolesRaw.([]interface{})
-		if !ok {
-			return false, nil
-		}
-		userRoles := make([]string, len(rolesArr))
-		for i, r := range rolesArr {
-			userRoles[i] = fmt.Sprintf("%v", r)
-		}
-		return hasAllRoles(userRoles, requiredRoles), userRoles
-	}
-
-	rolesRaw, ok := clientRoles["roles"]
-	if !ok {
+	roles := extractRoles(clientRolesRaw)
+	if len(roles) == 0 {
 		return false, nil
 	}
 
-	rolesArr, ok := rolesRaw.([]interface{})
-	if !ok {
-		return false, nil
+	return hasAllRoles(roles, requiredRoles), roles
+}
+
+func extractRoles(raw interface{}) []string {
+	// Try map first (Keycloak format: {"roles": ["admin", "user"]})
+	if m, ok := raw.(map[string]interface{}); ok {
+		if rolesRaw, ok := m["roles"]; ok {
+			return extractRoles(rolesRaw)
+		}
+		return nil
 	}
 
-	userRoles := make([]string, len(rolesArr))
-	for i, r := range rolesArr {
-		userRoles[i] = fmt.Sprintf("%v", r)
+	// Try array directly
+	if arr, ok := raw.([]interface{}); ok {
+		roles := make([]string, len(arr))
+		for i, r := range arr {
+			roles[i] = fmt.Sprintf("%v", r)
+		}
+		return roles
 	}
 
-	return hasAllRoles(userRoles, requiredRoles), userRoles
+	return nil
 }
 
 func hasAllRoles(roles []string, required []string) bool {
@@ -196,8 +206,15 @@ func hasAllRoles(roles []string, required []string) bool {
 	return true
 }
 
+func getClaim(token jwt.Token, key string) string {
+	val, ok := token.Get(key)
+	if !ok {
+		return ""
+	}
+	return fmt.Sprintf("%v", val)
+}
+
 func handleCheck(w http.ResponseWriter, r *http.Request) {
-	// Extract JWT from Authorization header
 	authHeader := r.Header.Get("Authorization")
 	if authHeader == "" {
 		w.WriteHeader(http.StatusUnauthorized)
@@ -216,7 +233,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 	token, err := jwt.Parse(
 		[]byte(tokenStr),
 		jwt.WithKeyProvider(findMatchingKey),
-		jwt.WithValidMethods([]string{"RS256"}),
+		jwt.WithVerify(true),
 	)
 	if err != nil {
 		if logLevel == "debug" {
@@ -232,7 +249,6 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 	// Determine required roles from request body
 	service := r.FormValue("service")
 	if service == "" {
-		// Try path: /check/{service}
 		pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
 		if len(pathParts) >= 2 {
 			service = pathParts[1]
@@ -250,41 +266,37 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 	requiredRoles, ok := policy[service]
 	policyMu.RUnlock()
 
+	userRoles := getUserRoles(token)
+	userEmail := getClaim(token, "email")
+	userName := getClaim(token, "preferred_username")
+
 	if !ok {
-		// Service not in policy — allow if any authenticated user
-		// (public services)
-		if _, userRoles := checkRoles(token, []string{}); true {
-			// Allow — service is public
-			userRoles := getUserRoles(token)
-			w.Header().Set("X-Beck-Service", service)
-			w.Header().Set("X-Beck-User-Email", fmt.Sprintf("%v", token.Get("email")))
-			w.Header().Set("X-Beck-User-Name", fmt.Sprintf("%v", token.Get("preferred_username")))
-			w.Header().Set("X-Beck-Roles", strings.Join(userRoles, ","))
-			w.WriteHeader(http.StatusOK)
-			w.Write([]byte(`{"allowed":true,"service":"` + service + `"}`))
-			return
-		}
+		// Service not in policy — allow any authenticated user
+		w.Header().Set("X-Beck-Service", service)
+		w.Header().Set("X-Beck-User-Email", userEmail)
+		w.Header().Set("X-Beck-User-Name", userName)
+		w.Header().Set("X-Beck-Roles", strings.Join(userRoles, ","))
+		w.WriteHeader(http.StatusOK)
+		w.Write([]byte(`{"allowed":true,"service":"` + service + `"}`))
+		return
 	}
 
-	// Check if user has required roles
-	hasRoles, userRoles := checkRoles(token, requiredRoles)
+	hasRoles, _ := checkRoles(token, requiredRoles)
 
 	if !hasRoles {
 		w.Header().Set("X-Beck-Required-Roles", strings.Join(requiredRoles, ","))
-		w.Header().Set("X-Beck-User-Email", fmt.Sprintf("%v", token.Get("email")))
-		log.Printf("DENIED: user=%s service=%s roles=%v",
-			token.Get("preferred_username"), service, userRoles)
+		w.Header().Set("X-Beck-User-Email", userEmail)
+		log.Printf("DENIED: user=%s service=%s roles=%v", userName, service, userRoles)
 		w.WriteHeader(http.StatusForbidden)
 		w.Write([]byte(`{"allowed":false,"service":"` + service + `","required":[` + rolesJSON(requiredRoles) + `]}`))
 		return
 	}
 
-	log.Printf("ALLOWED: user=%s service=%s roles=%v",
-		token.Get("preferred_username"), service, userRoles)
+	log.Printf("ALLOWED: user=%s service=%s roles=%v", userName, service, userRoles)
 
 	w.Header().Set("X-Beck-Service", service)
-	w.Header().Set("X-Beck-User-Email", fmt.Sprintf("%v", token.Get("email")))
-	w.Header().Set("X-Beck-User-Name", fmt.Sprintf("%v", token.Get("preferred_username")))
+	w.Header().Set("X-Beck-User-Email", userEmail)
+	w.Header().Set("X-Beck-User-Name", userName)
 	w.Header().Set("X-Beck-Roles", strings.Join(userRoles, ","))
 	w.Header().Set("X-Beck-Allowed-Roles", strings.Join(requiredRoles, ","))
 	w.WriteHeader(http.StatusOK)
@@ -292,30 +304,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 }
 
 func getUserRoles(token jwt.Token) []string {
-	resourceAccess, ok := token.Audience()["resource_access"].(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	clientRolesRaw, ok := resourceAccess[clientID]
-	if !ok {
-		return nil
-	}
-	clientRoles, ok := clientRolesRaw.(map[string]interface{})
-	if !ok {
-		return nil
-	}
-	rolesRaw, ok := clientRoles["roles"]
-	if !ok {
-		return nil
-	}
-	rolesArr, ok := rolesRaw.([]interface{})
-	if !ok {
-		return nil
-	}
-	userRoles := make([]string, len(rolesArr))
-	for i, r := range rolesArr {
-		userRoles[i] = fmt.Sprintf("%v", r)
-	}
+	_, userRoles := checkRoles(token, []string{})
 	return userRoles
 }
 
@@ -341,23 +330,19 @@ func main() {
 		log.Fatal("POLICY_PATH, JWKS_URL, and CLIENT_ID env vars required")
 	}
 
-	// Load policy
 	if err := loadPolicy(policyPath); err != nil {
 		log.Fatalf("Failed to load policy: %v", err)
 	}
 	log.Printf("Loaded policy with %d service entries", len(policy))
 
-	// Start JWKS refresh loop
 	go refreshJWKSLoop()
 
-	// Health check endpoint
 	http.HandleFunc("/health", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
 		w.Write([]byte(`{"status":"ok"}`))
 	})
 
-	// Policy reload endpoint
 	http.HandleFunc("/reload", func(w http.ResponseWriter, r *http.Request) {
 		if err := loadPolicy(policyPath); err != nil {
 			w.WriteHeader(http.StatusInternalServerError)
@@ -369,7 +354,6 @@ func main() {
 		w.Write([]byte(fmt.Sprintf(`{"reloaded":%d}`, len(policy))))
 	})
 
-	// Main check endpoint
 	http.HandleFunc("/check/", handleCheck)
 	http.HandleFunc("/check", handleCheck)
 
