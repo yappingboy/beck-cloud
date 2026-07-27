@@ -14,6 +14,6 @@ resources:
   - oauth2proxy
   - rbac
   - redis
-  # - role-enforcer
+  - role-enforcer
   - sso
   
