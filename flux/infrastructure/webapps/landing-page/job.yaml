@@ -5,6 +5,7 @@ metadata:
   name: build-landing-page
   namespace: toolbox
 spec:
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       serviceAccountName: kaniko-builder

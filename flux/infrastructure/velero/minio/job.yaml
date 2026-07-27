@@ -7,6 +7,7 @@ metadata:
   labels:
     app: minio
 spec:
+  ttlSecondsAfterFinished: 3600
   template:
     spec:
       restartPolicy: Never
