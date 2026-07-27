@@ -29,7 +29,7 @@ spec:
           /opt/keycloak/themes
         resources:
           limits:
-            cpu: 100m
+            cpu: 200m
             memory: 64Mi
         volumeMounts:
         - name: keycloak-theme-volume
