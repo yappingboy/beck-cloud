@@ -18,10 +18,10 @@ spec:
     spec:
       nodeSelector:
         kubernetes.io/hostname: ip-192-168-100-11
-      securityContext:
+#      securityContext:
 #        runAsNonRoot: true
 #        runAsUser: 1000
-        fsGroup: 1000
+#        fsGroup: 1000
 #        runAsGroup: 1000
 #        supplementalGroups:
 #        - 1000
