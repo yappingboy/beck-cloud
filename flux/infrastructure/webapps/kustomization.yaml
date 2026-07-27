@@ -5,7 +5,7 @@ resources:
   - namespace.yaml
   # - bitwarden
   - cms
-  - landing-page
+  # - landing-page
   # - affine
   - homepage
   # - home-assistant
