@@ -21,7 +21,7 @@ spec:
 #        fsGroup: 1000
       containers:
       - name: nginx
-        image: nginx:alpine
+        image: nginxinc/nginx-unprivileged:alpine3.24-perl
         resources:
           limits:
             memory: 64Mi
