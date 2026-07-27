@@ -15,5 +15,5 @@ resources:
   # - rbac
   - redis
   # - role-enforcer
-  # - sso
+  - sso
   
