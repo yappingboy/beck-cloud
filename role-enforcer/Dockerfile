@@ -1,16 +1,14 @@
 # ── Role Enforcer Dockerfile ─────────────────────────────────────
-# Multi-stage build for a minimal role-enforcer image.
 
-# Stage 1: Build
 FROM golang:1.22-bookworm AS builder
 
 WORKDIR /app
 COPY go.mod ./
-RUN go mod tidy
+# Copy source files first, then run go mod tidy
 COPY . .
-RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /role-enforcer .
+RUN go mod tidy
+RUN go build -ldflags="-s -w" -o /role-enforcer .
 
-# Stage 2: Runtime
 FROM alpine:3.19
 
 RUN apk --no-cache add ca-certificates
