@@ -33,6 +33,7 @@ data:
         </body>
     </html>
   default.conf: |
+    pid /tmp/nginx.pid
     server {
        listen 80;
        location / {
