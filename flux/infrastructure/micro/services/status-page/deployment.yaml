@@ -16,6 +16,8 @@ spec:
       labels:
         app: status-page
     spec:
+      imagePullSecrets:
+      - name: ghcr-credentials
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -35,6 +37,8 @@ spec:
         - name: html
           mountPath: /usr/share/nginx/html
           readOnly: true
+      - name: ghcr-credentials
+      securityContext:
         securityContext:
           capabilities:
             drop:

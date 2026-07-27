@@ -17,6 +17,8 @@ spec:
         app: cron-jobs
         monitoring: 'true'
     spec:
+      imagePullSecrets:
+      - name: ghcr-credentials
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000
@@ -48,6 +50,8 @@ spec:
             port: 8080
           initialDelaySeconds: 5
           periodSeconds: 10
+      - name: ghcr-credentials
+      securityContext:
         securityContext:
           capabilities:
             drop:
