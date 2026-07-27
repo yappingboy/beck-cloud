@@ -30,7 +30,7 @@ spec:
       serviceAccountName: kaniko-builder
       initContainers:
         - name: clone-source
-          image: bitnami/git:2.49.0
+          image: bitnami/git:latest
           command:
             - sh
             - -c
@@ -61,6 +61,5 @@ spec:
         - name: docker-config
           secret:
             secretName: ghcr-config
-            defaultMode: 420
         - name: workspace
           emptyDir: {}
