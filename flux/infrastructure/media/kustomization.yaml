@@ -4,6 +4,7 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvcs.yaml
+  - pvs-lvm.yaml
   - bazarr
   - homebox
   - jellyfin

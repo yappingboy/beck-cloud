@@ -27,7 +27,7 @@ spec:
         - 1000
       containers:
       - name: homebox
-        image: ghcr.io/sysadminsmedia/homebox:0.16.1
+        image: ghcr.io/sysadminsmedia/homebox:0.11.1
         resources:
           limits:
             cpu: 500m

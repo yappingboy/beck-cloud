@@ -152,7 +152,7 @@ spec:
         - 1000
       containers:
       - name: manyfold
-        image: ghcr.io/manyfold3d/manyfold:1.15.0
+        image: ghcr.io/manyfold3d/manyfold:0.109.0
         resources:
           limits:
             cpu: '2'

@@ -5,6 +5,7 @@ namespace: identity
 
 resources:
   - namespace.yaml
+  - pvcs.yaml
   - audit-sync
   - email
   - keycloak

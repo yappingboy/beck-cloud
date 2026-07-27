@@ -24,7 +24,7 @@ spec:
       - name: ghcr-credentials
       initContainers:
       - name: fix-permissions
-        image: ghcr.io/yappingboy/becklab-landing:0.8.0
+        image: ghcr.io/yappingboy/becklab-landing:latest
         command:
         - sh
         - -c
@@ -43,7 +43,7 @@ spec:
             - ALL
       containers:
       - name: landing
-        image: ghcr.io/yappingboy/becklab-landing:0.8.0
+        image: ghcr.io/yappingboy/becklab-landing:latest
         ports:
         - containerPort: 80
           name: http

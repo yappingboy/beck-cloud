@@ -21,7 +21,7 @@ spec:
         fsGroup: 1000
       initContainers:
       - name: hash-sasl
-        image: mwader/postfix-relay:1.11.0
+        image: mwader/postfix-relay:latest
         command:
         - sh
         - -c
@@ -45,7 +45,7 @@ spec:
             - ALL
       containers:
       - name: postfix
-        image: mwader/postfix-relay:1.11.0
+        image: mwader/postfix-relay:latest
         resources:
           limits:
             memory: 256Mi

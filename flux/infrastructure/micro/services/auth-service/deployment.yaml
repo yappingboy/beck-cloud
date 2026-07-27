@@ -24,7 +24,7 @@ spec:
         fsGroup: 1000
       containers:
       - name: auth-service
-        image: ghcr.io/yappingboy/micro/auth-service:v1.0.0
+        image: ghcr.io/yappingboy/micro/auth-service:latest
         ports:
         - containerPort: 8080
         env:
