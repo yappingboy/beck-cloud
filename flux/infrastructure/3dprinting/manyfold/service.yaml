@@ -7,7 +7,8 @@ spec:
   selector:
     app: manyfold-db
   ports:
-  - port: 5432
+  - name: http
+    port: 5432
     targetPort: 5432
   type: ClusterIP
 ---
@@ -20,7 +21,8 @@ spec:
   selector:
     app: manyfold-redis
   ports:
-  - port: 6379
+  - name: http
+    port: 6379
     targetPort: 6379
   type: ClusterIP
 ---
@@ -33,6 +35,7 @@ spec:
   selector:
     app: manyfold
   ports:
-  - port: 3214
+  - name: http
+    port: 3214
     targetPort: 3214
   type: ClusterIP

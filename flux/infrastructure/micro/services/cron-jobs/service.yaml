@@ -8,7 +8,8 @@ spec:
   selector:
     app: cron-jobs
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 8080
     protocol: TCP
   - name: metrics

@@ -8,5 +8,6 @@ spec:
   selector:
     app: pricing-page
   ports:
-  - port: 80
+  - name: http
+    port: 80
     targetPort: 80
