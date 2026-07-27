@@ -16,4 +16,3 @@ spec:
     services:
     - name: cron-jobs
       port: 80
-      sticky: false

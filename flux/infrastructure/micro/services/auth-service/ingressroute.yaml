@@ -16,6 +16,5 @@ spec:
     services:
     - name: auth-service
       port: 80
-      sticky: false
   tls:
     secretName: tools-becklab-cloud-tls

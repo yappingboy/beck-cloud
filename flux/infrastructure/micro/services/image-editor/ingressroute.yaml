@@ -16,7 +16,6 @@ spec:
     services:
     - name: image-editor-api
       port: 80
-      sticky: false
   - match: Host(`editor.tools.becklab.cloud`)
     kind: Rule
     middlewares:
@@ -25,4 +24,3 @@ spec:
     services:
     - name: image-editor-frontend
       port: 80
-      sticky: false

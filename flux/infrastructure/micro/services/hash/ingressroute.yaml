@@ -13,4 +13,3 @@ spec:
     services:
     - name: hasher
       port: 80
-      sticky: false

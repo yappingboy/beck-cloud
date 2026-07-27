@@ -16,4 +16,3 @@ spec:
     services:
     - name: beckflow
       port: 80
-      sticky: false

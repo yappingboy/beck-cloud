@@ -13,4 +13,3 @@ spec:
     services:
     - name: converter
       port: 80
-      sticky: false

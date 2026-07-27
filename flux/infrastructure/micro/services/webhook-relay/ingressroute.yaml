@@ -13,4 +13,3 @@ spec:
     services:
     - name: webhook-relay
       port: 80
-      sticky: false

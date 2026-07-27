@@ -13,4 +13,3 @@ spec:
     services:
     - name: qr-generator
       port: 80
-      sticky: false

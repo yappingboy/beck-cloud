@@ -13,4 +13,3 @@ spec:
     services:
     - name: url-shortener
       port: 80
-      sticky: false

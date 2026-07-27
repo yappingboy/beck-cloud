@@ -13,4 +13,3 @@ spec:
     services:
     - name: yaml-json-tool
       port: 80
-      sticky: false

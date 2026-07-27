@@ -16,4 +16,3 @@ spec:
     services:
     - name: dns-monitor
       port: 80
-      sticky: false
