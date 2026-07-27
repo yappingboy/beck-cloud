@@ -15,10 +15,10 @@ spec:
       labels:
         app: keycloak
     spec:
-      securityContext:
-        runAsNonRoot: true
-        runAsUser: 1000
-        fsGroup: 1000
+#      securityContext:
+#        runAsNonRoot: true
+#        runAsUser: 1000
+#        fsGroup: 1000
       initContainers:
       - name: unpack-theme
         image: busybox:1.37
@@ -50,8 +50,8 @@ spec:
         - --spi-theme-reload=true
         resources:
           limits:
-            cpu: '2'
-            memory: 4Gi
+            cpu: 600m
+            memory: 2Gi
           requests:
             cpu: 200m
             memory: 1Gi
