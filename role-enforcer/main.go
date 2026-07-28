@@ -21,7 +21,6 @@ import (
 	"time"
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
-	"github.com/lestrrat-go/jwx/v2/jws"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 )
 
@@ -127,17 +126,28 @@ func findMatchingKey(token jwt.Token) (jwk.Key, error) {
 
 	// Fallback: find first RSA public key with matching algorithm
 	iter := jwksSet.Iterate(context.TODO())
-	for iter.Next(context.TODO()) == nil {
-		key := iter.Pair().Value.(jwk.Key)
-		if alg == "" || key.Algorithm() == alg {
+	defer iter.Stop()
+	for {
+		pair, ok := iter.Next(context.TODO())
+		if !ok {
+			break
+		}
+		k := pair.Value()
+		if k == nil {
+			continue
+		}
+		jkey, ok := k.(jwk.Key)
+		if !ok {
+			continue
+		}
+		if alg == "" || fmt.Sprintf("%v", jkey.Algorithm()) == alg {
 			var pubKey rsa.PublicKey
-			if err := key.Raw(&pubKey); err == nil {
+			if err := jkey.Raw(&pubKey); err == nil {
 				_ = pubKey
-				return key, nil
+				return jkey, nil
 			}
 		}
 	}
-	iter.Close()
 
 	return nil, fmt.Errorf("no matching key found")
 }
