@@ -87,11 +87,8 @@ func refreshJWKSLoop() {
 }
 
 func checkRoles(token jwt.Token, requiredRoles []string) (bool, []string) {
-	aud := token.Audience()
-	if aud == nil || len(aud) == 0 {
-		return false, nil
-	}
-	resourceAccessRaw, ok := aud["resource_access"]
+	// Get resource_access from token claims (not audience)
+	resourceAccessRaw, ok := token.Get("resource_access")
 	if !ok {
 		return false, nil
 	}
@@ -157,26 +154,19 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 		return fmt.Errorf("JWKS not loaded")
 	}
 
-	// Get key ID from protected headers
 	keyID := ""
 	if sig != nil {
 		keyID = sig.Protected().KeyID()
 	}
 
 	if keyID != "" {
-		key, found := jwksSet.LookupKeyID(keyID)
-		if found {
+		if key, found := jwksSet.LookupKeyID(keyID); found {
 			sink.Key(jwa.RS256, key)
 			return nil
 		}
 	}
 
-	// Fallback: return all keys from the set
-	for i := 0; i < jwksSet.Len(); i++ {
-		// Iterate through the set using the map
-		_ = i
-	}
-	// Use a simpler approach: iterate through the set's private params
+	// Fallback: return all keys
 	for _, key := range jwksSet {
 		sink.Key(jwa.RS256, key)
 	}
