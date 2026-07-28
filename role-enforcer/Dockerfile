@@ -4,7 +4,7 @@ WORKDIR /app
 COPY go.mod ./
 COPY . .
 RUN go mod tidy
-RUN go build -s -w -o /role-enforcer .
+RUN go build -ldflags="-s -w" -o /role-enforcer .
 
 FROM alpine:3.19
 
