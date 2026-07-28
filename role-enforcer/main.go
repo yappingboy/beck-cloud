@@ -156,7 +156,7 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 
 	keyID := ""
 	if sig != nil {
-		keyID = sig.Protected().KeyID()
+		keyID = sig.ProtectedHeaders().KeyID()
 	}
 
 	if keyID != "" {
@@ -166,8 +166,13 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 		}
 	}
 
-	// Fallback: return all keys
-	for _, key := range jwksSet {
+	// Fallback: return all keys using Keys() iterator
+	iter := jwksSet.Keys(ctx)
+	for {
+		key, ok := iter.Next()
+		if !ok {
+			break
+		}
 		sink.Key(jwa.RS256, key)
 	}
 	return nil
