@@ -1,6 +1,7 @@
 FROM golang:1.22-bookworm AS builder
 
 WORKDIR /app
+RUN echo "v20260728" > /tmp/build-id
 COPY go.mod ./
 COPY . .
 RUN go mod tidy
