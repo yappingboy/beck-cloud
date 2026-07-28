@@ -149,33 +149,32 @@ func getClaim(token jwt.Token, key string) string {
 
 type keyProvider struct{}
 
-func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig jws.Signature, msg *jws.Message) error {
+func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Signature, msg *jws.Message) error {
 	jwksMu.RLock()
 	defer jwksMu.RUnlock()
 	if jwksSet == nil {
 		return fmt.Errorf("JWKS not loaded")
 	}
+	// Get key ID from the JWT header
 	keyID := ""
-	if kid, ok := msg.Get("kid"); ok {
-		keyID = fmt.Sprintf("%v", kid)
+	if kid, ok := msg.Headers().KeyID(); ok {
+		keyID = kid
 	}
 	if keyID != "" {
 		key, found := jwksSet.LookupKeyID(keyID)
 		if found {
-			return sink.Keys(key)
+			return sink(key)
 		}
 	}
 	// Fallback: return all keys
-	keys := make([]jwk.Key, 0, jwksSet.Len())
-	iter := jwksSet.Iterate(ctx)
-	for {
-		k := iter.Next(ctx)
-		if k == nil {
-			break
-		}
-		keys = append(keys, k)
+	var keys []jwk.Key
+	for _, rawKey := range jwksSet {
+		keys = append(keys, rawKey)
 	}
-	return sink.Keys(keys...)
+	if len(keys) > 0 {
+		return sink(keys...)
+	}
+	return fmt.Errorf("no keys found")
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
