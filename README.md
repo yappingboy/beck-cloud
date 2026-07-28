@@ -6,6 +6,13 @@ A production-grade homelab running on bare-metal hardware, virtualized through O
 
 ---
 
+## Filing System
+
+Please review docs/FILING-SYSTEM.md for specific naming conventions and templates.
+
+---
+
+
 ## Architecture at a Glance
 
 ```
