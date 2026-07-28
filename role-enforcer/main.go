@@ -155,17 +155,20 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 	if jwksSet == nil {
 		return fmt.Errorf("JWKS not loaded")
 	}
-	// Get key ID from the signature's headers
+	// Get key ID from signature headers
 	keyID := ""
 	if sig != nil {
-		if kid, ok := sig.Protected().KeyID(); ok {
-			keyID = kid
-		}
+		keyID = sig.Protected().KeyID()
 	}
 	if keyID != "" {
-		if _, found := jwksSet.LookupKeyID(keyID); found {
-			key, _ := jwksSet.LookupKeyID(keyID)
-			return sink(key)
+		keys, found := jwksSet.LookupKeyID(keyID)
+		if found {
+			for _, k := range keys {
+				if err := sink(k); err != nil {
+					return err
+				}
+			}
+			return nil
 		}
 	}
 	// Fallback: return all keys
