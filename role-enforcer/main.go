@@ -2,7 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/rsa"
 	"fmt"
 	"log"
 	"net/http"
@@ -86,37 +85,6 @@ func refreshJWKSLoop() {
 	}
 }
 
-type keyProvider struct{}
-
-func (kp keyProvider) FetchKeys(ctx context.Context, signature jws.Signature, token jwt.Token) ([]jwk.Key, error) {
-	jwksMu.RLock()
-	defer jwksMu.RUnlock()
-	if jwksSet == nil {
-		return nil, fmt.Errorf("JWKS not loaded")
-	}
-	keyID := ""
-	if kid, ok := token.Get("kid"); ok {
-		keyID = fmt.Sprintf("%v", kid)
-	}
-	if keyID != "" {
-		keys, found := jwksSet.LookupKeyID(keyID)
-		if found && len(keys) > 0 {
-			return keys, nil
-		}
-	}
-	// Fallback: return all RSA keys
-	var keys []jwk.Key
-	iter := jwksSet.Iterate(ctx)
-	for {
-		k, found := iter.Next()
-		if !found {
-			break
-		}
-		keys = append(keys, k)
-	}
-	return keys, nil
-}
-
 func checkRoles(token jwt.Token, requiredRoles []string) (bool, []string) {
 	aud := token.Audience()
 	if aud == nil || len(aud) == 0 {
@@ -177,6 +145,37 @@ func getClaim(token jwt.Token, key string) string {
 		return ""
 	}
 	return fmt.Sprintf("%v", val)
+}
+
+type keyProvider struct{}
+
+func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig jws.Signature, msg *jws.Message) error {
+	jwksMu.RLock()
+	defer jwksMu.RUnlock()
+	if jwksSet == nil {
+		return fmt.Errorf("JWKS not loaded")
+	}
+	keyID := ""
+	if kid, ok := msg.Get("kid"); ok {
+		keyID = fmt.Sprintf("%v", kid)
+	}
+	if keyID != "" {
+		key, found := jwksSet.LookupKeyID(keyID)
+		if found {
+			return sink.Keys(key)
+		}
+	}
+	// Fallback: return all keys
+	keys := make([]jwk.Key, 0, jwksSet.Len())
+	iter := jwksSet.Iterate(ctx)
+	for {
+		k := iter.Next(ctx)
+		if k == nil {
+			break
+		}
+		keys = append(keys, k)
+	}
+	return sink.Keys(keys...)
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
