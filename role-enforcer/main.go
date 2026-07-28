@@ -96,13 +96,20 @@ func findMatchingKey(token jwt.Token) (jwk.Key, error) {
 		keyID = fmt.Sprintf("%v", kid)
 	}
 	if keyID != "" {
-		keys, found := jwksSet.LookupKeyID(keyID)
-		if found && len(keys) > 0 {
-			return keys[0], nil
+		key, found := jwksSet.LookupKeyID(keyID)
+		if found {
+			return key, nil
 		}
 	}
-	for _, key := range jwksSet {
-		jkey, ok := key.(jwk.Key)
+	// Fallback: find first RSA public key
+	iter := jwksSet.Iterate(context.TODO())
+	defer iter.Stop()
+	for {
+		k, ok := iter.Next(context.TODO())
+		if !ok {
+			break
+		}
+		jkey, ok := k.(jwk.Key)
 		if !ok {
 			continue
 		}
