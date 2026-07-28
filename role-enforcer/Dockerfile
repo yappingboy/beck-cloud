@@ -1,13 +1,10 @@
-# ── Role Enforcer Dockerfile ─────────────────────────────────────
-
 FROM golang:1.22-bookworm AS builder
 
 WORKDIR /app
 COPY go.mod ./
-# Copy source files first, then run go mod tidy
 COPY . .
 RUN go mod tidy
-RUN go build -ldflags="-s -w" -o /role-enforcer .
+RUN go build -s -w -o /role-enforcer .
 
 FROM alpine:3.19
 
