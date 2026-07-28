@@ -155,26 +155,26 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 	if jwksSet == nil {
 		return fmt.Errorf("JWKS not loaded")
 	}
-	// Get key ID from the JWT header
+	// Get key ID from the signature's headers
 	keyID := ""
-	if kid, ok := msg.Headers().KeyID(); ok {
-		keyID = kid
+	if sig != nil {
+		if kid, ok := sig.Protected().KeyID(); ok {
+			keyID = kid
+		}
 	}
 	if keyID != "" {
-		key, found := jwksSet.LookupKeyID(keyID)
-		if found {
+		if _, found := jwksSet.LookupKeyID(keyID); found {
+			key, _ := jwksSet.LookupKeyID(keyID)
 			return sink(key)
 		}
 	}
 	// Fallback: return all keys
-	var keys []jwk.Key
-	for _, rawKey := range jwksSet {
-		keys = append(keys, rawKey)
+	for _, key := range jwksSet {
+		if err := sink(key); err != nil {
+			return err
+		}
 	}
-	if len(keys) > 0 {
-		return sink(keys...)
-	}
-	return fmt.Errorf("no keys found")
+	return nil
 }
 
 func handleCheck(w http.ResponseWriter, r *http.Request) {
