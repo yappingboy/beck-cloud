@@ -13,6 +13,7 @@ import (
 
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
+	"github.com/lestrrat-go/jwx/v2/jws"
 )
 
 type Policy map[string][]string
@@ -85,7 +86,9 @@ func refreshJWKSLoop() {
 	}
 }
 
-func findMatchingKey(token jwt.Token) (jwk.Key, error) {
+type keyProvider struct{}
+
+func (kp keyProvider) FetchKeys(ctx context.Context, signature jws.Signature, token jwt.Token) ([]jwk.Key, error) {
 	jwksMu.RLock()
 	defer jwksMu.RUnlock()
 	if jwksSet == nil {
@@ -96,29 +99,22 @@ func findMatchingKey(token jwt.Token) (jwk.Key, error) {
 		keyID = fmt.Sprintf("%v", kid)
 	}
 	if keyID != "" {
-		key, found := jwksSet.LookupKeyID(keyID)
-		if found {
-			return key, nil
+		keys, found := jwksSet.LookupKeyID(keyID)
+		if found && len(keys) > 0 {
+			return keys, nil
 		}
 	}
-	// Fallback: find first RSA public key
-	iter := jwksSet.Iterate(context.TODO())
-	defer iter.Stop()
+	// Fallback: return all RSA keys
+	var keys []jwk.Key
+	iter := jwksSet.Iterate(ctx)
 	for {
-		k, ok := iter.Next(context.TODO())
-		if !ok {
+		k, found := iter.Next()
+		if !found {
 			break
 		}
-		jkey, ok := k.(jwk.Key)
-		if !ok {
-			continue
-		}
-		var pubKey rsa.PublicKey
-		if err := jkey.Raw(&pubKey); err == nil {
-			return jkey, nil
-		}
+		keys = append(keys, k)
 	}
-	return nil, fmt.Errorf("no matching key found")
+	return keys, nil
 }
 
 func checkRoles(token jwt.Token, requiredRoles []string) (bool, []string) {
@@ -197,7 +193,7 @@ func handleCheck(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := jwt.Parse([]byte(tokenStr), jwt.WithKeyProvider(findMatchingKey))
+	token, err := jwt.Parse([]byte(tokenStr), jwt.WithKeyProvider(keyProvider{}))
 	if err != nil {
 		if logLevel == "debug" {
 			w.WriteHeader(http.StatusUnauthorized)
