@@ -169,8 +169,8 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 	// Fallback: return all keys using Keys() iterator
 	iter := jwksSet.Keys(ctx)
 	for {
-		key, ok := iter.Next()
-		if !ok {
+		key := iter.Next(ctx)
+		if key == nil {
 			break
 		}
 		sink.Key(jwa.RS256, key)
