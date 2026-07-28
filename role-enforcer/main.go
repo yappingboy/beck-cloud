@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/lestrrat-go/jwx/v2/jwa"
 	"github.com/lestrrat-go/jwx/v2/jwk"
 	"github.com/lestrrat-go/jwx/v2/jwt"
 	"github.com/lestrrat-go/jwx/v2/jws"
@@ -155,27 +156,29 @@ func (keyProvider) FetchKeys(ctx context.Context, sink jws.KeySink, sig *jws.Sig
 	if jwksSet == nil {
 		return fmt.Errorf("JWKS not loaded")
 	}
-	// Get key ID from signature headers
+
+	// Get key ID from protected headers
 	keyID := ""
 	if sig != nil {
 		keyID = sig.Protected().KeyID()
 	}
+
 	if keyID != "" {
-		keys, found := jwksSet.LookupKeyID(keyID)
+		key, found := jwksSet.LookupKeyID(keyID)
 		if found {
-			for _, k := range keys {
-				if err := sink(k); err != nil {
-					return err
-				}
-			}
+			sink.Key(jwa.RS256, key)
 			return nil
 		}
 	}
-	// Fallback: return all keys
+
+	// Fallback: return all keys from the set
+	for i := 0; i < jwksSet.Len(); i++ {
+		// Iterate through the set using the map
+		_ = i
+	}
+	// Use a simpler approach: iterate through the set's private params
 	for _, key := range jwksSet {
-		if err := sink(key); err != nil {
-			return err
-		}
+		sink.Key(jwa.RS256, key)
 	}
 	return nil
 }
