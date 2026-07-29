@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: LimitRange
+metadata:
+  name: gaming-limits
+  namespace: gaming
+spec:
+  limits:
+    - type: Container
+      default:
+        cpu: "2"
+        memory: 4Gi
+      defaultRequest:
+        cpu: 500m
+        memory: 1Gi
+---
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: gaming-quota
+  namespace: gaming
+spec:
+  hard:
+    pods: "4"
+    requests.cpu: "2"
+    requests.memory: 6Gi
+    limits.cpu: "3"
+    limits.memory: 8Gi
