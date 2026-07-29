@@ -73,6 +73,7 @@ spec:
           image: mwader/postfix-relay:latest
           resources:
             limits:
+              cpu: 250m
               memory: 256Mi
             requests:
               cpu: 50m

@@ -20,6 +20,7 @@ spec:
           image: nginx:alpine
           resources:
             limits:
+              cpu: 250m
               memory: 64Mi
           ports:
             - containerPort: 80
