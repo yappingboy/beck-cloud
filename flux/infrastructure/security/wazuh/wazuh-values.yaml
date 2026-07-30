@@ -119,7 +119,10 @@ spec:
             mountPath: /etc/filebeat/filebeat.yml
             subPath: filebeat.yml
 
-    # ── Dashboard ────────────────────────────────────────────────
+    # ── Dashboard auth override ──────────────────────────────────
+    # Chart default renders opensearch_security.auth.type as ["basicauth","anonymous"] (array).
+    # Wazuh 4.14.3 dashboard rejects "anonymous" as valid auth.type and expects a string.
+    # Override to "basicauth" (string).
     dashboard:
       enabled: true
       replicas: 1
@@ -151,6 +154,11 @@ spec:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
+      config:
+        opensearch_security.auth.type: "basicauth"
+        opensearch_security.auth.anonymous_auth_enabled: "true"
+        opensearch_security.auth.unauthenticated_routes: '["/api/stats", "/api/status", "/api/security/*/status"]'
+        opensearch.http2: false
 
     # ── Certificates ─────────────────────────────────────────────
     # Disabled: self-signed certs + Cilium eBPF caused bootstrap deadlocks.
@@ -159,13 +167,37 @@ spec:
     certificates:
       enabled: false
 
-    # ── Dashboard auth override ──────────────────────────────────
-    # Chart default renders opensearch_security.auth.type as ["basicauth","anonymous"] (array).
-    # Wazuh 4.14.3 dashboard rejects "anonymous" as valid auth.type and expects a string.
-    # Override to "basicauth" (string).
-    dashboard:
-      config:
-        opensearch_security.auth.type: "basicauth"
-        opensearch_security.auth.anonymous_auth_enabled: "true"
-        opensearch_security.auth.unauthenticated_routes: '["/api/stats", "/api/status", "/api/security/*/status"]'
-        opensearch.http2: false
+    # ── Filebeat TLS certificate fix ─────────────────────────────
+    # Chart v2.0.0 generates filebeat-tls secret with standard tls.crt/tls.key keys
+    # but our custom secret has filebeat.pem/filebeat.key (renamed for clarity).
+    # The filebeat-certs secret also has root-ca.pem (indexer CA) in addition to ca.crt.
+    # Override the volume mount subPaths to match our secret's key names.
+    wazuh:
+      master:
+        volumeMounts:
+          - mountPath: /etc/ssl/root-ca.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: root-ca.pem
+          - mountPath: /etc/ssl/filebeat.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.crt
+          - mountPath: /etc/ssl/filebeat.key
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.key
+      worker:
+        volumeMounts:
+          - mountPath: /etc/ssl/root-ca.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: root-ca.pem
+          - mountPath: /etc/ssl/filebeat.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.crt
+          - mountPath: /etc/ssl/filebeat.key
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.key
