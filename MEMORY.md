@@ -107,6 +107,7 @@ traefik.becklab.cloud was returning 500 due to cascading failure:
 5. Run Ansible playbooks to apply changes, don't do manual SSH edits and write the playbook afterward.
 6. NEVER store passwords in plaintext YAML — even temporarily, even in private repos. Use SOPS (with --ignore-mac if needed), sealed secrets, or external secret managers. If Git history gets polluted, force-push to clean it.
 7. Swiparr docs updated in services-catalog.md — deployed to `media` namespace (not standalone), SSO via `sso-media-chain` (Keycloak `/media` group). Port 4321, SQLite, Jellyfin provider.
+8. Wazuh dashboard probes: chart default `httpGet.path: /api/status` returns 401 (auth required). Override to `httpGet.path: /` which returns 302 (success). Setting entire probe to null doesn't work due to Helm deep merge behavior — must override the sub-fields.
 
 ## LLDAP Restore Issues (2026-07-27)
 
