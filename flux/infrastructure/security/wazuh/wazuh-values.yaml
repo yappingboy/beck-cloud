@@ -55,7 +55,7 @@ spec:
           effect: NoSchedule
 
       # Admin/kibanaserver password = WazuhSecretPassword (matches Filebeat config).
-      # Bcrypt hash of 'WazuhSecretPassword' ($2b$12$ rounds).
+      # Corrected hash: $2y$12$4mS3nafjaEBGWwVAK.4YZeU8nbIljVf7swLSs/JL1QJ6QX/92r5mq
       config:
         internalUsers: |
           ---
@@ -63,12 +63,12 @@ spec:
             type: "internalusers"
             config_version: 2
           admin:
-            hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
+            hash: "$2y$12$4mS3nafjaEBGWwVAK.4YZeU8nbIljVf7swLSs/JL1QJ6QX/92r5mq"
             reserved: true
             backend_roles:
               - "admin"
           kibanaserver:
-            hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
+            hash: "$2y$12$4mS3nafjaEBGWwVAK.4YZeU8nbIljVf7swLSs/JL1QJ6QX/92r5mq"
             reserved: true
             backend_roles:
               - "kibana_server"
@@ -176,7 +176,7 @@ spec:
       config: |
         server.host: 0.0.0.0
         server.port: 5601
-        opensearch.hosts: "https://wazuh-indexer:9200"
+        opensearch.hosts: "https://10.42.0.78:9200"
         opensearch.ssl.verificationMode: none
         opensearch.requestHeadersWhitelist: [ authorization,securitytenant ]
         opensearch_security.multitenancy.enabled: false
