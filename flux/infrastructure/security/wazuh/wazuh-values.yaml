@@ -70,6 +70,11 @@ spec:
           kibanaserver:
             hash: "$2b$12$tC.v75r7f6bAY3/k70WxU.iELemhi/dKoX2CHAjkSh5PDojVOTqfO"
             reserved: true
+            backend_roles:
+              - "kibana_server"
+        nodes_dn:
+          - CN=wazuh-indexer,O=Company,L=California,C=US
+          - CN=wazuh-dashboard,O=Wazuh
 
     # ── Wazuh Manager (master + workers) ────────────────────────
     wazuh:
