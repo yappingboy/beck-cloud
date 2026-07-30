@@ -149,6 +149,24 @@ spec:
       
     dashboard:
       enabled: true
+      livenessProbe:
+        periodSeconds: 20
+        timeoutSeconds: 5
+        failureThreshold: 10
+        successThreshold: 1
+        initialDelaySeconds: 10
+        httpGet:
+          path: /
+          port: 5601
+      readinessProbe:
+        periodSeconds: 20
+        timeoutSeconds: 5
+        failureThreshold: 10
+        successThreshold: 1
+        initialDelaySeconds: 10
+        httpGet:
+          path: /
+          port: 5601
       cred:
         username: kibanaserver
         password: "WazuhSecretPassword"
@@ -181,18 +199,6 @@ spec:
         - key: node-role.kubernetes.io/control-plane
           operator: Exists
           effect: NoSchedule
-      livenessProbe:
-        failureThreshold: 10
-        initialDelaySeconds: 10
-        periodSeconds: 20
-        successThreshold: 1
-        timeoutSeconds: 5
-      readinessProbe:
-        failureThreshold: 10
-        initialDelaySeconds: 10
-        periodSeconds: 20
-        successThreshold: 1
-        timeoutSeconds: 5
       config: |
         server.host: 0.0.0.0
         server.port: 5601
