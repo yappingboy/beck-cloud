@@ -77,6 +77,7 @@
         mode: '0750'
 
     - name: Write ldap_auth.conf for LLDAP
+      no_log: true
       ansible.builtin.copy:
         dest: /etc/one/auth/ldap_auth.conf
         owner: oneadmin

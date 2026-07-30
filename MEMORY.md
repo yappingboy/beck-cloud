@@ -83,18 +83,58 @@ Comprehensive docs in `beck-cloud/docs/`:
 - Full docs pushed to GitHub at `docs/research/`
 - Deleted: `system-topology.md` (outdated/wrong), `POST-DEPLOY-CHECKLIST.md` (merged into runbook)
 
-### Keycloak Monitoring Client (for authenticated API testing)
+### Lessons Learned
 - Realm: homelab, Client: nova-monitoring, User: yappingboy
 - Token URL: https://keycloak.becklab.cloud/realms/homelab/protocol/openid-connect/token
 - See TOOLS.md for credentials
 
-### Lessons Learned
+8. Keycloak pods get killed by CPU quota — identity namespace limited to 6 cores CPU. Keycloak needs ~1 core. Reduce its limits if other pods exceed quota.
+9. `secret-keycloak` must exist in identity ns for audit-sync job (it's actually populated from audit-sync-secrets data).
+10. oauth2-proxy HelmRelease upgrade timeout was 60s — too short. Increased to 5m.
+
+### Traefik Dashboard Fix (2026-07-29)
+
+traefik.becklab.cloud was returning 500 due to cascading failure:
+- Keycloak killed by CPU quota → oauth2-proxy Helm upgrade failed → SSO middleware broken
+- Fixed by reducing Keycloak CPU limits (2→1), creating missing `secret-keycloak`, increasing oauth2-proxy timeout
+- Both traefik.becklab.cloud and nova.becklab.cloud now return 401 (SSO login) instead of 500
+
+### Keycloak Monitoring Client (for authenticated API testing)
 1. Don't spawn subagents for data collection — they burn tokens before writing files. Collect + write in same session.
 2. kubectl connectivity from the sandbox can drop mid-session. If it does, collect what you can and proceed with cached data.
 3. Media services (Jellyfin, Sonarr, etc.) currently have NO IngressRoutes despite having TLS certs — they're internal-only right now. Don't assume they're externally accessible.
 4. When MEMORY.md already has a section about something, read it first before treating the task as fresh work.
 5. Run Ansible playbooks to apply changes, don't do manual SSH edits and write the playbook afterward.
 6. NEVER store passwords in plaintext YAML — even temporarily, even in private repos. Use SOPS (with --ignore-mac if needed), sealed secrets, or external secret managers. If Git history gets polluted, force-push to clean it.
+7. Swiparr docs updated in services-catalog.md — deployed to `media` namespace (not standalone), SSO via `sso-media-chain` (Keycloak `/media` group). Port 4321, SQLite, Jellyfin provider.
+
+## LLDAP Restore Issues (2026-07-27)
+
+**Problem:** Lost LLDAP database over the weekend. Need to restore from Velero backups.
+
+**Findings:**
+- Velero v1.15.0 with restic uploader (deprecated). All backups use restic.
+- The restic backup for LLDAP's `lldap-data` PVC was taken successfully every 6 hours.
+- However, the database in every backup contains only the default `admin` user.
+- Volume restore creates PVs but the local-path provisioner binds the PVC to a NEW empty PV instead of the data-mover's PV.
+- The data-mover on the velero server creates PVs with backup data, but they're garbage collected before the PVC binds to them.
+- The volume restore's `PodVolumeRestoreAction` completes in under 1 second — no data is actually downloaded.
+- The node-agent on the worker node never receives volume restore tasks for lldap-data.
+
+**Root cause:** Velero's data-mover + restic uploader combo doesn't work correctly with the local-path provisioner. The data-mover creates PVs but the local-path provisioner creates separate PVs, and the data-mover's PVs are cleaned up.
+
+**Workaround:** Delete the PVC, remove its finalizers, wait for deletion, then restore. The PVC gets bound but the volume data isn't populated.
+
+**Status:** LLDAP is running with the restored PVC but database only has admin user. Latest backup (velero-0-20260727180019, July 27 18:00) is InProgress and should have the latest data. Will check once it completes.
+
+**Next steps:**
+1. Wait for velero-0-20260727180019 to complete
+2. Delete PVC, restore from that backup
+3. Verify database has users
+4. Consider switching from restic to the new data-mover (fs-backup) in velero config
+5. Or add a post-backup script that copies users.db to a known location for manual restore
+
+---
 
 ## OpenNebula LDAP Auth (2026-07-14)
 
@@ -126,25 +166,13 @@ Agent configs in `agents/` directory. Each has a README.md.
 - Release Manager role dropped (that's Nova, policy-enforced)
 - Sales/Accounting tabled until BeckCloud becomes commercial
 
-## Promoted From Short-Term Memory (2026-07-14)
+## Promoted From Short-Term Memory (2026-07-22)
 
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:13:16 -->
-- What worked tonight (second attempt, 17:24 UTC onward): Collected all data directly in this session via exec commands — no subagents; Ran ~30+ kubectl queries covering nodes, deployments, services, IngressRoutes, HelmReleases, Kustomizations, PVs/PVCs, certificates, Velero schedules, SSO middleware chains, DaemonSets, StatefulSets; Wrote 7 documentation files totaling ~58KB:; `docs/research/system-overview.md` — Executive summary + full infrastructure map (15.7KB) [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:13-16]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:17:20 -->
-- What worked tonight (second attempt, 17:24 UTC onward): `docs/research/services-catalog.md` — Every service detailed (9KB); `docs/research/networking-ingress.md` — Traefik, SSO chains, TLS (7.5KB); `docs/research/storage-backups.md` — PVs, Velero, capacity (6.8KB); `docs/research/gitops-automation.md` — Flux pipeline, Ansible, SOPS (8.5KB) [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:17-20]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:21:24 -->
-- What worked tonight (second attempt, 17:24 UTC onward): `docs/research/procedures-runbook.md` — Ops procedures, troubleshooting (8.7KB); `docs/index.md` — Documentation index/navigation (2.1KB); Committed and pushed to GitHub as `c028489` on main branch; Created MEMORY.md with persistent cluster knowledge for future sessions [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:21-24]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:27:30 -->
-- Key findings from audit: 45+ deployments, all healthy (1/1 ready across the board); 8 HelmReleases managed by Flux; 5 Velero backup schedules covering identity/every-6h, security/daily, media/daily, cattle-system/daily, full-cluster/weekly; ~140 TiB of media storage on LVM PVs (NOT backed up) [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:27-30]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:5:5 -->
-- Documentation Audit (major task): Stephen requested comprehensive, layered documentation of the entire BeckCloud server environment + persistent knowledge retention. [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:5-5]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-08.md:8:10 -->
-- What went wrong earlier: First attempt: spawned two subagents for parallel deep audits — both ran out of tokens before writing files (~33k and ~93k tokens burned with zero output on disk); Session expired multiple times due to long runtime; kubectl connectivity dropped mid-session at some point [score=0.845 recalls=0 avg=0.620 source=memory/2026-07-08.md:8-10]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-10-0140.md:12:14 -->
-- Conversation Summary: **Keycloak** → stuck starting, fails liveness probe after ~20min, restarts (loop); **oauth2-proxy × 2** → crashes trying to connect to Keycloak (`503: no available server`); **user-invite** → likely depends on Keycloak too [score=0.825 recalls=0 avg=0.620 source=memory/2026-07-10-0140.md:12-14]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-10-0140.md:16:17 -->
-- Conversation Summary: Keycloak is stuck on "Updating the configuration and installing your custom providers." Let me check if it's a resource issue or a config problem: assistant: OK, here's the summary: [score=0.825 recalls=0 avg=0.620 source=memory/2026-07-10-0140.md:16-17]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-10-0140.md:19:19 -->
-- Conversation Summary: **What was crashing:** [score=0.825 recalls=0 avg=0.620 source=memory/2026-07-10-0140.md:19-19]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-10-0140.md:3:5 -->
-- Session: 2026-07-10 01:40:59 UTC: **Session Key**: agent:main:telegram:direct:7070537908; **Session ID**: 7971794b-b359-422b-a01a-8a32b6cbecc6; **Source**: telegram [score=0.825 recalls=0 avg=0.620 source=memory/2026-07-10-0140.md:3-5]
+<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:23:23 -->
+- public key: age1... ← Leading space! Breaks sops 3.13.x: AGE-SECRET-KEY-1LPXC... ← OK [score=0.828 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:23-23]
+<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:26:26 -->
+- public key: age1... ← Leading space! Breaks sops 3.13.x: I fixed that and local decryption works now. But the cluster's copy of the key is fine (no leading space), so Flux should still be able to decrypt. The error "error decrypting env sources: no kustomization file found" must be something else entirely — not a key issue. [score=0.828 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:26-26]
+<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:14:14 -->
+- public key: age1... ← Leading space! Breaks sops 3.13.x: AGE-SECRET-KEY-1LPXC... ← OK [score=0.800 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:14-14]
+<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:17:18 -->
+- public key: age1... ← Leading space! Breaks sops 3.13.x: I fixed it and local decryption works now. But the cluster's copy of the key is fine (no leading space), so Flux should still be able to decrypt. The error "error decrypting env sources: no kustomization file found" must mean something else — let me check if there's a reference to an `env` subdirectory somewhere in the repo that got deleted or moved: assistant: You're right — I found the smoking gun. The local age key file had a **leading space on line 2** that was breaking sops parsing: [score=0.800 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:17-18]

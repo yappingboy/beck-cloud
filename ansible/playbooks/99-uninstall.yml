@@ -74,6 +74,7 @@
       changed_when: false
 
     - name: Terminate all OpenNebula VMs
+      no_log: true
       ansible.builtin.shell: |
         onevm terminate --all --hard 2>/dev/null || true
       environment:
@@ -89,6 +90,7 @@
 
     # ── 2. Remove OpenNebula hosts ──────────────────────────────────────────
     - name: Remove all OpenNebula KVM hosts
+      no_log: true
       ansible.builtin.shell: |
         onehost list --no-header | awk '{print $2}' | while read h; do
           onehost delete "$h" 2>/dev/null || true
@@ -101,6 +103,7 @@
 
     # ── 3. Network cleanup — remove k3s-net vnet ───────────────────────────
     - name: Remove k3s virtual networks
+      no_log: true
       ansible.builtin.shell: |
         onevnet delete k3s-int 2>/dev/null || true
         onevnet delete k3s-ext 2>/dev/null || true

@@ -65,6 +65,7 @@
 
     # ── SSH public key on oneadmin ─────────────────────────────────────────
     - name: Set SSH_PUBLIC_KEY on oneadmin user (uid 0)
+      no_log: true
       ansible.builtin.shell: |
         oneuser update 0 <<< 'SSH_PUBLIC_KEY = "{{ lookup("file", one_k3s_keypair_pub | expanduser) }}"'
       environment: "{{ one_auth }}"
@@ -194,6 +195,7 @@
         label: "{{ item.name }}"
 
     - name: Instantiate VM from template
+      no_log: true
       ansible.builtin.command: onetemplate instantiate {{ item.item.name }}-tpl --name {{ item.item.name }}
       environment: "{{ one_auth }}"
       when: item.rc != 0
@@ -213,6 +215,7 @@
       changed_when: false
 
     - name: Manually deploy VMs stuck in PENDING (multi-datastore scheduler bug)
+      no_log: true
       ansible.builtin.shell: |
         state=$(onevm show "{{ item.name }}" --json \
           | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['STATE'])" 2>/dev/null)
@@ -265,6 +268,7 @@
       delegate_to: k3s-worker-1
 
     - name: Attach BecklabMedia disk to k3s-worker-1
+      no_log: true
       ansible.builtin.shell: |
         vm_id=$(onevm show k3s-worker-1 --json \
           | python3 -c "import sys,json; d=json.load(sys.stdin); print(d['VM']['ID'])" 2>/dev/null)
@@ -280,6 +284,7 @@
       changed_when: false
 
     - name: Run media mount script on k3s-worker-1
+      no_log: true
       ansible.builtin.shell: |
         {{ media_bootstrap_script }}
       delegate_to: k3s-worker-1

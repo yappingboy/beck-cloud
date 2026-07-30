@@ -139,6 +139,7 @@
         - /var/lib/llamactl
 
     - name: Write llamactl configuration
+      no_log: true
       ansible.builtin.copy:
         dest: /etc/llamactl/llamactl.yml
         mode: '0644'

@@ -70,6 +70,7 @@
         mode: '0755'
 
     - name: Mount backup drive (fstab entry for persistence)
+      no_log: true
       ansible.posix.mount:
         path: "{{ backup_mount_path }}"
         src: "UUID={{ backup_drive_uuid }}"

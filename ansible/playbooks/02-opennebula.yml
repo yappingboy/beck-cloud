@@ -40,6 +40,7 @@
     # a CE-provisioned password (it won't match the DB and breaks CLI auth).
     # To change the password post-install, use: oneuser passwd 0 <newpass>
     - name: Write oneadmin API auth file (only if not set by CE ISO)
+      no_log: true
       ansible.builtin.copy:
         content: "oneadmin:{{ one_admin_password }}"
         dest: /var/lib/one/.one/one_auth
@@ -55,6 +56,7 @@
       register: oneadmin_ssh_key
 
     - name: Generate oneadmin SSH keypair
+      no_log: true
       ansible.builtin.shell: |
         su oneadmin -s /bin/bash -c "ssh-keygen -t rsa -N '' -f /var/lib/one/.ssh/id_rsa"
       when: not oneadmin_ssh_key.stat.exists

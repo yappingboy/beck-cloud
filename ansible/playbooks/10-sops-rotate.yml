@@ -158,6 +158,7 @@
 
     # ── Generate new age keypair ───────────────────────────────────────────
     - name: Generate new age keypair
+      no_log: true
       ansible.builtin.command:
         cmd: "{{ age_keygen_bin }} -o {{ new_key_local }}"
       register: keygen_output
@@ -171,12 +172,14 @@
         group: root
 
     - name: Extract new age public key
+      no_log: true
       ansible.builtin.shell: |
         grep '^public key: ' {{ new_key_local }} | awk '{print $3}'
       register: new_public_key
       changed_when: false
 
     - name: Display new public key
+      no_log: true
       ansible.builtin.debug:
         msg: |
           New age public key: {{ new_public_key.stdout }}
@@ -206,6 +209,7 @@
         - old_key_stat.stat.exists
       block:
         - name: Re-encrypt each secret file
+          no_log: true
           ansible.builtin.command:
             cmd: "{{ sops_bin }} updatekeys --yes {{ item }}"
           args:
@@ -314,6 +318,7 @@
       ignore_errors: true
 
     - name: Copy new key to k3s-server
+      no_log: true
       ansible.builtin.copy:
         src: "{{ new_key_local }}"
         dest: /root/.config/sops/age/pre-rotated.agekey
@@ -343,6 +348,7 @@
 
   post_tasks:
     - name: Rotation summary
+      no_log: true
       ansible.builtin.debug:
         msg: |
           ╔═══════════════════════════════════════════════════╗
