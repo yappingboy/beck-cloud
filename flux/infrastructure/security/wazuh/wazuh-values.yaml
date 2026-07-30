@@ -176,7 +176,7 @@ spec:
       config: |
         server.host: 0.0.0.0
         server.port: 5601
-        opensearch.hosts: "https://10.42.0.78:9200"
+        opensearch.hosts: "https://wazuh-indexer.security.svc.cluster.local:9200"
         opensearch.ssl.verificationMode: none
         opensearch.requestHeadersWhitelist: [ authorization,securitytenant ]
         opensearch_security.multitenancy.enabled: false
