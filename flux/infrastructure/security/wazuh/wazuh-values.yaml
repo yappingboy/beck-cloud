@@ -124,6 +124,20 @@ spec:
             mountPath: /etc/filebeat/filebeat.yml
             subPath: filebeat.yml
 
+        volumeMounts:
+          - mountPath: /etc/ssl/root-ca.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: root-ca.pem
+          - mountPath: /etc/ssl/filebeat.pem
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.crt
+          - mountPath: /etc/ssl/filebeat.key
+            name: filebeat-certs
+            readOnly: true
+            subPath: tls.key
+
     # ── Dashboard auth override ──────────────────────────────────
     # Chart default renders opensearch_security.auth.type as ["basicauth","anonymous"] (array).
     # Wazuh 4.14.3 dashboard rejects "anonymous" as valid auth.type and expects a string.
@@ -171,38 +185,3 @@ spec:
     # External TLS handled by Traefik ingress + cert-manager.
     certificates:
       enabled: false
-
-    # ── Filebeat TLS certificate fix ─────────────────────────────
-    # Chart v2.0.0 generates filebeat-tls secret with standard tls.crt/tls.key keys
-    # but our custom secret has filebeat.pem/filebeat.key (renamed for clarity).
-    # The filebeat-certs secret also has root-ca.pem (indexer CA) in addition to ca.crt.
-    # Override the volume mount subPaths to match our secret's key names.
-    wazuh:
-      master:
-        volumeMounts:
-          - mountPath: /etc/ssl/root-ca.pem
-            name: filebeat-certs
-            readOnly: true
-            subPath: root-ca.pem
-          - mountPath: /etc/ssl/filebeat.pem
-            name: filebeat-certs
-            readOnly: true
-            subPath: tls.crt
-          - mountPath: /etc/ssl/filebeat.key
-            name: filebeat-certs
-            readOnly: true
-            subPath: tls.key
-      worker:
-        volumeMounts:
-          - mountPath: /etc/ssl/root-ca.pem
-            name: filebeat-certs
-            readOnly: true
-            subPath: root-ca.pem
-          - mountPath: /etc/ssl/filebeat.pem
-            name: filebeat-certs
-            readOnly: true
-            subPath: tls.crt
-          - mountPath: /etc/ssl/filebeat.key
-            name: filebeat-certs
-            readOnly: true
-            subPath: tls.key
