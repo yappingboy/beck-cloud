@@ -149,6 +149,10 @@ spec:
       
     dashboard:
       enabled: true
+      cred:
+        username: kibanaserver
+        password: "WazuhSecretPassword"
+      enabled: true
       replicas: 1
       images:
         repository: wazuh/wazuh-dashboard
