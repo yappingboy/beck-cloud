@@ -18,7 +18,7 @@ spec:
         kind: HelmRepository
         name: wazuh-helm
         namespace: flux-system
-  timeout: 15m
+  timeout: 30m
   install:
     remediation:
       retries: 5
@@ -158,3 +158,14 @@ spec:
     # External TLS handled by Traefik ingress + cert-manager.
     certificates:
       enabled: false
+
+    # ── Dashboard auth override ──────────────────────────────────
+    # Chart default renders opensearch_security.auth.type as ["basicauth","anonymous"] (array).
+    # Wazuh 4.14.3 dashboard rejects "anonymous" as valid auth.type and expects a string.
+    # Override to "basicauth" (string).
+    dashboard:
+      config:
+        opensearch_security.auth.type: "basicauth"
+        opensearch_security.auth.anonymous_auth_enabled: "true"
+        opensearch_security.auth.unauthenticated_routes: '["/api/stats", "/api/status", "/api/security/*/status"]'
+        opensearch.http2: false
