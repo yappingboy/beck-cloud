@@ -189,7 +189,6 @@ spec:
         uiSettings.overrides.defaultRoute: /app/wz-home
         opensearch_security.auth.multiple_auth_enabled: false
         opensearch_security.auth.type: "basicauth"
-        opensearch.http2: false
 
     # ── Certificates ─────────────────────────────────────────────
     # Disabled: self-signed certs + Cilium eBPF caused bootstrap deadlocks.
