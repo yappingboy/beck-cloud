@@ -96,6 +96,7 @@ Comprehensive docs in `beck-cloud/docs/`:
 13. **Every service directory under `flux/infrastructure/` needs a `kustomization.yaml`**, even if it only lists one YAML file in `resources:`. Without it, kustomize treats the directory as a nested kustomization and fails with `"error decrypting env sources: no kustomization file found"`. This is required by kustomize's directory traversal — when a parent kustomization references a directory name as a resource, kustomize must find `kustomization.yaml` inside it.
 14. **When restructuring namespaces per FILING-SYSTEM.md**, after moving YAML files into service subdirectories, generate `kustomization.yaml` for each service directory listing its YAML files in `resources:`. This is a mandatory step, not optional.
 15. `flux-system` Kustomization has interval 10m — stale status messages in `kubectl get kustomizations` may persist for up to 10m. Use `kubectl annotate kustomization <name> --overwrite fluxcd.io/force-sync=$(date +%s)` to force immediate re-check.
+16. **Provisioning Standardization Complete (2026-07-31):** All services now use IngressRoute (traefik.io/v1alpha1). 24 Certificate resources added for managed TLS. Namespace labels standardized across 14 namespaces. Homepage patches updated to IngressRoute format. PVCs centralized in gaming and identity. Full commit: `7b17550` → pushed to main.
 
 ### Traefik Dashboard Fix (2026-07-29)
 
