@@ -1,0 +1,268 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: sudoku-meals
+  namespace: webapps
+  labels:
+    app: sudoku-meals
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: sudoku-meals
+  template:
+    metadata:
+      labels:
+        app: sudoku-meals
+    spec:
+      containers:
+        - name: nginx
+          image: nginxinc/nginx-unprivileged:1.27-alpine
+          ports:
+            - containerPort: 8080
+              name: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 8080
+              scheme: HTTP
+            initialDelaySeconds: 10
+            periodSeconds: 15
+          volumeMounts:
+            - name: html
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+          resources:
+            requests:
+              cpu: 10m
+              memory: 20Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+      volumes:
+        - name: html
+          configMap:
+            name: sudoku-meals-html
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sudoku-meals-html
+  namespace: webapps
+data:
+  index.html: |
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sudoku Meals</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+    :root{--bg:#1a1714;--surface:#252119;--surface2:#2f2a20;--border:#3d372a;--text:#e8e0d4;--text-dim:#9a8e7e;--accent-protein:#d4735b;--accent-protein-bg:rgba(212,115,91,0.12);--accent-veg:#6db86e;--accent-veg-bg:rgba(109,184,110,0.12);--accent-starch:#d4a843;--accent-starch-bg:rgba(212,168,67,0.12);--accent-spice:#9b7bd4;--accent-spice-bg:rgba(155,123,212,0.12);--accent-shopping:#43a8d4}
+    *{margin:0;padding:0;box-sizing:border-box}
+    body{background:var(--bg);color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-weight:300;line-height:1.6;min-height:100vh}
+    body::before{content:'';position:fixed;inset:0;opacity:0.03;pointer-events:none;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");background-size:256px}
+    .app{max-width:1200px;margin:0 auto;padding:2rem 1.5rem 6rem}
+    .header{text-align:center;margin-bottom:3rem;padding-bottom:2rem;border-bottom:1px solid var(--border)}
+    .header h1{font-family:'DM Serif Display',serif;font-size:2.8rem;font-weight:400;letter-spacing:-0.02em;margin-bottom:0.5rem;background:linear-gradient(135deg,var(--accent-protein),var(--accent-starch));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .header p{color:var(--text-dim);font-size:0.95rem;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;letter-spacing:0.08em;text-transform:uppercase}
+    .tabs{display:flex;gap:0.25rem;margin-bottom:2rem;border-bottom:1px solid var(--border);padding-bottom:0;overflow-x:auto}
+    .tab-btn{background:none;border:none;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;letter-spacing:0.06em;text-transform:uppercase;padding:0.75rem 1.25rem;cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color 0.2s,border-color 0.2s;white-space:nowrap}
+    .tab-btn:hover{color:var(--text)}
+    .tab-btn.active{color:var(--text);border-bottom-color:var(--accent-protein)}
+    .section{display:none}
+    .section.active{display:block}
+    .grid-config{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem;margin-bottom:2rem}
+    @media(max-width:768px){.grid-config{grid-template-columns:1fr}}
+    .config-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem}
+    .config-card.protein{border-top:3px solid var(--accent-protein)}
+    .config-card.veg{border-top:3px solid var(--accent-veg)}
+    .config-card.starch{border-top:3px solid var(--accent-starch)}
+    .config-card h3{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:1rem;color:var(--text-dim)}
+    .config-card.protein h3{color:var(--accent-protein)}
+    .config-card.veg h3{color:var(--accent-veg)}
+    .config-card.starch h3{color:var(--accent-starch)}
+    .ingredient-list{list-style:none;display:flex;flex-direction:column;gap:0.5rem}
+    .ingredient-item{display:flex;align-items:center;gap:0.5rem}
+    .ingredient-item input[type="text"]{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:0.5rem 0.75rem;color:var(--text);font-family:'IBM Plex Sans',sans-serif;font-size:0.9rem;outline:none;transition:border-color 0.2s}
+    .ingredient-item input[type="text"].protein-input:focus{border-color:var(--accent-protein)}
+    .ingredient-item input[type="text"].veg-input:focus{border-color:var(--accent-veg)}
+    .ingredient-item input[type="text"].starch-input:focus{border-color:var(--accent-starch)}
+    .remove-btn{background:none;border:none;color:var(--text-dim);cursor:pointer;font-size:1.1rem;padding:0.25rem;line-height:1;transition:color 0.2s}
+    .remove-btn:hover{color:var(--accent-protein)}
+    .add-btn{background:none;border:1px dashed var(--border);border-radius:4px;padding:0.5rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;cursor:pointer;width:100%;margin-top:0.5rem;transition:border-color 0.2s,color 0.2s;text-transform:uppercase;letter-spacing:0.05em}
+    .add-btn:hover{border-color:var(--text-dim);color:var(--text)}
+    .spice-section{margin-top:2rem}
+    .spice-section h3{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-spice);margin-bottom:1rem}
+    .spice-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:1rem}
+    @media(max-width:768px){.spice-grid{grid-template-columns:1fr}}
+    .spice-card{background:var(--surface);border:1px solid var(--border);border-top:3px solid var(--accent-spice);border-radius:8px;padding:1.25rem;cursor:pointer;transition:border-color 0.2s,transform 0.15s}
+    .spice-card:hover{border-color:var(--accent-spice);transform:translateY(-1px)}
+    .spice-card.selected{border-color:var(--accent-spice);background:var(--accent-spice-bg)}
+    .spice-card-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:0.75rem}
+    .spice-card h4{font-family:'DM Serif Display',serif;font-size:1.1rem;font-weight:400}
+    .spice-tags{display:flex;flex-wrap:wrap;gap:0.35rem}
+    .spice-tag{background:var(--surface2);border:1px solid var(--border);border-radius:3px;padding:0.2rem 0.5rem;font-size:0.75rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;cursor:pointer;transition:all 0.15s}
+    .spice-tag:hover{border-color:var(--accent-spice);color:var(--text)}
+    .spice-tag.selected{background:var(--accent-spice);color:var(--bg);border-color:var(--accent-spice)}
+    .spice-pairs{margin-top:0.5rem;font-size:0.8rem;color:var(--text-dim);font-style:italic}
+    .custom-spice-row{display:flex;gap:0.5rem;margin-top:0.5rem}
+    .custom-spice-row input{flex:1;background:var(--surface2);border:1px solid var(--border);border-radius:4px;padding:0.4rem 0.6rem;color:var(--text);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;outline:none}
+    .custom-spice-row input:focus{border-color:var(--accent-spice)}
+    .custom-spice-btn{background:var(--accent-spice);border:none;border-radius:4px;padding:0.4rem 0.8rem;color:var(--bg);font-family:'IBM Plex Mono',monospace;font-size:0.75rem;cursor:pointer;font-weight:500;text-transform:uppercase;letter-spacing:0.05em}
+    .matrix-container{background:var(--surface);border:1px solid var(--border);border-radius:8px;overflow:hidden;margin-bottom:2rem}
+    .matrix-header{display:grid;grid-template-columns:60px 1fr 1fr 1fr;background:var(--surface2);border-bottom:1px solid var(--border)}
+    .matrix-header div{padding:0.75rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:0.7rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
+    .matrix-row{display:grid;grid-template-columns:60px 1fr 1fr 1fr;border-bottom:1px solid var(--border)}
+    .matrix-row:last-child{border-bottom:none}
+    .matrix-num{padding:0.75rem 1rem;font-family:'IBM Plex Mono',monospace;font-size:0.8rem;color:var(--text-dim);border-right:1px solid var(--border);display:flex;align-items:center}
+    .matrix-cell{padding:0.75rem 1rem;font-size:0.9rem;display:flex;align-items:center;gap:0.5rem;cursor:pointer;transition:background 0.15s;min-height:44px}
+    .matrix-cell:hover{background:var(--surface2)}
+    .matrix-cell.protein-cell{color:var(--accent-protein);font-weight:500}
+    .matrix-cell.veg-cell{color:var(--accent-veg)}
+    .matrix-cell.starch-cell{color:var(--accent-starch);font-weight:500}
+    .matrix-cell.empty-cell{color:var(--text-dim);font-style:italic;font-size:0.8rem}
+    .matrix-row.dimmed{opacity:0.35}
+    .recipe-panel{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.5rem;margin-bottom:2rem}
+    .recipe-panel h3{font-family:'DM Serif Display',serif;font-size:1.3rem;margin-bottom:1rem;color:var(--text)}
+    .recipe-detail{display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1rem}
+    @media(max-width:768px){.recipe-detail{grid-template-columns:1fr}}
+    .recipe-detail-item{padding:0.75rem;border-radius:6px}
+    .recipe-detail-item.protein-detail{background:var(--accent-protein-bg);border-left:3px solid var(--accent-protein)}
+    .recipe-detail-item.veg-detail{background:var(--accent-veg-bg);border-left:3px solid var(--accent-veg)}
+    .recipe-detail-item.starch-detail{background:var(--accent-starch-bg);border-left:3px solid var(--accent-starch)}
+    .recipe-detail-item .label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:0.25rem}
+    .recipe-detail-item .value{font-size:1rem;font-weight:400}
+    .recipe-detail-item.protein-detail .value{color:var(--accent-protein)}
+    .recipe-detail-item.veg-detail .value{color:var(--accent-veg)}
+    .recipe-detail-item.starch-detail .value{color:var(--accent-starch)}
+    .recipe-placeholder{text-align:center;padding:3rem;color:var(--text-dim);font-style:italic}
+    .shopping-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1.5rem}
+    @media(max-width:768px){.shopping-grid{grid-template-columns:1fr}}
+    .shopping-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1.25rem}
+    .shopping-card.protein-s{border-top:3px solid var(--accent-protein)}
+    .shopping-card.veg-s{border-top:3px solid var(--accent-veg)}
+    .shopping-card.starch-s{border-top:3px solid var(--accent-starch)}
+    .shopping-card.spice-s{border-top:3px solid var(--accent-spice)}
+    .shopping-card h4{font-family:'IBM Plex Mono',monospace;font-size:0.75rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim);margin-bottom:1rem}
+    .shopping-card.protein-s h4{color:var(--accent-protein)}
+    .shopping-card.veg-s h4{color:var(--accent-veg)}
+    .shopping-card.starch-s h4{color:var(--accent-starch)}
+    .shopping-card.spice-s h4{color:var(--accent-spice)}
+    .shopping-item{display:flex;align-items:center;gap:0.5rem;padding:0.4rem 0}
+    .shop-check{appearance:none;width:16px;height:16px;border:2px solid var(--border);border-radius:3px;cursor:pointer;flex-shrink:0;position:relative;transition:all 0.15s}
+    .shop-check:hover{border-color:var(--text-dim)}
+    .shop-check:checked{background:var(--accent-shopping);border-color:var(--accent-shopping)}
+    .shop-check:checked::after{content:'✓';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--bg);font-size:0.65rem;font-weight:700}
+    .shopping-item span{font-size:0.9rem;transition:all 0.15s}
+    .shopping-item span.checked-item{text-decoration:line-through;color:var(--text-dim)}
+    .stats-bar{display:flex;gap:2rem;justify-content:center;margin-bottom:2rem;flex-wrap:wrap}
+    .stat{text-align:center}
+    .stat-number{font-family:'DM Serif Display',serif;font-size:2rem;background:linear-gradient(135deg,var(--accent-protein),var(--accent-starch));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+    .stat-label{font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--text-dim)}
+    .action-row{display:flex;gap:1rem;margin-top:2rem;justify-content:center;flex-wrap:wrap}
+    .action-btn{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:0.6rem 1.5rem;color:var(--text-dim);font-family:'IBM Plex Mono',monospace;font-size:0.8rem;cursor:pointer;transition:all 0.2s;text-transform:uppercase;letter-spacing:0.05em}
+    .action-btn:hover{border-color:var(--text-dim);color:var(--text)}
+    .action-btn.primary{background:var(--accent-protein);border-color:var(--accent-protein);color:var(--bg);font-weight:500}
+    .action-btn.primary:hover{opacity:0.9}
+    @media(max-width:768px){.header h1{font-size:2rem}.matrix-header{grid-template-columns:40px 1fr 1fr 1fr}.matrix-row{grid-template-columns:40px 1fr 1fr 1fr}.matrix-num{padding:0.5rem 0.5rem}}
+    ::-webkit-scrollbar{width:6px}
+    ::-webkit-scrollbar-track{background:var(--bg)}
+    ::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+    @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(10px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+    </style>
+    </head>
+    <body>
+    <div class="app">
+    <div class="header">
+    <h1>Sudoku Meals</h1>
+    <p>3 proteins × 3 vegetables × 3 starches = 27 meals</p>
+    </div>
+    <div class="tabs">
+    <button class="tab-btn active" data-tab="config">Grid</button>
+    <button class="tab-btn" data-tab="spices">Spice Profiles</button>
+    <button class="tab-btn" data-tab="meals">Meal Matrix</button>
+    <button class="tab-btn" data-tab="shopping">Shopping List</button>
+    </div>
+    <div id="tab-config" class="section active">
+    <div class="grid-config">
+    <div class="config-card protein"><h3>Proteins</h3><ul class="ingredient-list" id="protein-list"></ul><button class="add-btn" onclick="addIngredient('protein')">+ Add ingredient</button></div>
+    <div class="config-card veg"><h3>Vegetables</h3><ul class="ingredient-list" id="veg-list"></ul><button class="add-btn" onclick="addIngredient('veg')">+ Add ingredient</button></div>
+    <div class="config-card starch"><h3>Starches</h3><ul class="ingredient-list" id="starch-list"></ul><button class="add-btn" onclick="addIngredient('starch')">+ Add ingredient</button></div>
+    </div>
+    <div class="action-row"><button class="action-btn primary" onclick="saveConfig()">Save Grid</button><button class="action-btn" onclick="resetConfig()">Reset to Default</button></div>
+    </div>
+    <div id="tab-spices" class="section">
+    <div class="spice-section"><h3>Spice Profiles — click a card to select, then pick spices</h3><div class="spice-grid" id="spice-grid"></div></div>
+    <div class="action-row"><button class="action-btn primary" onclick="saveSpices()">Save Spice Selection</button></div>
+    </div>
+    <div id="tab-meals" class="section">
+    <div class="stats-bar">
+    <div class="stat"><div class="stat-number" id="stat-total">0</div><div class="stat-label">Total Meals</div></div>
+    <div class="stat"><div class="stat-number" id="stat-used">0</div><div class="stat-label">Used This Week</div></div>
+    <div class="stat"><div class="stat-number" id="stat-remaining">0</div><div class="stat-label">Remaining</div></div>
+    </div>
+    <div class="matrix-container" id="meal-matrix"></div>
+    <div class="recipe-panel" id="recipe-panel"><div class="recipe-placeholder">Click a meal to see details</div></div>
+    </div>
+    <div id="tab-shopping" class="section">
+    <div class="shopping-grid" id="shopping-grid"></div>
+    <div class="action-row"><button class="action-btn" onclick="resetShopping()">Reset Checkoffs</button><button class="action-btn" onclick="exportShopping()">Copy to Clipboard</button></div>
+    </div>
+    </div>
+    <script>
+    const DEFAULT_PROTEINS=['Fish','Chicken','Beef'],DEFAULT_VEGS=['Asparagus','Carrots','Spinach'],DEFAULT_STARCHES=['Rice','Sweet Potato','White Potato'];
+    const DEFAULT_SPICE_PROFILES=[
+    {id:'mediterranean',name:'Mediterranean Herb',spices:['Garlic','Lemon zest','Oregano','Rosemary','Thyme','Black pepper'],pairs:'Fish, chicken, asparagus, white potato'},
+    {id:'southwest',name:'Smoky Southwest',spices:['Smoked paprika','Cumin','Garlic powder','Chili powder','Onion powder','Cayenne'],pairs:'Beef, chicken, sweet potato, carrots'},
+    {id:'curry',name:'Warm Curry',spices:['Turmeric','Cumin','Coriander','Ginger','Cinnamon','Cardamom'],pairs:'Chicken, fish, carrots, spinach, rice, sweet potato'},
+    {id:'asian',name:'Asian-Inspired',spices:['Ginger','Garlic','Five spice','Sesame','White pepper','Red pepper flakes'],pairs:'Beef, fish, spinach, rice, carrots'},
+    {id:'savory',name:'Simple Savory',spices:['Garlic powder','Onion powder','Italian seasoning','Salt','Black pepper','Dried parsley'],pairs:'Everything'},
+    {id:'lemon-herb',name:'Lemon Herb & Dill',spices:['Dill','Lemon pepper','Garlic','Parsley','Chives','Capers'],pairs:'Fish, asparagus, spinach, white potato, rice'}
+    ];
+    let state=loadState();
+    function defaultState(){return{proteins:[...DEFAULT_PROTEINS],vegs:[...DEFAULT_VEGS],starches:[...DEFAULT_STARCHES],selectedSpices:[],checkedMeals:{},checkedShopping:{},customSpiceProfiles:[],customShopping:[],lastSave:null}}
+    function loadState(){try{const s=localStorage.getItem('sudoku-meals-state');if(s){const p=JSON.parse(s);p.proteins=p.proteins||[];p.vegs=p.vegs||[];p.starches=p.starches||[];p.selectedSpices=p.selectedSpices||[];p.checkedMeals=p.checkedMeals||{};p.checkedShopping=p.checkedShopping||{};p.customSpiceProfiles=p.customSpiceProfiles||[];p.customShopping=p.customShopping||[];return p}}catch(e){}return defaultState()}
+    function saveState(){state.lastSave=Date.now();localStorage.setItem('sudoku-meals-state',JSON.stringify(state))}
+    document.querySelectorAll('.tab-btn').forEach(btn=>{btn.addEventListener('click',()=>{document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));btn.classList.add('active');document.getElementById('tab-'+btn.dataset.tab).classList.add('active');if(btn.dataset.tab==='meals')renderMealMatrix();if(btn.dataset.tab==='shopping')renderShopping();if(btn.dataset.tab==='config')renderConfig();if(btn.dataset.tab==='spices')renderSpiceGrid()})});
+    function renderConfig(){renderIngredientList('protein',state.proteins,'protein-input');renderIngredientList('veg',state.vegs,'veg-input');renderIngredientList('starch',state.starches,'starch-input')}
+    function renderIngredientList(type,items,inputClass){const list=document.getElementById(type==='veg'?'veg-list':type==='starch'?'starch-list':'protein-list');list.innerHTML='';items.forEach((item,i)=>{const li=document.createElement('li');li.className='ingredient-item';li.innerHTML=`<input type="text" class="${inputClass}" value="${escHtml(item)}" onchange="updateIngredient('${type}',${i},this.value)" onkeydown="handleIngredientKey(event,'${type}',${i})"><button class="remove-btn" onclick="removeIngredient('${type}',${i})" title="Remove">×</button>`;list.appendChild(li)})}
+    function addIngredient(type){const key=type==='veg'?'vegs':type==='starch'?'starches':'proteins';state[key].push('');saveState();renderConfig();const list=document.getElementById(type==='veg'?'veg-list':type==='starch'?'starch-list':'protein-list');const inputs=list.querySelectorAll('input');if(inputs.length)inputs[inputs.length-1].focus()}
+    function updateIngredient(type,index,value){const key=type==='veg'?'vegs':type==='starch'?'starches':'proteins';state[key][index]=value.trim();saveState()}
+    function removeIngredient(type,index){const key=type==='veg'?'vegs':type==='starch'?'starches':'proteins';state[key].splice(index,1);saveState();renderConfig()}
+    function handleIngredientKey(e,type,index){if(e.key==='Enter'){e.preventDefault();addIngredient(type)}}
+    function saveConfig(){gatherFromInputs('protein','proteins');gatherFromInputs('veg','vegs');gatherFromInputs('starch','starches');saveState();showToast('Grid saved!')}
+    function gatherFromInputs(type,stateKey){const list=document.getElementById(type==='veg'?'veg-list':type==='starch'?'starch-list':'protein-list');const inputs=list.querySelectorAll('input[type="text"]');const values=Array.from(inputs).map(i=>i.value.trim()).filter(v=>v);state[stateKey]=values}
+    function resetConfig(){if(!confirm('Reset grid to default proteins, vegetables, and starches?'))return;state.proteins=[...DEFAULT_PROTEINS];state.vegs=[...DEFAULT_VEGS];state.starches=[...DEFAULT_STARCHES];saveState();renderConfig();showToast('Grid reset to defaults')}
+    function renderSpiceGrid(){const grid=document.getElementById('spice-grid');grid.innerHTML='';const allProfiles=[...DEFAULT_SPICE_PROFILES,...state.customSpiceProfiles];allProfiles.forEach(profile=>{const isSelected=state.selectedSpices.includes(profile.id);const card=document.createElement('div');card.className='spice-card'+(isSelected?' selected':'');const spicesHtml=profile.spices.map(s=>`<span class="spice-tag ${state.selectedSpices.includes(profile.id)?'selected':''}" onclick="toggleSpiceFromProfile('${profile.id}','${escAttr(s)}',event)" title="Click to add/remove">${escHtml(s)}</span>`).join('');card.innerHTML=`<div class="spice-card-header"><h4>${escHtml(profile.name)}</h4><span style="font-family:'IBM Plex Mono',monospace;font-size:0.7rem;color:var(--text-dim)">${profile.spices.length} spices</span></div><div class="spice-tags">${spicesHtml}</div><div class="spice-pairs">Pairs with: ${escHtml(profile.pairs)}</div>`;card.addEventListener('click',(e)=>{if(e.target.classList.contains('spice-tag'))return;toggleProfile(profile.id)});grid.appendChild(card)});const addCard=document.createElement('div');addCard.className='spice-card';addCard.style.borderStyle='dashed';addCard.style.borderColor='var(--border)';addCard.style.cursor='pointer';addCard.innerHTML=`<div class="spice-card-header"><h4 style="color:var(--text-dim)">+ Custom Profile</h4></div><div class="custom-spice-row"><input type="text" placeholder="Profile name" id="custom-name"><input type="text" placeholder="Spices (comma-separated)" id="custom-spices"></div><div class="custom-spice-row" style="margin-top:0.4rem"><input type="text" placeholder="Pairs with..." id="custom-pairs" style="width:100%"><button class="custom-spice-btn" onclick="addCustomProfile()">Add</button></div>`;grid.appendChild(addCard)}
+    function toggleProfile(profileId){const idx=state.selectedSpices.indexOf(profileId);if(idx===-1)state.selectedSpices.push(profileId);else state.selectedSpices.splice(idx,1);saveState();renderSpiceGrid()}
+    function toggleSpiceFromProfile(profileId,spice,event){event.stopPropagation();toggleProfile(profileId)}
+    function addCustomProfile(){const name=document.getElementById('custom-name').value.trim();const spicesStr=document.getElementById('custom-spices').value.trim();const pairs=document.getElementById('custom-pairs').value.trim();if(!name||!spicesStr){showToast('Name and spices required');return}const spices=spicesStr.split(',').map(s=>s.trim()).filter(s=>s);const profile={id:'custom-'+Date.now(),name,spices,pairs:pairs||'All'};state.customSpiceProfiles.push(profile);state.selectedSpices.push(profile.id);saveState();renderSpiceGrid();showToast(`Custom profile "${name}" added`)}
+    function saveSpices(){saveState();showToast('Spice profiles saved!')}
+    function generateMealKey(protein,veg,starch){return `${protein}||${veg}||${starch}`}
+    function renderMealMatrix(){gatherFromInputs('protein','proteins');gatherFromInputs('veg','vegs');gatherFromInputs('starch','starches');const container=document.getElementById('meal-matrix');container.innerHTML='';const header=document.createElement('div');header.className='matrix-header';header.innerHTML='<div></div><div style="color:var(--accent-protein)">Protein</div><div style="color:var(--accent-veg)">Vegetable</div><div style="color:var(--accent-starch)">Starch</div>';container.appendChild(header);let mealNum=0;const allMeals=[];for(const protein of state.proteins)for(const veg of state.vegs)for(const starch of state.starches){mealNum++;allMeals.push({num:mealNum,protein,veg,starch})}const usedCount=Object.values(state.checkedMeals).filter(Boolean).length;const totalMeals=allMeals.length;const remaining=totalMeals-usedCount;document.getElementById('stat-total').textContent=totalMeals;document.getElementById('stat-used').textContent=usedCount;document.getElementById('stat-remaining').textContent=remaining;if(allMeals.length===0){container.innerHTML+='<div style="padding:2rem;text-align:center;color:var(--text-dim)">Add ingredients in the Grid tab to see your meals.</div>';return}allMeals.forEach(meal=>{const isChecked=state.checkedMeals[generateMealKey(meal.protein,meal.veg,meal.starch)]||false;const row=document.createElement('div');row.className='matrix-row'+(isChecked?' dimmed':'');row.style.cursor='pointer';row.innerHTML=`<div class="matrix-num">${meal.num}</div><div class="matrix-cell protein-cell">${escHtml(meal.protein)}</div><div class="matrix-cell veg-cell">${escHtml(meal.veg)}</div><div class="matrix-cell starch-cell">${escHtml(meal.starch)}</div>`;row.addEventListener('click',()=>toggleMeal(meal));container.appendChild(row)})}
+    function toggleMeal(meal){const key=generateMealKey(meal.protein,meal.veg,meal.starch);state.checkedMeals[key]=!state.checkedMeals[key];saveState();window._selectedMeal=meal;renderMealMatrix();showRecipe(meal)}
+    function showRecipe(meal){const panel=document.getElementById('recipe-panel');const selectedSpices=state.selectedSpices.map(id=>{const found=[...DEFAULT_SPICE_PROFILES,...state.customSpiceProfiles].find(p=>p.id===id);return found||null}).filter(Boolean);let spicesHtml='';if(selectedSpices.length>0)spicesHtml=selectedSpices.map(sp=>`<div style="margin-top:0.75rem"><div style="font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-spice);margin-bottom:0.25rem">${escHtml(sp.name)}</div><div style="font-size:0.85rem;color:var(--text-dim)">${sp.spices.join(' · ')}</div><div style="font-size:0.8rem;color:var(--text-dim);font-style:italic;margin-top:0.15rem">Pairs with: ${escHtml(sp.pairs)}</div></div>`).join('');panel.innerHTML=`<h3>Meal #${meal.num} — ${escHtml(meal.protein)}</h3><div class="recipe-detail"><div class="recipe-detail-item protein-detail"><div class="label">Protein</div><div class="value">${escHtml(meal.protein)}</div></div><div class="recipe-detail-item veg-detail"><div class="label">Vegetable</div><div class="value">${escHtml(meal.veg)}</div></div><div class="recipe-detail-item starch-detail"><div class="label">Starch</div><div class="value">${escHtml(meal.starch)}</div></div></div>${selectedSpices.length>0?`<div style="border-top:1px solid var(--border);padding-top:0.75rem">${spicesHtml}</div>`:''}<div style="margin-top:1rem;font-size:0.8rem;color:var(--text-dim);font-style:italic">${state.checkedMeals[generateMealKey(meal.protein,meal.veg,meal.starch)]?'✓ Used this week':'Not marked as used yet. Click again to toggle.'}</div>`}
+    function renderShopping(){gatherFromInputs('protein','proteins');gatherFromInputs('veg','vegs');gatherFromInputs('starch','starches');const grid=document.getElementById('shopping-grid');grid.innerHTML='';const sections=[{type:'protein-s',label:'Proteins',items:state.proteins,prefix:'p_'},{type:'veg-s',label:'Vegetables',items:state.vegs,prefix:'v_'},{type:'starch-s',label:'Starches',items:state.starches,prefix:'s_'}];sections.forEach(section=>{const card=document.createElement('div');card.className=`shopping-card ${section.type}`;const h4=document.createElement('h4');h4.textContent=section.label;card.appendChild(h4);section.items.forEach((item,i)=>{const shopKey=`${section.prefix}${i}`;const isChecked=state.checkedShopping[shopKey]||false;const itemDiv=document.createElement('div');itemDiv.className='shopping-item';const cb=document.createElement('input');cb.type='checkbox';cb.className='shop-check';cb.checked=isChecked;cb.onchange=()=>toggleShopping(shopKey,cb);const span=document.createElement('span');span.className=isChecked?'checked-item':'';span.textContent=item;itemDiv.appendChild(cb);itemDiv.appendChild(span);card.appendChild(itemDiv)});grid.appendChild(card)});const spiceCard=document.createElement('div');spiceCard.className='shopping-card spice-s';const spiceH4=document.createElement('h4');spiceH4.textContent='Selected Spice Profiles';spiceCard.appendChild(spiceH4);const allProfiles=[...DEFAULT_SPICE_PROFILES,...state.customSpiceProfiles];const selectedProfiles=allProfiles.filter(p=>state.selectedSpices.includes(p.id));if(selectedProfiles.length>0){selectedProfiles.forEach(profile=>{const headerSpan=document.createElement('div');headerSpan.style.fontWeight='500';headerSpan.style.fontSize='0.85rem';headerSpan.textContent=profile.name;spiceCard.appendChild(headerSpan);const spicesList=document.createElement('div');spicesList.style.paddingLeft='1.5rem';spicesList.style.fontSize='0.8rem';spicesList.style.color='var(--text-dim)';spicesList.style.marginBottom='0.75rem';spicesList.textContent=profile.spices.join(' · ');spiceCard.appendChild(spicesList)})}else{const emptyMsg=document.createElement('div');emptyMsg.style.color='var(--text-dim)';emptyMsg.style.fontStyle='italic';emptyMsg.style.fontSize='0.85rem';emptyMsg.textContent='Select spice profiles in the Spice Profiles tab';spiceCard.appendChild(emptyMsg)}grid.appendChild(spiceCard);const addCard=document.createElement('div');addCard.className='shopping-card';addCard.style.borderTop='3px solid var(--accent-shopping)';const addH4=document.createElement('h4');addH4.textContent='Custom Items';addCard.appendChild(addH4);const inputRow=document.createElement('div');inputRow.className='custom-spice-row';const customInput=document.createElement('input');customInput.type='text';customInput.placeholder='Add custom item...';customInput.id='custom-shopping-item';const addBtn=document.createElement('button');addBtn.className='custom-spice-btn';addBtn.textContent='Add';addBtn.onclick=addCustomShopping;inputRow.appendChild(customInput);inputRow.appendChild(addBtn);addCard.appendChild(inputRow);const customList=document.createElement('div');customList.id='custom-shopping-list';customList.style.marginTop='0.75rem';addCard.appendChild(customList);grid.appendChild(addCard);if(state.customShopping&&state.customShopping.length>0){state.customShopping.forEach((item,i)=>{const shopKey=`custom_${i}`;const isChecked=state.checkedShopping[shopKey]||false;const itemDiv=document.createElement('div');itemDiv.className='shopping-item';const cb=document.createElement('input');cb.type='checkbox';cb.className='shop-check';cb.checked=isChecked;cb.onchange=()=>toggleShopping(shopKey,cb);const span=document.createElement('span');span.className=isChecked?'checked-item':'';span.textContent=item;const remBtn=document.createElement('button');remBtn.className='remove-btn';remBtn.textContent='×';remBtn.title='Remove';remBtn.onclick=()=>removeCustomShopping(i);itemDiv.appendChild(cb);itemDiv.appendChild(span);itemDiv.appendChild(remBtn);customList.appendChild(itemDiv)})}}
+    function toggleShopping(key,el){state.checkedShopping[key]=el.checked;saveState();el.parentElement.querySelector('span').classList.toggle('checked-item',el.checked)}
+    function addCustomShopping(){const input=document.getElementById('custom-shopping-item');const val=input.value.trim();if(!val)return;if(!state.customShopping)state.customShopping=[];state.customShopping.push(val);input.value='';saveState();renderShopping();showToast('Item added')}
+    function removeCustomShopping(index){state.customShopping.splice(index,1);const newChecked={};state.proteins&&state.proteins.forEach((_,i)=>{newChecked[`p_${i}`]=state.checkedShopping[`p_${i}`]||false});state.vegs&&state.vegs.forEach((_,i)=>{newChecked[`v_${i}`]=state.checkedShopping[`v_${i}`]||false});state.starches&&state.starches.forEach((_,i)=>{newChecked[`s_${i}`]=state.checkedShopping[`s_${i}`]||false});state.customShopping&&state.customShopping.forEach((_,i)=>{newChecked[`custom_${i}`]=state.checkedShopping[`custom_${i}`]||false});state.checkedShopping=newChecked;saveState();renderShopping()}
+    function resetShopping(){if(!confirm('Clear all shopping checkoffs?'))return;state.checkedShopping={};saveState();renderShopping();showToast('Shopping list reset')}
+    function exportShopping(){gatherFromInputs('protein','proteins');gatherFromInputs('veg','vegs');gatherFromInputs('starch','starches');let text='🛒 SUDOKU MEALS SHOPPING LIST\n';text+='═'.repeat(40)+'\n\n';text+='PROTEINS\n'+('──'.repeat(20))+'\n';state.proteins.forEach(item=>{text+=`  ${state.checkedShopping['p_'+state.proteins.indexOf(item)]?'✓':'□'} ${item}\n`});text+='\nVEGETABLES\n'+('──'.repeat(20))+'\n';state.vegs.forEach(item=>{text+=`  ${state.checkedShopping['v_'+state.vegs.indexOf(item)]?'✓':'□'} ${item}\n`});text+='\nSTARCHES\n'+('──'.repeat(20))+'\n';state.starches.forEach(item=>{text+=`  ${state.checkedShopping['s_'+state.starches.indexOf(item)]?'✓':'□'} ${item}\n`});if(state.customShopping&&state.customShopping.length>0){text+='\nCUSTOM\n'+('──'.repeat(20))+'\n';state.customShopping.forEach((item,i)=>{text+=`  ${state.checkedShopping['custom_'+i]?'✓':'□'} ${item}\n`})}const selectedProfiles=state.selectedSpices.map(id=>{return[...DEFAULT_SPICE_PROFILES,...state.customSpiceProfiles].find(p=>p.id===id)}).filter(Boolean);if(selectedProfiles.length>0){text+='\nSPICE PROFILES\n'+('──'.repeat(20))+'\n';selectedProfiles.forEach(sp=>{text+=`\n  ${sp.name}\n    `+sp.spices.join(' · ')+'\n'})}navigator.clipboard.writeText(text).then(()=>showToast('Shopping list copied to clipboard!')).catch(()=>{const ta=document.createElement('textarea');ta.value=text;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);showToast('Shopping list copied!')})}
+    function escHtml(str){const d=document.createElement('div');d.textContent=str;return d.innerHTML}
+    function escAttr(str){return str.replace(/'/g,"\\'").replace(/"/g,'&quot;')}
+    function showToast(msg){const existing=document.querySelector('.toast');if(existing)existing.remove();const toast=document.createElement('div');toast.className='toast';toast.textContent=msg;toast.style.cssText='position:fixed;bottom:2rem;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:0.75rem 1.5rem;color:var(--text);font-family:"IBM Plex Mono",monospace;font-size:0.8rem;z-index:9999;animation:toastIn 0.3s ease';document.body.appendChild(toast);setTimeout(()=>{toast.style.opacity='0';toast.style.transition='opacity 0.3s';setTimeout(()=>toast.remove(),300)},2000)}
+    renderConfig();renderSpiceGrid();
+    </script>
+    </body>
+    </html>
