@@ -193,5 +193,14 @@ spec:
       middlewares:
         - name: sso-admin-chain
           namespace: identity
+    # Catch-all — routes everything else to Keycloak (SSO protected)
+    - match: Host(`keycloak.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: keycloak
+          port: 8080
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
   tls:
     secretName: keycloak-tls
