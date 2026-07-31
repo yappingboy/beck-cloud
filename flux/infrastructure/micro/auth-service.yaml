@@ -34,12 +34,8 @@ metadata:
   namespace: micro
 type: Opaque
 stringData:
-  # REDIS_PASSWORD is synced from identity/redis-secrets
-  # For now, reference the identity namespace secret via a cross-namespace approach
-  # TODO: Replace with SOPS-encrypted value matching the actual Redis password
-  redis-password: "REPLACE_WITH_ACTUAL_REDIS_PASSWORD"
-  # JWT signing key for token generation
-  jwt-key: "REPLACE_WITH_ACTUAL_JWT_KEY"
+  redis-password: "n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI="
+  jwt-key: "9c26eee775015355847f45ce861f9be43e6a8c7ee58c24b59c6b132a9f597e54"
 ---
 # Service account for auth-micro (read-only access to identity Redis)
 apiVersion: v1
