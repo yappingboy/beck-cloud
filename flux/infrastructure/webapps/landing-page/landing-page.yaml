@@ -296,6 +296,6 @@ spec:
       kind: Rule
       services:
         - name: landing-page
-          port: 8080
+          port: 80
   tls:
     secretName: landing-page-tls

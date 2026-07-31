@@ -1,10 +1,10 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: bechlab
+  name: landing-page
   namespace: webapps
 spec:
-  secretName: bechlab-tls
+  secretName: landing-page-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
