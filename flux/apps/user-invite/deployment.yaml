@@ -110,13 +110,19 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`user-invite.becklab.cloud`)
+    - match: Host(`user-invite.becklab.cloud`) && PathPrefix(`/.well-known/acme-challenge/`)
       kind: Rule
+      priority: 10
       services:
         - name: user-invite
-          port: 8080
+          port: 80
+    - match: Host(`user-invite.becklab.cloud`)
+      kind: Rule
       middlewares:
         - name: sso-admin-chain
           namespace: identity
+      services:
+        - name: user-invite
+          port: 80
   tls:
     secretName: user-invite-tls
