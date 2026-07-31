@@ -8,6 +8,7 @@ resources:
   - resource-quota.yaml
   - pvc.yaml
   - certificate.yaml
+  - ghcr-credentials.yaml
   - auth-service.yaml
   - middlewares.yaml
   - ingressroutes.yaml

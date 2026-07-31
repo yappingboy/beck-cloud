@@ -47,6 +47,8 @@ kind: ServiceAccount
 metadata:
   name: auth-micro
   namespace: micro
+imagePullSecrets:
+  - name: ghcr-credentials
 ---
 # RBAC: allow auth-micro to read secrets in identity namespace (for Redis password)
 # Note: K8s RBAC doesn't support cross-namespace secret reads by default.
