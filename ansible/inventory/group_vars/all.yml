@@ -1,13 +1,20 @@
 ---
 # Beck Cloud — Ansible Variables
 
+# ── Encrypted Secrets ─────────────────────────────────────────────────────────
+# Secrets are stored in all_secrets.yml.enc and loaded via SOPS during playbook execution.
+# To decrypt inline: ansible-playbook -e "@inventory/group_vars/all_secrets.yml.enc"
+# Or load in playbooks with:
+#   - name: Load encrypted secrets
+#     ansible.builtin.include_vars:
+#       file: all_secrets.yml.enc
+#       name: secrets
+
 homelab_hostname: becklab
 homelab_ip: 172.16.0.7
 ops_user: root
 
 # ── OpenNebula 7.2 ────────────────────────────────────────────────────────────
-one_admin_password: "changeme"   # override with -e one_admin_password=<secret> or vault
-
 # Internal VM network — isolated bridge (one0), NAT masqueraded to internet.
 # Used for kubelet / control-plane traffic between server and workers.
 one_int_bridge: one0
@@ -78,7 +85,6 @@ one_media_image_size_mb: 41943040    # 40 TiB (40 * 1024 * 1024 MB)
 
 # ── K3s ───────────────────────────────────────────────────────────────────────
 k3s_version: v1.32.0+k3s1
-k3s_token: ""
 k3s_disable:
   - traefik
   - servicelb
@@ -114,7 +120,7 @@ ntp_servers:
 firewall_allowed_ports:
   - { port: "22",   proto: tcp, comment: SSH }
   - { port: "9869", proto: tcp, comment: "OpenNebula Sunstone" }
-  - { port: "2616", proto: tcp, comment: "OpenNebula FireEdge" }
+  - { port: "2616", proto: tcp, comment: OpenNebula FireEdge }
   - { port: "2633", proto: tcp, comment: "OpenNebula API (oned)" }
   - { port: "29876", proto: tcp, comment: "OpenNebula Gate" }
   - { port: "80",   proto: tcp, comment: HTTP }
