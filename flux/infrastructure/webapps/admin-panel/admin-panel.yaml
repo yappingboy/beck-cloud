@@ -9,7 +9,7 @@ spec:
     - websecure
   routes:
     - kind: Rule
-      match: Host(`admin.beckcloud.cloud`) || Host(`admin.becklab.cloud`)
+      match: Host(`admin.becklab.cloud`)
       services:
         - name: admin-panel-static
           port: 80
@@ -103,5 +103,4 @@ spec:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - admin.beckcloud.cloud
     - admin.becklab.cloud
