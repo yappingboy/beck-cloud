@@ -4,11 +4,16 @@ kind: Kustomization
 resources:
   - admin-panel.yaml
 
+# Copy static files into the kustomization directory so kustomize
+# can read them. The files are managed at docs/brand/website/admin/
+# and linked here so kustomize build works with default restrictions.
+# NOTE: This directory is synced by the build pipeline or manually.
+
 configMapGenerator:
   - name: admin-panel-content
     namespace: webapps
     files:
-      - index.html=../../../../../docs/brand/website/admin/index.html
-      - admin.css=../../../../../docs/brand/website/admin/css/admin.css
-      - admin.js=../../../../../docs/brand/website/admin/js/admin.js
-    behavior: merge
+      - index.html=static/index.html
+      - admin.css=static/admin.css
+      - admin.js=static/admin.js
+    behavior: replace
