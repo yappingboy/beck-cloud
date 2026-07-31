@@ -91,6 +91,11 @@ Comprehensive docs in `beck-cloud/docs/`:
 8. Keycloak pods get killed by CPU quota — identity namespace limited to 6 cores CPU. Keycloak needs ~1 core. Reduce its limits if other pods exceed quota.
 9. `secret-keycloak` must exist in identity ns for audit-sync job (it's actually populated from audit-sync-secrets data).
 10. oauth2-proxy HelmRelease upgrade timeout was 60s — too short. Increased to 5m.
+11. **Never manually patch secrets with `kubectl apply/patch`.** Always fix the SOPS-encrypted manifest in the repo, commit, push, and let Flux apply. Manual patches break Flux drift detection.
+12. **Always verify new tokens are valid** before putting them in secrets — test with `curl -s -o /dev/null -w "%{http_code}" -H "Authorization: Bearer <token>" https://api.github.com` first.
+13. **Every service directory under `flux/infrastructure/` needs a `kustomization.yaml`**, even if it only lists one YAML file in `resources:`. Without it, kustomize treats the directory as a nested kustomization and fails with `"error decrypting env sources: no kustomization file found"`. This is required by kustomize's directory traversal — when a parent kustomization references a directory name as a resource, kustomize must find `kustomization.yaml` inside it.
+14. **When restructuring namespaces per FILING-SYSTEM.md**, after moving YAML files into service subdirectories, generate `kustomization.yaml` for each service directory listing its YAML files in `resources:`. This is a mandatory step, not optional.
+15. `flux-system` Kustomization has interval 10m — stale status messages in `kubectl get kustomizations` may persist for up to 10m. Use `kubectl annotate kustomization <name> --overwrite fluxcd.io/force-sync=$(date +%s)` to force immediate re-check.
 
 ### Traefik Dashboard Fix (2026-07-29)
 
