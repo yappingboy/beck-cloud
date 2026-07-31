@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: identity
 
 resources:
+  - certificate.yaml
   - secret-user-invite.yaml
   - secret-ghcr-identity.yaml
   - deployment.yaml
