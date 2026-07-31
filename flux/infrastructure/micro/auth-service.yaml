@@ -99,9 +99,9 @@ spec:
       serviceAccountName: auth-micro
       containers:
         - name: auth
-          image: becklab/auth-micro:latest
-          imagePullPolicy: IfNotPresent
-          command: ["/auth-micro"]
+          image: ghcr.io/yappingboy/auth-micro:latest
+          imagePullPolicy: Always
+          command: ["./auth-service"]
           args:
             - "--port=8080"
             - "--redis-host=$(REDIS_HOST)"
