@@ -118,6 +118,16 @@ spec:
                 configMapKeyRef:
                   name: auth-micro-config
                   key: REDIS_PORT
+            - name: REDIS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: auth-micro-secrets
+                  key: redis-password
+            - name: JWT_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: auth-micro-secrets
+                  key: jwt-key
           ports:
             - containerPort: 8080
               name: http
