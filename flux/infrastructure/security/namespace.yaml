@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: security
   labels:
-    name: security
+    app.kubernetes.io/name: security
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

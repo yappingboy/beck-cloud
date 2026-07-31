@@ -63,28 +63,24 @@ spec:
       protocol: TCP
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: prowlarr
   namespace: media
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+  labels:
+    app: prowlarr
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`prowlarr.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: prowlarr
+          port: 9696
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
   tls:
-    - hosts:
-        - prowlarr.becklab.cloud
-      secretName: prowlarr-tls
-  rules:
-    - host: prowlarr.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: prowlarr
-                port:
-                  number: 9696
+    secretName: prowlarr-tls

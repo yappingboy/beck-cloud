@@ -16,3 +16,4 @@ resources:
   - sso-redirect
   - sso-middlewares
   - email
+  - pvcs.yaml

@@ -4,3 +4,5 @@ metadata:
   name: 3dprinting
   labels:
     app.kubernetes.io/name: 3dprinting
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

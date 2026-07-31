@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: crowdsec
   labels:
-    name: crowdsec
+    app.kubernetes.io/name: crowdsec
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

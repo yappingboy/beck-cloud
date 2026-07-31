@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: cert-manager
   labels:
-    name: cert-manager
+    app.kubernetes.io/name: cert-manager
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

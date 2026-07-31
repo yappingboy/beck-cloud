@@ -59,28 +59,24 @@ spec:
       protocol: TCP
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: jellyseerr
   namespace: media
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-media-chain@kubernetescrd
+  labels:
+    app: jellyseerr
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`requests.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: jellyseerr
+          port: 5055
+      middlewares:
+        - name: sso-media-chain
+          namespace: identity
   tls:
-    - hosts:
-        - requests.becklab.cloud
-      secretName: jellyseerr-tls
-  rules:
-    - host: requests.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: jellyseerr
-                port:
-                  number: 5055
+    secretName: jellyseerr-tls

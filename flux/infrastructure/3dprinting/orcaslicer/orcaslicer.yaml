@@ -67,30 +67,25 @@ spec:
       name: https
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: orcaslicer
   namespace: 3dprinting
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
-    # Skip upstream SSL verification (linuxserver uses self-signed cert internally)
-    traefik.ingress.kubernetes.io/service.serversscheme: https
+  labels:
+    app: orcaslicer
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`slicer.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: orcaslicer
+          port: 3001
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
   tls:
-    - hosts:
-        - slicer.becklab.cloud
-      secretName: orcaslicer-tls
-  rules:
-    - host: slicer.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: orcaslicer
-                port:
-                  number: 3001
+    secretName: orcaslicer-tls

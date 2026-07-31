@@ -212,28 +212,25 @@ spec:
       targetPort: 3214
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: manyfold
   namespace: 3dprinting
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+  labels:
+    app: manyfold
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`manyfold.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
   tls:
-    - hosts:
-        - manyfold.becklab.cloud
-      secretName: manyfold-tls
-  rules:
-    - host: manyfold.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: manyfold
-                port:
-                  number: 3214
+    secretName: manyfold-tls

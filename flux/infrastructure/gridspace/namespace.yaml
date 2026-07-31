@@ -3,5 +3,6 @@ kind: Namespace
 metadata:
   name: gridspace
   labels:
+    app.kubernetes.io/name: gridspace
     app.kubernetes.io/part-of: beck-cloud
-    team: personal
+    app.kubernetes.io/managed-by: flux

@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: media
   labels:
-    name: media
+    app.kubernetes.io/name: media
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

@@ -3,5 +3,6 @@ kind: Namespace
 metadata:
   name: webapps
   labels:
+    app.kubernetes.io/name: webapps
     app.kubernetes.io/part-of: beck-cloud
-    team: personal
+    app.kubernetes.io/managed-by: flux

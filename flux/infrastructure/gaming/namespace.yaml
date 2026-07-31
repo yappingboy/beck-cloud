@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: gaming
   labels:
-    name: gaming
+    app.kubernetes.io/name: gaming
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

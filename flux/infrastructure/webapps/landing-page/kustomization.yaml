@@ -4,3 +4,4 @@ resources:
   - landing-page.yaml
   - silex.yaml
   - secret-landing-directus.yaml
+  - certificate.yaml

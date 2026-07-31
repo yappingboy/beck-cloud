@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: traefik
   labels:
-    name: traefik
+    app.kubernetes.io/name: traefik
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

@@ -78,27 +78,21 @@ spec:
       protocol: TCP
   type: ClusterIP
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: jellyfin
   namespace: media
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
+  labels:
+    app: jellyfin
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`jellyfin.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: jellyfin
+          port: 8096
   tls:
-    - hosts:
-        - jellyfin.becklab.cloud
-      secretName: jellyfin-tls
-  rules:
-    - host: jellyfin.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: jellyfin
-                port:
-                  number: 8096
+    secretName: jellyfin-tls

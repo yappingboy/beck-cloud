@@ -3,4 +3,6 @@ kind: Namespace
 metadata:
   name: velero
   labels:
-    name: velero
+    app.kubernetes.io/name: velero
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

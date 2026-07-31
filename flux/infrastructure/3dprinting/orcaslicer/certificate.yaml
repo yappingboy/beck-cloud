@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: orcaslicer
+  namespace: 3dprinting
+spec:
+  secretName: orcaslicer-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - slicer.becklab.cloud

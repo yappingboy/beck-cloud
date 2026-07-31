@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - qbit-gluetun.yaml
   - secret-gluetun.yaml
+  - certificate.yaml

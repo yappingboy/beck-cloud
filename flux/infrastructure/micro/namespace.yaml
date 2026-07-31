@@ -3,5 +3,6 @@ kind: Namespace
 metadata:
   name: micro
   labels:
-    name: micro
-    app.kubernetes.io/name: micro-services
+    app.kubernetes.io/name: micro
+    app.kubernetes.io/part-of: beck-cloud
+    app.kubernetes.io/managed-by: flux

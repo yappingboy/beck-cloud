@@ -10,86 +10,6 @@
 #   8443 — crafty web dashboard (HTTPS, terminated by traefik)
 #   25565 — minecraft server (NodePort 30065 for external players)
 ---
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crafty-config
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 1Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crafty-world
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 20Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crafty-import
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 20Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crafty-logs
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 5Gi
----
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: crafty-backup
-  namespace: gaming
-  labels:
-    app: crafty
-spec:
-  accessModes:
-    - ReadWriteOnce
-  storageClassName: local-path
-  resources:
-    requests:
-      storage: 20Gi
----
-
-
-
-
-
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -176,9 +96,7 @@ spec:
         - name: import
           persistentVolumeClaim:
             claimName: crafty-import
-               
 ---
-
 # Services
 ---
 apiVersion: v1
@@ -199,59 +117,25 @@ spec:
       port: 8123
       targetPort: 8123
   type: ClusterIP
-
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
-  name: crafty
+  name: crafty-controller
   namespace: gaming
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
+  labels:
+    app: crafty-controller
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`crafty.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: crafty-controller
+          port: 8080
   tls:
-    - hosts:
-      - crafty.becklab.cloud
-      secretName: crafty-tls
-  rules:
-    - host: crafty.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                 name: crafty
-                 port:
-                   number: 8443
-#---
-#apiVersion: networking.k8s.io/v1
-#kind: Ingress
-#metadata:
-#  name: crafty
-#  namespace: gaming
-#  annotations:
-#    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-#    cert-manager.io/cluster-issuer: letsencrypt-prod
-#    traefik.ingress.kubernetes.io/router.middlewares: identity-sso-admin-chain@kubernetescrd
-#spec:
-#  tls:
-#    - hosts:
-#      - dynmap.becklab.cloud
-#      secretName: dynmap-tls
-#  rules:
-#    - host: dynmap.becklab.cloud
-#      http:
-#        paths:
-#          - path: /
-#            pathType: Prefix
-#            backend:
-#              service:
-#                 name: crafty
-#                 port:
-#                   number: 8123
+    secretName: crafty-controller-tls
 ---
 # NodePort — external minecraft players
 apiVersion: v1

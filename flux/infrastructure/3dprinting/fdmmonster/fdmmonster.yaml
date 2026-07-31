@@ -63,28 +63,25 @@ spec:
       targetPort: 4000
   type: NodePort
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
 metadata:
   name: fdmmonster
   namespace: 3dprinting
-  annotations:
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    cert-manager.io/cluster-issuer: letsencrypt-prod
-    traefik.ingress.kubernetes.io/middlewares: identity-sso-admin-chain@kubernetescrd
+  labels:
+    app: fdmmonster
 spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`fdm.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: fdmmonster
+          port: 4000
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
   tls:
-    - hosts:
-        - fdm.becklab.cloud
-      secretName: fdmmonster-tls
-  rules:
-    - host: fdm.becklab.cloud
-      http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: fdmmonster
-                port:
-                  number: 4000
+    secretName: fdmmonster-tls

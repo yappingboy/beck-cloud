@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - secret-tdarr.yaml
   - tdarr.yaml
+  - certificate.yaml
