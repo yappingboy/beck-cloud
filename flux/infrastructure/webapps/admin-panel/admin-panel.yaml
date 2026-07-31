@@ -114,6 +114,11 @@ data:
             alias /usr/share/nginx/html/;
         }
 
+        # /js/admin.js → /usr/share/nginx/html/admin.js
+        location /js/ {
+            alias /usr/share/nginx/html/;
+        }
+
         error_page   500 502 503 504  /50x.html;
         location = /50x.html {
             root   /usr/share/nginx/html;
