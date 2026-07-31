@@ -5,18 +5,14 @@ namespace: identity
 
 resources:
   - namespace.yaml
-  - secret-lldap.yaml
-  - secret-keycloak.yaml
-  - secret-oauth2-proxy.yaml
-  - secret-redis.yaml
-  - redis.yaml
-  - lldap.yaml
-  - keycloak.yaml
-  - oauth2-proxy.yaml
-  - oauth2-proxy-media.yaml
-  - logout-page.yaml
-  - sso-redirect.yaml
-  - sso-middlewares.yaml
+  - secret-lldap
+  - secret-keycloak
+  - redis
+  - lldap
+  - keycloak
+  - oauth2-proxy
+  - oauth2-proxy-media
+  - logout-page
+  - sso-redirect
+  - sso-middlewares
   - email
-
-

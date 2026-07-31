@@ -3,6 +3,4 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
-  - grid-apps.yaml
-  - ingressroutes.yaml
-  - certificates.yaml
+  - gridspace-app
