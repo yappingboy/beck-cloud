@@ -57,632 +57,603 @@ metadata:
   name: sudoku-meals-html
   namespace: webapps
 data:
-  index.html: "<!DOCTYPE html>\\n<html lang=\\\"en\\\">\\n<head>\\n<meta charset=\\\
-    \"UTF-8\\\">\\n<meta name=\\\"viewport\\\" content=\\\"width=device-width, initial-scale=1.0\\\
-    \">\\n<title>Sudoku Meals</title>\\n<link rel=\\\"preconnect\\\" href=\\\"https://fonts.googleapis.com\\\
-    \">\\n<link href=\\\"https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap\\\
-    \" rel=\\\"stylesheet\\\">\\n<style>\\n  :root {\\n    --bg: #1a1714;\\n    --surface:\
-    \ #252119;\\n    --surface2: #2f2a20;\\n    --border: #3d372a;\\n    --text: #e8e0d4;\\\
-    n    --text-dim: #9a8e7e;\\n    --accent-protein: #d4735b;\\n    --accent-protein-bg:\
-    \ rgba(212,115,91,0.12);\\n    --accent-veg: #6db86e;\\n    --accent-veg-bg: rgba(109,184,110,0.12);\\\
-    n    --accent-starch: #d4a843;\\n    --accent-starch-bg: rgba(212,168,67,0.12);\\\
-    n    --accent-spice: #9b7bd4;\\n    --accent-spice-bg: rgba(155,123,212,0.12);\\\
-    n    --accent-shopping: #43a8d4;\\n    --accent-shopping-bg: rgba(67,168,212,0.12);\\\
-    n  }\\n\\n  * { margin: 0; padding: 0; box-sizing: border-box; }\\n\\n  body {\\\
-    n    background: var(--bg);\\n    color: var(--text);\\n    font-family: 'IBM\
-    \ Plex Sans', sans-serif;\\n    font-weight: 300;\\n    line-height: 1.6;\\n \
-    \   min-height: 100vh;\\n  }\\n\\n  /* Grain overlay */\\n  body::before {\\n\
-    \    content: '';\\n    position: fixed;\\n    inset: 0;\\n    opacity: 0.03;\\\
-    n    pointer-events: none;\\n    background-image: url(\\\"data:image/svg+xml,%3Csvg\
-    \ viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence\
-    \ type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect\
-    \ width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E\\\");\\\
-    n    background-size: 256px;\\n  }\\n\\n  .app {\\n    max-width: 1200px;\\n \
-    \   margin: 0 auto;\\n    padding: 2rem 1.5rem 6rem;\\n  }\\n\\n  /* Header */\\\
-    n  .header {\\n    text-align: center;\\n    margin-bottom: 3rem;\\n    padding-bottom:\
-    \ 2rem;\\n    border-bottom: 1px solid var(--border);\\n  }\\n\\n  .header h1\
-    \ {\\n    font-family: 'DM Serif Display', serif;\\n    font-size: 2.8rem;\\n\
-    \    font-weight: 400;\\n    letter-spacing: -0.02em;\\n    margin-bottom: 0.5rem;\\\
-    n    background: linear-gradient(135deg, var(--accent-protein), var(--accent-starch));\\\
-    n    -webkit-background-clip: text;\\n    -webkit-text-fill-color: transparent;\\\
-    n    background-clip: text;\\n  }\\n\\n  .header p {\\n    color: var(--text-dim);\\\
-    n    font-size: 0.95rem;\\n    font-family: 'IBM Plex Mono', monospace;\\n   \
-    \ font-size: 0.8rem;\\n    letter-spacing: 0.08em;\\n    text-transform: uppercase;\\\
-    n  }\\n\\n  /* Navigation Tabs */\\n  .tabs {\\n    display: flex;\\n    gap:\
-    \ 0.25rem;\\n    margin-bottom: 2rem;\\n    border-bottom: 1px solid var(--border);\\\
-    n    padding-bottom: 0;\\n    overflow-x: auto;\\n  }\\n\\n  .tab-btn {\\n   \
-    \ background: none;\\n    border: none;\\n    color: var(--text-dim);\\n    font-family:\
-    \ 'IBM Plex Mono', monospace;\\n    font-size: 0.8rem;\\n    letter-spacing: 0.06em;\\\
-    n    text-transform: uppercase;\\n    padding: 0.75rem 1.25rem;\\n    cursor:\
-    \ pointer;\\n    border-bottom: 2px solid transparent;\\n    margin-bottom: -1px;\\\
-    n    transition: color 0.2s, border-color 0.2s;\\n    white-space: nowrap;\\n\
-    \  }\\n\\n  .tab-btn:hover { color: var(--text); }\\n  .tab-btn.active {\\n  \
-    \  color: var(--text);\\n    border-bottom-color: var(--accent-protein);\\n  }\\\
-    n\\n  /* Sections */\\n  .section { display: none; }\\n  .section.active { display:\
-    \ block; }\\n\\n  /* Grid Config */\\n  .grid-config {\\n    display: flex;\\\
-    n    flex-direction: column;\\n    align-items: center;\\n    gap: 2rem;\\n  }\\\
-    n\\n  /* Sudoku grid */\\n  .sudoku-grid {\\n    display: grid;\\n    grid-template-columns:\
-    \ 200px 1fr;\\n    gap: 0;\\n    border: 3px solid var(--text-dim);\\n    border-radius:\
-    \ 8px;\\n    overflow: hidden;\\n    background: var(--surface);\\n  }\\n\\n \
-    \ @media (max-width: 768px) {\\n    .sudoku-grid {\\n      grid-template-columns:\
-    \ 1fr;\\n      width: 100%;\\n    }\\n  }\\n\\n  /* Category labels */\\n  .sudoku-label\
-    \ {\\n    display: flex;\\n    align-items: center;\\n    justify-content: center;\\\
-    n    padding: 1.5rem 1rem;\\n    font-family: 'DM Serif Display', serif;\\n  \
-    \  font-size: 1.1rem;\\n    text-align: center;\\n    line-height: 1.3;\\n  }\\\
-    n  .sudoku-label.protein-label {\\n    background: var(--accent-protein-bg);\\\
-    n    color: var(--accent-protein);\\n    border-right: 3px solid var(--text-dim);\\\
-    n  }\\n  .sudoku-label.veg-label {\\n    background: var(--accent-veg-bg);\\n\
-    \    color: var(--accent-veg);\\n    border-right: 3px solid var(--text-dim);\\\
-    n  }\\n  .sudoku-label.starch-label {\\n    background: var(--accent-starch-bg);\\\
-    n    color: var(--accent-starch);\\n    border-right: 3px solid var(--text-dim);\\\
-    n  }\\n\\n  /* Sudoku cell groups (3 columns per row) */\\n  .sudoku-row-group\
-    \ {\\n    display: grid;\\n    grid-template-columns: 1fr 1fr 1fr;\\n    gap:\
-    \ 0;\\n    background: var(--surface);\\n  }\\n\\n  .sudoku-cell {\\n    position:\
-    \ relative;\\n    border: 1px solid var(--border);\\n    display: flex;\\n   \
-    \ flex-direction: column;\\n    align-items: center;\\n    padding: 0.75rem 0.5rem;\\\
-    n    min-height: 100px;\\n    transition: background 0.15s;\\n  }\\n  .sudoku-cell:hover\
-    \ { background: var(--surface2); }\\n\\n  /* Thick borders between column groups\
-    \ */\\n  .sudoku-cell:nth-child(3n+1) { border-left: 3px solid var(--text-dim);\
-    \ }\\n  .sudoku-cell:nth-child(3n) { border-right: 3px solid var(--text-dim);\
-    \ }\\n\\n  /* Slot number */\\n  .cell-slot {\\n    font-family: 'IBM Plex Mono',\
-    \ monospace;\\n    font-size: 0.6rem;\\n    letter-spacing: 0.15em;\\n    text-transform:\
-    \ uppercase;\\n    color: var(--text-dim);\\n    margin-bottom: 0.4rem;\\n  }\\\
-    n\\n  .sudoku-cell input[type=\\\"text\\\"] {\\n    width: 100%;\\n    background:\
-    \ transparent;\\n    border: 1px solid transparent;\\n    border-radius: 4px;\\\
-    n    padding: 0.4rem 0.5rem;\\n    color: var(--text);\\n    font-family: 'IBM\
-    \ Plex Sans', sans-serif;\\n    font-size: 0.95rem;\\n    font-weight: 500;\\\
-    n    text-align: center;\\n    outline: none;\\n    transition: border-color 0.2s,\
-    \ background 0.15s;\\n  }\\n  .sudoku-cell input[type=\\\"text\\\"]:focus {\\\
-    n    border-color: var(--text-dim);\\n    background: var(--surface2);\\n  }\\\
-    n  .sudoku-cell.protein-cell input[type=\\\"text\\\"]:focus { border-color: var(--accent-protein);\
-    \ }\\n  .sudoku-cell.veg-cell input[type=\\\"text\\\"]:focus { border-color: var(--accent-veg);\
-    \ }\\n  .sudoku-cell.starch-cell input[type=\\\"text\\\"]:focus { border-color:\
-    \ var(--accent-starch); }\\n\\n  .sudoku-cell.protein-cell input[type=\\\"text\\\
-    \"] { color: var(--accent-protein); }\\n  .sudoku-cell.veg-cell input[type=\\\"\
-    text\\\"] { color: var(--accent-veg); }\\n  .sudoku-cell.starch-cell input[type=\\\
-    \"text\\\"] { color: var(--accent-starch); }\\n\\n  .remove-cell-btn {\\n    position:\
-    \ absolute;\\n    top: 4px;\\n    right: 4px;\\n    background: none;\\n    border:\
-    \ none;\\n    color: var(--text-dim);\\n    cursor: pointer;\\n    font-size:\
-    \ 0.9rem;\\n    line-height: 1;\\n    opacity: 0;\\n    transition: opacity 0.15s,\
-    \ color 0.15s;\\n    padding: 2px;\\n  }\\n  .sudoku-cell:hover .remove-cell-btn\
-    \ { opacity: 0.6; }\\n  .remove-cell-btn:hover { opacity: 1 !important; color:\
-    \ var(--accent-protein); }\\n\\n  /* Empty cell add button */\\n  .add-cell-btn\
-    \ {\\n    width: 100%;\\n    background: transparent;\\n    border: 2px dashed\
-    \ var(--border);\\n    border-radius: 4px;\\n    padding: 1.5rem 0.5rem;\\n  \
-    \  color: var(--text-dim);\\n    font-family: 'IBM Plex Mono', monospace;\\n \
-    \   font-size: 0.8rem;\\n    cursor: pointer;\\n    transition: border-color 0.2s,\
-    \ color 0.2s, background 0.15s;\\n    text-transform: uppercase;\\n    letter-spacing:\
-    \ 0.05em;\\n    display: flex;\\n    flex-direction: column;\\n    align-items:\
-    \ center;\\n    gap: 0.4rem;\\n  }\\n  .add-cell-btn:hover {\\n    border-color:\
-    \ var(--text-dim);\\n    color: var(--text);\\n    background: var(--surface2);\\\
-    n  }\\n  .add-cell-btn .plus {\\n    font-size: 1.5rem;\\n    line-height: 1;\\\
-    n  }\\n\\n  /* Legend */\\n  .sudoku-legend {\\n    display: flex;\\n    gap:\
-    \ 2rem;\\n    justify-content: center;\\n    flex-wrap: wrap;\\n    margin-top:\
-    \ 1rem;\\n  }\\n  .legend-item {\\n    display: flex;\\n    align-items: center;\\\
-    n    gap: 0.5rem;\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size:\
-    \ 0.7rem;\\n    letter-spacing: 0.08em;\\n    text-transform: uppercase;\\n  \
-    \  color: var(--text-dim);\\n  }\\n  .legend-dot {\\n    width: 10px;\\n    height:\
-    \ 10px;\\n    border-radius: 2px;\\n  }\\n  .legend-dot.protein-dot { background:\
-    \ var(--accent-protein); }\\n  .legend-dot.veg-dot { background: var(--accent-veg);\
-    \ }\\n  .legend-dot.starch-dot { background: var(--accent-starch); }\\n\\n  /*\
-    \ Combo preview */\\n  .combo-preview {\\n    margin-top: 1.5rem;\\n    padding:\
-    \ 1rem 1.5rem;\\n    background: var(--surface);\\n    border: 1px solid var(--border);\\\
-    n    border-radius: 8px;\\n    text-align: center;\\n  }\\n  .combo-preview .label\
-    \ {\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size: 0.65rem;\\\
-    n    letter-spacing: 0.1em;\\n    text-transform: uppercase;\\n    color: var(--text-dim);\\\
-    n    margin-bottom: 0.5rem;\\n  }\\n  .combo-preview .combo {\\n    font-family:\
-    \ 'DM Serif Display', serif;\\n    font-size: 1.2rem;\\n    color: var(--text);\\\
-    n  }\\n  .combo-preview .combo .protein-text { color: var(--accent-protein); }\\\
-    n  .combo-preview .combo .veg-text { color: var(--accent-veg); }\\n  .combo-preview\
-    \ .combo .starch-text { color: var(--accent-starch); }\\n  .combo-preview .count\
-    \ {\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size: 0.75rem;\\\
-    n    color: var(--text-dim);\\n    margin-top: 0.4rem;\\n  }\\n\\n  /* Spice Profiles\
-    \ */\\n  .spice-section { margin-top: 2rem; }\\n\\n  .spice-section h3 {\\n  \
-    \  font-family: 'IBM Plex Mono', monospace;\\n    font-size: 0.75rem;\\n    letter-spacing:\
-    \ 0.1em;\\n    text-transform: uppercase;\\n    color: var(--accent-spice);\\\
-    n    margin-bottom: 1rem;\\n  }\\n\\n  .spice-grid {\\n    display: grid;\\n \
-    \   grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));\\n    gap: 1rem;\\\
-    n  }\\n\\n  @media (max-width: 768px) {\\n    .spice-grid { grid-template-columns:\
-    \ 1fr; }\\n  }\\n\\n  .spice-card {\\n    background: var(--surface);\\n    border:\
-    \ 1px solid var(--border);\\n    border-top: 3px solid var(--accent-spice);\\\
-    n    border-radius: 8px;\\n    padding: 1.25rem;\\n    cursor: pointer;\\n   \
-    \ transition: border-color 0.2s, transform 0.15s;\\n  }\\n  .spice-card:hover\
-    \ {\\n    border-color: var(--accent-spice);\\n    transform: translateY(-1px);\\\
-    n  }\\n  .spice-card.selected {\\n    border-color: var(--accent-spice);\\n  \
-    \  background: var(--accent-spice-bg);\\n  }\\n\\n  .spice-card-header {\\n  \
-    \  display: flex;\\n    justify-content: space-between;\\n    align-items: center;\\\
-    n    margin-bottom: 0.75rem;\\n  }\\n\\n  .spice-card h4 {\\n    font-family:\
-    \ 'DM Serif Display', serif;\\n    font-size: 1.1rem;\\n    font-weight: 400;\\\
-    n  }\\n\\n  .spice-tags {\\n    display: flex;\\n    flex-wrap: wrap;\\n    gap:\
-    \ 0.35rem;\\n  }\\n\\n  .spice-tag {\\n    background: var(--surface2);\\n   \
-    \ border: 1px solid var(--border);\\n    border-radius: 3px;\\n    padding: 0.2rem\
-    \ 0.5rem;\\n    font-size: 0.75rem;\\n    color: var(--text-dim);\\n    font-family:\
-    \ 'IBM Plex Mono', monospace;\\n    cursor: pointer;\\n    transition: all 0.15s;\\\
-    n  }\\n  .spice-tag:hover { border-color: var(--accent-spice); color: var(--text);\
-    \ }\\n  .spice-tag.selected {\\n    background: var(--accent-spice);\\n    color:\
-    \ var(--bg);\\n    border-color: var(--accent-spice);\\n  }\\n\\n  .spice-pairs\
-    \ {\\n    margin-top: 0.5rem;\\n    font-size: 0.8rem;\\n    color: var(--text-dim);\\\
-    n    font-style: italic;\\n  }\\n\\n  .custom-spice-row {\\n    display: flex;\\\
-    n    gap: 0.5rem;\\n    margin-top: 0.5rem;\\n  }\\n\\n  .custom-spice-row input\
-    \ {\\n    flex: 1;\\n    background: var(--surface2);\\n    border: 1px solid\
-    \ var(--border);\\n    border-radius: 4px;\\n    padding: 0.4rem 0.6rem;\\n  \
-    \  color: var(--text);\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size:\
-    \ 0.8rem;\\n    outline: none;\\n  }\\n  .custom-spice-row input:focus { border-color:\
-    \ var(--accent-spice); }\\n\\n  .custom-spice-btn {\\n    background: var(--accent-spice);\\\
-    n    border: none;\\n    border-radius: 4px;\\n    padding: 0.4rem 0.8rem;\\n\
-    \    color: var(--bg);\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size:\
-    \ 0.75rem;\\n    cursor: pointer;\\n    font-weight: 500;\\n    text-transform:\
-    \ uppercase;\\n    letter-spacing: 0.05em;\\n  }\\n\\n  /* Meal Matrix */\\n \
-    \ .matrix-container {\\n    background: var(--surface);\\n    border: 1px solid\
-    \ var(--border);\\n    border-radius: 8px;\\n    overflow: hidden;\\n    margin-bottom:\
-    \ 2rem;\\n  }\\n\\n  .matrix-header {\\n    display: grid;\\n    grid-template-columns:\
-    \ 60px 1fr 1fr 1fr;\\n    background: var(--surface2);\\n    border-bottom: 1px\
-    \ solid var(--border);\\n  }\\n\\n  .matrix-header div {\\n    padding: 0.75rem\
-    \ 1rem;\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size: 0.7rem;\\\
-    n    letter-spacing: 0.1em;\\n    text-transform: uppercase;\\n    color: var(--text-dim);\\\
-    n  }\\n\\n  .matrix-row {\\n    display: grid;\\n    grid-template-columns: 60px\
-    \ 1fr 1fr 1fr;\\n    border-bottom: 1px solid var(--border);\\n  }\\n  .matrix-row:last-child\
-    \ { border-bottom: none; }\\n\\n  .matrix-row.protein-label {\\n    background:\
-    \ var(--accent-protein-bg);\\n  }\\n  .matrix-row.veg-label {\\n    background:\
-    \ var(--accent-veg-bg);\\n  }\\n  .matrix-row.starch-label {\\n    background:\
-    \ var(--accent-starch-bg);\\n  }\\n\\n  .matrix-num {\\n    padding: 0.75rem 1rem;\\\
-    n    font-family: 'IBM Plex Mono', monospace;\\n    font-size: 0.8rem;\\n    color:\
-    \ var(--text-dim);\\n    border-right: 1px solid var(--border);\\n    display:\
-    \ flex;\\n    align-items: center;\\n  }\\n\\n  .matrix-cell {\\n    padding:\
-    \ 0.75rem 1rem;\\n    font-size: 0.9rem;\\n    display: flex;\\n    align-items:\
-    \ center;\\n    gap: 0.5rem;\\n    cursor: pointer;\\n    transition: background\
-    \ 0.15s;\\n    min-height: 44px;\\n  }\\n  .matrix-cell:hover { background: var(--surface2);\
-    \ }\\n\\n  .matrix-cell.protein-cell { color: var(--accent-protein); font-weight:\
-    \ 500; }\\n  .matrix-cell.veg-cell { color: var(--accent-veg); }\\n  .matrix-cell.starch-cell\
-    \ { color: var(--accent-starch); font-weight: 500; }\\n\\n  .matrix-cell.empty-cell\
-    \ {\\n    color: var(--text-dim);\\n    font-style: italic;\\n    font-size: 0.8rem;\\\
-    n  }\\n\\n  /* Meal checkboxes */\\n  .meal-check {\\n    appearance: none;\\\
-    n    width: 18px;\\n    height: 18px;\\n    border: 2px solid var(--border);\\\
-    n    border-radius: 3px;\\n    cursor: pointer;\\n    flex-shrink: 0;\\n    position:\
-    \ relative;\\n    transition: all 0.15s;\\n  }\\n  .meal-check:hover { border-color:\
-    \ var(--text-dim); }\\n  .meal-check:checked {\\n    background: var(--accent-veg);\\\
-    n    border-color: var(--accent-veg);\\n  }\\n  .meal-check:checked::after {\\\
-    n    content: '\u2713';\\n    position: absolute;\\n    top: 50%;\\n    left:\
-    \ 50%;\\n    transform: translate(-50%, -50%);\\n    color: var(--bg);\\n    font-size:\
-    \ 0.7rem;\\n    font-weight: 700;\\n  }\\n\\n  /* Meal row dimming */\\n  .matrix-row.dimmed\
-    \ { opacity: 0.35; }\\n\\n  /* Recipe Display */\\n  .recipe-panel {\\n    background:\
-    \ var(--surface);\\n    border: 1px solid var(--border);\\n    border-radius:\
-    \ 8px;\\n    padding: 1.5rem;\\n    margin-bottom: 2rem;\\n  }\\n\\n  .recipe-panel\
-    \ h3 {\\n    font-family: 'DM Serif Display', serif;\\n    font-size: 1.3rem;\\\
-    n    margin-bottom: 1rem;\\n    color: var(--text);\\n  }\\n\\n  .recipe-detail\
-    \ {\\n    display: grid;\\n    grid-template-columns: 1fr 1fr 1fr;\\n    gap:\
-    \ 1rem;\\n    margin-bottom: 1rem;\\n  }\\n\\n  @media (max-width: 768px) {\\\
-    n    .recipe-detail { grid-template-columns: 1fr; }\\n  }\\n\\n  .recipe-detail-item\
-    \ {\\n    padding: 0.75rem;\\n    border-radius: 6px;\\n  }\\n  .recipe-detail-item.protein-detail\
-    \ {\\n    background: var(--accent-protein-bg);\\n    border-left: 3px solid var(--accent-protein);\\\
-    n  }\\n  .recipe-detail-item.veg-detail {\\n    background: var(--accent-veg-bg);\\\
-    n    border-left: 3px solid var(--accent-veg);\\n  }\\n  .recipe-detail-item.starch-detail\
-    \ {\\n    background: var(--accent-starch-bg);\\n    border-left: 3px solid var(--accent-starch);\\\
-    n  }\\n\\n  .recipe-detail-item .label {\\n    font-family: 'IBM Plex Mono', monospace;\\\
-    n    font-size: 0.65rem;\\n    letter-spacing: 0.1em;\\n    text-transform: uppercase;\\\
-    n    color: var(--text-dim);\\n    margin-bottom: 0.25rem;\\n  }\\n\\n  .recipe-detail-item\
-    \ .value {\\n    font-size: 1rem;\\n    font-weight: 400;\\n  }\\n\\n  .recipe-detail-item.protein-detail\
-    \ .value { color: var(--accent-protein); }\\n  .recipe-detail-item.veg-detail\
-    \ .value { color: var(--accent-veg); }\\n  .recipe-detail-item.starch-detail .value\
-    \ { color: var(--accent-starch); }\\n\\n  .recipe-placeholder {\\n    text-align:\
-    \ center;\\n    padding: 3rem;\\n    color: var(--text-dim);\\n    font-style:\
-    \ italic;\\n  }\\n\\n  /* Shopping List */\\n  .shopping-grid {\\n    display:\
-    \ grid;\\n    grid-template-columns: repeat(3, 1fr);\\n    gap: 1.5rem;\\n  }\\\
-    n\\n  @media (max-width: 768px) {\\n    .shopping-grid { grid-template-columns:\
-    \ 1fr; }\\n  }\\n\\n  .shopping-card {\\n    background: var(--surface);\\n  \
-    \  border: 1px solid var(--border);\\n    border-radius: 8px;\\n    padding: 1.25rem;\\\
-    n  }\\n  .shopping-card.protein-s { border-top: 3px solid var(--accent-protein);\
-    \ }\\n  .shopping-card.veg-s { border-top: 3px solid var(--accent-veg); }\\n \
-    \ .shopping-card.starch-s { border-top: 3px solid var(--accent-starch); }\\n \
-    \ .shopping-card.spice-s { border-top: 3px solid var(--accent-spice); }\\n\\n\
-    \  .shopping-card h4 {\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size:\
-    \ 0.75rem;\\n    letter-spacing: 0.1em;\\n    text-transform: uppercase;\\n  \
-    \  color: var(--text-dim);\\n    margin-bottom: 1rem;\\n  }\\n\\n  .shopping-card.protein-s\
-    \ h4 { color: var(--accent-protein); }\\n  .shopping-card.veg-s h4 { color: var(--accent-veg);\
-    \ }\\n  .shopping-card.starch-s h4 { color: var(--accent-starch); }\\n  .shopping-card.spice-s\
-    \ h4 { color: var(--accent-spice); }\\n\\n  .shopping-item {\\n    display: flex;\\\
-    n    align-items: center;\\n    gap: 0.5rem;\\n    padding: 0.4rem 0;\\n  }\\\
-    n\\n  .shop-check {\\n    appearance: none;\\n    width: 16px;\\n    height: 16px;\\\
-    n    border: 2px solid var(--border);\\n    border-radius: 3px;\\n    cursor:\
-    \ pointer;\\n    flex-shrink: 0;\\n    position: relative;\\n    transition: all\
-    \ 0.15s;\\n  }\\n  .shop-check:hover { border-color: var(--text-dim); }\\n  .shop-check:checked\
-    \ {\\n    background: var(--accent-shopping);\\n    border-color: var(--accent-shopping);\\\
-    n  }\\n  .shop-check:checked::after {\\n    content: '\u2713';\\n    position:\
-    \ absolute;\\n    top: 50%;\\n    left: 50%;\\n    transform: translate(-50%,\
-    \ -50%);\\n    color: var(--bg);\\n    font-size: 0.65rem;\\n    font-weight:\
-    \ 700;\\n  }\\n\\n  .shopping-item span {\\n    font-size: 0.9rem;\\n    transition:\
-    \ all 0.15s;\\n  }\\n  .shopping-item span.checked-item {\\n    text-decoration:\
-    \ line-through;\\n    color: var(--text-dim);\\n  }\\n\\n  .add-spice-btn {\\\
-    n    background: none;\\n    border: 1px dashed var(--border);\\n    border-radius:\
-    \ 4px;\\n    padding: 0.4rem 0.8rem;\\n    color: var(--text-dim);\\n    font-family:\
-    \ 'IBM Plex Mono', monospace;\\n    font-size: 0.75rem;\\n    cursor: pointer;\\\
-    n    margin-top: 0.5rem;\\n    transition: all 0.2s;\\n    width: 100%;\\n   \
-    \ text-transform: uppercase;\\n    letter-spacing: 0.05em;\\n  }\\n  .add-spice-btn:hover\
-    \ { border-color: var(--accent-spice); color: var(--text); }\\n\\n  /* Stats bar\
-    \ */\\n  .stats-bar {\\n    display: flex;\\n    gap: 2rem;\\n    justify-content:\
-    \ center;\\n    margin-bottom: 2rem;\\n    flex-wrap: wrap;\\n  }\\n\\n  .stat\
-    \ {\\n    text-align: center;\\n  }\\n\\n  .stat-number {\\n    font-family: 'DM\
-    \ Serif Display', serif;\\n    font-size: 2rem;\\n    background: linear-gradient(135deg,\
-    \ var(--accent-protein), var(--accent-starch));\\n    -webkit-background-clip:\
-    \ text;\\n    -webkit-text-fill-color: transparent;\\n    background-clip: text;\\\
-    n  }\\n\\n  .stat-label {\\n    font-family: 'IBM Plex Mono', monospace;\\n  \
-    \  font-size: 0.65rem;\\n    letter-spacing: 0.1em;\\n    text-transform: uppercase;\\\
-    n    color: var(--text-dim);\\n  }\\n\\n  /* Action buttons */\\n  .action-row\
-    \ {\\n    display: flex;\\n    gap: 1rem;\\n    margin-top: 2rem;\\n    justify-content:\
-    \ center;\\n    flex-wrap: wrap;\\n  }\\n\\n  .action-btn {\\n    background:\
-    \ var(--surface);\\n    border: 1px solid var(--border);\\n    border-radius:\
-    \ 6px;\\n    padding: 0.6rem 1.5rem;\\n    color: var(--text-dim);\\n    font-family:\
-    \ 'IBM Plex Mono', monospace;\\n    font-size: 0.8rem;\\n    cursor: pointer;\\\
-    n    transition: all 0.2s;\\n    text-transform: uppercase;\\n    letter-spacing:\
-    \ 0.05em;\\n  }\\n  .action-btn:hover {\\n    border-color: var(--text-dim);\\\
-    n    color: var(--text);\\n  }\\n  .action-btn.primary {\\n    background: var(--accent-protein);\\\
-    n    border-color: var(--accent-protein);\\n    color: var(--bg);\\n    font-weight:\
-    \ 500;\\n  }\\n  .action-btn.primary:hover {\\n    opacity: 0.9;\\n  }\\n\\n \
-    \ /* Responsive */\\n  @media (max-width: 768px) {\\n    .header h1 { font-size:\
-    \ 2rem; }\\n    .matrix-header { grid-template-columns: 40px 1fr 1fr 1fr; }\\\
-    n    .matrix-row { grid-template-columns: 40px 1fr 1fr 1fr; }\\n    .matrix-num\
-    \ { padding: 0.5rem 0.5rem; }\\n  }\\n\\n  /* Scrollbar */\\n  ::-webkit-scrollbar\
-    \ { width: 6px; }\\n  ::-webkit-scrollbar-track { background: var(--bg); }\\n\
-    \  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px;\
-    \ }\\n</style>\\n</head>\\n<body>\\n\\n<div class=\\\"app\\\">\\n  <div class=\\\
-    \"header\\\">\\n    <h1>Sudoku Meals</h1>\\n    <p>3 proteins \xD7 3 vegetables\
-    \ \xD7 3 starches = 27 meals</p>\\n  </div>\\n\\n  <div class=\\\"tabs\\\">\\\
-    n    <button class=\\\"tab-btn active\\\" data-tab=\\\"config\\\">Grid</button>\\\
-    n    <button class=\\\"tab-btn\\\" data-tab=\\\"spices\\\">Spice Profiles</button>\\\
-    n    <button class=\\\"tab-btn\\\" data-tab=\\\"meals\\\">Meal Matrix</button>\\\
-    n    <button class=\\\"tab-btn\\\" data-tab=\\\"shopping\\\">Shopping List</button>\\\
-    n  </div>\\n\\n  <!-- GRID CONFIG -->\\n  <div id=\\\"tab-config\\\" class=\\\"\
-    section active\\\">\\n    <div class=\\\"grid-config\\\">\\n      <div class=\\\
-    \"sudoku-grid\\\">\\n        <!-- Protein row -->\\n        <div class=\\\"sudoku-label\
-    \ protein-label\\\">PROTEINS</div>\\n        <div class=\\\"sudoku-row-group\\\
-    \" id=\\\"protein-grid\\\"></div>\\n\\n        <!-- Vegetable row -->\\n     \
-    \   <div class=\\\"sudoku-label veg-label\\\">VEGETABLES</div>\\n        <div\
-    \ class=\\\"sudoku-row-group\\\" id=\\\"veg-grid\\\"></div>\\n\\n        <!--\
-    \ Starch row -->\\n        <div class=\\\"sudoku-label starch-label\\\">STARCHES</div>\\\
-    n        <div class=\\\"sudoku-row-group\\\" id=\\\"starch-grid\\\"></div>\\n\
-    \      </div>\\n    </div>\\n\\n    <div class=\\\"sudoku-legend\\\">\\n     \
-    \ <div class=\\\"legend-item\\\"><div class=\\\"legend-dot protein-dot\\\"></div>\
-    \ Protein</div>\\n      <div class=\\\"legend-item\\\"><div class=\\\"legend-dot\
-    \ veg-dot\\\"></div> Vegetable</div>\\n      <div class=\\\"legend-item\\\"><div\
-    \ class=\\\"legend-dot starch-dot\\\"></div> Starch</div>\\n    </div>\\n\\n \
-    \   <div class=\\\"combo-preview\\\" id=\\\"combo-preview\\\">\\n      <div class=\\\
-    \"label\\\">Combinations</div>\\n      <div class=\\\"combo\\\"><span class=\\\
-    \"protein-text\\\">\u2014</span> \xD7 <span class=\\\"veg-text\\\">\u2014</span>\
-    \ \xD7 <span class=\\\"starch-text\\\">\u2014</span></div>\\n      <div class=\\\
-    \"count\\\" id=\\\"combo-count\\\"></div>\\n    </div>\\n\\n    <div class=\\\"\
-    action-row\\\">\\n      <button class=\\\"action-btn primary\\\" onclick=\\\"\
-    saveConfig()\\\">Save Grid</button>\\n      <button class=\\\"action-btn\\\" onclick=\\\
-    \"resetConfig()\\\">Reset to Default</button>\\n    </div>\\n  </div>\\n\\n  <!--\
-    \ SPICE PROFILES -->\\n  <div id=\\\"tab-spices\\\" class=\\\"section\\\">\\n\
-    \    <div class=\\\"spice-section\\\">\\n      <h3>Spice Profiles \u2014 click\
-    \ a card to select, then pick spices</h3>\\n      <div class=\\\"spice-grid\\\"\
-    \ id=\\\"spice-grid\\\"></div>\\n    </div>\\n    <div class=\\\"action-row\\\"\
-    >\\n      <button class=\\\"action-btn primary\\\" onclick=\\\"saveSpices()\\\"\
-    >Save Spice Selection</button>\\n    </div>\\n  </div>\\n\\n  <!-- MEAL MATRIX\
-    \ -->\\n  <div id=\\\"tab-meals\\\" class=\\\"section\\\">\\n    <div class=\\\
-    \"stats-bar\\\">\\n      <div class=\\\"stat\\\">\\n        <div class=\\\"stat-number\\\
-    \" id=\\\"stat-total\\\">0</div>\\n        <div class=\\\"stat-label\\\">Total\
-    \ Meals</div>\\n      </div>\\n      <div class=\\\"stat\\\">\\n        <div class=\\\
-    \"stat-number\\\" id=\\\"stat-used\\\">0</div>\\n        <div class=\\\"stat-label\\\
-    \">Used This Week</div>\\n      </div>\\n      <div class=\\\"stat\\\">\\n   \
-    \     <div class=\\\"stat-number\\\" id=\\\"stat-remaining\\\">0</div>\\n    \
-    \    <div class=\\\"stat-label\\\">Remaining</div>\\n      </div>\\n    </div>\\\
-    n\\n    <div class=\\\"matrix-container\\\" id=\\\"meal-matrix\\\"></div>\\n\\\
-    n    <div class=\\\"recipe-panel\\\" id=\\\"recipe-panel\\\">\\n      <div class=\\\
-    \"recipe-placeholder\\\">Click a meal to see details</div>\\n    </div>\\n  </div>\\\
-    n\\n  <!-- SHOPPING LIST -->\\n  <div id=\\\"tab-shopping\\\" class=\\\"section\\\
-    \">\\n    <div class=\\\"shopping-grid\\\" id=\\\"shopping-grid\\\"></div>\\n\
-    \    <div class=\\\"action-row\\\">\\n      <button class=\\\"action-btn\\\" onclick=\\\
-    \"resetShopping()\\\">Reset Checkoffs</button>\\n      <button class=\\\"action-btn\\\
-    \" onclick=\\\"exportShopping()\\\">Copy to Clipboard</button>\\n    </div>\\\
-    n  </div>\\n</div>\\n\\n<script>\\n// ===== DEFAULT DATA =====\\nconst DEFAULT_PROTEINS\
-    \ = ['Fish', 'Chicken', 'Beef'];\\nconst DEFAULT_VEGS = ['Asparagus', 'Carrots',\
-    \ 'Spinach'];\\nconst DEFAULT_STARCHES = ['Rice', 'Sweet Potato', 'White Potato'];\\\
-    n\\nconst DEFAULT_SPICE_PROFILES = [\\n  {\\n    id: 'mediterranean',\\n    name:\
-    \ 'Mediterranean Herb',\\n    spices: ['Garlic', 'Lemon zest', 'Oregano', 'Rosemary',\
-    \ 'Thyme', 'Black pepper'],\\n    pairs: 'Fish, chicken, asparagus, white potato'\\\
-    n  },\\n  {\\n    id: 'southwest',\\n    name: 'Smoky Southwest',\\n    spices:\
-    \ ['Smoked paprika', 'Cumin', 'Garlic powder', 'Chili powder', 'Onion powder',\
-    \ 'Cayenne'],\\n    pairs: 'Beef, chicken, sweet potato, carrots'\\n  },\\n  {\\\
-    n    id: 'curry',\\n    name: 'Warm Curry',\\n    spices: ['Turmeric', 'Cumin',\
-    \ 'Coriander', 'Ginger', 'Cinnamon', 'Cardamom'],\\n    pairs: 'Chicken, fish,\
-    \ carrots, spinach, rice, sweet potato'\\n  },\\n  {\\n    id: 'asian',\\n   \
-    \ name: 'Asian-Inspired',\\n    spices: ['Ginger', 'Garlic', 'Five spice', 'Sesame',\
-    \ 'White pepper', 'Red pepper flakes'],\\n    pairs: 'Beef, fish, spinach, rice,\
-    \ carrots'\\n  },\\n  {\\n    id: 'savory',\\n    name: 'Simple Savory',\\n  \
-    \  spices: ['Garlic powder', 'Onion powder', 'Italian seasoning', 'Salt', 'Black\
-    \ pepper', 'Dried parsley'],\\n    pairs: 'Everything'\\n  },\\n  {\\n    id:\
-    \ 'lemon-herb',\\n    name: 'Lemon Herb & Dill',\\n    spices: ['Dill', 'Lemon\
-    \ pepper', 'Garlic', 'Parsley', 'Chives', 'Capers'],\\n    pairs: 'Fish, asparagus,\
-    \ spinach, white potato, rice'\\n  }\\n];\\n\\n// ===== STATE =====\\nlet state\
-    \ = loadState();\\n\\nfunction defaultState() {\\n  return {\\n    proteins: [...DEFAULT_PROTEINS],\\\
-    n    vegs: [...DEFAULT_VEGS],\\n    starches: [...DEFAULT_STARCHES],\\n    selectedSpices:\
-    \ [],\\n    checkedMeals: {},\\n    checkedShopping: {},\\n    customSpiceProfiles:\
-    \ [],\\n    lastSave: null\\n  };\\n}\\n\\nfunction loadState() {\\n  try {\\\
-    n    const saved = localStorage.getItem('sudoku-meals-state');\\n    if (saved)\
-    \ {\\n      const parsed = JSON.parse(saved);\\n      // Ensure arrays\\n    \
-    \  parsed.proteins = parsed.proteins || [];\\n      parsed.vegs = parsed.vegs\
-    \ || [];\\n      parsed.starches = parsed.starches || [];\\n      parsed.selectedSpices\
-    \ = parsed.selectedSpices || [];\\n      parsed.checkedMeals = parsed.checkedMeals\
-    \ || {};\\n      parsed.checkedShopping = parsed.checkedShopping || {};\\n   \
-    \   parsed.customSpiceProfiles = parsed.customSpiceProfiles || [];\\n      return\
-    \ parsed;\\n    }\\n  } catch(e) {}\\n  return defaultState();\\n}\\n\\nfunction\
-    \ saveState() {\\n  state.lastSave = Date.now();\\n  localStorage.setItem('sudoku-meals-state',\
-    \ JSON.stringify(state));\\n}\\n\\n// ===== TABS =====\\ndocument.querySelectorAll('.tab-btn').forEach(btn\
-    \ => {\\n  btn.addEventListener('click', () => {\\n    document.querySelectorAll('.tab-btn').forEach(b\
-    \ => b.classList.remove('active'));\\n    document.querySelectorAll('.section').forEach(s\
-    \ => s.classList.remove('active'));\\n    btn.classList.add('active');\\n    document.getElementById('tab-'\
-    \ + btn.dataset.tab).classList.add('active');\\n\\n    if (btn.dataset.tab ===\
-    \ 'meals') renderMealMatrix();\\n    if (btn.dataset.tab === 'shopping') renderShopping();\\\
-    n    if (btn.dataset.tab === 'config') renderConfig();\\n    if (btn.dataset.tab\
-    \ === 'spices') renderSpiceGrid();\\n  });\\n});\\n\\n// ===== CONFIG =====\\\
-    nfunction renderConfig() {\\n  renderSudokuGrid('protein', state.proteins, 'protein-cell');\\\
-    n  renderSudokuGrid('veg', state.vegs, 'veg-cell');\\n  renderSudokuGrid('starch',\
-    \ state.starches, 'starch-cell');\\n  updateComboPreview();\\n}\\n\\nfunction\
-    \ renderSudokuGrid(type, items, cellClass) {\\n  const grid = document.getElementById(type\
-    \ === 'veg' ? 'veg-grid' : type === 'starch' ? 'starch-grid' : 'protein-grid');\\\
-    n  grid.innerHTML = '';\\n  const slotLabels = { protein: ['1A', '1B', '1C'],\
-    \ veg: ['2A', '2B', '2C'], starch: ['3A', '3B', '3C'] };\\n  items.forEach((item,\
-    \ i) => {\\n    const cell = document.createElement('div');\\n    cell.className\
-    \ = `sudoku-cell ${cellClass}`;\\n    const slotText = slotLabels[type][i] ||\
-    \ '';\\n    cell.innerHTML = `\\n      <div class=\\\"cell-slot\\\">slot ${slotText}</div>\\\
-    n      <input type=\\\"text\\\" value=\\\"${escHtml(item)}\\\" onchange=\\\"updateIngredient('${type}',\
-    \ ${i}, this.value)\\\" onkeydown=\\\"handleIngredientKey(event, '${type}', ${i})\\\
-    \" placeholder=\\\"item\\\">\\n      <button class=\\\"remove-cell-btn\\\" onclick=\\\
-    \"removeIngredient('${type}', ${i})\\\" title=\\\"Remove\\\">\xD7</button>\\n\
-    \    `;\\n    grid.appendChild(cell);\\n  });\\n  // Fill empty slots with add\
-    \ buttons\\n  for (let i = items.length; i < 3; i++) {\\n    const cell = document.createElement('div');\\\
-    n    cell.className = `sudoku-cell ${cellClass}`;\\n    cell.innerHTML = `<button\
-    \ class=\\\"add-cell-btn\\\" onclick=\\\"addIngredient('${type}')\\\"><span class=\\\
-    \"plus\\\">+</span>Add item</button>`;\\n    grid.appendChild(cell);\\n  }\\n}\\\
-    n\\nfunction addIngredient(type) {\\n  const key = type === 'veg' ? 'vegs' : type\
-    \ === 'starch' ? 'starches' : 'proteins';\\n  if (state[key].length >= 3) { showToast('Max\
-    \ 3 items per category'); return; }\\n  state[key].push('');\\n  saveState();\\\
-    n  renderConfig();\\n  showToast(`Item added to ${type}`);\\n}\\n\\nfunction updateIngredient(type,\
-    \ index, value) {\\n  const key = type === 'veg' ? 'vegs' : type === 'starch'\
-    \ ? 'starches' : 'proteins';\\n  state[key][index] = value.trim();\\n  saveState();\\\
-    n}\\n\\nfunction removeIngredient(type, index) {\\n  const key = type === 'veg'\
-    \ ? 'vegs' : type === 'starch' ? 'starches' : 'proteins';\\n  state[key].splice(index,\
-    \ 1);\\n  saveState();\\n  renderConfig();\\n}\\n\\nfunction handleIngredientKey(e,\
-    \ type, index) {\\n  if (e.key === 'Enter') {\\n    e.preventDefault();\\n   \
-    \ addIngredient(type);\\n  }\\n}\\n\\nfunction saveConfig() {\\n  // Gather current\
-    \ values from inputs\\n  gatherFromInputs('protein', 'proteins');\\n  gatherFromInputs('veg',\
-    \ 'vegs');\\n  gatherFromInputs('starch', 'starches');\\n  saveState();\\n  showToast('Grid\
-    \ saved!');\\n}\\n\\nfunction gatherFromInputs(type, stateKey) {\\n  const grid\
-    \ = document.getElementById(type === 'veg' ? 'veg-grid' : type === 'starch' ?\
-    \ 'starch-grid' : 'protein-grid');\\n  const inputs = grid.querySelectorAll('input[type=\\\
-    \"text\\\"]');\\n  const values = Array.from(inputs).map(i => i.value.trim()).filter(v\
-    \ => v);\\n  state[stateKey] = values;\\n}\\n\\nfunction resetConfig() {\\n  if\
-    \ (!confirm('Reset grid to default proteins, vegetables, and starches?')) return;\\\
-    n  state.proteins = [...DEFAULT_PROTEINS];\\n  state.vegs = [...DEFAULT_VEGS];\\\
-    n  state.starches = [...DEFAULT_STARCHES];\\n  saveState();\\n  renderConfig();\\\
-    n  showToast('Grid reset to defaults');\\n}\\n\\nfunction updateComboPreview()\
-    \ {\\n  const count = state.proteins.length * state.vegs.length * state.starches.length;\\\
-    n  const el = document.getElementById('combo-count');\\n  if (el) el.textContent\
-    \ = state.proteins.length > 0 && state.vegs.length > 0 && state.starches.length\
-    \ > 0\\n    ? `${count} unique meals possible`\\n    : `Fill all 9 slots to see\
-    \ your combinations`;\\n  // Update combo display\\n  const preview = document.getElementById('combo-preview');\\\
-    n  if (preview) {\\n    const comboEl = preview.querySelector('.combo');\\n  \
-    \  if (comboEl) {\\n      const p = state.proteins.length > 0 ? state.proteins[0]\
-    \ : '\u2014';\\n      const v = state.vegs.length > 0 ? state.vegs[0] : '\u2014\
-    ';\\n      const s = state.starches.length > 0 ? state.starches[0] : '\u2014';\\\
-    n      comboEl.innerHTML = `<span class=\\\"protein-text\\\">${escHtml(p)}</span>\
-    \ \xD7 <span class=\\\"veg-text\\\">${escHtml(v)}</span> \xD7 <span class=\\\"\
-    starch-text\\\">${escHtml(s)}</span>`;\\n    }\\n  }\\n}\\n\\n// ===== SPICE PROFILES\
-    \ =====\\nfunction renderSpiceGrid() {\\n  const grid = document.getElementById('spice-grid');\\\
-    n  grid.innerHTML = '';\\n\\n  const allProfiles = [...DEFAULT_SPICE_PROFILES,\
-    \ ...state.customSpiceProfiles];\\n\\n  allProfiles.forEach(profile => {\\n  \
-    \  const isSelected = state.selectedSpices.includes(profile.id);\\n    const card\
-    \ = document.createElement('div');\\n    card.className = 'spice-card' + (isSelected\
-    \ ? ' selected' : '');\\n\\n    let spicesHtml = profile.spices.map(s =>\\n  \
-    \    `<span class=\\\"spice-tag ${state.selectedSpices.includes(profile.id) ?\
-    \ 'selected' : ''}\\\"\\n             onclick=\\\"toggleSpiceFromProfile('${profile.id}',\
-    \ '${escAttr(s)}', event)\\\"\\n             title=\\\"Click to add/remove\\\"\
-    >${escHtml(s)}</span>`\\n    ).join('');\\n\\n    card.innerHTML = `\\n      <div\
-    \ class=\\\"spice-card-header\\\">\\n        <h4>${escHtml(profile.name)}</h4>\\\
-    n        <span style=\\\"font-family: 'IBM Plex Mono', monospace; font-size: 0.7rem;\
-    \ color: var(--text-dim)\\\">${profile.spices.length} spices</span>\\n      </div>\\\
-    n      <div class=\\\"spice-tags\\\">${spicesHtml}</div>\\n      <div class=\\\
-    \"spice-pairs\\\">Pairs with: ${escHtml(profile.pairs)}</div>\\n    `;\\n\\n \
-    \   card.addEventListener('click', (e) => {\\n      if (e.target.classList.contains('spice-tag'))\
-    \ return;\\n      toggleProfile(profile.id);\\n    });\\n\\n    grid.appendChild(card);\\\
-    n  });\\n\\n  // Add custom profile button\\n  const addCard = document.createElement('div');\\\
-    n  addCard.className = 'spice-card';\\n  addCard.style.borderStyle = 'dashed';\\\
-    n  addCard.style.borderColor = 'var(--border)';\\n  addCard.style.cursor = 'pointer';\\\
-    n  addCard.innerHTML = `\\n    <div class=\\\"spice-card-header\\\">\\n      <h4\
-    \ style=\\\"color: var(--text-dim)\\\">+ Custom Profile</h4>\\n    </div>\\n \
-    \   <div class=\\\"custom-spice-row\\\">\\n      <input type=\\\"text\\\" placeholder=\\\
-    \"Profile name\\\" id=\\\"custom-name\\\">\\n      <input type=\\\"text\\\" placeholder=\\\
-    \"Spices (comma-separated)\\\" id=\\\"custom-spices\\\">\\n    </div>\\n    <div\
-    \ class=\\\"custom-spice-row\\\" style=\\\"margin-top:0.4rem\\\">\\n      <input\
-    \ type=\\\"text\\\" placeholder=\\\"Pairs with...\\\" id=\\\"custom-pairs\\\"\
-    \ style=\\\"width:100%\\\">\\n      <button class=\\\"custom-spice-btn\\\" onclick=\\\
-    \"addCustomProfile()\\\">Add</button>\\n    </div>\\n  `;\\n  grid.appendChild(addCard);\\\
-    n}\\n\\nfunction toggleProfile(profileId) {\\n  const idx = state.selectedSpices.indexOf(profileId);\\\
-    n  if (idx === -1) {\\n    state.selectedSpices.push(profileId);\\n  } else {\\\
-    n    state.selectedSpices.splice(idx, 1);\\n  }\\n  saveState();\\n  renderSpiceGrid();\\\
-    n}\\n\\nfunction toggleSpiceFromProfile(profileId, spice, event) {\\n  event.stopPropagation();\\\
-    n  // For simplicity, adding/removes the whole profile\\n  toggleProfile(profileId);\\\
-    n}\\n\\nfunction addCustomProfile() {\\n  const name = document.getElementById('custom-name').value.trim();\\\
-    n  const spicesStr = document.getElementById('custom-spices').value.trim();\\\
-    n  const pairs = document.getElementById('custom-pairs').value.trim();\\n\\n \
-    \ if (!name || !spicesStr) {\\n    showToast('Name and spices required');\\n \
-    \   return;\\n  }\\n\\n  const spices = spicesStr.split(',').map(s => s.trim()).filter(s\
-    \ => s);\\n  const profile = {\\n    id: 'custom-' + Date.now(),\\n    name,\\\
-    n    spices,\\n    pairs: pairs || 'All'\\n  };\\n\\n  state.customSpiceProfiles.push(profile);\\\
-    n  state.selectedSpices.push(profile.id);\\n  saveState();\\n  renderSpiceGrid();\\\
-    n  showToast(`Custom profile \\\"${name}\\\" added`);\\n}\\n\\nfunction saveSpices()\
-    \ {\\n  saveState();\\n  showToast('Spice profiles saved!');\\n}\\n\\n// =====\
-    \ MEAL MATRIX =====\\nfunction generateMealKey(protein, veg, starch) {\\n  return\
-    \ `${protein}||${veg}||${starch}`;\\n}\\n\\nfunction renderMealMatrix() {\\n \
-    \ gatherFromInputs('protein', 'proteins');\\n  gatherFromInputs('veg', 'vegs');\\\
-    n  gatherFromInputs('starch', 'starches');\\n\\n  const container = document.getElementById('meal-matrix');\\\
-    n  container.innerHTML = '';\\n\\n  // Header\\n  const header = document.createElement('div');\\\
-    n  header.className = 'matrix-header';\\n  header.innerHTML = '<div></div><div\
-    \ style=\\\"color:var(--accent-protein)\\\">Protein</div><div style=\\\"color:var(--accent-veg)\\\
-    \">Vegetable</div><div style=\\\"color:var(--accent-starch)\\\">Starch</div>';\\\
-    n  container.appendChild(header);\\n\\n  // Generate all combos\\n  let mealNum\
-    \ = 0;\\n  const allMeals = [];\\n\\n  for (const protein of state.proteins) {\\\
-    n    for (const veg of state.vegs) {\\n      for (const starch of state.starches)\
-    \ {\\n        mealNum++;\\n        allMeals.push({ num: mealNum, protein, veg,\
-    \ starch });\\n      }\\n    }\\n  }\\n\\n  // Stats\\n  const usedCount = Object.values(state.checkedMeals).filter(Boolean).length;\\\
-    n  const totalMeals = allMeals.length;\\n  const remaining = totalMeals - usedCount;\\\
-    n\\n  document.getElementById('stat-total').textContent = totalMeals;\\n  document.getElementById('stat-used').textContent\
-    \ = usedCount;\\n  document.getElementById('stat-remaining').textContent = remaining;\\\
-    n\\n  if (allMeals.length === 0) {\\n    container.innerHTML += '<div style=\\\
-    \"padding:2rem;text-align:center;color:var(--text-dim)\\\">Add ingredients in\
-    \ the Grid tab to see your meals.</div>';\\n    return;\\n  }\\n\\n  // Render\
-    \ rows\\n  allMeals.forEach(meal => {\\n    const isChecked = state.checkedMeals[generateMealKey(meal.protein,\
-    \ meal.veg, meal.starch)] || false;\\n    const row = document.createElement('div');\\\
-    n    row.className = 'matrix-row' + (isChecked ? ' dimmed' : '');\\n    row.style.cursor\
-    \ = 'pointer';\\n    row.innerHTML = `\\n      <div class=\\\"matrix-num\\\">${meal.num}</div>\\\
-    n      <div class=\\\"matrix-cell protein-cell\\\">${escHtml(meal.protein)}</div>\\\
-    n      <div class=\\\"matrix-cell veg-cell\\\">${escHtml(meal.veg)}</div>\\n \
-    \     <div class=\\\"matrix-cell starch-cell\\\">${escHtml(meal.starch)}</div>\\\
-    n    `;\\n    row.addEventListener('click', () => toggleMeal(meal));\\n    container.appendChild(row);\\\
-    n  });\\n\\n  // Reset recipe panel if no selection\\n  if (!window._selectedMeal)\
-    \ {\\n    document.getElementById('recipe-panel').innerHTML = '<div class=\\\"\
-    recipe-placeholder\\\">Click a meal to see details</div>';\\n  }\\n}\\n\\nfunction\
-    \ toggleMeal(meal) {\\n  const key = generateMealKey(meal.protein, meal.veg, meal.starch);\\\
-    n  state.checkedMeals[key] = !state.checkedMeals[key];\\n  saveState();\\n  window._selectedMeal\
-    \ = meal;\\n  renderMealMatrix();\\n  showRecipe(meal);\\n}\\n\\nfunction showRecipe(meal)\
-    \ {\\n  const panel = document.getElementById('recipe-panel');\\n  const selectedSpices\
-    \ = state.selectedSpices.map(id => {\\n    const found = [...DEFAULT_SPICE_PROFILES,\
-    \ ...state.customSpiceProfiles].find(p => p.id === id);\\n    return found ||\
-    \ null;\\n  }).filter(Boolean);\\n\\n  let spicesHtml = '';\\n  if (selectedSpices.length\
-    \ > 0) {\\n    spicesHtml = selectedSpices.map(sp => {\\n      return `<div style=\\\
-    \"margin-top:0.75rem\\\">\\n        <div style=\\\"font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-spice);margin-bottom:0.25rem\\\
-    \">${escHtml(sp.name)}</div>\\n        <div style=\\\"font-size:0.85rem;color:var(--text-dim)\\\
-    \">${sp.spices.join(' \xB7 ')}</div>\\n        <div style=\\\"font-size:0.8rem;color:var(--text-dim);font-style:italic;margin-top:0.15rem\\\
-    \">Pairs with: ${escHtml(sp.pairs)}</div>\\n      </div>`;\\n    }).join('');\\\
-    n  }\\n\\n  panel.innerHTML = `\\n    <h3>Meal #${meal.num} \u2014 ${escHtml(meal.protein)}</h3>\\\
-    n    <div class=\\\"recipe-detail\\\">\\n      <div class=\\\"recipe-detail-item\
-    \ protein-detail\\\">\\n        <div class=\\\"label\\\">Protein</div>\\n    \
-    \    <div class=\\\"value\\\">${escHtml(meal.protein)}</div>\\n      </div>\\\
-    n      <div class=\\\"recipe-detail-item veg-detail\\\">\\n        <div class=\\\
-    \"label\\\">Vegetable</div>\\n        <div class=\\\"value\\\">${escHtml(meal.veg)}</div>\\\
-    n      </div>\\n      <div class=\\\"recipe-detail-item starch-detail\\\">\\n\
-    \        <div class=\\\"label\\\">Starch</div>\\n        <div class=\\\"value\\\
-    \">${escHtml(meal.starch)}</div>\\n      </div>\\n    </div>\\n    ${selectedSpices.length\
-    \ > 0 ? `<div style=\\\"border-top:1px solid var(--border);padding-top:0.75rem\\\
-    \">${spicesHtml}</div>` : ''}\\n    <div style=\\\"margin-top:1rem;font-size:0.8rem;color:var(--text-dim);font-style:italic\\\
-    \">\\n      ${state.checkedMeals[generateMealKey(meal.protein, meal.veg, meal.starch)]\
-    \ ? '\u2713 Used this week' : 'Not marked as used yet. Click again to toggle.'}\\\
-    n    </div>\\n  `;\\n}\\n\\n// ===== SHOPPING LIST =====\\nfunction renderShopping()\
-    \ {\\n  gatherFromInputs('protein', 'proteins');\\n  gatherFromInputs('veg', 'vegs');\\\
-    n  gatherFromInputs('starch', 'starches');\\n\\n  const grid = document.getElementById('shopping-grid');\\\
-    n  grid.innerHTML = '';\\n\\n  // Ingredients section\\n  const sections = [\\\
-    n    { type: 'protein-s', label: 'Proteins', items: state.proteins, prefix: 'p_'\
-    \ },\\n    { type: 'veg-s', label: 'Vegetables', items: state.vegs, prefix: 'v_'\
-    \ },\\n    { type: 'starch-s', label: 'Starches', items: state.starches, prefix:\
-    \ 's_' }\\n  ];\\n\\n  sections.forEach(section => {\\n    const card = document.createElement('div');\\\
-    n    card.className = `shopping-card ${section.type}`;\\n    card.innerHTML =\
-    \ `<h4>${escHtml(section.label)}</h4>`;\\n\\n    section.items.forEach((item,\
-    \ i) => {\\n      const shopKey = `${section.prefix}${i}`;\\n      const isChecked\
-    \ = state.checkedShopping[shopKey] || false;\\n      const itemDiv = document.createElement('div');\\\
-    n      itemDiv.className = 'shopping-item';\\n      itemDiv.innerHTML = `\\n \
-    \       <input type=\\\"checkbox\\\" class=\\\"shop-check\\\" ${isChecked ? 'checked'\
-    \ : ''}\\n               onchange=\\\"toggleShopping('${shopKey}', this)\\\">\\\
-    n        <span class=\\\"${isChecked ? 'checked-item' : ''}\\\">${escHtml(item)}</span>\\\
-    n      `;\\n      card.appendChild(itemDiv);\\n    });\\n\\n    grid.appendChild(card);\\\
-    n  });\\n\\n  // Spice profiles section\\n  const spiceCard = document.createElement('div');\\\
-    n  spiceCard.className = 'shopping-card spice-s';\\n  const spiceH4 = document.createElement('h4');\\\
-    n  spiceH4.textContent = 'Selected Spice Profiles';\\n  spiceCard.appendChild(spiceH4);\\\
-    n\\n  const allProfiles = [...DEFAULT_SPICE_PROFILES, ...state.customSpiceProfiles];\\\
-    n  const selectedProfiles = allProfiles.filter(p => state.selectedSpices.includes(p.id));\\\
-    n\\n  if (selectedProfiles.length > 0) {\\n    selectedProfiles.forEach(profile\
-    \ => {\\n      const headerSpan = document.createElement('div');\\n      headerSpan.style.fontWeight\
-    \ = '500';\\n      headerSpan.style.fontSize = '0.85rem';\\n      headerSpan.textContent\
-    \ = profile.name;\\n      spiceCard.appendChild(headerSpan);\\n\\n      const\
-    \ spicesList = document.createElement('div');\\n      spicesList.style.paddingLeft\
-    \ = '1.5rem';\\n      spicesList.style.fontSize = '0.8rem';\\n      spicesList.style.color\
-    \ = 'var(--text-dim)';\\n      spicesList.style.marginBottom = '0.75rem';\\n \
-    \     spicesList.textContent = profile.spices.join(' \xB7 ');\\n      spiceCard.appendChild(spicesList);\\\
-    n    });\\n  } else {\\n    const emptyMsg = document.createElement('div');\\\
-    n    emptyMsg.style.color = 'var(--text-dim)';\\n    emptyMsg.style.fontStyle\
-    \ = 'italic';\\n    emptyMsg.style.fontSize = '0.85rem';\\n    emptyMsg.textContent\
-    \ = 'Select spice profiles in the Spice Profiles tab';\\n    spiceCard.appendChild(emptyMsg);\\\
-    n  }\\n\\n  grid.appendChild(spiceCard);\\n\\n  // Custom ingredient input\\n\
-    \  const addCard = document.createElement('div');\\n  addCard.className = 'shopping-card';\\\
-    n  addCard.style.borderTop = '3px solid var(--accent-shopping)';\\n  addCard.innerHTML\
-    \ = `\\n    <h4>Custom Items</h4>\\n    <div class=\\\"custom-spice-row\\\">\\\
-    n      <input type=\\\"text\\\" placeholder=\\\"Add custom item...\\\" id=\\\"\
-    custom-shopping-item\\\">\\n      <button class=\\\"custom-spice-btn\\\" onclick=\\\
-    \"addCustomShopping()\\\">Add</button>\\n    </div>\\n    <div id=\\\"custom-shopping-list\\\
-    \" style=\\\"margin-top:0.75rem\\\"></div>\\n  `;\\n  grid.appendChild(addCard);\\\
-    n\\n  // Render custom items\\n  const customList = document.getElementById('custom-shopping-list');\\\
-    n  if (state.customShopping && state.customShopping.length > 0) {\\n    state.customShopping.forEach((item,\
-    \ i) => {\\n      const shopKey = `custom_${i}`;\\n      const isChecked = state.checkedShopping[shopKey]\
-    \ || false;\\n      const itemDiv = document.createElement('div');\\n      itemDiv.className\
-    \ = 'shopping-item';\\n      itemDiv.innerHTML = `\\n        <input type=\\\"\
-    checkbox\\\" class=\\\"shop-check\\\" ${isChecked ? 'checked' : ''}\\n       \
-    \        onchange=\\\"toggleShopping('${shopKey}', this)\\\">\\n        <span\
-    \ class=\\\"${isChecked ? 'checked-item' : ''}\\\">${escHtml(item)}</span>\\n\
-    \        <button class=\\\"remove-btn\\\" onclick=\\\"removeCustomShopping(${i})\\\
-    \" title=\\\"Remove\\\">\xD7</button>\\n      `;\\n      customList.appendChild(itemDiv);\\\
-    n    });\\n  }\\n}\\n\\nfunction headerDiv(text) {\\n  const d = document.createElement('div');\\\
-    n  d.textContent = text;\\n  d.style.fontWeight = '500';\\n  d.style.fontSize\
-    \ = '0.85rem';\\n  return d;\\n}\\n\\nfunction toggleShopping(key, el) {\\n  state.checkedShopping[key]\
-    \ = el.checked;\\n  saveState();\\n  el.parentElement.querySelector('span').classList.toggle('checked-item',\
-    \ el.checked);\\n}\\n\\nfunction addCustomShopping() {\\n  const input = document.getElementById('custom-shopping-item');\\\
-    n  const val = input.value.trim();\\n  if (!val) return;\\n\\n  if (!state.customShopping)\
-    \ state.customShopping = [];\\n  state.customShopping.push(val);\\n  input.value\
-    \ = '';\\n  saveState();\\n  renderShopping();\\n  showToast('Item added');\\\
-    n}\\n\\nfunction removeCustomShopping(index) {\\n  state.customShopping.splice(index,\
-    \ 1);\\n  // Rebuild checkedShopping for custom items\\n  const newChecked = {};\\\
-    n  if (state.proteins) state.proteins.forEach((_, i) => { newChecked[`p_${i}`]\
-    \ = state.checkedShopping[`p_${i}`] || false; });\\n  if (state.vegs) state.vegs.forEach((_,\
-    \ i) => { newChecked[`v_${i}`] = state.checkedShopping[`v_${i}`] || false; });\\\
-    n  if (state.starches) state.starches.forEach((_, i) => { newChecked[`s_${i}`]\
-    \ = state.checkedShopping[`s_${i}`] || false; });\\n  if (state.customShopping)\
-    \ state.customShopping.forEach((_, i) => { newChecked[`custom_${i}`] = state.checkedShopping[`custom_${i}`]\
-    \ || false; });\\n  state.checkedShopping = newChecked;\\n  saveState();\\n  renderShopping();\\\
-    n}\\n\\nfunction resetShopping() {\\n  if (!confirm('Clear all shopping checkoffs?'))\
-    \ return;\\n  state.checkedShopping = {};\\n  saveState();\\n  renderShopping();\\\
-    n  showToast('Shopping list reset');\\n}\\n\\nfunction exportShopping() {\\n \
-    \ gatherFromInputs('protein', 'proteins');\\n  gatherFromInputs('veg', 'vegs');\\\
-    n  gatherFromInputs('starch', 'starches');\\n\\n  let text = '\U0001F6D2 SUDOKU\
-    \ MEALS SHOPPING LIST\\\\n';\\n  text += '\u2550'.repeat(40) + '\\\\n\\\\n';\\\
-    n\\n  text += 'PROTEINS\\\\n';\\n  text += '\u2500\u2500'.repeat(20) + '\\\\n';\\\
-    n  state.proteins.forEach(item => {\\n    text += `  ${state.checkedShopping['p_'\
-    \ + state.proteins.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\\n`;\\n  });\\\
-    n\\n  text += '\\\\nVEGETABLES\\\\n';\\n  text += '\u2500\u2500'.repeat(20) +\
-    \ '\\\\n';\\n  state.vegs.forEach(item => {\\n    text += `  ${state.checkedShopping['v_'\
-    \ + state.vegs.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\\n`;\\n  });\\\
-    n\\n  text += '\\\\nSTARCHES\\\\n';\\n  text += '\u2500\u2500'.repeat(20) + '\\\
-    \\n';\\n  state.starches.forEach(item => {\\n    text += `  ${state.checkedShopping['s_'\
-    \ + state.starches.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\\n`;\\n  });\\\
-    n\\n  if (state.customShopping && state.customShopping.length > 0) {\\n    text\
-    \ += '\\\\nCUSTOM\\\\n';\\n    text += '\u2500\u2500'.repeat(20) + '\\\\n';\\\
-    n    state.customShopping.forEach((item, i) => {\\n      text += `  ${state.checkedShopping['custom_'\
-    \ + i] ? '\u2713' : '\u25A1'} ${item}\\\\n`;\\n    });\\n  }\\n\\n  const selectedProfiles\
-    \ = state.selectedSpices.map(id => {\\n    return [...DEFAULT_SPICE_PROFILES,\
-    \ ...state.customSpiceProfiles].find(p => p.id === id);\\n  }).filter(Boolean);\\\
-    n\\n  if (selectedProfiles.length > 0) {\\n    text += '\\\\nSPICE PROFILES\\\\\
-    n';\\n    text += '\u2500\u2500'.repeat(20) + '\\\\n';\\n    selectedProfiles.forEach(sp\
-    \ => {\\n      text += `\\\\n  ${sp.name}\\\\n`;\\n      text += '    ' + sp.spices.join('\
-    \ \xB7 ') + '\\\\n';\\n    });\\n  }\\n\\n  navigator.clipboard.writeText(text).then(()\
-    \ => {\\n    showToast('Shopping list copied to clipboard!');\\n  }).catch(()\
-    \ => {\\n    // Fallback\\n    const ta = document.createElement('textarea');\\\
-    n    ta.value = text;\\n    document.body.appendChild(ta);\\n    ta.select();\\\
-    n    document.execCommand('copy');\\n    document.body.removeChild(ta);\\n   \
-    \ showToast('Shopping list copied!');\\n  });\\n}\\n\\n// ===== UTILITIES =====\\\
-    nfunction escHtml(str) {\\n  const div = document.createElement('div');\\n  div.textContent\
-    \ = str;\\n  return div.innerHTML;\\n}\\n\\nfunction escAttr(str) {\\n  return\
-    \ str.replace(/'/g, \\\"\\\\\\\\'\\\").replace(/\\\"/g, '&quot;');\\n}\\n\\nfunction\
-    \ showToast(msg) {\\n  // Simple toast\\n  const existing = document.querySelector('.toast');\\\
-    n  if (existing) existing.remove();\\n\\n  const toast = document.createElement('div');\\\
-    n  toast.className = 'toast';\\n  toast.textContent = msg;\\n  toast.style.cssText\
-    \ = `\\n    position: fixed;\\n    bottom: 2rem;\\n    left: 50%;\\n    transform:\
-    \ translateX(-50%);\\n    background: var(--surface2);\\n    border: 1px solid\
-    \ var(--border);\\n    border-radius: 6px;\\n    padding: 0.75rem 1.5rem;\\n \
-    \   color: var(--text);\\n    font-family: 'IBM Plex Mono', monospace;\\n    font-size:\
-    \ 0.8rem;\\n    z-index: 9999;\\n    animation: toastIn 0.3s ease;\\n  `;\\n \
-    \ document.body.appendChild(toast);\\n  setTimeout(() => {\\n    toast.style.opacity\
-    \ = '0';\\n    toast.style.transition = 'opacity 0.3s';\\n    setTimeout(() =>\
-    \ toast.remove(), 300);\\n  }, 2000);\\n}\\n\\n// Add toast animation\\nconst\
-    \ style = document.createElement('style');\\nstyle.textContent = `@keyframes toastIn\
-    \ { from { opacity:0; transform:translateX(-50%) translateY(10px); } to { opacity:1;\
-    \ transform:translateX(-50%) translateY(0); } }`;\\ndocument.head.appendChild(style);\\\
-    n\\n// ===== INIT =====\\nrenderConfig();\\nrenderSpiceGrid();\\n</script>\\n\\\
-    n</body>\\n</html>\\n"
+  index.html: "<!DOCTYPE html>\n<html lang=\"en\">\n<head>\n<meta charset=\"UTF-8\"\
+    >\n<meta name=\"viewport\" content=\"width=device-width, initial-scale=1.0\">\n\
+    <title>Sudoku Meals</title>\n<link rel=\"preconnect\" href=\"https://fonts.googleapis.com\"\
+    >\n<link href=\"https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap\"\
+    \ rel=\"stylesheet\">\n<style>\n  :root {\n    --bg: #1a1714;\n    --surface:\
+    \ #252119;\n    --surface2: #2f2a20;\n    --border: #3d372a;\n    --text: #e8e0d4;\n\
+    \    --text-dim: #9a8e7e;\n    --accent-protein: #d4735b;\n    --accent-protein-bg:\
+    \ rgba(212,115,91,0.12);\n    --accent-veg: #6db86e;\n    --accent-veg-bg: rgba(109,184,110,0.12);\n\
+    \    --accent-starch: #d4a843;\n    --accent-starch-bg: rgba(212,168,67,0.12);\n\
+    \    --accent-spice: #9b7bd4;\n    --accent-spice-bg: rgba(155,123,212,0.12);\n\
+    \    --accent-shopping: #43a8d4;\n    --accent-shopping-bg: rgba(67,168,212,0.12);\n\
+    \  }\n\n  * { margin: 0; padding: 0; box-sizing: border-box; }\n\n  body {\n \
+    \   background: var(--bg);\n    color: var(--text);\n    font-family: 'IBM Plex\
+    \ Sans', sans-serif;\n    font-weight: 300;\n    line-height: 1.6;\n    min-height:\
+    \ 100vh;\n  }\n\n  /* Grain overlay */\n  body::before {\n    content: '';\n \
+    \   position: fixed;\n    inset: 0;\n    opacity: 0.03;\n    pointer-events: none;\n\
+    \    background-image: url(\"data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter\
+    \ id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'\
+    \ stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25'\
+    \ filter='url(%23noise)'/%3E%3C/svg%3E\");\n    background-size: 256px;\n  }\n\
+    \n  .app {\n    max-width: 1200px;\n    margin: 0 auto;\n    padding: 2rem 1.5rem\
+    \ 6rem;\n  }\n\n  /* Header */\n  .header {\n    text-align: center;\n    margin-bottom:\
+    \ 3rem;\n    padding-bottom: 2rem;\n    border-bottom: 1px solid var(--border);\n\
+    \  }\n\n  .header h1 {\n    font-family: 'DM Serif Display', serif;\n    font-size:\
+    \ 2.8rem;\n    font-weight: 400;\n    letter-spacing: -0.02em;\n    margin-bottom:\
+    \ 0.5rem;\n    background: linear-gradient(135deg, var(--accent-protein), var(--accent-starch));\n\
+    \    -webkit-background-clip: text;\n    -webkit-text-fill-color: transparent;\n\
+    \    background-clip: text;\n  }\n\n  .header p {\n    color: var(--text-dim);\n\
+    \    font-size: 0.95rem;\n    font-family: 'IBM Plex Mono', monospace;\n    font-size:\
+    \ 0.8rem;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n  }\n\n\
+    \  /* Navigation Tabs */\n  .tabs {\n    display: flex;\n    gap: 0.25rem;\n \
+    \   margin-bottom: 2rem;\n    border-bottom: 1px solid var(--border);\n    padding-bottom:\
+    \ 0;\n    overflow-x: auto;\n  }\n\n  .tab-btn {\n    background: none;\n    border:\
+    \ none;\n    color: var(--text-dim);\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.8rem;\n    letter-spacing: 0.06em;\n    text-transform: uppercase;\n\
+    \    padding: 0.75rem 1.25rem;\n    cursor: pointer;\n    border-bottom: 2px solid\
+    \ transparent;\n    margin-bottom: -1px;\n    transition: color 0.2s, border-color\
+    \ 0.2s;\n    white-space: nowrap;\n  }\n\n  .tab-btn:hover { color: var(--text);\
+    \ }\n  .tab-btn.active {\n    color: var(--text);\n    border-bottom-color: var(--accent-protein);\n\
+    \  }\n\n  /* Sections */\n  .section { display: none; }\n  .section.active { display:\
+    \ block; }\n\n  /* Grid Config */\n  .grid-config {\n    display: flex;\n    flex-direction:\
+    \ column;\n    align-items: center;\n    gap: 2rem;\n  }\n\n  /* Sudoku grid */\n\
+    \  .sudoku-grid {\n    display: grid;\n    grid-template-columns: 200px 1fr;\n\
+    \    gap: 0;\n    border: 3px solid var(--text-dim);\n    border-radius: 8px;\n\
+    \    overflow: hidden;\n    background: var(--surface);\n  }\n\n  @media (max-width:\
+    \ 768px) {\n    .sudoku-grid {\n      grid-template-columns: 1fr;\n      width:\
+    \ 100%;\n    }\n  }\n\n  /* Category labels */\n  .sudoku-label {\n    display:\
+    \ flex;\n    align-items: center;\n    justify-content: center;\n    padding:\
+    \ 1.5rem 1rem;\n    font-family: 'DM Serif Display', serif;\n    font-size: 1.1rem;\n\
+    \    text-align: center;\n    line-height: 1.3;\n  }\n  .sudoku-label.protein-label\
+    \ {\n    background: var(--accent-protein-bg);\n    color: var(--accent-protein);\n\
+    \    border-right: 3px solid var(--text-dim);\n  }\n  .sudoku-label.veg-label\
+    \ {\n    background: var(--accent-veg-bg);\n    color: var(--accent-veg);\n  \
+    \  border-right: 3px solid var(--text-dim);\n  }\n  .sudoku-label.starch-label\
+    \ {\n    background: var(--accent-starch-bg);\n    color: var(--accent-starch);\n\
+    \    border-right: 3px solid var(--text-dim);\n  }\n\n  /* Sudoku cell groups\
+    \ (3 columns per row) */\n  .sudoku-row-group {\n    display: grid;\n    grid-template-columns:\
+    \ 1fr 1fr 1fr;\n    gap: 0;\n    background: var(--surface);\n  }\n\n  .sudoku-cell\
+    \ {\n    position: relative;\n    border: 1px solid var(--border);\n    display:\
+    \ flex;\n    flex-direction: column;\n    align-items: center;\n    padding: 0.75rem\
+    \ 0.5rem;\n    min-height: 100px;\n    transition: background 0.15s;\n  }\n  .sudoku-cell:hover\
+    \ { background: var(--surface2); }\n\n  /* Thick borders between column groups\
+    \ */\n  .sudoku-cell:nth-child(3n+1) { border-left: 3px solid var(--text-dim);\
+    \ }\n  .sudoku-cell:nth-child(3n) { border-right: 3px solid var(--text-dim); }\n\
+    \n  /* Slot number */\n  .cell-slot {\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.6rem;\n    letter-spacing: 0.15em;\n    text-transform: uppercase;\n\
+    \    color: var(--text-dim);\n    margin-bottom: 0.4rem;\n  }\n\n  .sudoku-cell\
+    \ input[type=\"text\"] {\n    width: 100%;\n    background: transparent;\n   \
+    \ border: 1px solid transparent;\n    border-radius: 4px;\n    padding: 0.4rem\
+    \ 0.5rem;\n    color: var(--text);\n    font-family: 'IBM Plex Sans', sans-serif;\n\
+    \    font-size: 0.95rem;\n    font-weight: 500;\n    text-align: center;\n   \
+    \ outline: none;\n    transition: border-color 0.2s, background 0.15s;\n  }\n\
+    \  .sudoku-cell input[type=\"text\"]:focus {\n    border-color: var(--text-dim);\n\
+    \    background: var(--surface2);\n  }\n  .sudoku-cell.protein-cell input[type=\"\
+    text\"]:focus { border-color: var(--accent-protein); }\n  .sudoku-cell.veg-cell\
+    \ input[type=\"text\"]:focus { border-color: var(--accent-veg); }\n  .sudoku-cell.starch-cell\
+    \ input[type=\"text\"]:focus { border-color: var(--accent-starch); }\n\n  .sudoku-cell.protein-cell\
+    \ input[type=\"text\"] { color: var(--accent-protein); }\n  .sudoku-cell.veg-cell\
+    \ input[type=\"text\"] { color: var(--accent-veg); }\n  .sudoku-cell.starch-cell\
+    \ input[type=\"text\"] { color: var(--accent-starch); }\n\n  .remove-cell-btn\
+    \ {\n    position: absolute;\n    top: 4px;\n    right: 4px;\n    background:\
+    \ none;\n    border: none;\n    color: var(--text-dim);\n    cursor: pointer;\n\
+    \    font-size: 0.9rem;\n    line-height: 1;\n    opacity: 0;\n    transition:\
+    \ opacity 0.15s, color 0.15s;\n    padding: 2px;\n  }\n  .sudoku-cell:hover .remove-cell-btn\
+    \ { opacity: 0.6; }\n  .remove-cell-btn:hover { opacity: 1 !important; color:\
+    \ var(--accent-protein); }\n\n  /* Empty cell add button */\n  .add-cell-btn {\n\
+    \    width: 100%;\n    background: transparent;\n    border: 2px dashed var(--border);\n\
+    \    border-radius: 4px;\n    padding: 1.5rem 0.5rem;\n    color: var(--text-dim);\n\
+    \    font-family: 'IBM Plex Mono', monospace;\n    font-size: 0.8rem;\n    cursor:\
+    \ pointer;\n    transition: border-color 0.2s, color 0.2s, background 0.15s;\n\
+    \    text-transform: uppercase;\n    letter-spacing: 0.05em;\n    display: flex;\n\
+    \    flex-direction: column;\n    align-items: center;\n    gap: 0.4rem;\n  }\n\
+    \  .add-cell-btn:hover {\n    border-color: var(--text-dim);\n    color: var(--text);\n\
+    \    background: var(--surface2);\n  }\n  .add-cell-btn .plus {\n    font-size:\
+    \ 1.5rem;\n    line-height: 1;\n  }\n\n  /* Legend */\n  .sudoku-legend {\n  \
+    \  display: flex;\n    gap: 2rem;\n    justify-content: center;\n    flex-wrap:\
+    \ wrap;\n    margin-top: 1rem;\n  }\n  .legend-item {\n    display: flex;\n  \
+    \  align-items: center;\n    gap: 0.5rem;\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.7rem;\n    letter-spacing: 0.08em;\n    text-transform: uppercase;\n\
+    \    color: var(--text-dim);\n  }\n  .legend-dot {\n    width: 10px;\n    height:\
+    \ 10px;\n    border-radius: 2px;\n  }\n  .legend-dot.protein-dot { background:\
+    \ var(--accent-protein); }\n  .legend-dot.veg-dot { background: var(--accent-veg);\
+    \ }\n  .legend-dot.starch-dot { background: var(--accent-starch); }\n\n  /* Combo\
+    \ preview */\n  .combo-preview {\n    margin-top: 1.5rem;\n    padding: 1rem 1.5rem;\n\
+    \    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius:\
+    \ 8px;\n    text-align: center;\n  }\n  .combo-preview .label {\n    font-family:\
+    \ 'IBM Plex Mono', monospace;\n    font-size: 0.65rem;\n    letter-spacing: 0.1em;\n\
+    \    text-transform: uppercase;\n    color: var(--text-dim);\n    margin-bottom:\
+    \ 0.5rem;\n  }\n  .combo-preview .combo {\n    font-family: 'DM Serif Display',\
+    \ serif;\n    font-size: 1.2rem;\n    color: var(--text);\n  }\n  .combo-preview\
+    \ .combo .protein-text { color: var(--accent-protein); }\n  .combo-preview .combo\
+    \ .veg-text { color: var(--accent-veg); }\n  .combo-preview .combo .starch-text\
+    \ { color: var(--accent-starch); }\n  .combo-preview .count {\n    font-family:\
+    \ 'IBM Plex Mono', monospace;\n    font-size: 0.75rem;\n    color: var(--text-dim);\n\
+    \    margin-top: 0.4rem;\n  }\n\n  /* Spice Profiles */\n  .spice-section { margin-top:\
+    \ 2rem; }\n\n  .spice-section h3 {\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.75rem;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n\
+    \    color: var(--accent-spice);\n    margin-bottom: 1rem;\n  }\n\n  .spice-grid\
+    \ {\n    display: grid;\n    grid-template-columns: repeat(auto-fill, minmax(340px,\
+    \ 1fr));\n    gap: 1rem;\n  }\n\n  @media (max-width: 768px) {\n    .spice-grid\
+    \ { grid-template-columns: 1fr; }\n  }\n\n  .spice-card {\n    background: var(--surface);\n\
+    \    border: 1px solid var(--border);\n    border-top: 3px solid var(--accent-spice);\n\
+    \    border-radius: 8px;\n    padding: 1.25rem;\n    cursor: pointer;\n    transition:\
+    \ border-color 0.2s, transform 0.15s;\n  }\n  .spice-card:hover {\n    border-color:\
+    \ var(--accent-spice);\n    transform: translateY(-1px);\n  }\n  .spice-card.selected\
+    \ {\n    border-color: var(--accent-spice);\n    background: var(--accent-spice-bg);\n\
+    \  }\n\n  .spice-card-header {\n    display: flex;\n    justify-content: space-between;\n\
+    \    align-items: center;\n    margin-bottom: 0.75rem;\n  }\n\n  .spice-card h4\
+    \ {\n    font-family: 'DM Serif Display', serif;\n    font-size: 1.1rem;\n   \
+    \ font-weight: 400;\n  }\n\n  .spice-tags {\n    display: flex;\n    flex-wrap:\
+    \ wrap;\n    gap: 0.35rem;\n  }\n\n  .spice-tag {\n    background: var(--surface2);\n\
+    \    border: 1px solid var(--border);\n    border-radius: 3px;\n    padding: 0.2rem\
+    \ 0.5rem;\n    font-size: 0.75rem;\n    color: var(--text-dim);\n    font-family:\
+    \ 'IBM Plex Mono', monospace;\n    cursor: pointer;\n    transition: all 0.15s;\n\
+    \  }\n  .spice-tag:hover { border-color: var(--accent-spice); color: var(--text);\
+    \ }\n  .spice-tag.selected {\n    background: var(--accent-spice);\n    color:\
+    \ var(--bg);\n    border-color: var(--accent-spice);\n  }\n\n  .spice-pairs {\n\
+    \    margin-top: 0.5rem;\n    font-size: 0.8rem;\n    color: var(--text-dim);\n\
+    \    font-style: italic;\n  }\n\n  .custom-spice-row {\n    display: flex;\n \
+    \   gap: 0.5rem;\n    margin-top: 0.5rem;\n  }\n\n  .custom-spice-row input {\n\
+    \    flex: 1;\n    background: var(--surface2);\n    border: 1px solid var(--border);\n\
+    \    border-radius: 4px;\n    padding: 0.4rem 0.6rem;\n    color: var(--text);\n\
+    \    font-family: 'IBM Plex Mono', monospace;\n    font-size: 0.8rem;\n    outline:\
+    \ none;\n  }\n  .custom-spice-row input:focus { border-color: var(--accent-spice);\
+    \ }\n\n  .custom-spice-btn {\n    background: var(--accent-spice);\n    border:\
+    \ none;\n    border-radius: 4px;\n    padding: 0.4rem 0.8rem;\n    color: var(--bg);\n\
+    \    font-family: 'IBM Plex Mono', monospace;\n    font-size: 0.75rem;\n    cursor:\
+    \ pointer;\n    font-weight: 500;\n    text-transform: uppercase;\n    letter-spacing:\
+    \ 0.05em;\n  }\n\n  /* Meal Matrix */\n  .matrix-container {\n    background:\
+    \ var(--surface);\n    border: 1px solid var(--border);\n    border-radius: 8px;\n\
+    \    overflow: hidden;\n    margin-bottom: 2rem;\n  }\n\n  .matrix-header {\n\
+    \    display: grid;\n    grid-template-columns: 60px 1fr 1fr 1fr;\n    background:\
+    \ var(--surface2);\n    border-bottom: 1px solid var(--border);\n  }\n\n  .matrix-header\
+    \ div {\n    padding: 0.75rem 1rem;\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.7rem;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n\
+    \    color: var(--text-dim);\n  }\n\n  .matrix-row {\n    display: grid;\n   \
+    \ grid-template-columns: 60px 1fr 1fr 1fr;\n    border-bottom: 1px solid var(--border);\n\
+    \  }\n  .matrix-row:last-child { border-bottom: none; }\n\n  .matrix-row.protein-label\
+    \ {\n    background: var(--accent-protein-bg);\n  }\n  .matrix-row.veg-label {\n\
+    \    background: var(--accent-veg-bg);\n  }\n  .matrix-row.starch-label {\n  \
+    \  background: var(--accent-starch-bg);\n  }\n\n  .matrix-num {\n    padding:\
+    \ 0.75rem 1rem;\n    font-family: 'IBM Plex Mono', monospace;\n    font-size:\
+    \ 0.8rem;\n    color: var(--text-dim);\n    border-right: 1px solid var(--border);\n\
+    \    display: flex;\n    align-items: center;\n  }\n\n  .matrix-cell {\n    padding:\
+    \ 0.75rem 1rem;\n    font-size: 0.9rem;\n    display: flex;\n    align-items:\
+    \ center;\n    gap: 0.5rem;\n    cursor: pointer;\n    transition: background\
+    \ 0.15s;\n    min-height: 44px;\n  }\n  .matrix-cell:hover { background: var(--surface2);\
+    \ }\n\n  .matrix-cell.protein-cell { color: var(--accent-protein); font-weight:\
+    \ 500; }\n  .matrix-cell.veg-cell { color: var(--accent-veg); }\n  .matrix-cell.starch-cell\
+    \ { color: var(--accent-starch); font-weight: 500; }\n\n  .matrix-cell.empty-cell\
+    \ {\n    color: var(--text-dim);\n    font-style: italic;\n    font-size: 0.8rem;\n\
+    \  }\n\n  /* Meal checkboxes */\n  .meal-check {\n    appearance: none;\n    width:\
+    \ 18px;\n    height: 18px;\n    border: 2px solid var(--border);\n    border-radius:\
+    \ 3px;\n    cursor: pointer;\n    flex-shrink: 0;\n    position: relative;\n \
+    \   transition: all 0.15s;\n  }\n  .meal-check:hover { border-color: var(--text-dim);\
+    \ }\n  .meal-check:checked {\n    background: var(--accent-veg);\n    border-color:\
+    \ var(--accent-veg);\n  }\n  .meal-check:checked::after {\n    content: '\u2713\
+    ';\n    position: absolute;\n    top: 50%;\n    left: 50%;\n    transform: translate(-50%,\
+    \ -50%);\n    color: var(--bg);\n    font-size: 0.7rem;\n    font-weight: 700;\n\
+    \  }\n\n  /* Meal row dimming */\n  .matrix-row.dimmed { opacity: 0.35; }\n\n\
+    \  /* Recipe Display */\n  .recipe-panel {\n    background: var(--surface);\n\
+    \    border: 1px solid var(--border);\n    border-radius: 8px;\n    padding: 1.5rem;\n\
+    \    margin-bottom: 2rem;\n  }\n\n  .recipe-panel h3 {\n    font-family: 'DM Serif\
+    \ Display', serif;\n    font-size: 1.3rem;\n    margin-bottom: 1rem;\n    color:\
+    \ var(--text);\n  }\n\n  .recipe-detail {\n    display: grid;\n    grid-template-columns:\
+    \ 1fr 1fr 1fr;\n    gap: 1rem;\n    margin-bottom: 1rem;\n  }\n\n  @media (max-width:\
+    \ 768px) {\n    .recipe-detail { grid-template-columns: 1fr; }\n  }\n\n  .recipe-detail-item\
+    \ {\n    padding: 0.75rem;\n    border-radius: 6px;\n  }\n  .recipe-detail-item.protein-detail\
+    \ {\n    background: var(--accent-protein-bg);\n    border-left: 3px solid var(--accent-protein);\n\
+    \  }\n  .recipe-detail-item.veg-detail {\n    background: var(--accent-veg-bg);\n\
+    \    border-left: 3px solid var(--accent-veg);\n  }\n  .recipe-detail-item.starch-detail\
+    \ {\n    background: var(--accent-starch-bg);\n    border-left: 3px solid var(--accent-starch);\n\
+    \  }\n\n  .recipe-detail-item .label {\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.65rem;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n\
+    \    color: var(--text-dim);\n    margin-bottom: 0.25rem;\n  }\n\n  .recipe-detail-item\
+    \ .value {\n    font-size: 1rem;\n    font-weight: 400;\n  }\n\n  .recipe-detail-item.protein-detail\
+    \ .value { color: var(--accent-protein); }\n  .recipe-detail-item.veg-detail .value\
+    \ { color: var(--accent-veg); }\n  .recipe-detail-item.starch-detail .value {\
+    \ color: var(--accent-starch); }\n\n  .recipe-placeholder {\n    text-align: center;\n\
+    \    padding: 3rem;\n    color: var(--text-dim);\n    font-style: italic;\n  }\n\
+    \n  /* Shopping List */\n  .shopping-grid {\n    display: grid;\n    grid-template-columns:\
+    \ repeat(3, 1fr);\n    gap: 1.5rem;\n  }\n\n  @media (max-width: 768px) {\n  \
+    \  .shopping-grid { grid-template-columns: 1fr; }\n  }\n\n  .shopping-card {\n\
+    \    background: var(--surface);\n    border: 1px solid var(--border);\n    border-radius:\
+    \ 8px;\n    padding: 1.25rem;\n  }\n  .shopping-card.protein-s { border-top: 3px\
+    \ solid var(--accent-protein); }\n  .shopping-card.veg-s { border-top: 3px solid\
+    \ var(--accent-veg); }\n  .shopping-card.starch-s { border-top: 3px solid var(--accent-starch);\
+    \ }\n  .shopping-card.spice-s { border-top: 3px solid var(--accent-spice); }\n\
+    \n  .shopping-card h4 {\n    font-family: 'IBM Plex Mono', monospace;\n    font-size:\
+    \ 0.75rem;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n    color:\
+    \ var(--text-dim);\n    margin-bottom: 1rem;\n  }\n\n  .shopping-card.protein-s\
+    \ h4 { color: var(--accent-protein); }\n  .shopping-card.veg-s h4 { color: var(--accent-veg);\
+    \ }\n  .shopping-card.starch-s h4 { color: var(--accent-starch); }\n  .shopping-card.spice-s\
+    \ h4 { color: var(--accent-spice); }\n\n  .shopping-item {\n    display: flex;\n\
+    \    align-items: center;\n    gap: 0.5rem;\n    padding: 0.4rem 0;\n  }\n\n \
+    \ .shop-check {\n    appearance: none;\n    width: 16px;\n    height: 16px;\n\
+    \    border: 2px solid var(--border);\n    border-radius: 3px;\n    cursor: pointer;\n\
+    \    flex-shrink: 0;\n    position: relative;\n    transition: all 0.15s;\n  }\n\
+    \  .shop-check:hover { border-color: var(--text-dim); }\n  .shop-check:checked\
+    \ {\n    background: var(--accent-shopping);\n    border-color: var(--accent-shopping);\n\
+    \  }\n  .shop-check:checked::after {\n    content: '\u2713';\n    position: absolute;\n\
+    \    top: 50%;\n    left: 50%;\n    transform: translate(-50%, -50%);\n    color:\
+    \ var(--bg);\n    font-size: 0.65rem;\n    font-weight: 700;\n  }\n\n  .shopping-item\
+    \ span {\n    font-size: 0.9rem;\n    transition: all 0.15s;\n  }\n  .shopping-item\
+    \ span.checked-item {\n    text-decoration: line-through;\n    color: var(--text-dim);\n\
+    \  }\n\n  .add-spice-btn {\n    background: none;\n    border: 1px dashed var(--border);\n\
+    \    border-radius: 4px;\n    padding: 0.4rem 0.8rem;\n    color: var(--text-dim);\n\
+    \    font-family: 'IBM Plex Mono', monospace;\n    font-size: 0.75rem;\n    cursor:\
+    \ pointer;\n    margin-top: 0.5rem;\n    transition: all 0.2s;\n    width: 100%;\n\
+    \    text-transform: uppercase;\n    letter-spacing: 0.05em;\n  }\n  .add-spice-btn:hover\
+    \ { border-color: var(--accent-spice); color: var(--text); }\n\n  /* Stats bar\
+    \ */\n  .stats-bar {\n    display: flex;\n    gap: 2rem;\n    justify-content:\
+    \ center;\n    margin-bottom: 2rem;\n    flex-wrap: wrap;\n  }\n\n  .stat {\n\
+    \    text-align: center;\n  }\n\n  .stat-number {\n    font-family: 'DM Serif\
+    \ Display', serif;\n    font-size: 2rem;\n    background: linear-gradient(135deg,\
+    \ var(--accent-protein), var(--accent-starch));\n    -webkit-background-clip:\
+    \ text;\n    -webkit-text-fill-color: transparent;\n    background-clip: text;\n\
+    \  }\n\n  .stat-label {\n    font-family: 'IBM Plex Mono', monospace;\n    font-size:\
+    \ 0.65rem;\n    letter-spacing: 0.1em;\n    text-transform: uppercase;\n    color:\
+    \ var(--text-dim);\n  }\n\n  /* Action buttons */\n  .action-row {\n    display:\
+    \ flex;\n    gap: 1rem;\n    margin-top: 2rem;\n    justify-content: center;\n\
+    \    flex-wrap: wrap;\n  }\n\n  .action-btn {\n    background: var(--surface);\n\
+    \    border: 1px solid var(--border);\n    border-radius: 6px;\n    padding: 0.6rem\
+    \ 1.5rem;\n    color: var(--text-dim);\n    font-family: 'IBM Plex Mono', monospace;\n\
+    \    font-size: 0.8rem;\n    cursor: pointer;\n    transition: all 0.2s;\n   \
+    \ text-transform: uppercase;\n    letter-spacing: 0.05em;\n  }\n  .action-btn:hover\
+    \ {\n    border-color: var(--text-dim);\n    color: var(--text);\n  }\n  .action-btn.primary\
+    \ {\n    background: var(--accent-protein);\n    border-color: var(--accent-protein);\n\
+    \    color: var(--bg);\n    font-weight: 500;\n  }\n  .action-btn.primary:hover\
+    \ {\n    opacity: 0.9;\n  }\n\n  /* Responsive */\n  @media (max-width: 768px)\
+    \ {\n    .header h1 { font-size: 2rem; }\n    .matrix-header { grid-template-columns:\
+    \ 40px 1fr 1fr 1fr; }\n    .matrix-row { grid-template-columns: 40px 1fr 1fr 1fr;\
+    \ }\n    .matrix-num { padding: 0.5rem 0.5rem; }\n  }\n\n  /* Scrollbar */\n \
+    \ ::-webkit-scrollbar { width: 6px; }\n  ::-webkit-scrollbar-track { background:\
+    \ var(--bg); }\n  ::-webkit-scrollbar-thumb { background: var(--border); border-radius:\
+    \ 3px; }\n</style>\n</head>\n<body>\n\n<div class=\"app\">\n  <div class=\"header\"\
+    >\n    <h1>Sudoku Meals</h1>\n    <p>3 proteins \xD7 3 vegetables \xD7 3 starches\
+    \ = 27 meals</p>\n  </div>\n\n  <div class=\"tabs\">\n    <button class=\"tab-btn\
+    \ active\" data-tab=\"config\">Grid</button>\n    <button class=\"tab-btn\" data-tab=\"\
+    spices\">Spice Profiles</button>\n    <button class=\"tab-btn\" data-tab=\"meals\"\
+    >Meal Matrix</button>\n    <button class=\"tab-btn\" data-tab=\"shopping\">Shopping\
+    \ List</button>\n  </div>\n\n  <!-- GRID CONFIG -->\n  <div id=\"tab-config\"\
+    \ class=\"section active\">\n    <div class=\"grid-config\">\n      <div class=\"\
+    sudoku-grid\">\n        <!-- Protein row -->\n        <div class=\"sudoku-label\
+    \ protein-label\">PROTEINS</div>\n        <div class=\"sudoku-row-group\" id=\"\
+    protein-grid\"></div>\n\n        <!-- Vegetable row -->\n        <div class=\"\
+    sudoku-label veg-label\">VEGETABLES</div>\n        <div class=\"sudoku-row-group\"\
+    \ id=\"veg-grid\"></div>\n\n        <!-- Starch row -->\n        <div class=\"\
+    sudoku-label starch-label\">STARCHES</div>\n        <div class=\"sudoku-row-group\"\
+    \ id=\"starch-grid\"></div>\n      </div>\n    </div>\n\n    <div class=\"sudoku-legend\"\
+    >\n      <div class=\"legend-item\"><div class=\"legend-dot protein-dot\"></div>\
+    \ Protein</div>\n      <div class=\"legend-item\"><div class=\"legend-dot veg-dot\"\
+    ></div> Vegetable</div>\n      <div class=\"legend-item\"><div class=\"legend-dot\
+    \ starch-dot\"></div> Starch</div>\n    </div>\n\n    <div class=\"combo-preview\"\
+    \ id=\"combo-preview\">\n      <div class=\"label\">Combinations</div>\n     \
+    \ <div class=\"combo\"><span class=\"protein-text\">\u2014</span> \xD7 <span class=\"\
+    veg-text\">\u2014</span> \xD7 <span class=\"starch-text\">\u2014</span></div>\n\
+    \      <div class=\"count\" id=\"combo-count\"></div>\n    </div>\n\n    <div\
+    \ class=\"action-row\">\n      <button class=\"action-btn primary\" onclick=\"\
+    saveConfig()\">Save Grid</button>\n      <button class=\"action-btn\" onclick=\"\
+    resetConfig()\">Reset to Default</button>\n    </div>\n  </div>\n\n  <!-- SPICE\
+    \ PROFILES -->\n  <div id=\"tab-spices\" class=\"section\">\n    <div class=\"\
+    spice-section\">\n      <h3>Spice Profiles \u2014 click a card to select, then\
+    \ pick spices</h3>\n      <div class=\"spice-grid\" id=\"spice-grid\"></div>\n\
+    \    </div>\n    <div class=\"action-row\">\n      <button class=\"action-btn\
+    \ primary\" onclick=\"saveSpices()\">Save Spice Selection</button>\n    </div>\n\
+    \  </div>\n\n  <!-- MEAL MATRIX -->\n  <div id=\"tab-meals\" class=\"section\"\
+    >\n    <div class=\"stats-bar\">\n      <div class=\"stat\">\n        <div class=\"\
+    stat-number\" id=\"stat-total\">0</div>\n        <div class=\"stat-label\">Total\
+    \ Meals</div>\n      </div>\n      <div class=\"stat\">\n        <div class=\"\
+    stat-number\" id=\"stat-used\">0</div>\n        <div class=\"stat-label\">Used\
+    \ This Week</div>\n      </div>\n      <div class=\"stat\">\n        <div class=\"\
+    stat-number\" id=\"stat-remaining\">0</div>\n        <div class=\"stat-label\"\
+    >Remaining</div>\n      </div>\n    </div>\n\n    <div class=\"matrix-container\"\
+    \ id=\"meal-matrix\"></div>\n\n    <div class=\"recipe-panel\" id=\"recipe-panel\"\
+    >\n      <div class=\"recipe-placeholder\">Click a meal to see details</div>\n\
+    \    </div>\n  </div>\n\n  <!-- SHOPPING LIST -->\n  <div id=\"tab-shopping\"\
+    \ class=\"section\">\n    <div class=\"shopping-grid\" id=\"shopping-grid\"></div>\n\
+    \    <div class=\"action-row\">\n      <button class=\"action-btn\" onclick=\"\
+    resetShopping()\">Reset Checkoffs</button>\n      <button class=\"action-btn\"\
+    \ onclick=\"exportShopping()\">Copy to Clipboard</button>\n    </div>\n  </div>\n\
+    </div>\n\n<script>\n// ===== DEFAULT DATA =====\nconst DEFAULT_PROTEINS = ['Fish',\
+    \ 'Chicken', 'Beef'];\nconst DEFAULT_VEGS = ['Asparagus', 'Carrots', 'Spinach'];\n\
+    const DEFAULT_STARCHES = ['Rice', 'Sweet Potato', 'White Potato'];\n\nconst DEFAULT_SPICE_PROFILES\
+    \ = [\n  {\n    id: 'mediterranean',\n    name: 'Mediterranean Herb',\n    spices:\
+    \ ['Garlic', 'Lemon zest', 'Oregano', 'Rosemary', 'Thyme', 'Black pepper'],\n\
+    \    pairs: 'Fish, chicken, asparagus, white potato'\n  },\n  {\n    id: 'southwest',\n\
+    \    name: 'Smoky Southwest',\n    spices: ['Smoked paprika', 'Cumin', 'Garlic\
+    \ powder', 'Chili powder', 'Onion powder', 'Cayenne'],\n    pairs: 'Beef, chicken,\
+    \ sweet potato, carrots'\n  },\n  {\n    id: 'curry',\n    name: 'Warm Curry',\n\
+    \    spices: ['Turmeric', 'Cumin', 'Coriander', 'Ginger', 'Cinnamon', 'Cardamom'],\n\
+    \    pairs: 'Chicken, fish, carrots, spinach, rice, sweet potato'\n  },\n  {\n\
+    \    id: 'asian',\n    name: 'Asian-Inspired',\n    spices: ['Ginger', 'Garlic',\
+    \ 'Five spice', 'Sesame', 'White pepper', 'Red pepper flakes'],\n    pairs: 'Beef,\
+    \ fish, spinach, rice, carrots'\n  },\n  {\n    id: 'savory',\n    name: 'Simple\
+    \ Savory',\n    spices: ['Garlic powder', 'Onion powder', 'Italian seasoning',\
+    \ 'Salt', 'Black pepper', 'Dried parsley'],\n    pairs: 'Everything'\n  },\n \
+    \ {\n    id: 'lemon-herb',\n    name: 'Lemon Herb & Dill',\n    spices: ['Dill',\
+    \ 'Lemon pepper', 'Garlic', 'Parsley', 'Chives', 'Capers'],\n    pairs: 'Fish,\
+    \ asparagus, spinach, white potato, rice'\n  }\n];\n\n// ===== STATE =====\nlet\
+    \ state = loadState();\n\nfunction defaultState() {\n  return {\n    proteins:\
+    \ [...DEFAULT_PROTEINS],\n    vegs: [...DEFAULT_VEGS],\n    starches: [...DEFAULT_STARCHES],\n\
+    \    selectedSpices: [],\n    checkedMeals: {},\n    checkedShopping: {},\n  \
+    \  customSpiceProfiles: [],\n    lastSave: null\n  };\n}\n\nfunction loadState()\
+    \ {\n  try {\n    const saved = localStorage.getItem('sudoku-meals-state');\n\
+    \    if (saved) {\n      const parsed = JSON.parse(saved);\n      // Ensure arrays\n\
+    \      parsed.proteins = parsed.proteins || [];\n      parsed.vegs = parsed.vegs\
+    \ || [];\n      parsed.starches = parsed.starches || [];\n      parsed.selectedSpices\
+    \ = parsed.selectedSpices || [];\n      parsed.checkedMeals = parsed.checkedMeals\
+    \ || {};\n      parsed.checkedShopping = parsed.checkedShopping || {};\n     \
+    \ parsed.customSpiceProfiles = parsed.customSpiceProfiles || [];\n      return\
+    \ parsed;\n    }\n  } catch(e) {}\n  return defaultState();\n}\n\nfunction saveState()\
+    \ {\n  state.lastSave = Date.now();\n  localStorage.setItem('sudoku-meals-state',\
+    \ JSON.stringify(state));\n}\n\n// ===== TABS =====\ndocument.querySelectorAll('.tab-btn').forEach(btn\
+    \ => {\n  btn.addEventListener('click', () => {\n    document.querySelectorAll('.tab-btn').forEach(b\
+    \ => b.classList.remove('active'));\n    document.querySelectorAll('.section').forEach(s\
+    \ => s.classList.remove('active'));\n    btn.classList.add('active');\n    document.getElementById('tab-'\
+    \ + btn.dataset.tab).classList.add('active');\n\n    if (btn.dataset.tab === 'meals')\
+    \ renderMealMatrix();\n    if (btn.dataset.tab === 'shopping') renderShopping();\n\
+    \    if (btn.dataset.tab === 'config') renderConfig();\n    if (btn.dataset.tab\
+    \ === 'spices') renderSpiceGrid();\n  });\n});\n\n// ===== CONFIG =====\nfunction\
+    \ renderConfig() {\n  renderSudokuGrid('protein', state.proteins, 'protein-cell');\n\
+    \  renderSudokuGrid('veg', state.vegs, 'veg-cell');\n  renderSudokuGrid('starch',\
+    \ state.starches, 'starch-cell');\n  updateComboPreview();\n}\n\nfunction renderSudokuGrid(type,\
+    \ items, cellClass) {\n  const grid = document.getElementById(type === 'veg' ?\
+    \ 'veg-grid' : type === 'starch' ? 'starch-grid' : 'protein-grid');\n  grid.innerHTML\
+    \ = '';\n  const slotLabels = { protein: ['1A', '1B', '1C'], veg: ['2A', '2B',\
+    \ '2C'], starch: ['3A', '3B', '3C'] };\n  items.forEach((item, i) => {\n    const\
+    \ cell = document.createElement('div');\n    cell.className = `sudoku-cell ${cellClass}`;\n\
+    \    const slotText = slotLabels[type][i] || '';\n    cell.innerHTML = `\n   \
+    \   <div class=\"cell-slot\">slot ${slotText}</div>\n      <input type=\"text\"\
+    \ value=\"${escHtml(item)}\" onchange=\"updateIngredient('${type}', ${i}, this.value)\"\
+    \ onkeydown=\"handleIngredientKey(event, '${type}', ${i})\" placeholder=\"item\"\
+    >\n      <button class=\"remove-cell-btn\" onclick=\"removeIngredient('${type}',\
+    \ ${i})\" title=\"Remove\">\xD7</button>\n    `;\n    grid.appendChild(cell);\n\
+    \  });\n  // Fill empty slots with add buttons\n  for (let i = items.length; i\
+    \ < 3; i++) {\n    const cell = document.createElement('div');\n    cell.className\
+    \ = `sudoku-cell ${cellClass}`;\n    cell.innerHTML = `<button class=\"add-cell-btn\"\
+    \ onclick=\"addIngredient('${type}')\"><span class=\"plus\">+</span>Add item</button>`;\n\
+    \    grid.appendChild(cell);\n  }\n}\n\nfunction addIngredient(type) {\n  const\
+    \ key = type === 'veg' ? 'vegs' : type === 'starch' ? 'starches' : 'proteins';\n\
+    \  if (state[key].length >= 3) { showToast('Max 3 items per category'); return;\
+    \ }\n  state[key].push('');\n  saveState();\n  renderConfig();\n  showToast(`Item\
+    \ added to ${type}`);\n}\n\nfunction updateIngredient(type, index, value) {\n\
+    \  const key = type === 'veg' ? 'vegs' : type === 'starch' ? 'starches' : 'proteins';\n\
+    \  state[key][index] = value.trim();\n  saveState();\n}\n\nfunction removeIngredient(type,\
+    \ index) {\n  const key = type === 'veg' ? 'vegs' : type === 'starch' ? 'starches'\
+    \ : 'proteins';\n  state[key].splice(index, 1);\n  saveState();\n  renderConfig();\n\
+    }\n\nfunction handleIngredientKey(e, type, index) {\n  if (e.key === 'Enter')\
+    \ {\n    e.preventDefault();\n    addIngredient(type);\n  }\n}\n\nfunction saveConfig()\
+    \ {\n  // Gather current values from inputs\n  gatherFromInputs('protein', 'proteins');\n\
+    \  gatherFromInputs('veg', 'vegs');\n  gatherFromInputs('starch', 'starches');\n\
+    \  saveState();\n  showToast('Grid saved!');\n}\n\nfunction gatherFromInputs(type,\
+    \ stateKey) {\n  const grid = document.getElementById(type === 'veg' ? 'veg-grid'\
+    \ : type === 'starch' ? 'starch-grid' : 'protein-grid');\n  const inputs = grid.querySelectorAll('input[type=\"\
+    text\"]');\n  const values = Array.from(inputs).map(i => i.value.trim()).filter(v\
+    \ => v);\n  state[stateKey] = values;\n}\n\nfunction resetConfig() {\n  if (!confirm('Reset\
+    \ grid to default proteins, vegetables, and starches?')) return;\n  state.proteins\
+    \ = [...DEFAULT_PROTEINS];\n  state.vegs = [...DEFAULT_VEGS];\n  state.starches\
+    \ = [...DEFAULT_STARCHES];\n  saveState();\n  renderConfig();\n  showToast('Grid\
+    \ reset to defaults');\n}\n\nfunction updateComboPreview() {\n  const count =\
+    \ state.proteins.length * state.vegs.length * state.starches.length;\n  const\
+    \ el = document.getElementById('combo-count');\n  if (el) el.textContent = state.proteins.length\
+    \ > 0 && state.vegs.length > 0 && state.starches.length > 0\n    ? `${count} unique\
+    \ meals possible`\n    : `Fill all 9 slots to see your combinations`;\n  // Update\
+    \ combo display\n  const preview = document.getElementById('combo-preview');\n\
+    \  if (preview) {\n    const comboEl = preview.querySelector('.combo');\n    if\
+    \ (comboEl) {\n      const p = state.proteins.length > 0 ? state.proteins[0] :\
+    \ '\u2014';\n      const v = state.vegs.length > 0 ? state.vegs[0] : '\u2014';\n\
+    \      const s = state.starches.length > 0 ? state.starches[0] : '\u2014';\n \
+    \     comboEl.innerHTML = `<span class=\"protein-text\">${escHtml(p)}</span> \xD7\
+    \ <span class=\"veg-text\">${escHtml(v)}</span> \xD7 <span class=\"starch-text\"\
+    >${escHtml(s)}</span>`;\n    }\n  }\n}\n\n// ===== SPICE PROFILES =====\nfunction\
+    \ renderSpiceGrid() {\n  const grid = document.getElementById('spice-grid');\n\
+    \  grid.innerHTML = '';\n\n  const allProfiles = [...DEFAULT_SPICE_PROFILES, ...state.customSpiceProfiles];\n\
+    \n  allProfiles.forEach(profile => {\n    const isSelected = state.selectedSpices.includes(profile.id);\n\
+    \    const card = document.createElement('div');\n    card.className = 'spice-card'\
+    \ + (isSelected ? ' selected' : '');\n\n    let spicesHtml = profile.spices.map(s\
+    \ =>\n      `<span class=\"spice-tag ${state.selectedSpices.includes(profile.id)\
+    \ ? 'selected' : ''}\"\n             onclick=\"toggleSpiceFromProfile('${profile.id}',\
+    \ '${escAttr(s)}', event)\"\n             title=\"Click to add/remove\">${escHtml(s)}</span>`\n\
+    \    ).join('');\n\n    card.innerHTML = `\n      <div class=\"spice-card-header\"\
+    >\n        <h4>${escHtml(profile.name)}</h4>\n        <span style=\"font-family:\
+    \ 'IBM Plex Mono', monospace; font-size: 0.7rem; color: var(--text-dim)\">${profile.spices.length}\
+    \ spices</span>\n      </div>\n      <div class=\"spice-tags\">${spicesHtml}</div>\n\
+    \      <div class=\"spice-pairs\">Pairs with: ${escHtml(profile.pairs)}</div>\n\
+    \    `;\n\n    card.addEventListener('click', (e) => {\n      if (e.target.classList.contains('spice-tag'))\
+    \ return;\n      toggleProfile(profile.id);\n    });\n\n    grid.appendChild(card);\n\
+    \  });\n\n  // Add custom profile button\n  const addCard = document.createElement('div');\n\
+    \  addCard.className = 'spice-card';\n  addCard.style.borderStyle = 'dashed';\n\
+    \  addCard.style.borderColor = 'var(--border)';\n  addCard.style.cursor = 'pointer';\n\
+    \  addCard.innerHTML = `\n    <div class=\"spice-card-header\">\n      <h4 style=\"\
+    color: var(--text-dim)\">+ Custom Profile</h4>\n    </div>\n    <div class=\"\
+    custom-spice-row\">\n      <input type=\"text\" placeholder=\"Profile name\" id=\"\
+    custom-name\">\n      <input type=\"text\" placeholder=\"Spices (comma-separated)\"\
+    \ id=\"custom-spices\">\n    </div>\n    <div class=\"custom-spice-row\" style=\"\
+    margin-top:0.4rem\">\n      <input type=\"text\" placeholder=\"Pairs with...\"\
+    \ id=\"custom-pairs\" style=\"width:100%\">\n      <button class=\"custom-spice-btn\"\
+    \ onclick=\"addCustomProfile()\">Add</button>\n    </div>\n  `;\n  grid.appendChild(addCard);\n\
+    }\n\nfunction toggleProfile(profileId) {\n  const idx = state.selectedSpices.indexOf(profileId);\n\
+    \  if (idx === -1) {\n    state.selectedSpices.push(profileId);\n  } else {\n\
+    \    state.selectedSpices.splice(idx, 1);\n  }\n  saveState();\n  renderSpiceGrid();\n\
+    }\n\nfunction toggleSpiceFromProfile(profileId, spice, event) {\n  event.stopPropagation();\n\
+    \  // For simplicity, adding/removes the whole profile\n  toggleProfile(profileId);\n\
+    }\n\nfunction addCustomProfile() {\n  const name = document.getElementById('custom-name').value.trim();\n\
+    \  const spicesStr = document.getElementById('custom-spices').value.trim();\n\
+    \  const pairs = document.getElementById('custom-pairs').value.trim();\n\n  if\
+    \ (!name || !spicesStr) {\n    showToast('Name and spices required');\n    return;\n\
+    \  }\n\n  const spices = spicesStr.split(',').map(s => s.trim()).filter(s => s);\n\
+    \  const profile = {\n    id: 'custom-' + Date.now(),\n    name,\n    spices,\n\
+    \    pairs: pairs || 'All'\n  };\n\n  state.customSpiceProfiles.push(profile);\n\
+    \  state.selectedSpices.push(profile.id);\n  saveState();\n  renderSpiceGrid();\n\
+    \  showToast(`Custom profile \"${name}\" added`);\n}\n\nfunction saveSpices()\
+    \ {\n  saveState();\n  showToast('Spice profiles saved!');\n}\n\n// ===== MEAL\
+    \ MATRIX =====\nfunction generateMealKey(protein, veg, starch) {\n  return `${protein}||${veg}||${starch}`;\n\
+    }\n\nfunction renderMealMatrix() {\n  gatherFromInputs('protein', 'proteins');\n\
+    \  gatherFromInputs('veg', 'vegs');\n  gatherFromInputs('starch', 'starches');\n\
+    \n  const container = document.getElementById('meal-matrix');\n  container.innerHTML\
+    \ = '';\n\n  // Header\n  const header = document.createElement('div');\n  header.className\
+    \ = 'matrix-header';\n  header.innerHTML = '<div></div><div style=\"color:var(--accent-protein)\"\
+    >Protein</div><div style=\"color:var(--accent-veg)\">Vegetable</div><div style=\"\
+    color:var(--accent-starch)\">Starch</div>';\n  container.appendChild(header);\n\
+    \n  // Generate all combos\n  let mealNum = 0;\n  const allMeals = [];\n\n  for\
+    \ (const protein of state.proteins) {\n    for (const veg of state.vegs) {\n \
+    \     for (const starch of state.starches) {\n        mealNum++;\n        allMeals.push({\
+    \ num: mealNum, protein, veg, starch });\n      }\n    }\n  }\n\n  // Stats\n\
+    \  const usedCount = Object.values(state.checkedMeals).filter(Boolean).length;\n\
+    \  const totalMeals = allMeals.length;\n  const remaining = totalMeals - usedCount;\n\
+    \n  document.getElementById('stat-total').textContent = totalMeals;\n  document.getElementById('stat-used').textContent\
+    \ = usedCount;\n  document.getElementById('stat-remaining').textContent = remaining;\n\
+    \n  if (allMeals.length === 0) {\n    container.innerHTML += '<div style=\"padding:2rem;text-align:center;color:var(--text-dim)\"\
+    >Add ingredients in the Grid tab to see your meals.</div>';\n    return;\n  }\n\
+    \n  // Render rows\n  allMeals.forEach(meal => {\n    const isChecked = state.checkedMeals[generateMealKey(meal.protein,\
+    \ meal.veg, meal.starch)] || false;\n    const row = document.createElement('div');\n\
+    \    row.className = 'matrix-row' + (isChecked ? ' dimmed' : '');\n    row.style.cursor\
+    \ = 'pointer';\n    row.innerHTML = `\n      <div class=\"matrix-num\">${meal.num}</div>\n\
+    \      <div class=\"matrix-cell protein-cell\">${escHtml(meal.protein)}</div>\n\
+    \      <div class=\"matrix-cell veg-cell\">${escHtml(meal.veg)}</div>\n      <div\
+    \ class=\"matrix-cell starch-cell\">${escHtml(meal.starch)}</div>\n    `;\n  \
+    \  row.addEventListener('click', () => toggleMeal(meal));\n    container.appendChild(row);\n\
+    \  });\n\n  // Reset recipe panel if no selection\n  if (!window._selectedMeal)\
+    \ {\n    document.getElementById('recipe-panel').innerHTML = '<div class=\"recipe-placeholder\"\
+    >Click a meal to see details</div>';\n  }\n}\n\nfunction toggleMeal(meal) {\n\
+    \  const key = generateMealKey(meal.protein, meal.veg, meal.starch);\n  state.checkedMeals[key]\
+    \ = !state.checkedMeals[key];\n  saveState();\n  window._selectedMeal = meal;\n\
+    \  renderMealMatrix();\n  showRecipe(meal);\n}\n\nfunction showRecipe(meal) {\n\
+    \  const panel = document.getElementById('recipe-panel');\n  const selectedSpices\
+    \ = state.selectedSpices.map(id => {\n    const found = [...DEFAULT_SPICE_PROFILES,\
+    \ ...state.customSpiceProfiles].find(p => p.id === id);\n    return found || null;\n\
+    \  }).filter(Boolean);\n\n  let spicesHtml = '';\n  if (selectedSpices.length\
+    \ > 0) {\n    spicesHtml = selectedSpices.map(sp => {\n      return `<div style=\"\
+    margin-top:0.75rem\">\n        <div style=\"font-family:'IBM Plex Mono',monospace;font-size:0.65rem;letter-spacing:0.1em;text-transform:uppercase;color:var(--accent-spice);margin-bottom:0.25rem\"\
+    >${escHtml(sp.name)}</div>\n        <div style=\"font-size:0.85rem;color:var(--text-dim)\"\
+    >${sp.spices.join(' \xB7 ')}</div>\n        <div style=\"font-size:0.8rem;color:var(--text-dim);font-style:italic;margin-top:0.15rem\"\
+    >Pairs with: ${escHtml(sp.pairs)}</div>\n      </div>`;\n    }).join('');\n  }\n\
+    \n  panel.innerHTML = `\n    <h3>Meal #${meal.num} \u2014 ${escHtml(meal.protein)}</h3>\n\
+    \    <div class=\"recipe-detail\">\n      <div class=\"recipe-detail-item protein-detail\"\
+    >\n        <div class=\"label\">Protein</div>\n        <div class=\"value\">${escHtml(meal.protein)}</div>\n\
+    \      </div>\n      <div class=\"recipe-detail-item veg-detail\">\n        <div\
+    \ class=\"label\">Vegetable</div>\n        <div class=\"value\">${escHtml(meal.veg)}</div>\n\
+    \      </div>\n      <div class=\"recipe-detail-item starch-detail\">\n      \
+    \  <div class=\"label\">Starch</div>\n        <div class=\"value\">${escHtml(meal.starch)}</div>\n\
+    \      </div>\n    </div>\n    ${selectedSpices.length > 0 ? `<div style=\"border-top:1px\
+    \ solid var(--border);padding-top:0.75rem\">${spicesHtml}</div>` : ''}\n    <div\
+    \ style=\"margin-top:1rem;font-size:0.8rem;color:var(--text-dim);font-style:italic\"\
+    >\n      ${state.checkedMeals[generateMealKey(meal.protein, meal.veg, meal.starch)]\
+    \ ? '\u2713 Used this week' : 'Not marked as used yet. Click again to toggle.'}\n\
+    \    </div>\n  `;\n}\n\n// ===== SHOPPING LIST =====\nfunction renderShopping()\
+    \ {\n  gatherFromInputs('protein', 'proteins');\n  gatherFromInputs('veg', 'vegs');\n\
+    \  gatherFromInputs('starch', 'starches');\n\n  const grid = document.getElementById('shopping-grid');\n\
+    \  grid.innerHTML = '';\n\n  // Ingredients section\n  const sections = [\n  \
+    \  { type: 'protein-s', label: 'Proteins', items: state.proteins, prefix: 'p_'\
+    \ },\n    { type: 'veg-s', label: 'Vegetables', items: state.vegs, prefix: 'v_'\
+    \ },\n    { type: 'starch-s', label: 'Starches', items: state.starches, prefix:\
+    \ 's_' }\n  ];\n\n  sections.forEach(section => {\n    const card = document.createElement('div');\n\
+    \    card.className = `shopping-card ${section.type}`;\n    card.innerHTML = `<h4>${escHtml(section.label)}</h4>`;\n\
+    \n    section.items.forEach((item, i) => {\n      const shopKey = `${section.prefix}${i}`;\n\
+    \      const isChecked = state.checkedShopping[shopKey] || false;\n      const\
+    \ itemDiv = document.createElement('div');\n      itemDiv.className = 'shopping-item';\n\
+    \      itemDiv.innerHTML = `\n        <input type=\"checkbox\" class=\"shop-check\"\
+    \ ${isChecked ? 'checked' : ''}\n               onchange=\"toggleShopping('${shopKey}',\
+    \ this)\">\n        <span class=\"${isChecked ? 'checked-item' : ''}\">${escHtml(item)}</span>\n\
+    \      `;\n      card.appendChild(itemDiv);\n    });\n\n    grid.appendChild(card);\n\
+    \  });\n\n  // Spice profiles section\n  const spiceCard = document.createElement('div');\n\
+    \  spiceCard.className = 'shopping-card spice-s';\n  const spiceH4 = document.createElement('h4');\n\
+    \  spiceH4.textContent = 'Selected Spice Profiles';\n  spiceCard.appendChild(spiceH4);\n\
+    \n  const allProfiles = [...DEFAULT_SPICE_PROFILES, ...state.customSpiceProfiles];\n\
+    \  const selectedProfiles = allProfiles.filter(p => state.selectedSpices.includes(p.id));\n\
+    \n  if (selectedProfiles.length > 0) {\n    selectedProfiles.forEach(profile =>\
+    \ {\n      const headerSpan = document.createElement('div');\n      headerSpan.style.fontWeight\
+    \ = '500';\n      headerSpan.style.fontSize = '0.85rem';\n      headerSpan.textContent\
+    \ = profile.name;\n      spiceCard.appendChild(headerSpan);\n\n      const spicesList\
+    \ = document.createElement('div');\n      spicesList.style.paddingLeft = '1.5rem';\n\
+    \      spicesList.style.fontSize = '0.8rem';\n      spicesList.style.color = 'var(--text-dim)';\n\
+    \      spicesList.style.marginBottom = '0.75rem';\n      spicesList.textContent\
+    \ = profile.spices.join(' \xB7 ');\n      spiceCard.appendChild(spicesList);\n\
+    \    });\n  } else {\n    const emptyMsg = document.createElement('div');\n  \
+    \  emptyMsg.style.color = 'var(--text-dim)';\n    emptyMsg.style.fontStyle = 'italic';\n\
+    \    emptyMsg.style.fontSize = '0.85rem';\n    emptyMsg.textContent = 'Select\
+    \ spice profiles in the Spice Profiles tab';\n    spiceCard.appendChild(emptyMsg);\n\
+    \  }\n\n  grid.appendChild(spiceCard);\n\n  // Custom ingredient input\n  const\
+    \ addCard = document.createElement('div');\n  addCard.className = 'shopping-card';\n\
+    \  addCard.style.borderTop = '3px solid var(--accent-shopping)';\n  addCard.innerHTML\
+    \ = `\n    <h4>Custom Items</h4>\n    <div class=\"custom-spice-row\">\n     \
+    \ <input type=\"text\" placeholder=\"Add custom item...\" id=\"custom-shopping-item\"\
+    >\n      <button class=\"custom-spice-btn\" onclick=\"addCustomShopping()\">Add</button>\n\
+    \    </div>\n    <div id=\"custom-shopping-list\" style=\"margin-top:0.75rem\"\
+    ></div>\n  `;\n  grid.appendChild(addCard);\n\n  // Render custom items\n  const\
+    \ customList = document.getElementById('custom-shopping-list');\n  if (state.customShopping\
+    \ && state.customShopping.length > 0) {\n    state.customShopping.forEach((item,\
+    \ i) => {\n      const shopKey = `custom_${i}`;\n      const isChecked = state.checkedShopping[shopKey]\
+    \ || false;\n      const itemDiv = document.createElement('div');\n      itemDiv.className\
+    \ = 'shopping-item';\n      itemDiv.innerHTML = `\n        <input type=\"checkbox\"\
+    \ class=\"shop-check\" ${isChecked ? 'checked' : ''}\n               onchange=\"\
+    toggleShopping('${shopKey}', this)\">\n        <span class=\"${isChecked ? 'checked-item'\
+    \ : ''}\">${escHtml(item)}</span>\n        <button class=\"remove-btn\" onclick=\"\
+    removeCustomShopping(${i})\" title=\"Remove\">\xD7</button>\n      `;\n      customList.appendChild(itemDiv);\n\
+    \    });\n  }\n}\n\nfunction headerDiv(text) {\n  const d = document.createElement('div');\n\
+    \  d.textContent = text;\n  d.style.fontWeight = '500';\n  d.style.fontSize =\
+    \ '0.85rem';\n  return d;\n}\n\nfunction toggleShopping(key, el) {\n  state.checkedShopping[key]\
+    \ = el.checked;\n  saveState();\n  el.parentElement.querySelector('span').classList.toggle('checked-item',\
+    \ el.checked);\n}\n\nfunction addCustomShopping() {\n  const input = document.getElementById('custom-shopping-item');\n\
+    \  const val = input.value.trim();\n  if (!val) return;\n\n  if (!state.customShopping)\
+    \ state.customShopping = [];\n  state.customShopping.push(val);\n  input.value\
+    \ = '';\n  saveState();\n  renderShopping();\n  showToast('Item added');\n}\n\n\
+    function removeCustomShopping(index) {\n  state.customShopping.splice(index, 1);\n\
+    \  // Rebuild checkedShopping for custom items\n  const newChecked = {};\n  if\
+    \ (state.proteins) state.proteins.forEach((_, i) => { newChecked[`p_${i}`] = state.checkedShopping[`p_${i}`]\
+    \ || false; });\n  if (state.vegs) state.vegs.forEach((_, i) => { newChecked[`v_${i}`]\
+    \ = state.checkedShopping[`v_${i}`] || false; });\n  if (state.starches) state.starches.forEach((_,\
+    \ i) => { newChecked[`s_${i}`] = state.checkedShopping[`s_${i}`] || false; });\n\
+    \  if (state.customShopping) state.customShopping.forEach((_, i) => { newChecked[`custom_${i}`]\
+    \ = state.checkedShopping[`custom_${i}`] || false; });\n  state.checkedShopping\
+    \ = newChecked;\n  saveState();\n  renderShopping();\n}\n\nfunction resetShopping()\
+    \ {\n  if (!confirm('Clear all shopping checkoffs?')) return;\n  state.checkedShopping\
+    \ = {};\n  saveState();\n  renderShopping();\n  showToast('Shopping list reset');\n\
+    }\n\nfunction exportShopping() {\n  gatherFromInputs('protein', 'proteins');\n\
+    \  gatherFromInputs('veg', 'vegs');\n  gatherFromInputs('starch', 'starches');\n\
+    \n  let text = '\U0001F6D2 SUDOKU MEALS SHOPPING LIST\\\n';\n  text += '\u2550\
+    '.repeat(40) + '\\\n\\\n';\n\n  text += 'PROTEINS\\\n';\n  text += '\u2500\u2500\
+    '.repeat(20) + '\\\n';\n  state.proteins.forEach(item => {\n    text += `  ${state.checkedShopping['p_'\
+    \ + state.proteins.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\n`;\n  });\n\
+    \n  text += '\\\nVEGETABLES\\\n';\n  text += '\u2500\u2500'.repeat(20) + '\\\n\
+    ';\n  state.vegs.forEach(item => {\n    text += `  ${state.checkedShopping['v_'\
+    \ + state.vegs.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\n`;\n  });\n\n\
+    \  text += '\\\nSTARCHES\\\n';\n  text += '\u2500\u2500'.repeat(20) + '\\\n';\n\
+    \  state.starches.forEach(item => {\n    text += `  ${state.checkedShopping['s_'\
+    \ + state.starches.indexOf(item)] ? '\u2713' : '\u25A1'} ${item}\\\n`;\n  });\n\
+    \n  if (state.customShopping && state.customShopping.length > 0) {\n    text +=\
+    \ '\\\nCUSTOM\\\n';\n    text += '\u2500\u2500'.repeat(20) + '\\\n';\n    state.customShopping.forEach((item,\
+    \ i) => {\n      text += `  ${state.checkedShopping['custom_' + i] ? '\u2713'\
+    \ : '\u25A1'} ${item}\\\n`;\n    });\n  }\n\n  const selectedProfiles = state.selectedSpices.map(id\
+    \ => {\n    return [...DEFAULT_SPICE_PROFILES, ...state.customSpiceProfiles].find(p\
+    \ => p.id === id);\n  }).filter(Boolean);\n\n  if (selectedProfiles.length > 0)\
+    \ {\n    text += '\\\nSPICE PROFILES\\\n';\n    text += '\u2500\u2500'.repeat(20)\
+    \ + '\\\n';\n    selectedProfiles.forEach(sp => {\n      text += `\\\n  ${sp.name}\\\
+    \n`;\n      text += '    ' + sp.spices.join(' \xB7 ') + '\\\n';\n    });\n  }\n\
+    \n  navigator.clipboard.writeText(text).then(() => {\n    showToast('Shopping\
+    \ list copied to clipboard!');\n  }).catch(() => {\n    // Fallback\n    const\
+    \ ta = document.createElement('textarea');\n    ta.value = text;\n    document.body.appendChild(ta);\n\
+    \    ta.select();\n    document.execCommand('copy');\n    document.body.removeChild(ta);\n\
+    \    showToast('Shopping list copied!');\n  });\n}\n\n// ===== UTILITIES =====\n\
+    function escHtml(str) {\n  const div = document.createElement('div');\n  div.textContent\
+    \ = str;\n  return div.innerHTML;\n}\n\nfunction escAttr(str) {\n  return str.replace(/'/g,\
+    \ \"\\\\\\\\'\").replace(/\"/g, '&quot;');\n}\n\nfunction showToast(msg) {\n \
+    \ // Simple toast\n  const existing = document.querySelector('.toast');\n  if\
+    \ (existing) existing.remove();\n\n  const toast = document.createElement('div');\n\
+    \  toast.className = 'toast';\n  toast.textContent = msg;\n  toast.style.cssText\
+    \ = `\n    position: fixed;\n    bottom: 2rem;\n    left: 50%;\n    transform:\
+    \ translateX(-50%);\n    background: var(--surface2);\n    border: 1px solid var(--border);\n\
+    \    border-radius: 6px;\n    padding: 0.75rem 1.5rem;\n    color: var(--text);\n\
+    \    font-family: 'IBM Plex Mono', monospace;\n    font-size: 0.8rem;\n    z-index:\
+    \ 9999;\n    animation: toastIn 0.3s ease;\n  `;\n  document.body.appendChild(toast);\n\
+    \  setTimeout(() => {\n    toast.style.opacity = '0';\n    toast.style.transition\
+    \ = 'opacity 0.3s';\n    setTimeout(() => toast.remove(), 300);\n  }, 2000);\n\
+    }\n\n// Add toast animation\nconst style = document.createElement('style');\n\
+    style.textContent = `@keyframes toastIn { from { opacity:0; transform:translateX(-50%)\
+    \ translateY(10px); } to { opacity:1; transform:translateX(-50%) translateY(0);\
+    \ } }`;\ndocument.head.appendChild(style);\n\n// ===== INIT =====\nrenderConfig();\n\
+    renderSpiceGrid();\n</script>\n\n</body>\n</html>\n"
