@@ -1,6 +1,6 @@
 /**
  * BeckCloud Admin Panel — Backend API Server
- * Replaces nginx-only serving with a real API that talks to K8s, Keycloak, Redis, etc.
+ * Serves static files AND provides real API endpoints.
  * Uses only Node.js built-in modules (no npm dependencies).
  */
 
@@ -12,7 +12,7 @@ const { execSync } = require('child_process');
 
 const PORT = process.env.PORT || 8080;
 const K8S_API = process.env.K8S_API || 'https://172.16.0.20:6443';
-const K8S_CERT = '/var/run/secrets/kubernetes.io/serviceaccount/ca.crt';
+const STATIC_DIR = '/app/static';
 const SA_TOKEN_PATH = '/var/run/secrets/kubernetes.io/serviceaccount/token';
 const REDIS_HOST = '10.43.139.161';
 const REDIS_PORT = 6379;
@@ -20,12 +20,18 @@ const REDIS_PASSWORD = 'n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI=';
 const KC_TOKEN_URL = 'http://keycloak.identity:8080/realms/homelab/protocol/openid-connect/token';
 const KC_ADMIN_URL = 'http://keycloak.identity:8080/admin/realms/homelab';
 
-// Read SA token
+let caCert = null;
+try {
+  caCert = fs.readFileSync('/var/run/secrets/kubernetes.io/serviceaccount/ca.crt', 'utf8');
+} catch (e) {
+  // Running outside K8s or cert not available
+}
+
 let saToken = '';
 try {
   saToken = fs.readFileSync(SA_TOKEN_PATH, 'utf8').trim();
 } catch (e) {
-  // Running outside K8s — kubectl will be used instead
+  // Running outside K8s
 }
 
 // ---- K8s API helpers ----
@@ -41,7 +47,8 @@ function k8sGet(subpath, token) {
         'Authorization': `Bearer ${token || saToken}`,
         'Accept': 'application/json',
       },
-      ca: fs.readFileSync(K8S_CERT, 'utf8'),
+      ca: caCert,
+      rejectUnauthorized: !!caCert,
       timeout: 10000,
     };
     const req = https.request(opts, (res) => {
@@ -74,7 +81,8 @@ function k8sPost(subpath, body, token) {
         'Content-Type': 'application/json',
         'Accept': 'application/json',
       },
-      ca: fs.readFileSync(K8S_CERT, 'utf8'),
+      ca: caCert,
+      rejectUnauthorized: !!caCert,
       timeout: 30000,
     };
     const req = https.request(opts, (res) => {
@@ -500,9 +508,9 @@ const API_ROUTES = {
     }
   },
 
-  'DELETE /api/users/keycloak/:id': async () => {
+  'DELETE /api/users/keycloak/:id': async (params) => {
     try {
-      const result = await kcPost('/users/:id', {});
+      const result = await kcPost(`/users/${params.id}`, {});
       return { ok: true, message: 'User deleted' };
     } catch (e) {
       return { error: e.message };
@@ -628,6 +636,46 @@ const API_ROUTES = {
   },
 };
 
+// ---- File serve helper ----
+
+const MIME_TYPES = {
+  '.html': 'text/html; charset=utf-8',
+  '.css': 'text/css; charset=utf-8',
+  '.js': 'application/javascript; charset=utf-8',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.jpg': 'image/jpeg',
+  '.gif': 'image/gif',
+  '.ico': 'image/x-icon',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.eot': 'application/vnd.ms-fontobject',
+};
+
+function serveStatic(res, reqPath) {
+  // Map /css/xxx to /xxx, /js/xxx to /xxx
+  let mappedPath = reqPath;
+  if (reqPath.startsWith('/css/') || reqPath.startsWith('/js/')) {
+    mappedPath = reqPath.slice(reqPath.indexOf('/', 1));
+  }
+
+  const filePath = path.join(STATIC_DIR, mappedPath);
+  const ext = path.extname(filePath);
+  const contentType = MIME_TYPES[ext] || 'application/octet-stream';
+
+  fs.readFile(filePath, (err, data) => {
+    if (err) {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('Not found');
+      return;
+    }
+    res.writeHead(200, { 'Content-Type': contentType });
+    res.end(data);
+  });
+}
+
 // ---- Request routing ----
 
 const server = http.createServer(async (req, res) => {
@@ -644,44 +692,55 @@ const server = http.createServer(async (req, res) => {
 
   // Parse path
   const url = new URL(req.url, `http://localhost:${PORT}`);
-  const path = url.pathname;
+  const reqPath = url.pathname;
   const method = req.method;
 
-  // Check API route
-  const routeKey = `${method} ${path}`;
-  const route = API_ROUTES[routeKey];
-
-  if (!route) {
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found', path }));
+  // Serve static files for /, /css/*, /js/*, /favicon.svg
+  if (reqPath === '/' || reqPath.startsWith('/css/') || reqPath.startsWith('/js/') || reqPath === '/favicon.svg') {
+    serveStatic(res, reqPath);
     return;
   }
 
-  try {
-    // Parse body for POST
-    let body = null;
-    if (method === 'POST') {
-      let data = '';
-      for await (const chunk of req) data += chunk;
-      try { body = JSON.parse(data); } catch { body = {}; }
+  // API routes
+  if (reqPath.startsWith('/api/')) {
+    const routeKey = `${method} ${reqPath}`;
+    const route = API_ROUTES[routeKey];
+
+    if (!route) {
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found', path: reqPath }));
+      return;
     }
 
-    // Extract URL params (e.g., /api/users/keycloak/:id)
-    let params = {};
-    const parts = path.split('/');
-    for (let i = 0; i < parts.length; i++) {
-      if (parts[i].startsWith(':')) {
-        params[parts[i].slice(1)] = parts[i + 1];
+    try {
+      let body = null;
+      if (method === 'POST') {
+        let data = '';
+        for await (const chunk of req) data += chunk;
+        try { body = JSON.parse(data); } catch { body = {}; }
       }
-    }
 
-    const result = await route(body || params);
-    res.writeHead(200, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify(result));
-  } catch (e) {
-    res.writeHead(500, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: e.message }));
+      // Extract URL params
+      let params = {};
+      const parts = reqPath.split('/');
+      for (let i = 0; i < parts.length; i++) {
+        if (parts[i].startsWith(':')) {
+          params[parts[i].slice(1)] = parts[i + 1];
+        }
+      }
+
+      const result = await route(body || params);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify(result));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    }
+    return;
   }
+
+  res.writeHead(404, { 'Content-Type': 'text/plain' });
+  res.end('Not found');
 });
 
 server.listen(PORT, '0.0.0.0', () => {
