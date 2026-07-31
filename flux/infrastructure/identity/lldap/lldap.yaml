@@ -101,7 +101,6 @@ spec:
       nodePort: 31389
   type: NodePort
 ---
----
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
