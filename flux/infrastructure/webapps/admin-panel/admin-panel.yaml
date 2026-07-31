@@ -1,0 +1,107 @@
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: admin-panel
+  namespace: webapps
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - kind: Rule
+      match: Host(`admin.beckcloud.cloud`) || Host(`admin.becklab.cloud`)
+      services:
+        - name: admin-panel-static
+          port: 80
+      middlewares:
+        - name: admin-panel-compress
+          namespace: webapps
+        - name: sso-admin-chain
+          namespace: identity
+  tls:
+    secretName: admin-panel-tls
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-panel-static
+  namespace: webapps
+spec:
+  selector:
+    app: admin-panel
+  ports:
+    - name: http
+      port: 80
+      targetPort: 80
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-panel
+  namespace: webapps
+  labels:
+    app: admin-panel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-panel
+  template:
+    metadata:
+      labels:
+        app: admin-panel
+    spec:
+      containers:
+        - name: admin-panel
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+          resources:
+            limits:
+              memory: 64Mi
+              cpu: 50m
+            requests:
+              memory: 32Mi
+              cpu: 25m
+          volumeMounts:
+            - name: admin-content
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+      volumes:
+        - name: admin-content
+          configMap:
+            name: admin-panel-content
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: admin-panel-content
+  namespace: webapps
+data:
+  # This is populated by the build step. The static HTML/CSS/JS
+  # from docs/brand/website/admin/ is mounted here.
+  index.html: |
+    <!-- Admin panel served from nginx -->
+  # In production, use a initContainer or sidecar to copy the static files.
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: admin-panel-compress
+  namespace: webapps
+spec:
+  compress: {}
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: admin-panel
+  namespace: webapps
+spec:
+  secretName: admin-panel-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - admin.beckcloud.cloud
+    - admin.becklab.cloud

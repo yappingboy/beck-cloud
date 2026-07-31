@@ -1,0 +1,75 @@
+{
+  "collection": "bc_tickets",
+  "name": "bc_tickets",
+  "meta": {
+    "collection": "bc_tickets",
+    "icon": "assignment",
+    "note": "Trouble tickets from users. Track status, priority, and resolution.",
+    "display_template": "#{{id}}: {{title}}"
+  },
+  "schema": {
+    "name": "bc_tickets",
+    "columns": {
+      "id": {
+        "autoGenerate": true,
+        "dbType": "UUID",
+        "name": "id",
+        "nullable": false,
+        "generated": true,
+        "dataType": "UUID"
+      },
+      "title": {
+        "name": "title",
+        "dataType": "string",
+        "nullable": false,
+        "special": []
+      },
+      "description": {
+        "name": "description",
+        "dataType": "text",
+        "nullable": true,
+        "special": []
+      },
+      "user_email": {
+        "name": "user_email",
+        "dataType": "string",
+        "nullable": true,
+        "special": []
+      },
+      "service": {
+        "name": "service",
+        "dataType": "string",
+        "nullable": true,
+        "special": []
+      },
+      "status": {
+        "name": "status",
+        "dataType": "string",
+        "nullable": false,
+        "special": [],
+        "defaultValue": "new"
+      },
+      "priority": {
+        "name": "priority",
+        "dataType": "string",
+        "nullable": false,
+        "special": [],
+        "defaultValue": "normal"
+      },
+      "created_at": {
+        "name": "created_at",
+        "dataType": "datetime",
+        "nullable": false,
+        "generated": true,
+        "special": ["date_created"]
+      },
+      "updated_at": {
+        "name": "updated_at",
+        "dataType": "datetime",
+        "nullable": false,
+        "generated": true,
+        "special": ["date_updated"]
+      }
+    }
+  }
+}

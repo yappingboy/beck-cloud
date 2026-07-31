@@ -10,4 +10,3 @@ spec:
     kind: ClusterIssuer
   dnsNames:
     - becklab.cloud
-    - admin.becklab.cloud

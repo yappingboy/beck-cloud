@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BeckCloud Admin Panel — Central management dashboard">
+  <meta name="theme-color" content="#0F1729">
+  <title>BeckCloud — Admin Panel</title>
+
+  <link rel="icon" type="image/svg+xml" href="../favicon.svg">
+
+  <!-- Preload fonts for performance -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="../css/style.css">
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+  <!-- ========== NOISE OVERLAY ========== -->
+  <div class="noise" aria-hidden="true"></div>
+
+  <!-- ========== MOBILE SIDEBAR TOGGLE ========== -->
+  <button class="admin-sidebar-toggle" id="admin-sidebar-toggle" aria-label="Toggle navigation" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+
+  <!-- ========== SIDEBAR OVERLAY (mobile) ========== -->
+  <div class="admin-sidebar-overlay" id="admin-sidebar-overlay"></div>
+
+  <!-- ========== ADMIN SIDEBAR ========== -->
+  <aside class="admin-sidebar" id="admin-sidebar" aria-label="Admin navigation">
+    <a href="/" class="admin-sidebar-logo" aria-label="BeckCloud home">
+      <svg class="logo-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z"
+              fill="none" stroke="currentColor" stroke-width="20"/>
+        <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130
+                 C95,130 88,120 85,105 C82,90 92,75 100,65 Z"
+              fill="currentColor"/>
+      </svg>
+      <span class="wordmark">Beck<span class="gradient-text">Cloud</span></span>
+      <span class="admin-badge">Admin</span>
+    </a>
+
+    <nav class="admin-sidebar-nav" aria-label="Admin menu">
+      <ul class="admin-sidebar-menu">
+        <li><a class="admin-sidebar-link admin-sidebar-link-active" data-section="dashboard" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/>
+          </svg>
+          Dashboard
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="users" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>
+          </svg>
+          Users
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="groups" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+          </svg>
+          Groups &amp; Roles
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="access" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+          </svg>
+          Access Matrix
+        </a></li>
+      </ul>
+
+      <div class="sidebar-divider"></div>
+      <div class="sidebar-section-label">Operations</div>
+
+      <ul class="admin-sidebar-menu">
+        <li><a class="admin-sidebar-link" data-section="tickets" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/>
+          </svg>
+          Trouble Tickets
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="audit" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/>
+          </svg>
+          Audit Log
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="health" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+          </svg>
+          Service Health
+        </a></li>
+        <li><a class="admin-sidebar-link" data-section="quick" role="button">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>
+          </svg>
+          Quick Actions
+        </a></li>
+      </ul>
+    </nav>
+
+    <div class="admin-sidebar-footer">
+      <div class="admin-user-info" id="admin-user-info">
+        <div class="admin-user-avatar" id="admin-user-avatar">SB</div>
+        <div class="admin-user-details">
+          <div class="admin-user-name" id="admin-user-name">Stephen Beck</div>
+          <div class="admin-user-role" id="admin-user-role">beckcloud.admin</div>
+        </div>
+      </div>
+      <button class="btn-admin-logout" id="btn-admin-logout">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>
+        </svg>
+        <span>Log out</span>
+      </button>
+    </div>
+  </aside>
+
+  <!-- ========== MAIN CONTENT ========== -->
+  <main class="admin-main">
+    <div class="admin-container">
+
+      <!-- ===== DASHBOARD SECTION ===== -->
+      <section id="section-dashboard" class="admin-section admin-section-active">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Dashboard</h1>
+            <p>System overview and key metrics at a glance.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="btn btn-secondary" onclick="location.href='/portal.html'">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>
+              </svg>
+              Portal
+            </button>
+          </div>
+        </div>
+
+        <!-- Stats Overview -->
+        <div class="stats-grid" id="dashboard-stats">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Quick actions</h2>
+            <p class="section-desc">Common administrative tasks.</p>
+          </div>
+        </div>
+
+        <div class="quick-actions-grid" id="quick-actions-grid">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Recent activity</h2>
+            <p class="section-desc">Latest audit log entries.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('audit')">View all</button>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-body" id="recent-activity">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+
+        <!-- Service Health Overview -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Service health</h2>
+            <p class="section-desc">Current status of all services.</p>
+          </div>
+          <button class="btn btn-secondary btn-sm" onclick="navigateTo('health')">Full view</button>
+        </div>
+
+        <div class="service-health-grid" id="dashboard-health">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+
+      <!-- ===== USERS SECTION ===== -->
+      <section id="section-users" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>User Management</h1>
+            <p>Manage users, roles, and account status.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="btn btn-secondary" onclick="openFilterModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/>
+              </svg>
+              Filter
+            </button>
+            <button class="btn btn-primary" onclick="openUserModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add User
+            </button>
+          </div>
+        </div>
+
+        <!-- User table -->
+        <div class="admin-card">
+          <div class="admin-card-header">
+            <span class="admin-card-title">Users</span>
+            <div class="admin-toolbar">
+              <div class="admin-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="search" id="user-search" placeholder="Search users…" oninput="filterUsers()" aria-label="Search users">
+              </div>
+            </div>
+          </div>
+          <div style="overflow-x: auto;">
+            <table class="admin-table" id="users-table">
+              <thead>
+                <tr>
+                  <th>User</th>
+                  <th>Roles</th>
+                  <th>Status</th>
+                  <th>Last Login</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="users-table-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== GROUPS & ROLES SECTION ===== -->
+      <section id="section-groups" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Groups &amp; Roles</h1>
+            <p>RBAC groups and role assignments via Keycloak.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="btn btn-primary" onclick="openGroupModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              Add Group
+            </button>
+          </div>
+        </div>
+
+        <!-- Role hierarchy cards -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Role hierarchy</h2>
+            <p class="section-desc">BeckCloud role definitions (Keycloak realm roles).</p>
+          </div>
+        </div>
+
+        <div class="service-health-grid" id="role-cards">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Service Access Matrix -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">Service access matrix</h2>
+            <p class="section-desc">Which roles can access which services.</p>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-body">
+            <div class="role-matrix">
+              <table class="admin-table" id="access-matrix-table">
+                <thead>
+                  <tr>
+                    <th>Service</th>
+                    <th>Admin</th>
+                    <th>User</th>
+                    <th>Media</th>
+                    <th>3D Printing</th>
+                    <th>LLM</th>
+                    <th>OpenNebula</th>
+                  </tr>
+                </thead>
+                <tbody id="access-matrix-body">
+                  <!-- Filled by JS -->
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== TROUBLE TICKETS SECTION ===== -->
+      <section id="section-tickets" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Trouble Tickets</h1>
+            <p>Track and resolve user issues.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="btn btn-primary" onclick="openTicketModal()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+              </svg>
+              New Ticket
+            </button>
+          </div>
+        </div>
+
+        <!-- Ticket filters -->
+        <div class="admin-tabs" id="ticket-tabs">
+          <button class="admin-tab admin-tab-active" data-ticket-filter="all" onclick="filterTickets('all')">All</button>
+          <button class="admin-tab" data-ticket-filter="new" onclick="filterTickets('new')">New</button>
+          <button class="admin-tab" data-ticket-filter="open" onclick="filterTickets('open')">Open</button>
+          <button class="admin-tab" data-ticket-filter="pending" onclick="filterTickets('pending')">Pending</button>
+          <button class="admin-tab" data-ticket-filter="resolved" onclick="filterTickets('resolved')">Resolved</button>
+          <button class="admin-tab" data-ticket-filter="closed" onclick="filterTickets('closed')">Closed</button>
+        </div>
+
+        <!-- Ticket list -->
+        <div class="admin-card">
+          <div class="admin-card-body" id="ticket-list">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== AUDIT LOG SECTION ===== -->
+      <section id="section-audit" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Audit Log</h1>
+            <p>Complete history of admin actions and system events.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <div class="admin-toolbar">
+              <div class="admin-search">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                <input type="search" id="audit-search" placeholder="Search audit log…" oninput="filterAuditLog()" aria-label="Search audit log">
+              </div>
+              <select class="admin-filter" id="audit-type-filter" onchange="filterAuditLog()" aria-label="Filter by type">
+                <option value="all">All types</option>
+                <option value="user">User actions</option>
+                <option value="role">Role changes</option>
+                <option value="service">Service changes</option>
+                <option value="system">System events</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div class="admin-card-body" id="audit-log">
+            <!-- Filled by JS -->
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== SERVICE HEALTH SECTION ===== -->
+      <section id="section-health" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Service Health</h1>
+            <p>Monitor and manage all running services.</p>
+          </div>
+          <div class="admin-topbar-actions">
+            <button class="btn btn-secondary" onclick="refreshHealth()">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+              </svg>
+              Refresh
+            </button>
+          </div>
+        </div>
+
+        <!-- Health stats -->
+        <div class="stats-grid" id="health-stats">
+          <!-- Filled by JS -->
+        </div>
+
+        <!-- Service list -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">All services</h2>
+            <p class="section-desc">Click a service for detailed diagnostics.</p>
+          </div>
+        </div>
+
+        <div class="service-health-grid" id="full-health-grid">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+
+      <!-- ===== QUICK ACTIONS SECTION ===== -->
+      <section id="section-quick" class="admin-section">
+        <div class="admin-topbar">
+          <div class="admin-topbar-title">
+            <h1>Quick Actions</h1>
+            <p>Common administrative operations.</p>
+          </div>
+        </div>
+
+        <div class="quick-actions-grid" id="all-quick-actions">
+          <!-- Filled by JS -->
+        </div>
+      </section>
+
+    </div>
+  </main>
+
+  <!-- ========== MODALS ========== -->
+
+  <!-- Add/Edit User Modal -->
+  <div class="modal-overlay" id="user-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title" id="user-modal-title">Add User</h3>
+        <button class="modal-close" onclick="closeModal('user-modal')" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="user-form" novalidate>
+          <input type="hidden" id="user-edit-id" value="">
+          <div class="form-group">
+            <label class="form-label" for="user-form-name">Full Name <span style="color:var(--brand-accent)">*</span></label>
+            <input type="text" class="form-input" id="user-form-name" placeholder="John Doe" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-form-email">Email <span style="color:var(--brand-accent)">*</span></label>
+            <input type="email" class="form-input" id="user-form-email" placeholder="john@becklab.cloud" required>
+            <div class="form-hint">Used for Keycloak account creation and login.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-form-password">Password</label>
+            <input type="password" class="form-input" id="user-form-password" placeholder="Leave blank to generate">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Role</label>
+            <select class="form-select" id="user-form-role">
+              <option value="beckcloud.user">User (beckcloud.user)</option>
+              <option value="beckcloud.admin">Admin (beckcloud.admin)</option>
+              <option value="beckcloud.media">Media (beckcloud.media)</option>
+              <option value="beckcloud.3dprinting">3D Printing (beckcloud.3dprinting)</option>
+              <option value="beckcloud.llm">LLM (beckcloud.llm)</option>
+              <option value="beckcloud.opennebula">OpenNebula (beckcloud.opennebula)</option>
+            </select>
+            <div class="form-hint">Realm role assigned in Keycloak.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Groups</label>
+            <div class="checkbox-group" id="user-form-groups">
+              <label class="checkbox-item"><input type="checkbox" value="admins"> Admins</label>
+              <label class="checkbox-item"><input type="checkbox" value="media"> Media</label>
+              <label class="checkbox-item"><input type="checkbox" value="3dprinting"> 3D Printing</label>
+              <label class="checkbox-item"><input type="checkbox" value="llm"> LLM</label>
+              <label class="checkbox-item"><input type="checkbox" value="opennebula"> OpenNebula</label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-form-status">Status</label>
+            <select class="form-select" id="user-form-status">
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+              <option value="suspended">Suspended</option>
+            </select>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('user-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveUser()">Save User</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add Group Modal -->
+  <div class="modal-overlay" id="group-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Add Role</h3>
+        <button class="modal-close" onclick="closeModal('group-modal')" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="group-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="group-form-name">Role Name <span style="color:var(--brand-accent)">*</span></label>
+            <input type="text" class="form-input" id="group-form-name" placeholder="e.g. Developer">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="group-form-slug">Keycloak Slug</label>
+            <input type="text" class="form-input" id="group-form-slug" placeholder="beckcloud.developer">
+            <div class="form-hint">Lowercase, hyphens or underscores only.</div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Service Access</label>
+            <div class="checkbox-group" id="group-form-services">
+              <!-- Filled by JS -->
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('group-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveGroup()">Create Role</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- New Ticket Modal -->
+  <div class="modal-overlay" id="ticket-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">New Trouble Ticket</h3>
+        <button class="modal-close" onclick="closeModal('ticket-modal')" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <form id="ticket-form" novalidate>
+          <div class="form-group">
+            <label class="form-label" for="ticket-form-title">Subject <span style="color:var(--brand-accent)">*</span></label>
+            <input type="text" class="form-input" id="ticket-form-title" placeholder="Cannot access Jellyfin" required>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ticket-form-user">Affected User</label>
+            <input type="text" class="form-input" id="ticket-form-user" placeholder="user@becklab.cloud">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ticket-form-service">Service</label>
+            <select class="form-select" id="ticket-form-service">
+              <option value="">— General —</option>
+              <option value="sso">SSO Platform</option>
+              <option value="bitwarden">Password Vault</option>
+              <option value="grafana">Grafana</option>
+              <option value="wazuh">Wazuh</option>
+              <option value="wiki">Wiki</option>
+              <option value="directus">CMS (Directus)</option>
+              <option value="affine">Affine</option>
+              <option value="homeassistant">Home Assistant</option>
+              <option value="jellyfin">Jellyfin</option>
+              <option value="swiparr">Swiparr</option>
+              <option value="silex">Silex</option>
+              <option value="nova">OpenClaw (Nova)</option>
+              <option value="manyfold">Manyfold</option>
+              <option value="fdm">FDM Monster</option>
+              <option value="gridspace">Gridspace</option>
+              <option value="opennebula">OpenNebula</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Priority</label>
+            <select class="form-select" id="ticket-form-priority">
+              <option value="low">Low</option>
+              <option value="normal" selected>Normal</option>
+              <option value="high">High</option>
+              <option value="urgent">Urgent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="ticket-form-desc">Description <span style="color:var(--brand-accent)">*</span></label>
+            <textarea class="form-textarea" id="ticket-form-desc" placeholder="Describe the issue…" required></textarea>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('ticket-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="saveTicket()">Create Ticket</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filter Modal -->
+  <div class="modal-overlay" id="filter-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 class="modal-title">Filter Users</h3>
+        <button class="modal-close" onclick="closeModal('filter-modal')" aria-label="Close">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+        </button>
+      </div>
+      <div class="modal-body">
+        <div class="form-group">
+          <label class="form-label">Role</label>
+          <select class="form-select" id="filter-role">
+            <option value="all">All roles</option>
+            <option value="admin">Admin</option>
+            <option value="user">User</option>
+            <option value="media">Media</option>
+            <option value="3d">3D Printing</option>
+            <option value="llm">LLM</option>
+            <option value="opennebula">OpenNebula</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="form-label">Status</label>
+          <select class="form-select" id="filter-status">
+            <option value="all">All statuses</option>
+            <option value="active">Active</option>
+            <option value="inactive">Inactive</option>
+            <option value="suspended">Suspended</option>
+          </select>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('filter-modal')">Cancel</button>
+        <button class="btn btn-primary" onclick="applyFilters()">Apply</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/admin.js"></script>
+</body>
+</html>

@@ -6,6 +6,7 @@ resources:
   - bitwarden
   - cms
   - landing-page
+  - admin-panel
   - affine
   - homepage
   - home-assistant

@@ -297,13 +297,5 @@ spec:
       services:
         - name: landing-page
           port: 80
-    - match: Host(`admin.becklab.cloud`)
-      kind: Rule
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
-      services:
-        - name: landing-page
-          port: 80
   tls:
     secretName: landing-page-tls

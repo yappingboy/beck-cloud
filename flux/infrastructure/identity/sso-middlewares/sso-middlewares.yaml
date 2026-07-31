@@ -41,6 +41,18 @@ spec:
         namespace: identity
       - name: keycloak-forwardauth-admin
         namespace: identity
+      - name: admin-role-check
+        namespace: identity
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: admin-role-check
+  namespace: identity
+spec:
+  headers:
+    customResponseHeaders:
+      X-BeckCloud-Role-Required: "beckcloud.admin"
 
 # ── HA-compatible SSO chain (no Authorization header forwarded) ──
 # Home Assistant has its own auth layer that rejects oauth2-proxy's Bearer JWT.

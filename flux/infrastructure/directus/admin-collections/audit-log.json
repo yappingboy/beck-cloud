@@ -1,0 +1,61 @@
+{
+  "collection": "bc_audit_log",
+  "name": "bc_audit_log",
+  "meta": {
+    "collection": "bc_audit_log",
+    "icon": "history",
+    "note": "Audit log entries. Stores all admin actions and system events.",
+    "display_template": "{{action}} by {{user}}"
+  },
+  "schema": {
+    "name": "bc_audit_log",
+    "columns": {
+      "id": {
+        "autoGenerate": true,
+        "dbType": "UUID",
+        "name": "id",
+        "nullable": false,
+        "generated": true,
+        "dataType": "UUID"
+      },
+      "timestamp": {
+        "name": "timestamp",
+        "dataType": "datetime",
+        "nullable": false,
+        "generated": true,
+        "special": ["date_created"]
+      },
+      "user": {
+        "name": "user",
+        "dataType": "string",
+        "nullable": false,
+        "special": []
+      },
+      "action": {
+        "name": "action",
+        "dataType": "string",
+        "nullable": false,
+        "special": []
+      },
+      "target": {
+        "name": "target",
+        "dataType": "string",
+        "nullable": true,
+        "special": []
+      },
+      "type": {
+        "name": "type",
+        "dataType": "string",
+        "nullable": false,
+        "special": [],
+        "defaultValue": "system"
+      },
+      "ip_address": {
+        "name": "ip_address",
+        "dataType": "string",
+        "nullable": true,
+        "special": []
+      }
+    }
+  }
+}

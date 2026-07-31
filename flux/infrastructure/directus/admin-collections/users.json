@@ -1,0 +1,86 @@
+{
+  "collection": "bc_users",
+  "name": "bc_users",
+  "meta": {
+    "collection": "bc_users",
+    "icon": "people",
+    "note": "BeckCloud user accounts linked to Keycloak/LLDAP. Mirrors realm roles and groups.",
+    "display_template": "{{name}} ({{email}})",
+    "sort_field": "name"
+  },
+  "schema": {
+    "name": "bc_users",
+    "columns": {
+      "id": {
+        "autoGenerate": true,
+        "dbType": "UUID",
+        "name": "id",
+        "nullable": false,
+        "generated": true,
+        "dataType": "UUID"
+      },
+      "keycloak_uuid": {
+        "name": "keycloak_uuid",
+        "dataType": "string",
+        "nullable": true,
+        "generated": false,
+        "special": [],
+        "note": "Keycloak user UUID for sync"
+      },
+      "name": {
+        "name": "name",
+        "dataType": "string",
+        "nullable": false,
+        "generated": false,
+        "special": []
+      },
+      "email": {
+        "name": "email",
+        "dataType": "string",
+        "nullable": false,
+        "generated": false,
+        "special": [],
+        "validation": "email",
+        "validation_message": "Must be a valid email"
+      },
+      "role": {
+        "name": "role",
+        "dataType": "string",
+        "nullable": false,
+        "generated": false,
+        "special": [],
+        "defaultValue": "beckcloud.user",
+        "note": "Keycloak realm role"
+      },
+      "status": {
+        "name": "status",
+        "dataType": "string",
+        "nullable": false,
+        "generated": false,
+        "special": [],
+        "defaultValue": "active"
+      },
+      "last_login": {
+        "name": "last_login",
+        "dataType": "datetime",
+        "nullable": true,
+        "generated": false,
+        "special": ["datetime"]
+      },
+      "created_at": {
+        "name": "created_at",
+        "dataType": "datetime",
+        "nullable": false,
+        "generated": true,
+        "special": ["date_created"]
+      },
+      "updated_at": {
+        "name": "updated_at",
+        "dataType": "datetime",
+        "nullable": false,
+        "generated": true,
+        "special": ["date_updated"]
+      }
+    }
+  }
+}
