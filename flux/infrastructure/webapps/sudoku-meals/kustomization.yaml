@@ -1,4 +1,5 @@
 resources:
   - ingress.yaml
   - certificate.yaml
+  - service.yaml
   - deployment.yaml
