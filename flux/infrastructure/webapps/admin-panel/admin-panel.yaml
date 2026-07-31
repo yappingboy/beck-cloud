@@ -33,6 +33,9 @@ spec:
     - name: http
       port: 80
       targetPort: 80
+    - name: api
+      port: 8080
+      targetPort: 8080
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -53,16 +56,19 @@ spec:
     spec:
       containers:
         - name: admin-panel
-          image: nginx:1.27-alpine
+          image: node:24-alpine
           ports:
-            - containerPort: 80
+            - containerPort: 8080
           resources:
             limits:
+              memory: 128Mi
+              cpu: 100m
+            requests:
               memory: 64Mi
               cpu: 50m
-            requests:
-              memory: 32Mi
-              cpu: 25m
+          env:
+            - name: PORT
+              value: "8080"
           volumeMounts:
             - name: admin-content
               mountPath: /usr/share/nginx/html
@@ -71,6 +77,16 @@ spec:
               mountPath: /etc/nginx/conf.d/default.conf
               subPath: default.conf
               readOnly: true
+            - name: server-code
+              mountPath: /app
+              readOnly: true
+          command: ["sh", "-c"]
+          args:
+            - |
+              # Start nginx to serve static files on port 80
+              nginx -g 'daemon off;' &
+              # Start Node API server on port 8080
+              node /app/server.js
       volumes:
         - name: admin-content
           configMap:
@@ -78,6 +94,9 @@ spec:
         - name: nginx-config
           configMap:
             name: admin-panel-nginx-config
+        - name: server-code
+          configMap:
+            name: admin-panel-server-code
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -99,6 +118,17 @@ data:
         listen  [::]:80;
         server_name  localhost;
 
+        # Proxy API calls to Node.js backend
+        location /api/ {
+            proxy_pass http://127.0.0.1:8080;
+            proxy_set_header Host $host;
+            proxy_set_header X-Real-IP $remote_addr;
+            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+            proxy_set_header X-Forwarded-Proto $scheme;
+            proxy_connect_timeout 10s;
+            proxy_read_timeout 30s;
+        }
+
         location / {
             root   /usr/share/nginx/html;
             index  index.html index.htm;
@@ -109,7 +139,7 @@ data:
             root /usr/share/nginx/html;
         }
 
-        # /css/style.css → /usr/share/nginx/html/style.css (alias maps /css/ to root)
+        # /css/style.css → /usr/share/nginx/html/style.css
         location /css/ {
             alias /usr/share/nginx/html/;
         }
