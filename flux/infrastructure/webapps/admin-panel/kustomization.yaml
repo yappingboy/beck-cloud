@@ -3,3 +3,12 @@ kind: Kustomization
 
 resources:
   - admin-panel.yaml
+
+configMapGenerator:
+  - name: admin-panel-content
+    namespace: webapps
+    files:
+      - index.html=../../../../../docs/brand/website/admin/index.html
+      - admin.css=../../../../../docs/brand/website/admin/css/admin.css
+      - admin.js=../../../../../docs/brand/website/admin/js/admin.js
+    behavior: merge
