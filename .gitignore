@@ -25,3 +25,7 @@ __pycache__/
 # Hermes (legacy)
 .hermes/
 .git-creds
+
+
+# Ansible encrypted secrets (tracked in git, encrypted with SOPS)
+ansible/inventory/group_vars/.sops.yaml
