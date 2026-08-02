@@ -4,11 +4,11 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - pvc.yaml
-  - manyfold
-  - fdmmonster
-  - spoolman
-  - bumpmesh
-  - orcaslicer
+#  - manyfold
+#  - fdmmonster
+#  - spoolman
+#  - bumpmesh
+#  - orcaslicer
 
 secretGenerator:
   - name: manyfold-db-secret
