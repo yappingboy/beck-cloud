@@ -114,6 +114,11 @@ spec:
   routes:
     - match: Host(`lldap.becklab.cloud`)
       kind: Rule
+      middlewares:
+        - name: crowdsec-bouncer
+          namespace: crowdsec
+        - name: sso-admin-chain
+          namespace: identity
       services:
         - name: lldap
           port: 17170
