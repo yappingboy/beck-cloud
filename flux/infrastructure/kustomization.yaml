@@ -22,6 +22,5 @@ resources:
   - 3dprinting
   # - gridspace
   - micro
-  - volumeclaims.yaml
 
 #  - csi-snapshotter # Can likely be deleted
