@@ -379,18 +379,20 @@ const API_ROUTES = {
 
   'GET /api/health/certs': async () => {
     try {
-      const data = await k8sGet('/apis/cert-manager.io/v1/namespaces');
+      const data = await k8sGet('/api/v1/namespaces');
       if (data.items) {
         const certs = [];
         for (const ns of data.items) {
-          const nsCerts = await k8sGet(`/apis/cert-manager.io/v1/namespaces/${ns.metadata.name}/certificates`);
+          const nsName = ns.metadata.name;
+          if (['kube-system', 'kube-public'].includes(nsName)) continue;
+          const nsCerts = await k8sGet(`/apis/cert-manager.io/v1/namespaces/${nsName}/certificates`);
           if (nsCerts.items) {
             nsCerts.items.forEach(c => {
-              const conditions = (c.status?.conditions || []).find(c => c.type === 'Ready');
+              const conditions = (c.status?.conditions || []).find(c2 => c2.type === 'Ready');
               const secretName = c.spec?.dnsNames || [];
               certs.push({
                 name: c.metadata.name,
-                namespace: ns.metadata.name,
+                namespace: nsName,
                 domains: secretName,
                 secret: c.spec?.secretName,
                 ready: conditions?.status === 'True',
@@ -401,7 +403,7 @@ const API_ROUTES = {
         }
         return certs;
       }
-      return { error: 'cert-manager not found' };
+      return [];
     } catch (e) {
       return { error: e.message };
     }
@@ -659,6 +661,11 @@ function serveStatic(res, reqPath) {
   let mappedPath = reqPath;
   if (reqPath.startsWith('/css/') || reqPath.startsWith('/js/')) {
     mappedPath = reqPath.slice(reqPath.indexOf('/', 1));
+  }
+
+  // Handle root path and index.html
+  if (mappedPath === '/' || mappedPath === '/index.html') {
+    mappedPath = '/index.html';
   }
 
   const filePath = path.join(STATIC_DIR, mappedPath);
