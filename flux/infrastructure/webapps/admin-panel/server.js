@@ -702,8 +702,8 @@ const server = http.createServer(async (req, res) => {
   const reqPath = url.pathname;
   const method = req.method;
 
-  // Serve static files for /, /css/*, /js/*, /favicon.svg
-  if (reqPath === '/' || reqPath.startsWith('/css/') || reqPath.startsWith('/js/') || reqPath === '/favicon.svg') {
+  // Serve static files for /, /index.html, /css/*, /js/*, /favicon.svg
+  if (reqPath === '/' || reqPath === '/index.html' || reqPath.startsWith('/css/') || reqPath.startsWith('/js/') || reqPath === '/favicon.svg') {
     serveStatic(res, reqPath);
     return;
   }
