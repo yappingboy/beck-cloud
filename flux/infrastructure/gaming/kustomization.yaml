@@ -6,5 +6,5 @@ namespace: gaming
 resources:
   - namespace.yaml
   - crafty-controller
-  #  - crafty-ingress.yaml
   - pvcs.yaml
+  - limits.yaml

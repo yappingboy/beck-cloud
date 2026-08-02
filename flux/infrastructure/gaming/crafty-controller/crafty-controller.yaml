@@ -98,7 +98,7 @@ spec:
             claimName: crafty-import
 ---
 # Services
----
+
 apiVersion: v1
 kind: Service
 metadata:
@@ -118,25 +118,6 @@ spec:
       targetPort: 8123
   type: ClusterIP
 ---
-apiVersion: traefik.io/v1alpha1
-kind: IngressRoute
-metadata:
-  name: crafty-controller
-  namespace: gaming
-  labels:
-    app: crafty-controller
-spec:
-  entryPoints:
-    - websecure
-  routes:
-    - match: Host(`crafty.becklab.cloud`)
-      kind: Rule
-      services:
-        - name: crafty-controller
-          port: 8443
-  tls:
-    secretName: crafty-controller-tls
----
 # NodePort — external minecraft players
 apiVersion: v1
 kind: Service
@@ -155,3 +136,24 @@ spec:
       targetPort: 25565
       nodePort: 31337
   type: NodePort
+
+ # IngressRoute - webUI for Crafty
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: crafty
+  namespace: gaming
+  labels:
+    app: crafty
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`crafty.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: crafty
+          port: 8443
+  tls:
+    secretName: crafty-tls
