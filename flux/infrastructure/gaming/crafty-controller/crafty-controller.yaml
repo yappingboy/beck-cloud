@@ -133,7 +133,7 @@ spec:
       kind: Rule
       services:
         - name: crafty-controller
-          port: 8080
+          port: 8443
   tls:
     secretName: crafty-controller-tls
 ---
