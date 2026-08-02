@@ -12,6 +12,7 @@ resources:
   - keycloak
   - oauth2-proxy
   - oauth2-proxy-media
+  - oauth2
   - logout-page
   - sso-redirect
   - sso-middlewares

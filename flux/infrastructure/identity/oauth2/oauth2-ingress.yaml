@@ -1,0 +1,18 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: oauth2-admin
+  namespace: identity
+  labels:
+    app: oauth2-proxy
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`oauth2.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: oauth2-proxy
+          port: 80
+  tls:
+    secretName: oauth2-proxy-tls
