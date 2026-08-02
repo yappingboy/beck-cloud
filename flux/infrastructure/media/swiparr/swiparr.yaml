@@ -2,19 +2,6 @@
 # Deployed in media namespace alongside Jellyfin stack
 # Ingress: swiparr.becklab.cloud (media SSO via sso-media-chain)
 
-apiVersion: v1
-kind: PersistentVolumeClaim
-metadata:
-  name: swiparr-data
-  namespace: media
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 2Gi
-  storageClassName: local-path
-
 ---
 apiVersion: v1
 kind: Secret

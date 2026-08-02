@@ -5,7 +5,6 @@ resources:
   - sources
   - controllers
   - configs
-  - csi-snapshotter
   - cert-manager
   - traefik
   - identity          # includes email (postfix-relay)
@@ -23,3 +22,6 @@ resources:
   - 3dprinting
   # - gridspace
   - micro
+  - volumeclaims.yaml
+
+#  - csi-snapshotter # Can likely be deleted

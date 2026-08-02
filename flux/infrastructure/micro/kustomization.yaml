@@ -6,7 +6,7 @@ namespace: micro
 resources:
   - namespace.yaml
   - resource-quota.yaml
-  - pvc.yaml
+#  - pvc.yaml
   - certificate.yaml
   - ghcr-credentials.yaml
   - micro-app
