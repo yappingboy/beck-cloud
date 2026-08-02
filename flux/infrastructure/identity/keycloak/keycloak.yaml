@@ -199,8 +199,8 @@ spec:
       services:
         - name: keycloak
           port: 8080
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
+#      middlewares:
+#        - name: sso-admin-chain
+#          namespace: identity
   tls:
     secretName: keycloak-tls
