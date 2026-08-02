@@ -158,6 +158,67 @@ const SERVICE_HEALTH = {
   'beckflow': { status: 'healthy', uptime: '99.7%', latency: '165ms' },
 };
 
+// ===== API FETCH HELPERS =====
+async function apiFetch(endpoint, options = {}) {
+  try {
+    const res = await fetch('/api' + endpoint, { ...options, headers: { 'Content-Type': 'application/json', ...options.headers } });
+    return await res.json();
+  } catch (e) {
+    console.error('API error:', e);
+    return { error: e.message };
+  }
+}
+
+// Real service health from K8s
+let realServiceHealth = null;
+async function loadRealHealth() {
+  try {
+    const data = await apiFetch('/health/services');
+    if (data && !data.error) {
+      realServiceHealth = data.map(s => ({
+        id: s.name.replace(/[-\s]/g, '').toLowerCase(),
+        name: s.name,
+        status: s.healthy ? 'healthy' : s.phase === 'no-pods' ? 'down' : 'degraded',
+        ready: s.ready,
+        total: s.total,
+        namespace: s.namespace,
+      }));
+    }
+  } catch (e) { console.error('Health load error:', e); }
+}
+
+// Real cert data
+let realCerts = null;
+async function loadRealCerts() {
+  try {
+    realCerts = await apiFetch('/health/certs');
+  } catch (e) { console.error('Certs load error:', e); }
+}
+
+// Real Keycloak users
+let realKcUsers = null;
+async function loadRealKcUsers() {
+  try {
+    realKcUsers = await apiFetch('/users/keycloak');
+  } catch (e) { console.error('KC users load error:', e); }
+}
+
+// Real backup status
+let realBackups = null;
+async function loadRealBackups() {
+  try {
+    realBackups = await apiFetch('/backup/status');
+  } catch (e) { console.error('Backup load error:', e); }
+}
+
+// Real dashboard summary
+let realDashboardSummary = null;
+async function loadDashboardSummary() {
+  try {
+    realDashboardSummary = await apiFetch('/dashboard/summary');
+  } catch (e) { console.error('Dashboard summary error:', e); }
+}
+
 // ===== STATE =====
 let currentSection = 'dashboard';
 let currentTicketFilter = 'all';

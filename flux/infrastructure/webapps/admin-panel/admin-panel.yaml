@@ -81,7 +81,7 @@ spec:
             name: admin-panel-content
         - name: server-code
           configMap:
-            name: admin-panel-server-code-dkfgh8h8m4
+            name: admin-panel-server-code
 ---
 apiVersion: v1
 kind: ConfigMap
