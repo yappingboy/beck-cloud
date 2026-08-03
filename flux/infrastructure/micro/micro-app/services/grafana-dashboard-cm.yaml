@@ -1,0 +1,62 @@
+# ============================================================
+# Grafana Dashboard for Micro Namespace
+# Sidecar will auto-provision this dashboard
+# ============================================================
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: micro-services-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+    app: micro
+data:
+  micro-services.json: |
+    {
+      "annotations": { "list": [] },
+      "description": "BeckCloud Micro Services Dashboard",
+      "editable": true,
+      "graphTooltip": 1,
+      "panels": [
+        {
+          "type": "stat", "title": "Total Request Rate", "id": 1, "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+          "targets": [{"expr": "sum(rate(http_requests_total{namespace=\"micro\"}[5m]))", "legendFormat": "req/s"}],
+          "fieldConfig": {"defaults": {"unit": "reqps"}}
+        },
+        {
+          "type": "graph", "title": "Request Rate by Service", "id": 2, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+          "targets": [{"expr": "sum(rate(http_requests_total{namespace=\"micro\"}[5m])) by (service)", "legendFormat": "{{service}}"}]
+        },
+        {
+          "type": "graph", "title": "5xx Error Rate", "id": 3, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+          "targets": [{"expr": "sum(rate(http_requests_total{namespace=\"micro\",code=~\"5..\"}[5m])) by (service)", "legendFormat": "{{service}}"}]
+        },
+        {
+          "type": "graph", "title": "P95 Latency", "id": 4, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+          "targets": [{"expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"micro\"}[5m])) by (le, service))", "legendFormat": "{{service}}"}],
+          "yaxes": [{"label": "seconds"}],
+          "thresholds": [{"color": "green", "value": null}, {"color": "yellow", "value": 0.5}, {"color": "red", "value": 5.0}]
+        },
+        {
+          "type": "graph", "title": "CPU Usage", "id": 5, "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+          "targets": [{"expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"micro\"}[5m])) by (pod)", "legendFormat": "{{pod}}"}]
+        },
+        {
+          "type": "graph", "title": "Memory Usage", "id": 6, "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+          "targets": [{"expr": "sum(container_memory_working_set_bytes{namespace=\"micro\"}) by (pod)", "legendFormat": "{{pod}}"}]
+        },
+        {
+          "type": "table", "title": "Service Availability", "id": 7, "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+          "targets": [{"expr": "kube_deployment_status_replicas_available{namespace=\"micro\"}", "legendFormat": "{{deployment}}"}],
+          "transform": "table"
+        }
+      ],
+      "refresh": "30s",
+      "schemaVersion": 38,
+      "style": "dark",
+      "tags": ["micro", "beckcloud"],
+      "time": {"from": "now-1h", "to": "now"},
+      "title": "BeckCloud Micro Services",
+      "uid": "micro-services",
+      "version": 1
+    }

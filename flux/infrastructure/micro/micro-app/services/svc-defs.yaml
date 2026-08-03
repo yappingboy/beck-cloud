@@ -1,0 +1,208 @@
+# ============================================================
+# ClusterIP Service Definitions for Micro Services
+# All reference the service names used in IngressRoutes
+# ============================================================
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hash-service
+  namespace: micro
+  labels:
+    app: hash
+    service: micro
+spec:
+  selector:
+    app: hash
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: short-service
+  namespace: micro
+  labels:
+    app: short
+    service: micro
+spec:
+  selector:
+    app: short
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: base64-service
+  namespace: micro
+  labels:
+    app: base64
+    service: micro
+spec:
+  selector:
+    app: base64
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: markdown-service
+  namespace: micro
+  labels:
+    app: markdown
+    service: micro
+spec:
+  selector:
+    app: markdown
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: resize-service
+  namespace: micro
+  labels:
+    app: resize
+    service: micro
+spec:
+  selector:
+    app: resize
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cron-service
+  namespace: micro
+  labels:
+    app: cron
+    service: micro
+spec:
+  selector:
+    app: cron
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-service
+  namespace: micro
+  labels:
+    app: dns
+    service: micro
+spec:
+  selector:
+    app: dns
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: micro
+  labels:
+    app: webhook
+    service: micro
+spec:
+  selector:
+    app: webhook
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fmt-service
+  namespace: micro
+  labels:
+    app: fmt
+    service: micro
+spec:
+  selector:
+    app: fmt
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qr-service
+  namespace: micro
+  labels:
+    app: qr
+    service: micro
+spec:
+  selector:
+    app: qr
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: editor-service
+  namespace: micro
+  labels:
+    app: editor
+    service: micro
+spec:
+  selector:
+    app: editor
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beckflow-service
+  namespace: micro
+  labels:
+    app: beckflow
+    service: micro
+spec:
+  selector:
+    app: beckflow
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http

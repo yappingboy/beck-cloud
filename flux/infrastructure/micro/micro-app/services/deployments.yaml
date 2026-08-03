@@ -1,0 +1,646 @@
+# ============================================================
+# Micro Services Deployments — Phase 5
+# All services: single binary, <10MB, <10MB RAM, <100ms response
+# Resource limits: 200m CPU, 50Mi memory per service
+# ============================================================
+
+# -----------------------------------------------------------
+# 1. Hash Service (hash-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hash-service
+  namespace: micro
+  labels:
+    app: hash
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hash
+  template:
+    metadata:
+      labels:
+        app: hash
+        service: micro
+    spec:
+      containers:
+        - name: hasher
+          image: ghcr.io/yappingboy/hash:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 2. URL Shortener (short-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: short-service
+  namespace: micro
+  labels:
+    app: short
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: short
+  template:
+    metadata:
+      labels:
+        app: short
+        service: micro
+    spec:
+      containers:
+        - name: url-shortener
+          image: ghcr.io/yappingboy/url-shortener:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 3. Base64/Converter (base64-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: base64-service
+  namespace: micro
+  labels:
+    app: base64
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: base64
+  template:
+    metadata:
+      labels:
+        app: base64
+        service: micro
+    spec:
+      containers:
+        - name: converter
+          image: ghcr.io/yappingboy/converter:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 4. Markdown Converter (markdown-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: markdown-service
+  namespace: micro
+  labels:
+    app: markdown
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: markdown
+  template:
+    metadata:
+      labels:
+        app: markdown
+        service: micro
+    spec:
+      containers:
+        - name: markdown-renderer
+          image: ghcr.io/yappingboy/markdown-renderer:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 30Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 5. Image Resize (resize-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: resize-service
+  namespace: micro
+  labels:
+    app: resize
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: resize
+  template:
+    metadata:
+      labels:
+        app: resize
+        service: micro
+    spec:
+      containers:
+        - name: image-resize
+          image: ghcr.io/yappingboy/image-resize:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 30Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 6. Cron Jobs (cron-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron-service
+  namespace: micro
+  labels:
+    app: cron
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cron
+  template:
+    metadata:
+      labels:
+        app: cron
+        service: micro
+    spec:
+      containers:
+        - name: cron-jobs
+          image: ghcr.io/yappingboy/cron-jobs:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 7. DNS Monitor (dns-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-service
+  namespace: micro
+  labels:
+    app: dns
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns
+  template:
+    metadata:
+      labels:
+        app: dns
+        service: micro
+    spec:
+      containers:
+        - name: dns-monitor
+          image: ghcr.io/yappingboy/dns-monitor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 8. Webhook Relay (webhook-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-service
+  namespace: micro
+  labels:
+    app: webhook
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook
+  template:
+    metadata:
+      labels:
+        app: webhook
+        service: micro
+    spec:
+      containers:
+        - name: webhook-relay
+          image: ghcr.io/yappingboy/webhook-relay:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 9. YAML/JSON Tool (fmt-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fmt-service
+  namespace: micro
+  labels:
+    app: fmt
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: fmt
+  template:
+    metadata:
+      labels:
+        app: fmt
+        service: micro
+    spec:
+      containers:
+        - name: yaml-json-tool
+          image: ghcr.io/yappingboy/yaml-json-tool:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 10. QR Code Generator (qr-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qr-service
+  namespace: micro
+  labels:
+    app: qr
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qr
+  template:
+    metadata:
+      labels:
+        app: qr
+        service: micro
+    spec:
+      containers:
+        - name: qr-generator
+          image: ghcr.io/yappingboy/qr-generator:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 10Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 11. Image Editor (editor-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: editor-service
+  namespace: micro
+  labels:
+    app: editor
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: editor
+  template:
+    metadata:
+      labels:
+        app: editor
+        service: micro
+    spec:
+      containers:
+        - name: image-editor
+          image: ghcr.io/yappingboy/image-editor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+---
+# -----------------------------------------------------------
+# 12. BeckFlow Gateway (beckflow-service)
+# -----------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beckflow-service
+  namespace: micro
+  labels:
+    app: beckflow
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beckflow
+  template:
+    metadata:
+      labels:
+        app: beckflow
+        service: micro
+    spec:
+      containers:
+        - name: beckflow-gateway
+          image: ghcr.io/yappingboy/beckflow:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: REDIS_HOST
+              value: redis.identity.svc.cluster.local
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD_FILE
+              value: "/etc/auth/redis-password"
+          volumeMounts:
+            - name: redis-password
+              mountPath: /etc/auth
+              readOnly: true
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 100m
+              memory: 20Mi
+            limits:
+              cpu: 200m
+              memory: 50Mi
+      volumes:
+        - name: redis-password
+          secret:
+            secretName: auth-micro-secrets
+            items:
+              - key: redis-password
+                path: redis-password

@@ -1,0 +1,149 @@
+# ============================================================
+# Updated Rate Limit Middlewares — Phase 5
+# Rates converted from daily limits to per-minute averages
+# Free tier: daily limits → average req/min (24h = 1440 min)
+# ============================================================
+---
+# Hash: 100 req/day → 0.07/min → use 100/min burst, 10/min sustained (plan baseline)
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-hash
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+---
+# URL Shortener: 100 links/day → 5/min sustained
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-short
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+---
+# Base64: 100 req/day → 20/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-base64
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+---
+# Markdown: 50 req/day → 5/min sustained
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-markdown
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+---
+# Image Resize: 100 req/day → 5/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-resize
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+---
+# Cron Jobs: 10 jobs total (per-user), daily avg ≈ 0.007
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-cron
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 5
+    period: 60s
+---
+# DNS Monitor: 50 checks/day → 10/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-dns
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+---
+# Webhook Relay: 100 webhooks/day
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-webhook
+  namespace: micro
+spec:
+  rateLimit:
+    average: 100
+    burst: 20
+    period: 60s
+---
+# YAML/JSON: 200 req/day → 20/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-fmt
+  namespace: micro
+spec:
+  rateLimit:
+    average: 200
+    burst: 40
+    period: 60s
+---
+# QR Code: 50 QR/month → ~0.07/min → use 50/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-qr
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s
+---
+# Image Editor: 10 saves/day → 5/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-editor
+  namespace: micro
+spec:
+  rateLimit:
+    average: 10
+    burst: 5
+    period: 60s
+---
+# BeckFlow: 50 runs/month → 50/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-beckflow
+  namespace: micro
+spec:
+  rateLimit:
+    average: 50
+    burst: 10
+    period: 60s

@@ -1,0 +1,277 @@
+# ============================================================
+# Prometheus ServiceMonitors for all Micro Services
+# Each service exposes /metrics endpoint in Prometheus format
+# ============================================================
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: hash-service
+  namespace: micro
+  labels:
+    app: hash
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: hash
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: short-service
+  namespace: micro
+  labels:
+    app: short
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: short
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: base64-service
+  namespace: micro
+  labels:
+    app: base64
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: base64
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: markdown-service
+  namespace: micro
+  labels:
+    app: markdown
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: markdown
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: resize-service
+  namespace: micro
+  labels:
+    app: resize
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: resize
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: cron-service
+  namespace: micro
+  labels:
+    app: cron
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: cron
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: dns-service
+  namespace: micro
+  labels:
+    app: dns
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: dns
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: webhook-service
+  namespace: micro
+  labels:
+    app: webhook
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: webhook
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: fmt-service
+  namespace: micro
+  labels:
+    app: fmt
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: fmt
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: qr-service
+  namespace: micro
+  labels:
+    app: qr
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: qr
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: editor-service
+  namespace: micro
+  labels:
+    app: editor
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: editor
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: beckflow-service
+  namespace: micro
+  labels:
+    app: beckflow
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: beckflow
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s
+---
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: auth-micro
+  namespace: micro
+  labels:
+    app: auth-micro
+    service: micro
+    release: kps-prometheus
+spec:
+  selector:
+    matchLabels:
+      app: auth-micro
+  namespaceSelector:
+    matchNames:
+      - micro
+  endpoints:
+    - port: http
+      path: /metrics
+      interval: 15s

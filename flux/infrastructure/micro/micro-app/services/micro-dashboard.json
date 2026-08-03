@@ -1,0 +1,125 @@
+{
+  "annotations": {
+    "list": []
+  },
+  "description": "BeckCloud Micro Services Dashboard — monitors all 12 micro services: hash, URL shortener, base64, markdown, image resize, cron jobs, DNS monitor, webhook relay, YAML/JSON, QR generator, image editor, and BeckFlow gateway.",
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 1,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Total Requests (All Services)",
+      "id": 1,
+      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{namespace=\"micro\"}[5m]))",
+          "legendFormat": "req/s"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "reqps",
+          "color": {"mode": "palette-classic"},
+          "thresholds": {"mode": "absolute", "steps": [{"color": "green", "value": null}, {"color": "yellow", "value": 500}, {"color": "red", "value": 1000}]}
+        }
+      }
+    },
+    {
+      "type": "graph",
+      "title": "Request Rate by Service",
+      "id": 2,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 4},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{namespace=\"micro\"}[5m])) by (service)",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "yaxes": [{"label": "req/s"}, {}]
+    },
+    {
+      "type": "graph",
+      "title": "Error Rate by Service",
+      "id": 3,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 4},
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{namespace=\"micro\",code=~\"5..\"}[5m])) by (service)",
+          "legendFormat": "{{service}} 5xx"
+        }
+      ],
+      "yaxes": [{"label": "err/s"}, {}]
+    },
+    {
+      "type": "graph",
+      "title": "Response Latency (P95)",
+      "id": 4,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 12},
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket{namespace=\"micro\"}[5m])) by (le, service))",
+          "legendFormat": "{{service}}"
+        }
+      ],
+      "yaxes": [{"label": "seconds"}, {}],
+      "thresholds": [
+        {"color": "green", "value": null},
+        {"color": "yellow", "value": 0.5},
+        {"color": "red", "value": 5.0}
+      ]
+    },
+    {
+      "type": "graph",
+      "title": "CPU Usage by Service",
+      "id": 5,
+      "gridPos": {"h": 8, "w": 12, "x": 12, "y": 12},
+      "targets": [
+        {
+          "expr": "sum(rate(container_cpu_usage_seconds_total{namespace=\"micro\"}[5m])) by (pod)",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "yaxes": [{"label": "cores"}, {}]
+    },
+    {
+      "type": "graph",
+      "title": "Memory Usage by Service",
+      "id": 6,
+      "gridPos": {"h": 8, "w": 12, "x": 0, "y": 20},
+      "targets": [
+        {
+          "expr": "sum(container_memory_working_set_bytes{namespace=\"micro\"}) by (pod)",
+          "legendFormat": "{{pod}}"
+        }
+      ],
+      "yaxes": [{"label": "bytes"}, {}]
+    },
+    {
+      "type": "table",
+      "title": "Service Health Status",
+      "id": 7,
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 28},
+      "targets": [
+        {
+          "expr": "kube_deployment_status_replicas_available{namespace=\"micro\"}",
+          "legendFormat": "{{deployment}}"
+        }
+      ],
+      "transform": "table"
+    }
+  ],
+  "refresh": "30s",
+  "schemaVersion": 38,
+  "style": "dark",
+  "tags": ["micro", "beckcloud"],
+  "templating": {"list": []},
+  "time": {"from": "now-1h", "to": "now"},
+  "title": "BeckCloud Micro Services",
+  "uid": "micro-services",
+  "version": 1
+}
