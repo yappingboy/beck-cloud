@@ -329,6 +329,7 @@ spec:
 
 # -----------------------------------------------------------
 # 11. Image Editor (browser-facing, CORS enabled)
+# Routes: /api/ -> editor-service (API), / -> editor-frontend-service (nginx)
 # -----------------------------------------------------------
 ---
 apiVersion: traefik.io/v1alpha1
@@ -343,8 +344,10 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`editor.tools.becklab.cloud`)
+    # API routes -> backend
+    - match: Host(`editor.tools.becklab.cloud`) && PathPrefix(`/api/`)
       kind: Rule
+      priority: 10
       middlewares:
         - name: security-headers
           namespace: traefik
@@ -357,11 +360,27 @@ spec:
       services:
         - name: editor-service
           port: 8080
+    # Frontend routes -> nginx
+    - match: Host(`editor.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-editor
+          namespace: micro
+        - name: cors-editor
+          namespace: micro
+        - name: micro-maxbody-image
+          namespace: micro
+      services:
+        - name: editor-frontend-service
+          port: 8080
   tls:
     secretName: tools-tls
 
 # -----------------------------------------------------------
 # 12. BeckFlow (browser-facing, CORS enabled)
+# Routes: /api/ -> beckflow-service (API), / -> beckflow-frontend-service (nginx)
 # -----------------------------------------------------------
 ---
 apiVersion: traefik.io/v1alpha1
@@ -376,8 +395,10 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`beckflow.tools.becklab.cloud`)
+    # API routes -> backend
+    - match: Host(`beckflow.tools.becklab.cloud`) && PathPrefix(`/api/`)
       kind: Rule
+      priority: 10
       middlewares:
         - name: security-headers
           namespace: traefik
@@ -390,6 +411,21 @@ spec:
       services:
         - name: beckflow-service
           port: 8080
+    # Frontend routes -> nginx
+    - match: Host(`beckflow.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-beckflow
+          namespace: micro
+        - name: cors-beckflow
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: beckflow-frontend-service
+          port: 80
   tls:
     secretName: tools-tls
 

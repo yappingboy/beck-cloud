@@ -1,0 +1,1005 @@
+# ============================================================
+# Service Deployment Manifests for Micro Services
+# ============================================================
+# All services share:
+#   - ImagePullSecret: ghcr-credentials
+#   - Namespace: micro
+#   - Port: 8080
+#   - SecurityContext: runAsNonRoot, runAsUser: 1000
+#   - Liveness/Readiness probes on /healthz:8080
+#   - Prometheus metrics on /metrics:8080 (auto-exposed by container)
+
+# ============================================================
+# 1. Hash Service
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: hash-deployment
+  namespace: micro
+  labels:
+    app: hasher
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: hasher
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: hasher
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: hasher
+          image: ghcr.io/yappingboy/hasher:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: hash-service
+  namespace: micro
+  labels:
+    app: hasher
+    service: micro
+spec:
+  selector:
+    app: hasher
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 2. Base64 Converter
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: base64-deployment
+  namespace: micro
+  labels:
+    app: converter
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: converter
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: converter
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: converter
+          image: ghcr.io/yappingboy/converter:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: base64-service
+  namespace: micro
+  labels:
+    app: converter
+    service: micro
+spec:
+  selector:
+    app: converter
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 3. URL Shortener
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shortener-deployment
+  namespace: micro
+  labels:
+    app: url-shortener
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: url-shortener
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: url-shortener
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: url-shortener
+          image: ghcr.io/yappingboy/url-shortener:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 25m
+            limits:
+              memory: 64Mi
+              cpu: 100m
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: micro-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: short-service
+  namespace: micro
+  labels:
+    app: url-shortener
+    service: micro
+spec:
+  selector:
+    app: url-shortener
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 4. QR Code Generator
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: qr-deployment
+  namespace: micro
+  labels:
+    app: qr-generator
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: qr-generator
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: qr-generator
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: qr-generator
+          image: ghcr.io/yappingboy/qr-generator:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: qr-service
+  namespace: micro
+  labels:
+    app: qr-generator
+    service: micro
+spec:
+  selector:
+    app: qr-generator
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 5. YAML/JSON Formatter
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: fmt-deployment
+  namespace: micro
+  labels:
+    app: yaml-json-tool
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: yaml-json-tool
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: yaml-json-tool
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: yaml-json-tool
+          image: ghcr.io/yappingboy/yaml-json-tool:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: fmt-service
+  namespace: micro
+  labels:
+    app: yaml-json-tool
+    service: micro
+spec:
+  selector:
+    app: yaml-json-tool
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 6. Webhook Relay
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: webhook-deployment
+  namespace: micro
+  labels:
+    app: webhook-relay
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webhook-relay
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: webhook-relay
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: webhook-relay
+          image: ghcr.io/yappingboy/webhook-relay:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 25m
+            limits:
+              memory: 64Mi
+              cpu: 100m
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: micro-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: webhook-service
+  namespace: micro
+  labels:
+    app: webhook-relay
+    service: micro
+spec:
+  selector:
+    app: webhook-relay
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 7. Cron Jobs
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cron-deployment
+  namespace: micro
+  labels:
+    app: cron-jobs
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cron-jobs
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: cron-jobs
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: cron-jobs
+          image: ghcr.io/yappingboy/cron-jobs:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 25m
+            limits:
+              memory: 64Mi
+              cpu: 100m
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: micro-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cron-service
+  namespace: micro
+  labels:
+    app: cron-jobs
+    service: micro
+spec:
+  selector:
+    app: cron-jobs
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 8. DNS Monitor
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dns-deployment
+  namespace: micro
+  labels:
+    app: dns-monitor
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dns-monitor
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: dns-monitor
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: dns-monitor
+          image: ghcr.io/yappingboy/dns-monitor:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dns-service
+  namespace: micro
+  labels:
+    app: dns-monitor
+    service: micro
+spec:
+  selector:
+    app: dns-monitor
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 9. Image Editor API
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-editor-api-deployment
+  namespace: micro
+  labels:
+    app: image-editor-api
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-editor-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: image-editor-api
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: image-editor-api
+          image: ghcr.io/yappingboy/image-editor-api:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 50m
+            limits:
+              memory: 128Mi
+              cpu: 250m
+          volumeMounts:
+            - name: image-data
+              mountPath: /data/images
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: image-data
+          persistentVolumeClaim:
+            claimName: micro-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: editor-service
+  namespace: micro
+  labels:
+    app: image-editor-api
+    service: micro
+spec:
+  selector:
+    app: image-editor-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 10. Image Editor Frontend
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: image-editor-frontend-deployment
+  namespace: micro
+  labels:
+    app: image-editor-frontend
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: image-editor-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: image-editor-frontend
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: nginx
+          image: ghcr.io/yappingboy/image-editor-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: editor-frontend-service
+  namespace: micro
+  labels:
+    app: image-editor-frontend
+    service: micro
+spec:
+  selector:
+    app: image-editor-frontend
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 11. BeckFlow API
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beckflow-api-deployment
+  namespace: micro
+  labels:
+    app: beckflow-api
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beckflow-api
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: beckflow-api
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: beckflow-api
+          image: ghcr.io/yappingboy/beckflow:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 32Mi
+              cpu: 50m
+            limits:
+              memory: 128Mi
+              cpu: 250m
+          volumeMounts:
+            - name: sqlite-data
+              mountPath: /data
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+      volumes:
+        - name: sqlite-data
+          persistentVolumeClaim:
+            claimName: micro-storage
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beckflow-service
+  namespace: micro
+  labels:
+    app: beckflow-api
+    service: micro
+spec:
+  selector:
+    app: beckflow-api
+  ports:
+    - port: 8080
+      targetPort: 8080
+      name: http
+      protocol: TCP
+  type: ClusterIP
+
+# ============================================================
+# 12. BeckFlow Frontend
+# ============================================================
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: beckflow-frontend-deployment
+  namespace: micro
+  labels:
+    app: beckflow-frontend
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: beckflow-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: beckflow-frontend
+        service: micro
+    spec:
+      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: nginx
+          image: ghcr.io/yappingboy/beckflow-frontend:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+              protocol: TCP
+          resources:
+            requests:
+              memory: 16Mi
+              cpu: 25m
+            limits:
+              memory: 32Mi
+              cpu: 100m
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: beckflow-frontend-service
+  namespace: micro
+  labels:
+    app: beckflow-frontend
+    service: micro
+spec:
+  selector:
+    app: beckflow-frontend
+  ports:
+    - port: 80
+      targetPort: 80
+      name: http
+      protocol: TCP
+  type: ClusterIP
