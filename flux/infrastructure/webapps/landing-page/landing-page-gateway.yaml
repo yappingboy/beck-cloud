@@ -159,11 +159,11 @@ spec:
   routes:
   - match: Host(`becklab.cloud`) || Host(`www.becklab.cloud`)
     kind: Rule
+    forwardAuth:
+      address: http://oauth2-admin.identity.svc.cluster.local:4180
     services:
     - name: landing-page-gateway
       port: 80
-      forwardAuth:
-        address: http://oauth2-admin.identity.svc.cluster.local:4180
     priority: 10
   - match: Host(`becklab.cloud`) && Path(`/admin`)
     kind: Rule
