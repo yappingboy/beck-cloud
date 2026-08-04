@@ -10,7 +10,7 @@ spec:
       crowdsecMode: stream
       crowdsecLapiScheme: http
       crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
-      crowdsecLapiPath: /v1
+      crowdsecLapiPath: /
       crowdsecLapiKeyFile: /etc/traefik/crowdsec/BOUNCER_KEY_traefik
       forwardedHeadersTrustedIps:
         - "10.0.0.0/8"
