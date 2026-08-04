@@ -11,7 +11,7 @@ spec:
       logFilePath: /tmp/bouncer.log
       crowdsecMode: stream
       crowdsecLapiScheme: http
-      crowdsecLapiHost: crowdsec-service.crowdsec.svc.cluster.local:8080
+      crowdsecLapiHost: crowdsec.crowdsec.svc.cluster.local:8080
       crowdsecLapiPath: /health
       crowdsecLapiKeyFile: /etc/traefik/crowdsec/BOUNCER_KEY_traefik
       forwardedHeadersTrustedIps:
