@@ -25,8 +25,8 @@ spec:
           version: v1.4.5
     additionalArguments:
       - "--serversTransport.insecureSkipVerify=true"
-      - "--entrypoints.web.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
-      - "--entrypoints.websecure.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
+      - "--entrypoints.web.http.middlewares=crowdsec-bouncer@kubernetescrd"
+      - "--entrypoints.websecure.http.middlewares=crowdsec-bouncer@kubernetescrd"
     logs:
       general:
         level: INFO
