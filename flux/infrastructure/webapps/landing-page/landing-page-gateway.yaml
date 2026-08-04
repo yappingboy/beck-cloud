@@ -159,8 +159,9 @@ spec:
   routes:
   - match: Host(`becklab.cloud`) || Host(`www.becklab.cloud`)
     kind: Rule
-    forwardAuth:
-      address: http://oauth2-admin.identity.svc.cluster.local:4180
+    middlewares:
+    - name: sso-admin-chain
+      namespace: identity
     services:
     - name: landing-page-gateway
       port: 80
