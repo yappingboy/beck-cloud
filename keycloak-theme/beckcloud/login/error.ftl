@@ -27,8 +27,8 @@
 
   <div id="kc-card">
     <div id="kc-message">
-      <h3 id="alert-title">${kcSanitize(msg(error.ftl!error.message))!''}</h3>
-      <p>${kcSanitize(msg(errorDetails.ftl!error.message))!''}</p>
+      <h3 id="alert-title">${kcSanitize(msg(errorMessage))!''}</h3>
+      <p>${kcSanitize(msg(errorDetails))!''}</p>
     </div>
 
     <div id="kc-form-buttons" style="margin-top: 1.5rem;">

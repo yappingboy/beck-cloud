@@ -1,6 +1,7 @@
 FROM golang:1.22-alpine AS builder
 WORKDIR /app
-COPY go.mod go.sum ./ 2>/dev/null; go mod download 2>/dev/null || true
+COPY go.mod ./
+RUN go mod download
 COPY . .
 RUN CGO_ENABLED=0 go build -o /yaml-json-tool .
 

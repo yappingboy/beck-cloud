@@ -1,7 +1,8 @@
 FROM golang:1.22-alpine AS builder
 RUN apk --no-cache build-base
 WORKDIR /app
-COPY go.mod go.sum ./ 2>/dev/null; go mod download 2>/dev/null || true
+COPY go.mod ./
+RUN go mod download
 COPY . .
 RUN CGO_ENABLED=1 go build -o /cron-jobs .
 
