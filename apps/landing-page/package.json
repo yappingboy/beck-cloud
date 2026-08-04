@@ -1,0 +1,22 @@
+{
+  "name": "beckcloud-landing",
+  "version": "1.0.0",
+  "description": "BeckCloud landing page, admin portal, and user profile management",
+  "main": "server.js",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js",
+    "build": "echo 'No build step needed'",
+    "lint": "eslint ."
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "express-session": "^1.18.0",
+    "connect-redis": "^7.1.1",
+    "ioredis": "^5.4.1",
+    "@supabase/supabase-js": "^2.45.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

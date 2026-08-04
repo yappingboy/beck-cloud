@@ -1,19 +1,40 @@
-FROM python:3.12-slim
-
-# Apache 2.4 + mod_wsgi + essentials
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    apache2 \
-    libapache2-mod-wsgi-py3 \
-    && pip install django==5.1 \
-    && rm -rf /var/lib/apt/lists/* /tmp/*
-
-# Remove default Apache configs (we mount our own)
-RUN rm -rf /etc/apache2/conf-enabled/* /etc/apache2/sites-enabled/* /etc/apache2/mods-enabled/*
-
-# Set up app directory structure
-RUN mkdir -p /app/beckcloud
+# ---- Build Stage ----
+FROM node:22-alpine AS build
 
 WORKDIR /app
-EXPOSE 80
 
-CMD ["/usr/sbin/apachectl", "-D", "FOREGROUND"]
+# Copy package files first for layer caching
+COPY package*.json ./
+
+# Install dependencies
+RUN npm install --omit=dev
+
+# Copy source code
+COPY server.js ./
+COPY package.json ./
+
+# ---- Runtime Stage ----
+FROM node:22-alpine
+
+# Create non-root user
+RUN addgroup -S appgroup && adduser -S appuser -G appgroup
+
+WORKDIR /app
+
+# Copy built application
+COPY --from=build --chown=appuser:appgroup /app /app
+
+# Create necessary directories
+RUN mkdir -p /app/public /var/lib/beckcloud /var/log/beckcloud \
+    && chown -R appuser:appgroup /app /var/lib/beckcloud /var/log/beckcloud
+
+# Switch to non-root user
+USER appuser
+
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD wget -qO- http://localhost:8080/api/health || exit 1
+
+CMD ["node", "server.js"]

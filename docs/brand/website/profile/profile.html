@@ -1029,6 +1029,113 @@
     }
 
     /* ============================================================
+       SECTION: Security (2FA + Audit Log)
+       ============================================================ */
+    .badge-active { background: rgba(74, 222, 128, 0.12); color: var(--status-success); border: 1px solid rgba(74, 222, 128, 0.25); padding: 0.25rem 0.625rem; border-radius: 100px; font-family: var(--font-heading); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; }
+
+    .twofa-setup { } .twofa-options { display: flex; gap: 1rem; margin-bottom: 1.5rem; }
+    .twofa-option { display: flex; align-items: center; gap: 0.75rem; padding: 1rem; border: 1px solid var(--border-default); border-radius: 10px; cursor: pointer; transition: all 0.2s ease; flex: 1; }
+    .twofa-option:hover { border-color: var(--brand-secondary); background: rgba(124, 92, 252, 0.03); }
+    .twofa-option.active { border-color: var(--brand-secondary); background: rgba(124, 92, 252, 0.06); box-shadow: 0 0 0 2px rgba(124, 92, 252, 0.15); }
+    .twofa-option-icon { width: 40px; height: 40px; border-radius: 8px; background: var(--bg-tertiary); display: flex; align-items: center; justify-content: center; color: var(--text-secondary); flex-shrink: 0; }
+    .twofa-option-icon svg { width: 20px; height: 20px; }
+    .twofa-option.active .twofa-option-icon { color: var(--brand-secondary); background: rgba(124, 92, 252, 0.12); }
+    .twofa-option-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .twofa-option-desc { font-size: 0.8125rem; color: var(--text-tertiary); }
+
+    .twofa-qr { text-align: center; padding: 1.5rem; background: var(--bg-tertiary); border-radius: 10px; }
+    .qr-placeholder svg { width: 140px; height: 140px; }
+
+    .twofa-recovery { padding: 1rem 0; }
+    .recovery-codes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 0.5rem; }
+    .recovery-code { font-family: var(--font-heading); font-size: 0.8125rem; text-align: center; padding: 0.5rem; background: var(--bg-tertiary); border: 1px solid var(--border-default); border-radius: 6px; color: var(--text-primary); letter-spacing: 0.1em; user-select: all; }
+
+    .audit-log-list { list-style: none; }
+    .audit-log-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 1.25rem; border-bottom: 1px solid var(--border-subtle); }
+    .audit-log-item:last-child { border-bottom: none; }
+    .audit-log-icon { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .audit-log-icon svg { width: 18px; height: 18px; }
+    .audit-log-icon.success { background: rgba(74, 222, 128, 0.08); color: var(--status-success); }
+    .audit-log-icon.warning { background: rgba(251, 191, 36, 0.08); color: var(--status-warning); }
+    .audit-log-icon.danger { background: rgba(239, 68, 68, 0.08); color: var(--status-error); }
+    .audit-log-info { flex: 1; min-width: 0; }
+    .audit-log-title { font-size: 0.9375rem; font-weight: 500; color: var(--text-primary); }
+    .audit-log-meta { font-size: 0.8125rem; color: var(--text-tertiary); display: flex; gap: 1rem; margin-top: 0.125rem; flex-wrap: wrap; }
+    .audit-log-badge { font-family: var(--font-heading); font-size: 0.625rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; padding: 0.25rem 0.5rem; border-radius: 4px; flex-shrink: 0; }
+    .audit-log-badge.success { background: rgba(74, 222, 128, 0.12); color: var(--status-success); }
+    .audit-log-badge.warning { background: rgba(251, 191, 36, 0.12); color: var(--status-warning); }
+    .audit-log-badge.danger { background: rgba(239, 68, 68, 0.12); color: var(--status-error); }
+
+    /* ============================================================
+       SECTION: Danger Zone
+       ============================================================ */
+    .danger-zone { border-color: rgba(239, 68, 68, 0.3); }
+    .danger-zone .card-header { border-bottom-color: rgba(239, 68, 68, 0.15); }
+    .danger-item { display: flex; align-items: center; justify-content: space-between; padding: 1rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .danger-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .danger-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); margin-bottom: 0.125rem; }
+    .danger-desc { font-size: 0.8125rem; color: var(--text-tertiary); }
+
+    /* ============================================================
+       SECTION: Notifications
+       ============================================================ */
+    .notif-channel { display: flex; align-items: center; justify-content: space-between; padding: 0.875rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .notif-channel:last-child { border-bottom: none; }
+    .notif-channel-label { font-size: 0.875rem; font-weight: 500; color: var(--text-secondary); min-width: 80px; }
+    .notif-channel-info { flex: 1; }
+    .notif-channel-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .notif-channel-desc { font-size: 0.8125rem; color: var(--text-tertiary); }
+
+    .notif-category { padding: 1rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .notif-category:last-child { border-bottom: none; padding-bottom: 0; }
+    .notif-category-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; flex-wrap: wrap; gap: 0.5rem; }
+    .notif-category-title { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .notif-category-desc { font-size: 0.8125rem; color: var(--text-tertiary); }
+    .notif-category-levels { display: flex; gap: 0.375rem; flex-wrap: wrap; }
+    .level-chip { font-size: 0.6875rem; font-weight: 600; padding: 0.125rem 0.5rem; border-radius: 100px; text-transform: uppercase; letter-spacing: 0.04em; }
+    .level-critical { background: rgba(239, 68, 68, 0.12); color: var(--status-error); }
+    .level-warning { background: rgba(251, 191, 36, 0.12); color: var(--status-warning); }
+    .level-info { background: rgba(96, 165, 250, 0.12); color: var(--status-info); }
+
+    /* Toggle switch */
+    .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; flex-shrink: 0; }
+    .toggle-switch input { opacity: 0; width: 0; height: 0; }
+    .toggle-slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: var(--bg-tertiary); transition: 0.3s; border-radius: 24px; border: 1px solid var(--border-default); }
+    .toggle-slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 2px; bottom: 2px; background-color: var(--text-secondary); transition: 0.3s; border-radius: 50%; }
+    input:checked + .toggle-slider { background-color: var(--brand-secondary); border-color: var(--brand-secondary); }
+    input:checked + .toggle-slider:before { transform: translateX(20px); background-color: white; }
+
+    /* Export section */
+    .export-section { margin-top: 1.5rem; padding-top: 1.5rem; border-top: 1px solid var(--border-subtle); }
+
+    /* Link connect/disconnect buttons */
+    .btn-connect { font-family: var(--font-body); font-size: 0.8125rem; font-weight: 500; padding: 0.375rem 0.875rem; border-radius: 6px; border: 1px solid var(--brand-secondary); background: transparent; color: var(--brand-secondary); cursor: pointer; transition: all 0.2s ease; }
+    .btn-connect:hover { background: rgba(124, 92, 252, 0.1); }
+    .btn-connected { font-family: var(--font-heading); font-size: 0.6875rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.25rem 0.625rem; border-radius: 100px; background: rgba(74, 222, 128, 0.12); color: var(--status-success); border: 1px solid rgba(74, 222, 128, 0.25); }
+    .btn-disconnect { font-family: var(--font-body); font-size: 0.8125rem; font-weight: 500; padding: 0.375rem 0.875rem; border-radius: 6px; border: 1px solid rgba(239, 68, 68, 0.3); background: transparent; color: var(--status-error); cursor: pointer; transition: all 0.2s ease; }
+    .btn-disconnect:hover { background: rgba(239, 68, 68, 0.1); }
+
+    /* Link item layout */
+    .link-item { display: flex; align-items: center; gap: 1rem; padding: 1rem 0; border-bottom: 1px solid var(--border-subtle); }
+    .link-item:last-child { border-bottom: none; }
+    .link-icon { width: 40px; height: 40px; border-radius: 8px; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+    .link-icon svg { width: 20px; height: 20px; }
+    .link-icon.connected { background: rgba(74, 222, 128, 0.08); color: var(--status-success); }
+    .link-icon.disconnected { background: var(--bg-tertiary); color: var(--text-tertiary); }
+    .link-info { flex: 1; min-width: 0; }
+    .link-name { font-size: 0.9375rem; font-weight: 600; color: var(--text-primary); }
+    .link-desc { font-size: 0.8125rem; color: var(--text-tertiary); }
+    .link-action { flex-shrink: 0; }
+
+    /* Request form grid */
+    .request-form-grid { display: grid; grid-template-columns: 1fr; gap: 0.75rem; }
+    .request-item { display: flex; align-items: center; gap: 0.75rem; padding: 0.75rem 1rem; border: 1px solid var(--border-default); border-radius: 8px; transition: border-color 0.2s ease, background 0.2s ease; }
+    .request-item:hover { border-color: var(--border-subtle); background: var(--bg-secondary); }
+    .request-item input[type="checkbox"] { accent-color: var(--brand-primary); width: 16px; height: 16px; }
+    .request-item label { font-size: 0.875rem; color: var(--text-secondary); cursor: pointer; display: flex; flex-direction: column; gap: 0.125rem; }
+    .request-item label strong { color: var(--text-primary); font-size: 0.875rem; }
+
+    /* ============================================================
        Responsive
        ============================================================ */
     @media (max-width: 900px) {
@@ -1112,6 +1219,10 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
           Active Sessions
         </a></li>
+        <li><a href="#tab-security" data-tab="tab-security">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Security
+        </a></li>
         <li><a href="#tab-tickets" data-tab="tab-tickets">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
           Trouble Tickets
@@ -1128,13 +1239,17 @@
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
           Request Access
         </a></li>
+        <li><a href="#tab-notifications" data-tab="tab-notifications">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+          Notifications
+        </a></li>
       </ul>
 
       <div class="sidebar-profile-mini">
         <div class="mini-avatar" id="mini-avatar">SB</div>
         <div class="mini-info">
           <div class="mini-name">Stephen Beck</div>
-          <div class="mini-email">stephen@beckcloud.cloud</div>
+          <div class="mini-email">stephen@becklab.cloud</div>
         </div>
       </div>
 
@@ -1155,10 +1270,12 @@
       <div class="tab-bar" role="tablist">
         <button class="tab-btn active" data-tab="tab-profile" role="tab" aria-selected="true">Profile</button>
         <button class="tab-btn" data-tab="tab-password" role="tab" aria-selected="false">Password</button>
+        <button class="tab-btn" data-tab="tab-security" role="tab" aria-selected="false">Security</button>
         <button class="tab-btn" data-tab="tab-groups" role="tab" aria-selected="false">Groups</button>
         <button class="tab-btn" data-tab="tab-sessions" role="tab" aria-selected="false">Sessions</button>
         <button class="tab-btn" data-tab="tab-tickets" role="tab" aria-selected="false">Tickets</button>
         <button class="tab-btn" data-tab="tab-links" role="tab" aria-selected="false">Links</button>
+        <button class="tab-btn" data-tab="tab-notifications" role="tab" aria-selected="false">Notifications</button>
         <button class="tab-btn" data-tab="tab-request" role="tab" aria-selected="false">Request</button>
       </div>
 
@@ -1208,7 +1325,7 @@
               </div>
               <div class="form-field">
                 <label for="profile-email">Email address</label>
-                <input type="email" id="profile-email" value="stephen@beckcloud.cloud" placeholder="you@example.com">
+                <input type="email" id="profile-email" value="stephen@becklab.cloud" placeholder="you@example.com">
                 <span class="form-field-hint">This is your primary login email. Changes sync via Keycloak.</span>
               </div>
               <div class="form-field">
@@ -1226,6 +1343,42 @@
                 <button type="button" class="btn btn-secondary" id="profile-reset-btn">Cancel</button>
               </div>
             </form>
+
+            <!-- Export Profile -->
+            <div class="export-section">
+              <h3 style="font-size:0.9375rem;font-weight:600;margin-bottom:0.5rem;">Export Data</h3>
+              <p style="font-size:0.8125rem;color:var(--text-tertiary);margin-bottom:0.75rem;">Download a JSON copy of your profile data, groups, and preferences.</p>
+              <button type="button" class="btn btn-secondary" id="export-profile-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:16px;height:16px;vertical-align:-3px;margin-right:4px;"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                Export Profile Data
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Danger Zone -->
+        <div class="card danger-zone">
+          <div class="card-header">
+            <div>
+              <h2 style="color:var(--status-error);">Danger Zone</h2>
+              <span class="card-subtitle">Irreversible actions</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="danger-item">
+              <div>
+                <div class="danger-title">Deactivate Account</div>
+                <div class="danger-desc">Temporarily disable your account. You can reactivate by logging in again.</div>
+              </div>
+              <button type="button" class="btn-sm btn-danger" id="deactivate-btn">Deactivate</button>
+            </div>
+            <div class="danger-item">
+              <div>
+                <div class="danger-title">Delete Account</div>
+                <div class="danger-desc">Permanently delete your account and all associated data. This cannot be undone.</div>
+              </div>
+              <button type="button" class="btn-sm btn-danger" id="delete-btn" style="background:var(--status-error);color:white;border-color:var(--status-error);">Delete</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1451,6 +1604,171 @@
       </div>
 
       <!-- =============================================
+           TAB: Security (2FA + Login Audit)
+           ============================================= -->
+      <div class="tab-panel" id="tab-security">
+        <div class="page-header">
+          <h1>Security</h1>
+          <p>Two-factor authentication, login audit log, and session management.</p>
+        </div>
+
+        <!-- Two-Factor Authentication -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Two-Factor Authentication</h2>
+              <span class="card-subtitle">Add an extra layer of security to your account</span>
+            </div>
+            <span class="badge-active" id="twofa-status-badge">Disabled</span>
+          </div>
+          <div class="card-body">
+            <div class="twofa-setup" id="twofa-setup">
+              <div class="twofa-options">
+                <div class="twofa-option active">
+                  <div class="twofa-option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+                  </div>
+                  <div>
+                    <div class="twofa-option-title">Authenticator App</div>
+                    <div class="twofa-option-desc">Use Google Authenticator, Authy, or similar TOTP app</div>
+                  </div>
+                </div>
+                <div class="twofa-option">
+                  <div class="twofa-option-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.127.96.361 1.903.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.907.339 1.85.573 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+                  </div>
+                  <div>
+                    <div class="twofa-option-title">SMS</div>
+                    <div class="twofa-option-desc">Receive codes via text message</div>
+                  </div>
+                </div>
+              </div>
+              <div class="twofa-qr" id="twofa-qr" style="display:none;">
+                <div class="qr-placeholder">
+                  <svg viewBox="0 0 100 100" fill="none" stroke="var(--text-primary)" stroke-width="2">
+                        <rect x="10" y="10" width="30" height="30" rx="2"/>
+                        <rect x="15" y="15" width="20" height="20" rx="1" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="60" y="10" width="30" height="30" rx="2"/>
+                        <rect x="65" y="15" width="20" height="20" rx="1" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="10" y="60" width="30" height="30" rx="2"/>
+                        <rect x="15" y="65" width="20" height="20" rx="1" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="50" y="50" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="60" y="50" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="70" y="50" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="80" y="50" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="50" y="60" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="50" y="70" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                        <rect x="50" y="80" width="5" height="5" fill="var(--text-primary)" stroke="none"/>
+                      </svg>
+                    <p style="margin-top:1rem;font-size:0.875rem;color:var(--text-tertiary);">Scan with your authenticator app</p>
+                  </div>
+                <div class="form-field" style="margin-top:1.5rem;">
+                  <label for="twofa-code">Verification code</label>
+                  <input type="text" id="twofa-code" placeholder="Enter 6-digit code" maxlength="6" style="font-family:var(--font-heading);letter-spacing:0.2em;text-align:center;font-size:1.25rem;">
+                </div>
+              </div>
+              <div class="form-actions">
+                <button type="button" class="btn btn-primary" id="enable-2fa-btn">Enable 2FA</button>
+                <button type="button" class="btn btn-secondary" id="disable-2fa-btn" style="display:none;">Disable 2FA</button>
+              </div>
+            </div>
+            <div class="twofa-recovery" id="twofa-recovery" style="display:none;">
+              <p style="font-size:0.9375rem;color:var(--text-secondary);margin-bottom:0.75rem;">Recovery codes — use these if you lose your device:</p>
+              <div class="recovery-codes-grid" id="recovery-codes-grid"></div>
+              <div class="form-actions" style="margin-top:1rem;">
+                <button type="button" class="btn btn-secondary" id="download-recovery-btn">Download Codes</button>
+                <button type="button" class="btn btn-secondary" id="regenerate-2fa-btn">Regenerate</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Login Audit Log -->
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Login Audit Log</h2>
+              <span class="card-subtitle">Recent sign-ins to your account</span>
+            </div>
+          </div>
+          <div class="card-body" style="padding:0;">
+            <ul class="audit-log-list">
+              <li class="audit-log-item">
+                <div class="audit-log-icon success">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="audit-log-info">
+                  <div class="audit-log-title">Successful login</div>
+                  <div class="audit-log-meta">
+                    <span>Chrome 126 — macOS 14.5</span>
+                    <span>192.168.1.42</span>
+                    <span>2 min ago</span>
+                  </div>
+                </div>
+                <span class="audit-log-badge success">Success</span>
+              </li>
+              <li class="audit-log-item">
+                <div class="audit-log-icon success">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="audit-log-info">
+                  <div class="audit-log-title">Successful login (2FA)</div>
+                  <div class="audit-log-meta">
+                    <span>Safari — iPhone 15 Pro</span>
+                    <span>73.162.89.201</span>
+                    <span>2 hours ago</span>
+                  </div>
+                </div>
+                <span class="audit-log-badge success">Success</span>
+              </li>
+              <li class="audit-log-item">
+                <div class="audit-log-icon warning">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+                </div>
+                <div class="audit-log-info">
+                  <div class="audit-log-title">Failed login — wrong password</div>
+                  <div class="audit-log-meta">
+                    <span>Firefox — Ubuntu 24.04</span>
+                    <span>203.0.113.45</span>
+                    <span>1 day ago</span>
+                  </div>
+                </div>
+                <span class="audit-log-badge warning">Failed</span>
+              </li>
+              <li class="audit-log-item">
+                <div class="audit-log-icon success">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="audit-log-info">
+                  <div class="audit-log-title">Password changed</div>
+                  <div class="audit-log-meta">
+                    <span>Chrome 125 — macOS 14.4</span>
+                    <span>192.168.1.42</span>
+                    <span>3 days ago</span>
+                  </div>
+                </div>
+                <span class="audit-log-badge success">Success</span>
+              </li>
+              <li class="audit-log-item">
+                <div class="audit-log-icon success">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/></svg>
+                </div>
+                <div class="audit-log-info">
+                  <div class="audit-log-title">Successful login (2FA)</div>
+                  <div class="audit-log-meta">
+                    <span>Chrome 125 — macOS 14.4</span>
+                    <span>192.168.1.42</span>
+                    <span>5 days ago</span>
+                  </div>
+                </div>
+                <span class="audit-log-badge success">Success</span>
+              </li>
+            </ul>
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
            TAB: Trouble Ticket History
            ============================================= -->
       <div class="tab-panel" id="tab-tickets">
@@ -1622,6 +1940,201 @@
               </div>
             </div>
 
+          </div>
+        </div>
+      </div>
+
+      <!-- =============================================
+           TAB: Notification Preferences
+           ============================================= -->
+      <div class="tab-panel" id="tab-notifications">
+        <div class="page-header">
+          <h1>Notification Preferences</h1>
+          <p>Choose what alerts and updates you receive.</p>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Notification Channels</h2>
+              <span class="card-subtitle">How you want to be notified</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="notif-channel">
+              <div class="notif-channel-info">
+                <div class="notif-channel-title">Email</div>
+                <div class="notif-channel-desc">Receive notifications at stephen@becklab.cloud</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked id="notif-email">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-channel">
+              <div class="notif-channel-info">
+                <div class="notif-channel-title">Push Notifications</div>
+                <div class="notif-channel-desc">Browser push notifications via WebPush API</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" id="notif-push">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+            <div class="notif-channel">
+              <div class="notif-channel-info">
+                <div class="notif-channel-title">Slack</div>
+                <div class="notif-channel-desc">Forward to #becklab-alerts on Slack</div>
+              </div>
+              <label class="toggle-switch">
+                <input type="checkbox" checked id="notif-slack">
+                <span class="toggle-slider"></span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <div>
+              <h2>Alert Categories</h2>
+              <span class="card-subtitle">Control which events trigger notifications</span>
+            </div>
+          </div>
+          <div class="card-body">
+            <div class="notif-category">
+              <div class="notif-category-header">
+                <div>
+                  <div class="notif-category-title">Service Alerts</div>
+                  <div class="notif-category-desc">Uptime, downtime, and performance degradation</div>
+                </div>
+                <div class="notif-category-levels">
+                  <span class="level-chip level-critical">Critical</span>
+                  <span class="level-chip level-warning">Warning</span>
+                  <span class="level-chip level-info">Info</span>
+                </div>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Email</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Push</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Slack</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="notif-category">
+              <div class="notif-category-header">
+                <div>
+                  <div class="notif-category-title">Ticket Updates</div>
+                  <div class="notif-category-desc">When your trouble tickets are updated</div>
+                </div>
+                <div class="notif-category-levels">
+                  <span class="level-chip level-critical">All</span>
+                </div>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Email</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Push</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Slack</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="notif-category">
+              <div class="notif-category-header">
+                <div>
+                  <div class="notif-category-title">Security</div>
+                  <div class="notif-category-desc">Logins, password changes, 2FA events</div>
+                </div>
+                <div class="notif-category-levels">
+                  <span class="level-chip level-critical">All</span>
+                </div>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Email</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Push</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Slack</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="notif-category">
+              <div class="notif-category-header">
+                <div>
+                  <div class="notif-category-title">Billing &amp; Accounts</div>
+                  <div class="notif-category-desc">Invoice notifications, plan changes</div>
+                </div>
+                <div class="notif-category-levels">
+                  <span class="level-chip level-info">Info</span>
+                </div>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Email</span>
+                <label class="toggle-switch">
+                  <input type="checkbox" checked>
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Push</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+              <div class="notif-channel">
+                <span class="notif-channel-label">Slack</span>
+                <label class="toggle-switch">
+                  <input type="checkbox">
+                  <span class="toggle-slider"></span>
+                </label>
+              </div>
+            </div>
+            <div class="form-actions">
+              <button type="button" class="btn btn-primary" id="notif-save-btn">Save Preferences</button>
+            </div>
           </div>
         </div>
       </div>
@@ -1889,7 +2402,7 @@
       profileResetBtn.addEventListener('click', () => {
         document.getElementById('profile-first-name').value = 'Stephen';
         document.getElementById('profile-last-name').value = 'Beck';
-        document.getElementById('profile-email').value = 'stephen@beckcloud.cloud';
+        document.getElementById('profile-email').value = 'stephen@becklab.cloud';
         document.getElementById('profile-display-name').value = 'Stephen Beck';
         document.getElementById('profile-bio').value = 'Homelab operator. K3s enthusiast. Runs everything on ZFS.';
         showToast('Form reset.', 'success');
@@ -2031,6 +2544,481 @@
         setTimeout(() => toast.remove(), 300);
       }, 3000);
     }
+
+    // ============================================================
+    // API Integration Layer (stubbed — swap URLs for real endpoints)
+    // ============================================================
+    const API = {
+      BASE: '/api/v1',
+      async getProfile() {
+        return fetch(`${this.BASE}/profile`).then(r => r.json());
+      },
+      async updateProfile(data) {
+        return fetch(`${this.BASE}/profile`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(r => r.json());
+      },
+      async changePassword(current, newPwd) {
+        return fetch(`${this.BASE}/auth/password`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ current_password: current, new_password: newPwd })
+        }).then(r => r.json());
+      },
+      async enable2FA(method) {
+        return fetch(`${this.BASE}/auth/2fa`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ method })
+        }).then(r => r.json());
+      },
+      async verify2FA(code) {
+        return fetch(`${this.BASE}/auth/2fa/verify`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code })
+        }).then(r => r.json());
+      },
+      async disable2FA() {
+        return fetch(`${this.BASE}/auth/2fa`, { method: 'DELETE' }).then(r => r.json());
+      },
+      async getRecoveryCodes() {
+        return fetch(`${this.BASE}/auth/2fa/codes`).then(r => r.json());
+      },
+      async regenerateRecoveryCodes() {
+        return fetch(`${this.BASE}/auth/2fa/codes/regenerate`, { method: 'POST' }).then(r => r.json());
+      },
+      async getSessions() {
+        return fetch(`${this.BASE}/sessions`).then(r => r.json());
+      },
+      async revokeSession(sessionId) {
+        return fetch(`${this.BASE}/sessions/${sessionId}`, { method: 'DELETE' }).then(r => r.json());
+      },
+      async revokeAllSessions(currentId) {
+        return fetch(`${this.BASE}/sessions`, {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ currentSessionId: currentId })
+        }).then(r => r.json());
+      },
+      async getTickets() {
+        return fetch(`${this.BASE}/tickets`).then(r => r.json());
+      },
+      async getGroups() {
+        return fetch(`${this.BASE}/groups`).then(r => r.json());
+      },
+      async getOAuthLinks() {
+        return fetch(`${this.BASE}/oauth/links`).then(r => r.json());
+      },
+      async connectOAuth(provider) {
+        return fetch(`${this.BASE}/oauth/connect/${provider}`).then(r => r.json());
+      },
+      async disconnectOAuth(provider) {
+        return fetch(`${this.BASE}/oauth/links/${provider}`, { method: 'DELETE' }).then(r => r.json());
+      },
+      async getNotifications() {
+        return fetch(`${this.BASE}/notifications`).then(r => r.json());
+      },
+      async updateNotifications(data) {
+        return fetch(`${this.BASE}/notifications`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(data)
+        }).then(r => r.json());
+      },
+      async exportProfile() {
+        return fetch(`${this.BASE}/profile/export`).then(r => r.json());
+      },
+      async deactivateAccount() {
+        return fetch(`${this.BASE}/profile/deactivate`, { method: 'POST' }).then(r => r.json());
+      },
+      async deleteAccount() {
+        return fetch(`${this.BASE}/profile`, { method: 'DELETE' }).then(r => r.json());
+      }
+    };
+
+    // ============================================================
+    // 2FA Setup
+    // ============================================================
+    const twofaOptions = document.querySelectorAll('.twofa-option');
+    const enable2faBtn = document.getElementById('enable-2fa-btn');
+    const disable2faBtn = document.getElementById('disable-2fa-btn');
+    const twofaQr = document.getElementById('twofa-qr');
+    const twofaRecovery = document.getElementById('twofa-recovery');
+    const twofaStatusBadge = document.getElementById('twofa-status-badge');
+
+    twofaOptions.forEach(opt => {
+      opt.addEventListener('click', () => {
+        twofaOptions.forEach(o => o.classList.remove('active'));
+        opt.classList.add('active');
+      });
+    });
+
+    if (enable2faBtn) {
+      enable2faBtn.addEventListener('click', async () => {
+        const activeOption = document.querySelector('.twofa-option.active');
+        if (!activeOption) { showToast('Select a 2FA method.', 'error'); return; }
+        const method = activeOption.querySelector('.twofa-option-title').textContent.toLowerCase();
+        try {
+          const result = await API.enable2FA(method);
+          if (result.qr) {
+            twofaQr.style.display = 'block';
+            showToast('Scan the QR code with your authenticator app.', 'success');
+          }
+        } catch (err) {
+          showToast('Failed to enable 2FA: ' + err.message, 'error');
+        }
+      });
+    }
+
+    const twofaCodeInput = document.getElementById('twofa-code');
+    if (twofaCodeInput) {
+      twofaCodeInput.addEventListener('change', async () => {
+        const code = twofaCodeInput.value.replace(/\D/g, '');
+        if (code.length !== 6) { showToast('Enter a 6-digit code.', 'error'); return; }
+        try {
+          const result = await API.verify2FA(code);
+          if (result.success) {
+            twofaStatusBadge.textContent = 'Enabled';
+            twofaStatusBadge.className = 'badge-active';
+            disable2faBtn.style.display = 'inline-block';
+            enable2faBtn.style.display = 'none';
+            twofaQr.style.display = 'none';
+            twofaRecovery.style.display = 'block';
+
+            // Generate mock recovery codes
+            const codesGrid = document.getElementById('recovery-codes-grid');
+            if (codesGrid) {
+              codesGrid.innerHTML = '';
+              const codes = Array.from({length: 8}, () =>
+                Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+                Math.random().toString(36).substring(2, 6).toUpperCase()
+              );
+              codes.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'recovery-code';
+                div.textContent = c;
+                codesGrid.appendChild(div);
+              });
+            }
+            showToast('2FA enabled! Save your recovery codes.', 'success');
+          }
+        } catch (err) {
+          showToast('Invalid code. Try again.', 'error');
+        }
+      });
+    }
+
+    if (disable2faBtn) {
+      disable2faBtn.addEventListener('click', async () => {
+        if (!confirm('Disable 2FA on your account?')) return;
+        try {
+          await API.disable2FA();
+          twofaStatusBadge.textContent = 'Disabled';
+          twofaStatusBadge.className = 'badge-active';
+          twofaStatusBadge.style.background = 'rgba(239, 68, 68, 0.12)';
+          twofaStatusBadge.style.color = 'var(--status-error)';
+          twofaStatusBadge.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+          disable2faBtn.style.display = 'none';
+          enable2faBtn.style.display = 'inline-block';
+          twofaRecovery.style.display = 'none';
+          showToast('2FA disabled.', 'success');
+        } catch (err) {
+          showToast('Failed to disable 2FA.', 'error');
+        }
+      });
+    }
+
+    if (document.getElementById('download-recovery-btn')) {
+      document.getElementById('download-recovery-btn').addEventListener('click', () => {
+        const codes = document.querySelectorAll('.recovery-code');
+        const text = Array.from(codes).map(c => c.textContent).join('\n');
+        const blob = new Blob([text], { type: 'text/plain' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'becklab-recovery-codes.txt';
+        a.click(); URL.revokeObjectURL(url);
+        showToast('Recovery codes downloaded.', 'success');
+      });
+    }
+
+    if (document.getElementById('regenerate-2fa-btn')) {
+      document.getElementById('regenerate-2fa-btn').addEventListener('click', async () => {
+        if (!confirm('Regenerate all recovery codes? Old codes will be invalid.')) return;
+        try {
+          await API.regenerateRecoveryCodes();
+          const codesGrid = document.getElementById('recovery-codes-grid');
+          codesGrid.innerHTML = '';
+          const codes = Array.from({length: 8}, () =>
+            Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+            Math.random().toString(36).substring(2, 6).toUpperCase()
+          );
+          codes.forEach(c => {
+            const div = document.createElement('div');
+            div.className = 'recovery-code';
+            div.textContent = c;
+            codesGrid.appendChild(div);
+          });
+          showToast('Recovery codes regenerated.', 'success');
+        } catch (err) {
+          showToast('Failed to regenerate codes.', 'error');
+        }
+      });
+    }
+
+    // ============================================================
+    // Password Change
+    // ============================================================
+    const passwordSaveBtn = document.getElementById('password-save-btn');
+    if (passwordSaveBtn) {
+      passwordSaveBtn.addEventListener('click', async () => {
+        const current = document.getElementById('current-password').value;
+        const newPwd = document.getElementById('new-password').value;
+        const confirm = document.getElementById('confirm-password').value;
+        if (!current || !newPwd || !confirm) {
+          showToast('Fill in all password fields.', 'error'); return;
+        }
+        if (newPwd !== confirm) {
+          showToast('New passwords do not match.', 'error'); return;
+        }
+        if (newPwd.length < 8) {
+          showToast('Password must be at least 8 characters.', 'error'); return;
+        }
+        try {
+          await API.changePassword(current, newPwd);
+          showToast('Password updated successfully!', 'success');
+          document.getElementById('current-password').value = '';
+          document.getElementById('new-password').value = '';
+          document.getElementById('confirm-password').value = '';
+        } catch (err) {
+          showToast('Failed to update password: ' + err.message, 'error');
+        }
+      });
+    }
+
+    // ============================================================
+    // Profile Save
+    // ============================================================
+    const profileSaveBtn = document.getElementById('profile-save-btn');
+    if (profileSaveBtn) {
+      profileSaveBtn.addEventListener('click', async () => {
+        const data = {
+          firstName: document.getElementById('profile-first-name').value,
+          lastName: document.getElementById('profile-last-name').value,
+          phone: document.getElementById('profile-phone').value,
+          bio: document.getElementById('profile-bio').value
+        };
+        try {
+          await API.updateProfile(data);
+          showToast('Profile updated successfully!', 'success');
+        } catch (err) {
+          showToast('Failed to save profile: ' + err.message, 'error');
+        }
+      });
+    }
+
+    const profileResetBtn = document.getElementById('profile-reset-btn');
+    if (profileResetBtn) {
+      profileResetBtn.addEventListener('click', () => {
+        document.getElementById('profile-first-name').value = 'Stephen';
+        document.getElementById('profile-last-name').value = 'Beck';
+        document.getElementById('profile-phone').value = '+1 (555) 123-4567';
+        document.getElementById('profile-bio').value = 'Homelab operator. K3s enthusiast. Runs everything on ZFS.';
+      });
+    }
+
+    // ============================================================
+    // Session Management
+    // ============================================================
+    const revokeAllBtn = document.getElementById('revoke-all-btn');
+    if (revokeAllBtn) {
+      revokeAllBtn.addEventListener('click', async () => {
+        if (!confirm('Revoke all other sessions? You will stay logged in on this device.')) return;
+        try {
+          await API.revokeAllSessions('current');
+          showToast('All other sessions revoked.', 'success');
+        } catch (err) {
+          showToast('Failed to revoke sessions.', 'error');
+        }
+      });
+    }
+
+    document.querySelectorAll('.btn-revoke').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        if (!confirm('Revoke this session?')) return;
+        showToast('Session revoked.', 'success');
+      });
+    });
+
+    // ============================================================
+    // OAuth2 Account Links
+    // ============================================================
+    document.querySelectorAll('.btn-connect').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const provider = btn.getAttribute('data-provider');
+        try {
+          await API.connectOAuth(provider);
+          btn.textContent = 'Connected';
+          btn.className = 'btn-connected';
+          btn.disabled = true;
+          const disconnectBtn = btn.parentElement.querySelector('.btn-disconnect');
+          if (disconnectBtn) disconnectBtn.style.display = 'inline-block';
+          showToast(`${provider} connected successfully.`, 'success');
+        } catch (err) {
+          showToast(`Failed to connect ${provider}: ${err.message}`, 'error');
+        }
+      });
+    });
+
+    document.querySelectorAll('.btn-disconnect').forEach(btn => {
+      btn.addEventListener('click', async () => {
+        const provider = btn.getAttribute('data-provider');
+        if (!confirm(`Disconnect ${provider}?`)) return;
+        try {
+          await API.disconnectOAuth(provider);
+          btn.textContent = 'Connect';
+          btn.className = 'btn-connect';
+          btn.disabled = false;
+          btn.style.display = 'none';
+          showToast(`${provider} disconnected.`, 'success');
+        } catch (err) {
+          showToast(`Failed to disconnect ${provider}: ${err.message}`, 'error');
+        }
+      });
+    });
+
+    // ============================================================
+    // Notification Preferences
+    // ============================================================
+    const notifSaveBtn = document.getElementById('notif-save-btn');
+    if (notifSaveBtn) {
+      notifSaveBtn.addEventListener('click', async () => {
+        const prefs = {
+          channels: {
+            email: document.getElementById('notif-email')?.checked ?? false,
+            push: document.getElementById('notif-push')?.checked ?? false,
+            slack: document.getElementById('notif-slack')?.checked ?? false
+          },
+          categories: {}
+        };
+        document.querySelectorAll('.notif-category').forEach(cat => {
+          const title = cat.querySelector('.notif-category-title')?.textContent;
+          const toggles = cat.querySelectorAll('.notif-channel input[type="checkbox"]');
+          if (title) prefs.categories[title.toLowerCase()] = Array.from(toggles).map(t => t.checked);
+        });
+        try {
+          await API.updateNotifications(prefs);
+          showToast('Notification preferences saved!', 'success');
+        } catch (err) {
+          showToast('Failed to save preferences.', 'error');
+        }
+      });
+    }
+
+    // ============================================================
+    // Export Profile
+    // ============================================================
+    const exportBtn = document.getElementById('export-profile-btn');
+    if (exportBtn) {
+      exportBtn.addEventListener('click', async () => {
+        exportBtn.textContent = 'Exporting...';
+        exportBtn.disabled = true;
+        try {
+          const data = await API.exportProfile();
+          const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url; a.download = `becklab-profile-${new Date().toISOString().split('T')[0]}.json`;
+          a.click(); URL.revokeObjectURL(url);
+          showToast('Profile exported.', 'success');
+        } catch (err) {
+          showToast('Export failed: ' + err.message, 'error');
+        }
+        exportBtn.textContent = 'Export Profile Data';
+        exportBtn.disabled = false;
+      });
+    }
+
+    // ============================================================
+    // Danger Zone
+    // ============================================================
+    const deactivateBtn = document.getElementById('deactivate-btn');
+    if (deactivateBtn) {
+      deactivateBtn.addEventListener('click', async () => {
+        if (!confirm('Deactivate your account? You can reactivate by logging in again.')) return;
+        try {
+          await API.deactivateAccount();
+          showToast('Account deactivated.', 'success');
+        } catch (err) {
+          showToast('Deactivation failed.', 'error');
+        }
+      });
+    }
+
+    const deleteBtn = document.getElementById('delete-btn');
+    if (deleteBtn) {
+      deleteBtn.addEventListener('click', async () => {
+        if (!confirm('Delete your account permanently? This cannot be undone!')) return;
+        if (!confirm('Are you sure? Type OK to confirm.')) return;
+        try {
+          await API.deleteAccount();
+          showToast('Account deleted. Redirecting...', 'success');
+        } catch (err) {
+          showToast('Deletion failed.', 'error');
+        }
+      });
+    }
+
+    // ============================================================
+    // Request Form
+    // ============================================================
+    const requestSubmitBtn = document.getElementById('request-submit-btn');
+    if (requestSubmitBtn) {
+      requestSubmitBtn.addEventListener('click', async () => {
+        const selected = Array.from(document.querySelectorAll('#request-form input[type="checkbox"]:checked'))
+          .map(cb => cb.parentElement.querySelector('strong')?.textContent || cb.value);
+        const reason = document.getElementById('request-reason').value;
+        if (selected.length === 0) {
+          showToast('Select at least one item to request.', 'error'); return;
+        }
+        if (!reason.trim()) {
+          showToast('Please provide a reason for your request.', 'error'); return;
+        }
+        try {
+          await API.updateProfile({ requestedAccess: selected, requestReason: reason });
+          showToast(`Request submitted for: ${selected.join(', ')}`, 'success');
+          document.getElementById('request-reason').value = '';
+          document.querySelectorAll('#request-form input[type="checkbox"]').forEach(cb => cb.checked = false);
+        } catch (err) {
+          showToast('Failed to submit request.', 'error');
+        }
+      });
+    }
+
+    // ============================================================
+    // Dynamic Data Loading (on page load)
+    // ============================================================
+    async function loadProfileData() {
+      try {
+        const profile = await API.getProfile();
+        if (profile) {
+          const fn = document.getElementById('profile-first-name');
+          const ln = document.getElementById('profile-last-name');
+          if (fn && profile.firstName) fn.value = profile.firstName;
+          if (ln && profile.lastName) ln.value = profile.lastName;
+          const miniName = document.querySelector('.mini-name');
+          const miniEmail = document.querySelector('.mini-email');
+          if (miniName && profile.firstName) miniName.textContent = `${profile.firstName} ${profile.lastName || ''}`;
+          if (miniEmail && profile.email) miniEmail.textContent = profile.email;
+        }
+      } catch (err) {
+        console.warn('Profile data load failed (using static data):', err);
+      }
+    }
+
+    loadProfileData();
   </script>
 </body>
 </html>

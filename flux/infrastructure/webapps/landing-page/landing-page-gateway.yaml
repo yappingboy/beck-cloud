@@ -1,0 +1,235 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: landing-page-gateway
+  namespace: webapps
+data:
+  server.js: "#!/usr/bin/env node\nconst express = require('express');\nconst session = require('express-session');\nconst path = require('path');\nconst fs = require('fs');\n\nconst PORT = process.env.PORT || 8080;\nconst KEYCLOAK_URL = process.env.KEYCLOAK_URL || 'http://keycloak.identity.svc.cluster.local:8080';\nconst KEYCLOAK_REALM = process.env.KEYCLOAK_REALM || 'homelab';\nconst LLDAP_URL = process.env.LLDAP_URL || 'http://lldap.identity.svc.cluster.local:17170';\nconst DIRECTUS_URL = process.env.DIRECTUS_URL || 'http://directus.cms.svc.cluster.local:8055';\nconst PROMETHEUS_URL = process.env.PROMETHEUS_URL || 'http://prometheus.monitoring.svc.cluster.local:9090';\nconst REDIS_URL = process.env.REDIS_URL || 'redis://redis.identity.svc.cluster.local:6379';\nconst SESSION_SECRET = process.env.SESSION_SECRET || 'beckcloud-session-secret';\n\nconst STATIC_ROOT = '/app/public';\n\nconst app = express();\n\napp.use(express.json());\napp.use(express.urlencoded({ extended: true }));\n\napp.use(session({\n  secret: SESSION_SECRET,\n  resave: false,\n  saveUninitialized: false,\n  cookie: { secure: process.env.NODE_ENV === 'production', httpOnly: true, maxAge: 7 * 24 * 60 * 60 * 1000 },\n  name: 'beckcloud.sid',\n}));\n\napp.use('/static', express.static(STATIC_ROOT));\napp.use('/css', express.static(path.join(STATIC_ROOT, 'css')));\napp.use('/js', express.static(path.join(STATIC_ROOT, 'js')));\n\napp.get('/', (req, res) => res.sendFile(path.join(STATIC_ROOT, 'index.html')));\napp.get('/portal', (req, res) => res.sendFile(path.join(STATIC_ROOT, 'portal.html')));\napp.get('/admin', (req, res) => res.sendFile(path.join(STATIC_ROOT, 'admin', 'index.html')));\napp.get('/profile', (req, res) => res.sendFile(path.join(STATIC_ROOT, 'profile', 'profile.html')));\n\napp.get('/api/health', (req, res) => res.json({ status: 'ok', timestamp: new Date().toISOString() }));\n\napp.listen(PORT, () => {\n  console.log(`BeckCloud API Gateway listening on :${PORT}`);\n});\n\nmodule.exports = app;"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: landing-page-gateway
+  namespace: webapps
+  labels:
+    app: landing-page-gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: landing-page-gateway
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: landing-page-gateway
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+    spec:
+      imagePullSecrets:
+      - name: ghcr-credentials
+      containers:
+      - name: gateway
+        image: ghcr.io/yappingboy/becklab-landing:latest
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: production
+        - name: PORT
+          value: "8080"
+        - name: KEYCLOAK_URL
+          value: http://keycloak.identity.svc.cluster.local:8080
+        - name: KEYCLOAK_REALM
+          value: homelab
+        - name: LLDAP_URL
+          value: http://lldap.identity.svc.cluster.local:17170
+        - name: DIRECTUS_URL
+          value: http://directus.cms.svc.cluster.local:8055
+        - name: PROMETHEUS_URL
+          value: http://prometheus.monitoring.svc.cluster.local:9090
+        - name: REDIS_URL
+          value: redis://redis.identity.svc.cluster.local:6379
+        - name: SESSION_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: landing-page-gateway-secrets
+              key: session-secret
+        - name: JWT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: landing-page-gateway-secrets
+              key: jwt-secret
+        - name: KEYCLOAK_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: landing-page-gateway-secrets
+              key: keycloak-admin-password
+        - name: LLDAP_ADMIN_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: landing-page-gateway-secrets
+              key: lldap-admin-password
+        - name: DIRECTUS_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: landing-page-gateway-secrets
+              key: directus-token
+        - name: KEYCLOAK_ADMIN_USERNAME
+          value: admin
+        - name: KEYCLOAK_ADMIN_CLIENT_ID
+          value: admin-cli
+        - name: LLDAP_ADMIN_USERNAME
+          value: admin
+        resources:
+          limits:
+            memory: "256Mi"
+            cpu: "500m"
+          requests:
+            memory: "64Mi"
+            cpu: "50m"
+        readinessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+          failureThreshold: 3
+        livenessProbe:
+          httpGet:
+            path: /api/health
+            port: 8080
+          initialDelaySeconds: 15
+          periodSeconds: 30
+          failureThreshold: 3
+        volumeMounts:
+        - name: public
+          mountPath: /app/public
+          readOnly: true
+        - name: tickets-data
+          mountPath: /var/lib/beckcloud
+        - name: audit-log
+          mountPath: /var/log/beckcloud
+      volumes:
+      - name: public
+        persistentVolumeClaim:
+          claimName: silex-hosting
+      - name: tickets-data
+        persistentVolumeClaim:
+          claimName: landing-page-tickets
+      - name: audit-log
+        persistentVolumeClaim:
+          claimName: landing-page-audit-log
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: landing-page-gateway
+  namespace: webapps
+  labels:
+    app: landing-page-gateway
+spec:
+  selector:
+    app: landing-page-gateway
+  ports:
+  - name: http
+    port: 80
+    targetPort: 8080
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: landing-page-gateway
+  namespace: webapps
+  labels:
+    app: landing-page-gateway
+spec:
+  entryPoints:
+  - websecure
+  routes:
+  - match: Host(`becklab.cloud`) || Host(`www.becklab.cloud`)
+    kind: Rule
+    services:
+    - name: landing-page-gateway
+      port: 80
+      forwardAuth:
+        address: http://oauth2-admin.identity.svc.cluster.local:4180
+    priority: 10
+  - match: Host(`becklab.cloud`) && Path(`/admin`)
+    kind: Rule
+    services:
+    - name: landing-page-gateway
+      port: 80
+    priority: 5
+  - match: Host(`becklab.cloud`) && Path(`/profile`)
+    kind: Rule
+    services:
+    - name: landing-page-gateway
+      port: 80
+    priority: 5
+  - match: Host(`becklab.cloud`) && PathRegexp(`^/api/`)
+    kind: Rule
+    services:
+    - name: landing-page-gateway
+      port: 80
+  - match: Host(`becklab.cloud`) && Path(`/portal`)
+    kind: Rule
+    services:
+    - name: landing-page-gateway
+      port: 80
+    priority: 1
+  tls:
+    secretName: landing-page-tls
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: landing-page-tickets
+  namespace: webapps
+  labels:
+    app: landing-page-gateway
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: landing-page-audit-log
+  namespace: webapps
+  labels:
+    app: landing-page-gateway
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+  storageClassName: local-path
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: landing-page-gateway-secrets
+  namespace: webapps
+type: Opaque
+stringData:
+  session-secret: "beckcloud-session-secret"
+  jwt-secret: "beckcloud-jwt-secret"
+  keycloak-admin-password: "suCNJ5CtDdHEdy3Zhy6azwgG"
+  lldap-admin-password: "0VFdWI9LXWugx8H0LpV5hePG"
+  directus-token: ""
