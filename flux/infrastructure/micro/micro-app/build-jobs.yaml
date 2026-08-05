@@ -23,9 +23,9 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
-            - --destination=ghcr.io/yappingboy/hasher:latest
+            - --destination=ghcr.io/yappingboy/hash:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
@@ -72,7 +72,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/converter:latest
             - --cache=true
@@ -121,7 +121,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/url-shortener:latest
             - --cache=true
@@ -170,7 +170,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/qr-generator:latest
             - --cache=true
@@ -219,7 +219,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/yaml-json-tool:latest
             - --cache=true
@@ -268,7 +268,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/webhook-relay:latest
             - --cache=true
@@ -317,7 +317,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/cron-jobs:latest
             - --cache=true
@@ -366,7 +366,7 @@ spec:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/Dockerfile
+            - --dockerfile=/workspace/src/Dockerfile
             - --context=/workspace/src/
             - --destination=ghcr.io/yappingboy/dns-monitor:latest
             - --cache=true

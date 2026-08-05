@@ -6,7 +6,7 @@ COPY . .
 RUN CGO_ENABLED=0 go build -o /qr-generator .
 
 FROM alpine:3.19
-RUN apk --no-cache add ca-certificates
+RUN apk add --no-cache ca-certificates git
 RUN adduser -D -u 1000 qr-generator
 USER qr-generator
 COPY --from=builder /qr-generator /qr-generator
