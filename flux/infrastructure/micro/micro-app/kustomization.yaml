@@ -6,3 +6,5 @@ resources:
   - middlewares.yaml
   - services/deployments.yaml
   - services/rate-limits.yaml
+  - build-jobs.yaml
+  - frontend-builds.yaml

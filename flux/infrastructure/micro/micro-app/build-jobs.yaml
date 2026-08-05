@@ -1,7 +1,6 @@
 # Kaniko build jobs for all micro services
-# Run: kubectl apply -f build-jobs.yaml -n toolbox && kubectl wait job -n toolbox --for=condition=ready --all --timeout=30m
-# Then: kubectl logs -n toolbox -l job-name=<name> to check progress
-# Or run sequentially to save cluster resources
+# Flux will apply these automatically via the micro-app kustomization.
+# Each job clones the repo, builds the image, and pushes to GHCR.
 
 # ============================================================
 # 1. Hash Service
@@ -19,12 +18,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/hash/* . && cp /workspace/src/tools/hash/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/hash:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -35,19 +41,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/hash
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -68,12 +73,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/base64/* . && cp /workspace/src/tools/base64/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/converter:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -84,19 +96,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/base64
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -117,12 +128,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/url-shortener/* . && cp /workspace/src/tools/url-shortener/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/url-shortener:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -133,19 +151,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/url-shortener
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -166,12 +183,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/qr-generator/* . && cp /workspace/src/tools/qr-generator/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/qr-generator:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -182,19 +206,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/qr-generator
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -215,12 +238,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/yaml-json-tool/* . && cp /workspace/src/tools/yaml-json-tool/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/yaml-json-tool:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -231,19 +261,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/yaml-json-tool
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -264,12 +293,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/webhook-relay/* . && cp /workspace/src/tools/webhook-relay/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/webhook-relay:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -280,19 +316,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/webhook-relay
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -313,12 +348,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/cron-jobs/* . && cp /workspace/src/tools/cron-jobs/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/cron-jobs:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -329,19 +371,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/cron-jobs
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
@@ -362,12 +403,19 @@ spec:
   template:
     spec:
       serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/dns-monitor/* . && cp /workspace/src/tools/dns-monitor/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
           args:
-            - --dockerfile=/workspace/src/Dockerfile
-            - --context=/workspace/src/
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/dns-monitor:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
@@ -378,19 +426,18 @@ spec:
               cpu: "2"
               memory: 4Gi
             requests:
-              cpu: "500m"
-              memory: 2Gi
+              cpu: 250m
+              memory: 1Gi
           volumeMounts:
-            - name: src
-              mountPath: /workspace/src
+            - name: workspace
+              mountPath: /workspace
             - name: docker-config
               mountPath: /kaniko/.docker/
               readOnly: true
       restartPolicy: Never
       volumes:
-        - name: src
-          hostPath:
-            path: /home/openclaw/.openclaw/workspace/beck-cloud/tools/dns-monitor
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
