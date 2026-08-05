@@ -107,6 +107,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Clone GridSpace external repo
+        if: matrix.grid-apps
+        run: |
+          git clone --depth 1 https://github.com/GridSpace/grid-apps.git /tmp/grid-apps
+          cp -r /tmp/grid-apps/apps /tmp/grid-apps/src /tmp/grid-apps/web /tmp/grid-apps/bin apps/gridspace/
+          mkdir -p apps/gridspace/src/cli
+          echo '{"appId": "gridspace", "appName": "GridSpace"}' > apps/gridspace/src/cli/tina2s.json
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
 

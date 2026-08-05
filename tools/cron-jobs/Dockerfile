@@ -8,9 +8,9 @@ RUN CGO_ENABLED=1 go build -o /cron-jobs .
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates libstdc++
+RUN mkdir -p /data && chown cron-jobs /data
 RUN adduser -D -u 1000 cron-jobs
 USER cron-jobs
-RUN mkdir -p /data
 COPY --from=builder /cron-jobs /cron-jobs
 EXPOSE 8080
 CMD ["/cron-jobs"]
