@@ -20,7 +20,7 @@ resources:
   # - support
   - gaming
   - 3dprinting
-  # - gridspace
+  - gridspace
   - micro
 
 #  - csi-snapshotter # Can likely be deleted
