@@ -6,5 +6,51 @@ resources:
   - middlewares.yaml
   - services/deployments.yaml
   - services/rate-limits.yaml
-  - build-jobs.yaml
-  - frontend-builds.yaml
+  # Kaniko jobs removed — builds now happen via GitHub Actions
+  # build-jobs.yaml
+  # frontend-builds.yaml
+
+images:
+  # Hash / Base64 / URL Shortener / QR / YAML-JSON / Webhook / Cron / DNS
+  - name: ghcr.io/yappingboy/hash
+    newName: ghcr.io/yappingboy/hash
+    newTag: latest
+  - name: ghcr.io/yappingboy/converter
+    newName: ghcr.io/yappingboy/converter
+    newTag: latest
+  - name: ghcr.io/yappingboy/url-shortener
+    newName: ghcr.io/yappingboy/url-shortener
+    newTag: latest
+  - name: ghcr.io/yappingboy/qr-generator
+    newName: ghcr.io/yappingboy/qr-generator
+    newTag: latest
+  - name: ghcr.io/yappingboy/yaml-json-tool
+    newName: ghcr.io/yappingboy/yaml-json-tool
+    newTag: latest
+  - name: ghcr.io/yappingboy/webhook-relay
+    newName: ghcr.io/yappingboy/webhook-relay
+    newTag: latest
+  - name: ghcr.io/yappingboy/cron-jobs
+    newName: ghcr.io/yappingboy/cron-jobs
+    newTag: latest
+  - name: ghcr.io/yappingboy/dns-monitor
+    newName: ghcr.io/yappingboy/dns-monitor
+    newTag: latest
+  # Auth service
+  - name: ghcr.io/yappingboy/auth-micro
+    newName: ghcr.io/yappingboy/auth-micro
+    newTag: latest
+  # Image Editor
+  - name: ghcr.io/yappingboy/image-editor-api
+    newName: ghcr.io/yappingboy/image-editor-api
+    newTag: latest
+  - name: ghcr.io/yappingboy/image-editor-frontend
+    newName: ghcr.io/yappingboy/image-editor-frontend
+    newTag: latest
+  # BeckFlow
+  - name: ghcr.io/yappingboy/beckflow
+    newName: ghcr.io/yappingboy/beckflow
+    newTag: latest
+  - name: ghcr.io/yappingboy/beckflow-frontend
+    newName: ghcr.io/yappingboy/beckflow-frontend
+    newTag: latest

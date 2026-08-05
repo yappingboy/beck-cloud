@@ -4,3 +4,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - gridspace-app
+
+images:
+  - name: ghcr.io/yappingboy/becklab-gridspace
+    newName: ghcr.io/yappingboy/becklab-gridspace
+    newTag: latest

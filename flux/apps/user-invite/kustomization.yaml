@@ -8,3 +8,8 @@ resources:
   - secret-user-invite.yaml
   - secret-ghcr-identity.yaml
   - deployment.yaml
+
+images:
+  - name: ghcr.io/yappingboy/becklab-user-invite
+    newName: ghcr.io/yappingboy/becklab-user-invite
+    newTag: latest
