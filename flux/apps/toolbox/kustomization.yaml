@@ -4,6 +4,7 @@ kind: Kustomization
 namespace: toolbox
 
 resources:
+  - namespace.yaml
   - ../user-invite/secret-ghcr-toolbox.yaml
   # Kaniko job removed — builds now happen via GitHub Actions
   # ../user-invite/kaniko-build.yaml
