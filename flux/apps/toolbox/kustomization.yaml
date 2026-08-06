@@ -6,7 +6,7 @@ namespace: toolbox
 resources:
   - ../user-invite/secret-ghcr-toolbox.yaml
   - ../user-invite/kaniko-build.yaml
-  - ../../infrastructure/webapps/landing-page/kaniko-build.yaml
+  - ../gridspace/kaniko-build.yaml
+  - ../landing-page/kaniko-build.yaml
   - ../../infrastructure/micro/micro-app/build-jobs.yaml
   - ../../infrastructure/micro/micro-app/frontend-builds.yaml
-  - ../../../apps/gridspace/kaniko-build.yaml
