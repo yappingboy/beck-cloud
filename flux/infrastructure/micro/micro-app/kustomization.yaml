@@ -6,9 +6,8 @@ resources:
   - middlewares.yaml
   - services/deployments.yaml
   - services/rate-limits.yaml
-  # Kaniko jobs removed — builds now happen via GitHub Actions
-  # build-jobs.yaml
-  # frontend-builds.yaml
+  - build-jobs.yaml
+  - frontend-builds.yaml
 
 images:
   # Hash / Base64 / URL Shortener / QR / YAML-JSON / Webhook / Cron / DNS

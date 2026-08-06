@@ -6,5 +6,8 @@ namespace: toolbox
 resources:
   - namespace.yaml
   - ../user-invite/secret-ghcr-toolbox.yaml
-  # Kaniko job removed — builds now happen via GitHub Actions
-  # ../user-invite/kaniko-build.yaml
+  - ../user-invite/kaniko-build.yaml
+  - ../infrastructure/webapps/landing-page/kaniko-build.yaml
+  - ../infrastructure/micro/build-jobs.yaml
+  - ../infrastructure/micro/frontend-builds.yaml
+  - ../apps/gridspace/kaniko-build.yaml
