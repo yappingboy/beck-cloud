@@ -46,7 +46,8 @@ spec:
             - --skip-tls-verify
           volumeMounts:
             - name: docker-config
-              mountPath: /kaniko/.docker/
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
               readOnly: true
             - name: workspace
               mountPath: /workspace
