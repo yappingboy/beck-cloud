@@ -9,8 +9,8 @@ RUN CGO_ENABLED=1 go build -o /shortener .
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates libstdc++
 RUN adduser -D -u 1000 shortener
+RUN mkdir -p /data && chown shortener /data
 USER shortener
-RUN mkdir -p /data
 COPY --from=builder /shortener /shortener
 EXPOSE 8080
 CMD ["/shortener"]

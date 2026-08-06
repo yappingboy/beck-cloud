@@ -38,6 +38,7 @@ jobs:
             path: apps/gridspace
             image: becklab-gridspace
             context: apps/gridspace
+            grid-apps: true
           - name: landing-page
             path: apps/landing-page
             image: becklab-landing
@@ -126,7 +127,7 @@ jobs:
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
-          password: ${{ secrets.GITHUB_TOKEN }}
+          password: ${{ secrets.GHCR_TOKEN }}
 
       - name: Extract metadata
         id: meta
