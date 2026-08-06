@@ -3,8 +3,6 @@ kind: Kustomization
 
 namespace: toolbox
 
-prune: false
-
 resources:
   - namespace.yaml
   - ../user-invite/secret-ghcr-toolbox.yaml
