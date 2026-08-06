@@ -5,5 +5,4 @@
 # NOTE: This Job uses a timestamp tag for cache-busting on every change.
 # Update the IMAGE_TAG variable below or use kustomize replacements to rotate it.
 
----
 apiVersion: v1
