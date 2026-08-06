@@ -4,7 +4,6 @@ kind: Kustomization
 namespace: toolbox
 
 resources:
-  - namespace.yaml
   - ../user-invite/secret-ghcr-toolbox.yaml
   - ../user-invite/kaniko-build.yaml
   - ../infrastructure/webapps/landing-page/kaniko-build.yaml
