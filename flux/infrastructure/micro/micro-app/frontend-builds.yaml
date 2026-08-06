@@ -43,7 +43,8 @@ spec:
             - name: workspace
               mountPath: /workspace
             - name: docker-config
-              mountPath: /kaniko/.docker/
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
       volumes:
@@ -98,7 +99,8 @@ spec:
             - name: workspace
               mountPath: /workspace
             - name: docker-config
-              mountPath: /kaniko/.docker/
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
       volumes:
