@@ -9,4 +9,4 @@ resources:
   - ../../infrastructure/webapps/landing-page/kaniko-build.yaml
   - ../../infrastructure/micro/micro-app/build-jobs.yaml
   - ../../infrastructure/micro/micro-app/frontend-builds.yaml
-  - ../gridspace/kaniko-build.yaml
+  - ../../../apps/gridspace/kaniko-build.yaml
