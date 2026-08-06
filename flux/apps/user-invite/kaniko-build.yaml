@@ -31,6 +31,9 @@ spec:
             - |
               git clone --depth=1 https://github.com/yappingboy/beck-cloud.git
               cp -r beck-cloud/apps/user-invite/* /workspace/
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
