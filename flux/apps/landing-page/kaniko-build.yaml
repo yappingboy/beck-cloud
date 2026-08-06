@@ -41,7 +41,7 @@ spec:
       volumes:
         - name: docker-config
           secret:
-            secretName: ghcr-credentials
+            secretName: ghcr-config
             items:
               - key: .dockerconfigjson
                 path: config.json
