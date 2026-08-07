@@ -424,7 +424,7 @@ spec:
             - --dockerfile=/workspace/Dockerfile
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/dns-monitor:latest
-            - --cache=true
+            - --cache=false
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
             - --push-retry=3
