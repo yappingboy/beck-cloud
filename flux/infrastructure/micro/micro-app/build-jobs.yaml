@@ -58,6 +58,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -121,6 +123,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -184,6 +188,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -247,6 +253,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -310,6 +318,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -373,6 +383,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -436,6 +448,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -499,6 +513,8 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
+        parallelism: 1
+        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
