@@ -33,12 +33,14 @@ spec:
         prometheus.io/port: "8080"
     spec:
       securityContext:
-        fsGroup: 101
+        fsGroup: 1000
       imagePullSecrets:
       - name: ghcr-credentials
       containers:
       - name: gateway
         image: ghcr.io/yappingboy/becklab-landing:latest
+        securityContext:
+          runAsGroup: 1000
         ports:
         - containerPort: 8080
           name: http
