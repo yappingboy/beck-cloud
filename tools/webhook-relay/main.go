@@ -112,7 +112,7 @@ func initDB() error {
 func genID() string {
 	b := make([]byte, 16)
 	for i := range b {
-		b[i] = byte(time.Now().UnixNano()%256 + i)
+		b[i] = byte(int(time.Now().UnixNano())%256 + i)
 	}
 	return fmt.Sprintf("%x", b)
 }

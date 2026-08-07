@@ -1,7 +1,9 @@
 package main
 
 import (
+	"image"
 	"encoding/json"
+	"encoding/base64"
 	"bytes"
 	"image/png"
 	"fmt"
@@ -118,7 +120,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	case "MEDIUM":
 		ecLevel = qr.Medium
 	case "QUARTILE":
-		ecLevel = qr.Level(2)
+		ecLevel = qr.Quartile
 	case "HIGH":
 		ecLevel = qr.High
 	default:
@@ -139,28 +141,41 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	format := strings.ToLower(req.Format)
 	if format == "" {
 		format = "png"
-	}
 	if format == "svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
-		if err := qrCode.WriteSVG(w); err != nil {
+		img, err := qrCode.PNG(size)
+		if err != nil {
 			writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "svg generation failed"}, Meta: meta{RequestID: genID()}})
 			return
 		}
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, img); err != nil {
+			writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png encode failed"}, Meta: meta{RequestID: genID()}})
+			return
+		}
+		// Simple SVG wrapper
+		fmt.Fprintf(w, `<svg xmlns="http://www.w3.org/2000/svg" width="%d" height="%d"><image width="%d" height="%d" xlink:href="data:image/png;base64,%s"/></svg>`,
+			size, size, size, size, base64.StdEncoding.EncodeToString(buf.Bytes()))
 		return
 	}
 
 	// PNG output
-	pngImg, err := qrCode.PNG(size)
+	pngBytes, err := qrCode.PNG(size)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png generation failed"}, Meta: meta{RequestID: genID()}})
 		return
 	}
-	var buf bytes.Buffer
-	if err := png.Encode(&buf, pngImg); err != nil {
-		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png encode failed"}, Meta: meta{RequestID: genID()}})
-		return
+	switch v := pngBytes.(type) {
+	case []byte:
+		w.Write(v)
+	case image.Image:
+		var buf bytes.Buffer
+		if err := png.Encode(&buf, v); err != nil {
+			writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png encode failed"}, Meta: meta{RequestID: genID()}})
+			return
+		}
+		w.Write(buf.Bytes())
 	}
-	w.Write(buf.Bytes())
 }
 func main() {
 	port := os.Getenv("PORT")
