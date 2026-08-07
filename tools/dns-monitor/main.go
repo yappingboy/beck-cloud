@@ -164,18 +164,6 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 				records = append(records, dnsRecord{Type: "SOA", Name: req.Domain, Content: fmt.Sprintf("%s %s %d %d %d %d %d", soa.Ns, soa.Mbox, soa.Serial, soa.Refresh, soa.Retry, soa.Expire, soa.Minimum)})
 			}
 		}
-			s := soa[0]
-			records = append(records, dnsRecord{Type: "SOA", Name: req.Domain, Content: fmt.Sprintf("%s %s %d %d %d %d %d", s.Ns, s.Mbox, s.Serial, s.Refresh, s.Retry, s.Expire, s.Minimum)})
-		}
-	default:
-		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": fmt.Sprintf("unknown record type: %s", req.RecordType)}, Meta: meta{RequestID: genID()}})
-		return
-	}
-
-	if err != nil {
-		writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: records, Meta: meta{RequestID: genID()}})
-		return
-	}
 
 	writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: records, Meta: meta{RequestID: genID()}})
 }
