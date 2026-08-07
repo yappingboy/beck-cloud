@@ -30,5 +30,3 @@ golang.org/x/sys v0.20.0 h1:Q9Sw4+mVmh01H4zDAR9I1cO0mD7MIY1+gi0HPeB3Ey=
 golang.org/x/sys v0.20.0/go.mod h1:/VUy7aMFE90E6WDw7S5RRHDbfaF3Th8dM7s3PpBcME=
 gopkg.in/check.v1 v0.0.0-20161208181129-38e5d4642f32 h1:5S0P+9HSs7aY1Ck5bWuSLW4n1lMw8mO2m1m3qC8C0o=
 gopkg.in/check.v1 v0.0.0-20161208181129-38e5d4642f32/go.mod h1:5S0P+9HSs7aY1Ck5bWuSLW4n1lMw8mO2m1m3qC8C0o=
-gopkg.in/yaml.v3 v3.0.1 h1:fxVm/GzAzEWqLHuvctI91KS9hhNmmWOoWu0XTYJS7CA=
-gopkg.in/yaml.v3 v3.0.1/go.mod h1:KfySsI7HH1sJQR6dI0P2kIe2DtdYgOZ5P3W1MjrZMk=
