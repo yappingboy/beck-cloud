@@ -141,6 +141,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	format := strings.ToLower(req.Format)
 	if format == "" {
 		format = "png"
+	}
 	if format == "svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		img, err := qrCode.PNG(size)
