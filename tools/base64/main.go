@@ -74,7 +74,7 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var result string
+	var result any
 	var err error
 
 	switch strings.ToLower(req.Operation) {
@@ -93,7 +93,10 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	case "hex_encode":
 		result = hex.EncodeToString([]byte(req.Input))
 	case "hex_decode":
-		result, err = hex.DecodeString(req.Input)
+		b, err := hex.DecodeString(req.Input)
+		if err == nil {
+			result = string(b)
+		}
 	case "rot13":
 		result = rot13(req.Input)
 	case "uuid_v4":
@@ -107,7 +110,10 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 	case "ascii_to_hex":
 		result = hex.EncodeToString([]byte(req.Input))
 	case "hex_to_ascii":
-		result, err = hex.DecodeString(req.Input)
+		b, err := hex.DecodeString(req.Input)
+		if err == nil {
+			result = string(b)
+		}
 	default:
 		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": fmt.Sprintf("unknown operation: %s", req.Operation)}, Meta: meta{RequestID: genID()}})
 		return
@@ -118,9 +124,10 @@ func convertHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	resultStr := fmt.Sprintf("%v", result)
 	writeJSON(w, http.StatusOK, response{
 		Status: "success",
-		Result: map[string]string{"result": result},
+		Result: map[string]string{"result": resultStr},
 		Meta:   meta{RequestID: genID()},
 	})
 }
