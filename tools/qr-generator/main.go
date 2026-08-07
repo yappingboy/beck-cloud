@@ -166,7 +166,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png generation failed"}, Meta: meta{RequestID: genID()}})
 		return
 	}
-	switch v := img.(type) {
+	switch v := pngBytes.(type) {
 	case image.Image:
 		var buf bytes.Buffer
 		if err := png.Encode(&buf, v); err != nil {

@@ -198,6 +198,50 @@ func writeJSON(w http.ResponseWriter, code int, body interface{}) {
 	json.NewEncoder(w).Encode(body)
 }
 
+func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
+	var req healthCheckRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	client := &http.Client{Timeout: 10 * time.Second}
+	resp, err := client.Get(req.URL)
+	status := "down"
+	if err != nil {
+		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"url": req.URL, "status": status, "error": err.Error()}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	resp.Body.Close()
+	status = "up"
+	if req.ExpectedStatus > 0 && resp.StatusCode != req.ExpectedStatus {
+		status = "mismatch"
+	}
+	writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"url": req.URL, "status": status, "statusCode": resp.StatusCode}, Meta: meta{RequestID: genID()}})
+}
+
+func tlsCheckHandler(w http.ResponseWriter, r *http.Request) {
+	var req tlsCheckRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	conn, err := tls.Dial("tcp", req.Domain+":443", &tls.Config{InsecureSkipVerify: true})
+	if err != nil {
+		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]string{"error": err.Error(), "domain": req.Domain}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	defer conn.Close()
+	cert := conn.ConnectionState().PeerCertificates[0]
+	expiry := cert.NotAfter
+	now := time.Now()
+	if expiry.Before(now) {
+		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"domain": req.Domain, "tls": true, "expired": true, "expiry": expiry.Format(time.RFC3339)}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	daysLeft := int(expiry.Sub(now).Hours() / 24)
+	writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"domain": req.Domain, "tls": true, "expired": false, "expiry": expiry.Format(time.RFC3339), "daysUntilExpiry": daysLeft}, Meta: meta{RequestID: genID()}})
+}
+
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {
