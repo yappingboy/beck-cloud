@@ -13,7 +13,6 @@ import (
 	"math/big"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -436,13 +435,14 @@ func randomStringHandler(w http.ResponseWriter, r *http.Request) {
 		s[i] = charset[n.Int64()]
 	}
 
+	hash := sha256.Sum256([]byte(string(s)))
 	writeJSON(w, http.StatusOK, APIResponse{
 		Status: "success",
 		Result: map[string]interface{}{
 			"string": string(s),
 			"length": length,
 			"base64": base64.StdEncoding.EncodeToString([]byte(string(s))),
-			"sha256": hex.EncodeToString(sha256.Sum256([]byte(string(s)))[:]),
+			"sha256": hex.EncodeToString(hash[:]),
 		},
 		Meta: APIMeta{RequestID: genID(), Timestamp: time.Now().UTC().Format(time.RFC3339)},
 	})
