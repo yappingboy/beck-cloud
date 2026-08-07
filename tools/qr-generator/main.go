@@ -1,11 +1,8 @@
 package main
 
 import (
-	"bytes"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"image/png"
 	"io"
 	"log"
 	"net/http"
@@ -142,7 +139,6 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 		format = "png"
 	}
 
-	w.Header().Set("Content-Type", "image/png")
 	if format == "svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
 		svg := qrCode.ToSVG(size)
@@ -151,27 +147,13 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// PNG output
-	var buf bytes.Buffer
-	img, err := qrCode.PNG(size)
+	pngBytes, err := qrCode.PNG(size)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png generation failed"}, Meta: meta{RequestID: genID()}})
 		return
 	}
-	if err := png.Encode(&buf, img); err != nil {
-		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png encode failed"}, Meta: meta{RequestID: genID()}})
-		return
-	}
-
-	w.Header().Set("X-QR-Size", fmt.Sprintf("%d", buf.Len()))
-	w.Write(buf.Bytes())
+	w.Write(pngBytes)
 }
-
-func writeJSON(w http.ResponseWriter, code int, body interface{}) {
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
-	json.NewEncoder(w).Encode(body)
-}
-
 func main() {
 	port := os.Getenv("PORT")
 	if port == "" {

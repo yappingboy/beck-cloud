@@ -132,7 +132,7 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	case "MX":
-		preferences, servers, err := net.LookupMX(req.Domain)
+		servers, err := net.LookupMX(req.Domain)
 		if err != nil {
 			writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: []dnsRecord{}, Meta: meta{RequestID: genID()}})
 			return
