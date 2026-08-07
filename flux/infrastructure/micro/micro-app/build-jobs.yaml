@@ -21,6 +21,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/hash/* . && cp /workspace/src/tools/hash/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -77,6 +84,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/base64/* . && cp /workspace/src/tools/base64/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -133,6 +147,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/url-shortener/* . && cp /workspace/src/tools/url-shortener/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -189,6 +210,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/qr-generator/* . && cp /workspace/src/tools/qr-generator/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -245,6 +273,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/yaml-json-tool/* . && cp /workspace/src/tools/yaml-json-tool/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -301,6 +336,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/webhook-relay/* . && cp /workspace/src/tools/webhook-relay/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -357,6 +399,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/cron-jobs/* . && cp /workspace/src/tools/cron-jobs/Dockerfile ."]
           volumeMounts:
             - name: workspace
@@ -413,6 +462,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/dns-monitor/* . && cp /workspace/src/tools/dns-monitor/Dockerfile ."]
           volumeMounts:
             - name: workspace
