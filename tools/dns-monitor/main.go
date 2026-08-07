@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -137,8 +138,11 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: []dnsRecord{}, Meta: meta{RequestID: genID()}})
 			return
 		}
-		for i, srv := range servers {
-			records = append(records, dnsRecord{Type: "MX", Name: req.Domain, Content: fmt.Sprintf("%d %s", preferences[i], srv.Host)})
+		for _, srv := range servers {
+			parts := strings.SplitN(srv, " ", 2)
+			if len(parts) == 2 {
+				records = append(records, dnsRecord{Type: "MX", Name: req.Domain, Content: parts[0] + " " + parts[1]})
+			}
 		}
 	case "TXT":
 		txts, _ := net.LookupTXT(req.Domain)
@@ -152,12 +156,14 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	case "NS":
 		nameservers, _ := net.LookupNS(req.Domain)
-		for _, ns := range nameservers {
-			records = append(records, dnsRecord{Type: "NS", Name: req.Domain, Content: ns.Host})
-		}
 	case "SOA":
-		soa, _ := net.LookupSOA(req.Domain)
-		if len(soa) > 0 {
+		r := &net.Resolver{}
+		soas, err := r.LookupSOA(context.Background(), req.Domain)
+		if err == nil {
+			for _, soa := range soas {
+				records = append(records, dnsRecord{Type: "SOA", Name: req.Domain, Content: fmt.Sprintf("%s %s %d %d %d %d %d", soa.Ns, soa.Mbox, soa.Serial, soa.Refresh, soa.Retry, soa.Expire, soa.Minimum)})
+			}
+		}
 			s := soa[0]
 			records = append(records, dnsRecord{Type: "SOA", Name: req.Domain, Content: fmt.Sprintf("%s %s %d %d %d %d %d", s.Ns, s.Mbox, s.Serial, s.Refresh, s.Retry, s.Expire, s.Minimum)})
 		}

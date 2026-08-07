@@ -2,6 +2,8 @@ package main
 
 import (
 	"encoding/json"
+	"bytes"
+	"image/png"
 	"fmt"
 	"io"
 	"log"
@@ -116,7 +118,7 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	case "MEDIUM":
 		ecLevel = qr.Medium
 	case "QUARTILE":
-		ecLevel = qr.Quartile
+		ecLevel = qr.Level(2)
 	case "HIGH":
 		ecLevel = qr.High
 	default:
@@ -138,21 +140,27 @@ func generateHandler(w http.ResponseWriter, r *http.Request) {
 	if format == "" {
 		format = "png"
 	}
-
 	if format == "svg" {
 		w.Header().Set("Content-Type", "image/svg+xml")
-		svg := qrCode.ToSVG(size)
-		io.WriteString(w, svg)
+		if err := qrCode.WriteSVG(w); err != nil {
+			writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "svg generation failed"}, Meta: meta{RequestID: genID()}})
+			return
+		}
 		return
 	}
 
 	// PNG output
-	pngBytes, err := qrCode.PNG(size)
+	pngImg, err := qrCode.PNG(size)
 	if err != nil {
 		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png generation failed"}, Meta: meta{RequestID: genID()}})
 		return
 	}
-	w.Write(pngBytes)
+	var buf bytes.Buffer
+	if err := png.Encode(&buf, pngImg); err != nil {
+		writeJSON(w, http.StatusInternalServerError, response{Status: "error", Result: map[string]string{"error": "png encode failed"}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	w.Write(buf.Bytes())
 }
 func main() {
 	port := os.Getenv("PORT")
