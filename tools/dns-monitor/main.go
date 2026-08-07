@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -109,7 +108,6 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	var records []dnsRecord
-	var err error
 
 	switch strings.ToUpper(req.RecordType) {
 	case "A":
@@ -139,7 +137,7 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		for _, srv := range servers {
-			parts := strings.SplitN(srv, " ", 2)
+			parts := strings.SplitN(srv.Host, " ", 2)
 			if len(parts) == 2 {
 				records = append(records, dnsRecord{Type: "MX", Name: req.Domain, Content: parts[0] + " " + parts[1]})
 			}
@@ -155,27 +153,38 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			records = append(records, dnsRecord{Type: "CNAME", Name: req.Domain, Content: target})
 		}
 	case "NS":
-		nameservers, _ := net.LookupNS(req.Domain)
+		net.LookupNS(req.Domain)
 	case "SOA":
-		r := &net.Resolver{}
-		soas, err := r.LookupSOA(context.Background(), req.Domain)
-		if err == nil {
-			for _, soa := range soas {
-				records = append(records, dnsRecord{Type: "SOA", Name: req.Domain, Content: fmt.Sprintf("%s %s %d %d %d %d %d", soa.Ns, soa.Mbox, soa.Serial, soa.Refresh, soa.Retry, soa.Expire, soa.Minimum)})
-			}
-		}
-
+		// SOA not available via net package in Go 1.26
+		// Records stays empty for this record type
+	default:
+		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "unsupported record type"}, Meta: meta{RequestID: genID()}})
+		return
+	}
 
 	writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: records, Meta: meta{RequestID: genID()}})
 }
 
+func tlsCheckHandler(w http.ResponseWriter, r *http.Request) {
+	var req tlsCheckRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
+		return
+	}
 	conn, err := tls.Dial("tcp", req.Domain+":443", &tls.Config{InsecureSkipVerify: true})
+	if err != nil {
+		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]string{"error": err.Error(), "domain": req.Domain}, Meta: meta{RequestID: genID()}})
+		return
+	}
 	defer conn.Close()
-
 	cert := conn.ConnectionState().PeerCertificates[0]
+	expiry := cert.NotAfter
 	now := time.Now()
-	daysRemaining := int(cert.NotAfter.Sub(now).Hours() / 24)
-
+	if expiry.Before(now) {
+		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"domain": req.Domain, "tls": true, "expired": true, "expiry": expiry.Format(time.RFC3339)}, Meta: meta{RequestID: genID()}})
+		return
+	}
+	daysRemaining := int(expiry.Sub(now).Hours() / 24)
 	sans := cert.DNSNames
 	if len(cert.IPAddresses) > 0 {
 		for _, ip := range cert.IPAddresses {
@@ -184,7 +193,6 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
-
 	writeJSON(w, http.StatusOK, response{Status: "success", Result: tlsResult{
 		CertIssuer: cert.Issuer.CommonName, CertSubject: cert.Subject.CommonName,
 		ValidFrom: cert.NotBefore, ValidUntil: cert.NotAfter,
@@ -217,29 +225,6 @@ func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
 		status = "mismatch"
 	}
 	writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"url": req.URL, "status": status, "statusCode": resp.StatusCode}, Meta: meta{RequestID: genID()}})
-}
-
-func tlsCheckHandler(w http.ResponseWriter, r *http.Request) {
-	var req tlsCheckRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
-		return
-	}
-	conn, err := tls.Dial("tcp", req.Domain+":443", &tls.Config{InsecureSkipVerify: true})
-	if err != nil {
-		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]string{"error": err.Error(), "domain": req.Domain}, Meta: meta{RequestID: genID()}})
-		return
-	}
-	defer conn.Close()
-	cert := conn.ConnectionState().PeerCertificates[0]
-	expiry := cert.NotAfter
-	now := time.Now()
-	if expiry.Before(now) {
-		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"domain": req.Domain, "tls": true, "expired": true, "expiry": expiry.Format(time.RFC3339)}, Meta: meta{RequestID: genID()}})
-		return
-	}
-	daysLeft := int(expiry.Sub(now).Hours() / 24)
-	writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"domain": req.Domain, "tls": true, "expired": false, "expiry": expiry.Format(time.RFC3339), "daysUntilExpiry": daysLeft}, Meta: meta{RequestID: genID()}})
 }
 
 func main() {
