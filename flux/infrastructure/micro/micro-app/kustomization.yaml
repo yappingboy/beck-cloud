@@ -7,8 +7,6 @@ resources:
   - services/deployments.yaml
   - services/svc-defs.yaml
   - services/rate-limits.yaml
-  - build-jobs.yaml
-  - frontend-builds.yaml
   - kaniko-sa.yaml
 
 images:
