@@ -225,7 +225,7 @@ spec:
   - match: Host(`becklab.cloud`)
     kind: Rule
     services:
-    - name: landing-page
+    - name: landing-page-gateway
       port: 80
   tls:
     secretName: landing-page-tls
