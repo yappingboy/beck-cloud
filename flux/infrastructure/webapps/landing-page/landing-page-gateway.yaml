@@ -118,6 +118,8 @@ spec:
           mountPath: /var/lib/beckcloud
         - name: audit-log
           mountPath: /var/log/beckcloud
+        - name: public
+          mountPath: /docs/brand/website
       volumes:
       - name: public
         persistentVolumeClaim:
