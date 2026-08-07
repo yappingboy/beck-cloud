@@ -1,9 +1,4 @@
 creation_rules:
-  # Flux Kubernetes secrets (encrypt data/stringData fields)
-  - path_regex: flux/.*\.yaml$
+  - path_regex: .*\.yaml$
     age: age1yhl457qt9vxad0zvwuyweqz4vdhfm372y9cypkvrsqnx028cyqvqrq4u8w
     encrypted_regex: ^(data|stringData)$
-
-  # Ansible group_vars secrets (encrypt all values)
-  - path_regex: ansible/.*secrets.*\.yaml$
-    age: age1yhl457qt9vxad0zvwuyweqz4vdhfm372y9cypkvrsqnx028cyqvqrq4u8w
