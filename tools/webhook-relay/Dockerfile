@@ -4,7 +4,7 @@ WORKDIR /app
 COPY go.mod ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=1 go build -o /webhook-relay .
+RUN GOFLAGS=-mod=mod CGO_ENABLED=1 go build -o /webhook-relay .
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates libstdc++

@@ -214,7 +214,8 @@ func webhookIngestHandler(w http.ResponseWriter, r *http.Request) {
 		if ep.Secret != "" {
 			signature := strings.TrimPrefix(r.Header.Get("X-Hub-Signature-256"), "sha256=")
 			mac := hmac.New(sha256.New, []byte(ep.Secret))
-			mac.Write(r.Body)
+			body, _ := io.ReadAll(r.Body)
+			mac.Write(body)
 			if hex.EncodeToString(mac.Sum(nil)) != signature {
 				http.Error(w, "signature mismatch", 401)
 				return

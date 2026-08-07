@@ -1,6 +1,7 @@
 package main
 
 import (
+	"net"
 	"crypto/rand"
 	"database/sql"
 	"encoding/json"
@@ -184,7 +185,8 @@ func redirectHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_ = recordClick(code, r)
+	ip := getClientIP(r)
+	_ = recordClick(code, ip, r.UserAgent(), r.Referer())
 	http.Redirect(w, r, originalURL, http.StatusFound)
 }
 
@@ -202,6 +204,18 @@ func statsHandler(w http.ResponseWriter, r *http.Request) {
 		Result: map[string]interface{}{"shortCode": code, "clicks": count},
 		Meta:   meta{RequestID: genID()},
 	})
+}
+
+func getClientIP(r *http.Request) string {
+	// Check X-Forwarded-For, then X-Real-IP, then RemoteAddr
+	if ip := r.Header.Get("X-Forwarded-For"); ip != "" {
+		return strings.Split(ip, ",")[0]
+	}
+	if ip := r.Header.Get("X-Real-IP"); ip != "" {
+		return ip
+	}
+	ip, _, _ := net.SplitHostPort(r.RemoteAddr)
+	return ip
 }
 
 func recordClick(shortCode, ip, ua, ref string) error {
