@@ -86,23 +86,19 @@ jobs:
           - name: image-editor-api
             path: tools/image-editor
             image: image-editor-api
-            context: tools/image-editor
-            dockerfile: tools/image-editor/api/Dockerfile
+            context: tools/image-editor/api
           - name: image-editor-frontend
             path: tools/image-editor
             image: image-editor-frontend
-            context: tools/image-editor
-            dockerfile: tools/image-editor/frontend/Dockerfile
+            context: tools/image-editor/frontend
           - name: beckflow
             path: tools/beckflow
             image: beckflow
-            context: tools/beckflow
-            dockerfile: tools/beckflow/api/Dockerfile
+            context: tools/beckflow/api
           - name: beckflow-frontend
             path: tools/beckflow
             image: beckflow-frontend
-            context: tools/beckflow
-            dockerfile: tools/beckflow/frontend/Dockerfile
+            context: tools/beckflow/frontend
 
     steps:
       - name: Checkout
@@ -112,7 +108,7 @@ jobs:
         if: matrix.grid-apps
         run: |
           git clone --depth 1 https://github.com/GridSpace/grid-apps.git /tmp/grid-apps
-          cp -r /tmp/grid-apps/apps /tmp/grid-apps/src /tmp/grid-apps/web /tmp/grid-apps/bin apps/gridspace/
+          cp -r /tmp/grid-apps/package.json /tmp/grid-apps/app.js /tmp/grid-apps/apps /tmp/grid-apps/src /tmp/grid-apps/web /tmp/grid-apps/bin apps/gridspace/
           mkdir -p apps/gridspace/src/cli
           echo '{"appId": "gridspace", "appName": "GridSpace"}' > apps/gridspace/src/cli/tina2s.json
 
