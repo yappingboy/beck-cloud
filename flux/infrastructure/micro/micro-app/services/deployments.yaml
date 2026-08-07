@@ -196,21 +196,23 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 5
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 100m
-              memory: 30Mi
+              memory: 128Mi
             limits:
               cpu: 200m
-              memory: 50Mi
+              memory: 256Mi
 ---
 # -----------------------------------------------------------
 # 5. Image Resize (resize-service)
@@ -248,21 +250,23 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 5
+            initialDelaySeconds: 20
             periodSeconds: 10
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 5
+            initialDelaySeconds: 15
+            periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 100m
-              memory: 30Mi
+              memory: 128Mi
             limits:
               cpu: 200m
-              memory: 50Mi
+              memory: 256Mi
 ---
 # -----------------------------------------------------------
 # 6. Cron Jobs (cron-service)
@@ -560,21 +564,23 @@ spec:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 5
-            periodSeconds: 10
+            initialDelaySeconds: 30
+            periodSeconds: 15
+            timeoutSeconds: 5
           readinessProbe:
             httpGet:
               path: /healthz
               port: 8080
-            initialDelaySeconds: 3
-            periodSeconds: 5
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
           resources:
             requests:
               cpu: 100m
-              memory: 20Mi
+              memory: 128Mi
             limits:
-              cpu: 200m
-              memory: 50Mi
+              cpu: "1"
+              memory: 512Mi
 ---
 # -----------------------------------------------------------
 # 12. BeckFlow Gateway (beckflow-service)
