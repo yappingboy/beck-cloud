@@ -120,6 +120,8 @@ spec:
         - sh
         - -c
         - chmod -R a+r /hosting && chmod -R a+X /hosting
+        securityContext:
+          runAsUser: 0
         volumeMounts:
         - name: hosting
           mountPath: /hosting
