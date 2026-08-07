@@ -165,33 +165,9 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 
+
 	writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: records, Meta: meta{RequestID: genID()}})
 }
-
-func healthCheckHandler(w http.ResponseWriter, r *http.Request) {
-	var req healthCheckRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
-		return
-	}
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	resp, err := client.Get(req.URL)
-	status := "down"
-	if err != nil {
-		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"url": req.URL, "status": status, "error": err.Error()}, Meta: meta{RequestID: genID()}})
-		return
-	}
-	resp.Body.Close()
-
-	status = "up"
-	if req.ExpectedStatus > 0 && resp.StatusCode != req.ExpectedStatus {
-		status = "mismatch"
-	}
-
-	writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]interface{}{"url": req.URL, "status": status, "statusCode": resp.StatusCode}, Meta: meta{RequestID: genID()}})
-}
-
 func tlsCheckHandler(w http.ResponseWriter, r *http.Request) {
 	var req tlsCheckRequest
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
