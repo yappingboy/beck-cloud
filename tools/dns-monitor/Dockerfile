@@ -3,7 +3,7 @@ WORKDIR /app
 COPY go.mod ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /dns-monitor .
+RUN GOFLAGS=-mod=mod CGO_ENABLED=0 go build -o /dns-monitor .
 
 FROM alpine:3.19
 RUN apk --no-cache add ca-certificates

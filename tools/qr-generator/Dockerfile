@@ -3,7 +3,7 @@ WORKDIR /app
 COPY go.mod ./
 RUN go mod download
 COPY . .
-RUN CGO_ENABLED=0 go build -o /qr-generator .
+RUN GOFLAGS=-mod=mod CGO_ENABLED=0 go build -o /qr-generator .
 
 FROM alpine:3.19
 RUN apk add --no-cache ca-certificates git
