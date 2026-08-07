@@ -168,18 +168,8 @@ func dnsLookupHandler(w http.ResponseWriter, r *http.Request) {
 
 	writeJSON(w, http.StatusOK, dnsResponse{Status: "success", Result: records, Meta: meta{RequestID: genID()}})
 }
-func tlsCheckHandler(w http.ResponseWriter, r *http.Request) {
-	var req tlsCheckRequest
-	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-		writeJSON(w, http.StatusBadRequest, response{Status: "error", Result: map[string]string{"error": "invalid JSON"}, Meta: meta{RequestID: genID()}})
-		return
-	}
 
 	conn, err := tls.Dial("tcp", req.Domain+":443", &tls.Config{InsecureSkipVerify: true})
-	if err != nil {
-		writeJSON(w, http.StatusOK, response{Status: "success", Result: map[string]string{"error": err.Error(), "domain": req.Domain}, Meta: meta{RequestID: genID()}})
-		return
-	}
 	defer conn.Close()
 
 	cert := conn.ConnectionState().PeerCertificates[0]
