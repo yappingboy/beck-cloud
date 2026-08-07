@@ -188,5 +188,5 @@ func main() {
 	mux.Handle("/metrics", promhttp.Handler())
 
 	log.Printf("qr-generator listening on :%s", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	log.Fatal(http.ListenAndServe(":"+port, mux))
 }
