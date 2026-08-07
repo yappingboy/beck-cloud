@@ -147,12 +147,8 @@ spec:
           value: '1'
         - name: HOSTING_DIR
           value: /hosting
-        - name: REDIS_HOST
-          value: redis.identity.svc.cluster.local
-        - name: REDIS_PORT
-          value: '6379'
-        - name: REDIS_PASSWORD
-          value: 'n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI='
+        - name: REDIS_URL
+          value: redis://:n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI=@redis.identity.svc.cluster.local:6379
         volumeMounts:
         - name: httpd-config
           mountPath: /etc/apache2/apache2.conf
