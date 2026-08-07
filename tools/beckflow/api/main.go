@@ -12,7 +12,6 @@ import (
 	"log"
 	"math/big"
 	"net/http"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -443,7 +442,7 @@ func randomStringHandler(w http.ResponseWriter, r *http.Request) {
 			"string": string(s),
 			"length": length,
 			"base64": base64.StdEncoding.EncodeToString([]byte(string(s))),
-			"sha256": hex.EncodeToString(sha256.Sum256([]byte(string(s)))),
+			"sha256": hex.EncodeToString(sha256.Sum256([]byte(string(s)))[:]),
 		},
 		Meta: APIMeta{RequestID: genID(), Timestamp: time.Now().UTC().Format(time.RFC3339)},
 	})
