@@ -15,6 +15,8 @@ metadata:
     app: hash
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -58,8 +60,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -80,6 +80,8 @@ metadata:
     app: base64
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -123,8 +125,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -145,6 +145,8 @@ metadata:
     app: shortener
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -188,8 +190,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -210,6 +210,8 @@ metadata:
     app: qr
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -253,8 +255,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -275,6 +275,8 @@ metadata:
     app: yaml-json
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -318,8 +320,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -340,6 +340,8 @@ metadata:
     app: webhook
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -383,8 +385,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -405,6 +405,8 @@ metadata:
     app: cron
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -448,8 +450,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
@@ -470,6 +470,8 @@ metadata:
     app: dns
     build-phase: "1"
 spec:
+  parallelism: 1
+  backoffLimit: 1
   template:
     spec:
       serviceAccountName: kaniko-builder
@@ -513,8 +515,6 @@ spec:
               subPath: .dockerconfigjson
               readOnly: true
       restartPolicy: Never
-        parallelism: 1
-        backoffLimit: 1
       volumes:
         - name: workspace
           emptyDir: {}
