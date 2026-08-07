@@ -32,6 +32,8 @@ spec:
         prometheus.io/scrape: "true"
         prometheus.io/port: "8080"
     spec:
+      securityContext:
+        fsGroup: 101
       imagePullSecrets:
       - name: ghcr-credentials
       containers:
