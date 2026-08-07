@@ -14,8 +14,6 @@ github.com/klauspost/compress v1.18.0 h1:RGoXS2PMagG/ST1snU5n1rF+FgMBBZmHgZh67w2
 github.com/klauspost/compress v1.18.0/go.mod h1:OQ9HvebsA42JBA5VsN2M09MRb8I+uoGh2t+sHbCO0+I=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b682841 h1:C3w9Pqiso6nrbD8+pY8/GtpME/1luXYbRf20fJLh4g=
 github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b682841/go.mod h1:C3w9Pqiso6nrbD8+pY8.tpME/1luXYbRf20fJLh4g=
-github.com/prometheus/client_golang v1.20.5 h1:DduFYssc1ZZs2htSJ0ekdttI8Bn+HKDuz9pXEMK/U3c=
-github.com/prometheus/client_golang v1.20.5/go.mod h1:08LjqJwM/TWJMPapV/0XC081k3/qSST4To2Sy0NB0o=
 github.com/prometheus/client_model v0.6.1 h1:ZWTiG8vYCnKZjUgCoMNIXNQfkgvqfkF7P5vMwE4Y4s=
 github.com/prometheus/client_model v0.6.1/go.mod h1:bBpP144ilhxOg2W0eCjJUJQj1n+eMma2Ob0rOZJ2ul4=
 github.com/prometheus/common v0.60.0 h1:d+S6h7urVSvpjDZQ4jhg6gi7F3um9bJW0sRkBjMkP8=
