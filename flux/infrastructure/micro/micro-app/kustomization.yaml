@@ -8,6 +8,7 @@ resources:
   - services/rate-limits.yaml
   - build-jobs.yaml
   - frontend-builds.yaml
+  - kaniko-sa.yaml
 
 images:
   # Hash / Base64 / URL Shortener / QR / YAML-JSON / Webhook / Cron / DNS
