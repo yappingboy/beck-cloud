@@ -45,7 +45,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -108,7 +108,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -171,7 +171,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -234,7 +234,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -297,7 +297,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -360,7 +360,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -423,7 +423,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
@@ -486,7 +486,7 @@ spec:
             - --push-retry=3
           resources:
             limits:
-              cpu: "2"
+              cpu: "1"
               memory: 2Gi
             requests:
               cpu: 250m
