@@ -18,11 +18,11 @@ spec:
   upgrade:
     crds: CreateReplace
   values:
-   experimental:
-     plugins:
-       bouncer:
-         moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
-         version: v1.4.5
+    experimental:
+      plugins:
+        bouncer:
+          moduleName: github.com/maxlerebourg/crowdsec-bouncer-traefik-plugin
+          version: v1.4.5
     additionalArguments:
       - "--serversTransport.insecureSkipVerify=true"
       - "--entrypoints.web.http.middlewares=traefik-crowdsec-bouncer@kubernetescrd"
