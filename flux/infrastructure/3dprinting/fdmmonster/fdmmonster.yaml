@@ -75,6 +75,16 @@ spec:
   entryPoints:
     - websecure
   routes:
+    # API routes: use forwardauth only (no oauth2-redirect) so login POST returns JSON 401
+    - match: Host(`fdm.becklab.cloud`) && PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: fdmmonster
+          port: 4000
+      middlewares:
+        - name: keycloak-forwardauth-admin
+          namespace: identity
+    # UI routes: full SSO chain with oauth2-redirect for login page
     - match: Host(`fdm.becklab.cloud`)
       kind: Rule
       services:
