@@ -29,7 +29,7 @@ spec:
         oidc_groups_claim = "groups"
         scope = "openid email profile"
         email_domains = ["*"]
-        allowed_groups = ["/admins"]
+        allowed_groups = ["/admins", "/auditors", "/service", "/dev", "/download", "/cms", "/monitor", "/security", "/gaming", "/3dp", "/infrastructure"]
         redirect_url = "https://oauth2.becklab.cloud/oauth2/callback"
         cookie_name = "_oauth2_admin"
         cookie_secure = true

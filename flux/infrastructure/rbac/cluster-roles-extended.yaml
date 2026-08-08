@@ -1,0 +1,221 @@
+---
+# K3s RBAC bindings for new Keycloak groups
+# Groups: auditors, service, dev, download, cms, monitor, security, gaming, 3dp, infrastructure
+# Prefix: keycloak: (via --kube-apiserver-arg=oidc-groups-prefix=keycloak:)
+#
+# Group → RBAC Role mapping:
+#   /auditors      → cluster-admin (full access to all clusters)
+#   /service       → custom cluster role for service accounts (read-only secrets, pods)
+#   /dev           → custom cluster role for developers (deploy to namespaces)
+#   /download      → read-only access to torrent ns (qBittorrent, SABnzbd, NZBGet)
+#   /cms           → read-write Directus ns + Affine ns
+#   /monitor       → read-only monitoring ns (Prometheus, Grafana, Hubble)
+#   /security      → read-only trivy-system ns + security ns
+#   /gaming        → read-write gaming ns (Crafty Controller)
+#   /3dp           → read-only 3dprinting ns + gridspace ns
+#   /infrastructure → read-write opennebula ns + traefik ns
+
+# === AUDITORS: full cluster admin ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-auditors-cluster-admin
+subjects:
+  - kind: Group
+    name: "keycloak:/auditors"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cluster-admin
+  apiGroup: rbac.authorization.k8s.io
+
+# === MONITOR: read-only access to monitoring namespaces ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: monitor-reader
+rules:
+  - apiGroups: ["", "apps", "batch", "extensions"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["metrics.k8s.io"]
+    resources: ["pods", "nodes"]
+    verbs: ["get", "list"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-monitor-reader
+subjects:
+  - kind: Group
+    name: "keycloak:/monitor"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: monitor-reader
+  apiGroup: rbac.authorization.k8s.io
+
+# === GAMING: read-write gaming namespace ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: gaming-writer
+rules:
+  - apiGroups: ["", "apps", "batch", "extensions"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "persistentvolumeclaims", "ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-gaming-writer
+subjects:
+  - kind: Group
+    name: "keycloak:/gaming"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: gaming-writer
+  apiGroup: rbac.authorization.k8s.io
+
+# === 3DP: read-only 3dprinting + gridspace namespaces ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: 3dp-reader
+rules:
+  - apiGroups: ["", "apps"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "ingresses"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-3dp-reader
+subjects:
+  - kind: Group
+    name: "keycloak:/3dp"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: 3dp-reader
+  apiGroup: rbac.authorization.k8s.io
+
+# === CMS: read-write cms namespace (Directus, Affine, Manyfold) ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cms-writer
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "persistentvolumeclaims", "ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-cms-writer
+subjects:
+  - kind: Group
+    name: "keycloak:/cms"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: cms-writer
+  apiGroup: rbac.authorization.k8s.io
+
+# === SECURITY: read-only trivy-system + security namespaces ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: security-reader
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "jobs", "cronjobs"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["trivy.aquasecurity.github.io"]
+    resources: ["clusterinstallations", "clusterreports", "cluster VulnerabilityReports", "clusterCompliances"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-security-reader
+subjects:
+  - kind: Group
+    name: "keycloak:/security"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: security-reader
+  apiGroup: rbac.authorization.k8s.io
+
+# === INFRASTRUCTURE: read-write opennebula + traefik namespaces ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: infrastructure-writer
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-infrastructure-writer
+subjects:
+  - kind: Group
+    name: "keycloak:/infrastructure"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: infrastructure-writer
+  apiGroup: rbac.authorization.k8s.io
+
+# === DEV: read-write toolbox + micro namespaces (microservices) ===
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: dev-writer
+rules:
+  - apiGroups: ["", "apps", "batch"]
+    resources: ["pods", "services", "endpoints", "configmaps", "secrets", "deployments", "replicasets", "jobs", "persistentvolumeclaims", "ingresses"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+  - apiGroups: ["traefik.io"]
+    resources: ["ingressroutes", "middlewares", "traefikservices"]
+    verbs: ["get", "list", "watch", "create", "update", "patch"]
+  - apiGroups: ["batch"]
+    resources: ["jobs", "cronjobs"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: keycloak-dev-writer
+subjects:
+  - kind: Group
+    name: "keycloak:/dev"
+    apiGroup: rbac.authorization.k8s.io
+roleRef:
+  kind: ClusterRole
+  name: dev-writer
+  apiGroup: rbac.authorization.k8s.io
