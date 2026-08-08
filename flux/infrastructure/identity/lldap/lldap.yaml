@@ -116,7 +116,7 @@ spec:
       kind: Rule
       middlewares:
         - name: crowdsec-bouncer
-          namespace: traefik
+          namespace: default
         - name: sso-admin-chain
           namespace: identity
       services:
