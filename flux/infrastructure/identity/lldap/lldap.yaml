@@ -115,8 +115,6 @@ spec:
     - match: Host(`lldap.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: crowdsec-bouncer
-          namespace: default
         - name: sso-admin-chain
           namespace: identity
       services:
