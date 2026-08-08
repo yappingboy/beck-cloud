@@ -131,3 +131,143 @@ spec:
         namespace: identity
       - name: keycloak-forwardauth-media
         namespace: identity
+
+# ── New Group SSO Chains (2026-08-08 RBAC Buildout) ──
+# Each chain routes through oauth2-redirect-admin → keycloak-forwardauth-admin
+# Group membership is enforced by Keycloak's groups claim in the OIDC token.
+# The forwardAuth middleware checks /oauth2/auth which verifies groups via oauth2-proxy.
+
+# AUDITORS
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-auditors-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# DEV
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-dev-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# DOWNLOAD
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-download-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# CMS
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-cms-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# MONITOR
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-monitor-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# SECURITY
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-security-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# GAMING
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-gaming-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# 3DP
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-3dp-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
+
+# INFRASTRUCTURE
+---
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: sso-infrastructure-chain
+  namespace: identity
+spec:
+  chain:
+    middlewares:
+      - name: oauth2-redirect-admin
+        namespace: identity
+      - name: keycloak-forwardauth-admin
+        namespace: identity
