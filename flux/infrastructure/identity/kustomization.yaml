@@ -18,3 +18,4 @@ resources:
   - sso-middlewares
   - email
   - pvcs.yaml
+  - ghcr-credentials.yaml
