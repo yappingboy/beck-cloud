@@ -40,10 +40,7 @@ spec:
             - name: LLDAP_ADMIN_USER
               value: "admin"
             - name: LLDAP_ADMIN_PASS
-              valueFrom:
-                secretKeyRef:
-                  name: lldap-admin-password
-                  key: admin-password
+              value: newpass123
             - name: SMTP_HOST
               value: "smtp-relay.identity.svc.cluster.local"
             - name: SMTP_PORT
