@@ -1,0 +1,11 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+resources:
+  # Kaniko builds for custom app source
+  - ../apps/gridspace/kaniko-build.yaml
+  - ../apps/landing-page/kaniko-build.yaml
+  - ../apps/user-invite/kaniko-build.yaml
+  # Micro-service build jobs (moved from flux/apps/toolbox)
+  - ../infrastructure/micro/micro-app/build-jobs.yaml
+  - ../infrastructure/micro/micro-app/frontend-builds.yaml

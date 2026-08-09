@@ -5,8 +5,7 @@
 
 # Secrets
 secrets/
-
-# IDE / editor
+!.git-creds
 .idea/
 .vscode/
 *.swp
