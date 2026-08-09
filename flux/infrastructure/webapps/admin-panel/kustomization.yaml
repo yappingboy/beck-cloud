@@ -3,19 +3,3 @@ kind: Kustomization
 
 resources:
   - admin-panel.yaml
-
-configMapGenerator:
-  - name: admin-panel-content
-    namespace: webapps
-    files:
-      - index.html=static/index.html
-      - admin.css=static/admin.css
-      - admin.js=static/admin.js
-      - style.css=static/style.css
-      - favicon.svg=static/favicon.svg
-    behavior: replace
-  - name: admin-panel-server-code
-    namespace: webapps
-    files:
-      - server.js=server.js
-    behavior: create

@@ -1,0 +1,43 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-admin-panel
+  namespace: toolbox
+  labels:
+    app: admin-panel
+    build-phase: "1"
+  annotations:
+    job-name: "admin-panel"
+spec:
+  backoffLimit: 1
+  template:
+    metadata:
+      labels:
+        app: admin-panel
+        job-name: admin-panel
+    spec:
+      serviceAccountName: default
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:latest
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/admin-panel:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+          volumeMounts:
+            - name: docker-config
+              mountPath: /kaniko/.docker/
+              readOnly: true
+              subPath: .dockerconfigjson
+            - name: workspace
+              mountPath: /workspace
+      volumes:
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
+        - name: workspace
+          emptyDir: {}
+      restartPolicy: Never

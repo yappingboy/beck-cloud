@@ -1,0 +1,77 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: admin-panel
+  namespace: webapps
+  labels:
+    app: admin-panel
+spec:
+  selector:
+    app: admin-panel
+  ports:
+  - name: http
+    port: 8080
+    targetPort: 8080
+    protocol: TCP
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: admin-panel-secrets
+  namespace: webapps
+  labels:
+    app: admin-panel
+type: Opaque
+stringData:
+  directus-password: "suCNJ5CtDdHEdy3Zhy6azwgG"
+  kc-client-secret: "9lJwF6HKD8z2l8ft9qbheIGASgAZTdrr"
+
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: admin-panel-sa
+  namespace: webapps
+  labels:
+    app: admin-panel
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: admin-panel-reader
+  labels:
+    app: admin-panel
+rules:
+- apiGroups: [""]
+  resources: ["pods", "namespaces", "persistentvolumes", "services", "endpoints"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["apps"]
+  resources: ["deployments", "replicasets", "statefulsets"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["cert-manager.io"]
+  resources: ["certificates"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: ["velero.io"]
+  resources: ["backups"]
+  verbs: ["get", "list", "watch"]
+- apiGroups: [""]
+  resources: ["events"]
+  verbs: ["get", "list"]
+
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-panel-reader-binding
+  labels:
+    app: admin-panel
+subjects:
+- kind: ServiceAccount
+  name: admin-panel-sa
+  namespace: webapps
+roleRef:
+  kind: ClusterRole
+  name: admin-panel-reader
+  apiGroup: rbac.authorization.k8s.io

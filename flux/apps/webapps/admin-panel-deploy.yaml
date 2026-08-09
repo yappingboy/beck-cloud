@@ -1,0 +1,82 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-panel
+  namespace: webapps
+  labels:
+    app: admin-panel
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-panel
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: admin-panel
+    spec:
+      serviceAccountName: admin-panel-sa
+      containers:
+      - name: admin-panel
+        image: ghcr.io/yappingboy/admin-panel:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+        env:
+        - name: PORT
+          value: "8080"
+        - name: DIRECTUS_URL
+          value: "http://directus.webapps:8055"
+        - name: DIRECTUS_EMAIL
+          value: "admin@becklab.cloud"
+        - name: DIRECTUS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: admin-panel-secrets
+              key: directus-password
+        - name: KEYCLOAK_URL
+          value: "http://keycloak.identity:8080"
+        - name: KC_CLIENT_ID
+          value: "nova-monitoring"
+        - name: KC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: admin-panel-secrets
+              key: kc-client-secret
+        - name: KC_USERNAME
+          value: "yappingboy"
+        - name: KC_PASSWORD
+          value: "y4pp1ngb0y"
+        - name: K8S_API
+          value: "https://172.16.0.20:6443"
+        - name: REDIS_HOST
+          value: "10.43.139.161"
+        - name: REDIS_PORT
+          value: "6379"
+        - name: REDIS_PASSWORD
+          value: "677258544"
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 5
+          periodSeconds: 10
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 30
+        resources:
+          limits:
+            cpu: 500m
+            memory: 256Mi
+          requests:
+            cpu: 100m
+            memory: 128Mi

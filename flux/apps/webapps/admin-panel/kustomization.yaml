@@ -1,0 +1,4 @@
+resources:
+- admin-panel-deploy.yaml
+- admin-panel-ingress.yaml
+- admin-panel-service.yaml

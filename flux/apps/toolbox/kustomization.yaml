@@ -13,3 +13,4 @@ resources:
   - ../landing-page/kaniko-build.yaml
   - ../../infrastructure/micro/micro-app/build-jobs.yaml
   - ../../infrastructure/micro/micro-app/frontend-builds.yaml
+  - admin-panel-build/

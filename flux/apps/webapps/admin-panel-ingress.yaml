@@ -1,0 +1,33 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: admin-panel
+  namespace: webapps
+  labels:
+    app: admin-panel
+    sso: "false"
+spec:
+  entryPoints:
+  - web
+  - websecure
+  routes:
+  # API routes — bypass SSO, serve directly
+  - match: Host(`admin.becklab.cloud`) && PathPrefix(`/api/`)
+    kind: Rule
+    priority: 10
+    services:
+    - name: admin-panel
+      port: 8080
+      scheme: http
+  # Static assets and SPA
+  - match: Host(`admin.becklab.cloud`) && PathPrefix(`/`)
+    kind: Rule
+    priority: 5
+    middlewares:
+    - name: sso-admin-chain
+    services:
+    - name: admin-panel
+      port: 8080
+      scheme: http
+  tls:
+    certResolver: letsencrypt

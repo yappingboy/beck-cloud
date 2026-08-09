@@ -1,39 +1,57 @@
----
+# ─── IngressRoute ─────────────────────────────────────────────
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
   name: admin-panel
   namespace: webapps
+  labels:
+    app: admin-panel
+    sso: "false"
 spec:
   entryPoints:
+    - web
     - websecure
   routes:
+    # API routes — bypass SSO
     - kind: Rule
-      match: Host(`admin.becklab.cloud`)
+      match: Host(`admin.becklab.cloud`) && PathPrefix(`/api/`)
+      priority: 10
       services:
-        - name: admin-panel-static
-          port: 80
+        - name: admin-panel
+          port: 8080
+          scheme: http
+    # SPA + static — SSO protected
+    - kind: Rule
+      match: Host(`admin.becklab.cloud`) && PathPrefix(`/`)
+      priority: 5
       middlewares:
-        - name: admin-panel-compress
-          namespace: webapps
         - name: sso-admin-chain
           namespace: identity
+      services:
+        - name: admin-panel
+          port: 8080
+          scheme: http
   tls:
     secretName: admin-panel-tls
----
+
+# ─── Service ─────────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
-  name: admin-panel-static
+  name: admin-panel
   namespace: webapps
+  labels:
+    app: admin-panel
 spec:
   selector:
     app: admin-panel
   ports:
     - name: http
-      port: 80
+      port: 8080
       targetPort: 8080
----
+      protocol: TCP
+
+# ─── Deployment ──────────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -46,113 +64,147 @@ spec:
   selector:
     matchLabels:
       app: admin-panel
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
   template:
     metadata:
       labels:
         app: admin-panel
     spec:
+      serviceAccountName: admin-panel-sa
       containers:
         - name: admin-panel
-          image: node:24-alpine
+          image: ghcr.io/yappingboy/admin-panel:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
-          resources:
-            limits:
-              memory: 128Mi
-              cpu: 100m
-            requests:
-              memory: 64Mi
-              cpu: 50m
+              name: http
           env:
             - name: PORT
               value: "8080"
-          command: ["node", "/app/server.js"]
-          volumeMounts:
-            - name: admin-content
-              mountPath: /app/static
-              readOnly: true
-            - name: server-code
-              mountPath: /app/server.js
-              subPath: server.js
-              readOnly: true
-      volumes:
-        - name: admin-content
-          configMap:
-            name: admin-panel-content
-        - name: server-code
-          configMap:
-            name: admin-panel-server-code
----
+            - name: DIRECTUS_URL
+              value: "http://directus.webapps:8055"
+            - name: DIRECTUS_EMAIL
+              value: "admin@becklab.cloud"
+            - name: DIRECTUS_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: admin-panel-secrets
+                  key: directus-password
+            - name: KEYCLOAK_URL
+              value: "http://keycloak.identity:8080"
+            - name: KC_CLIENT_ID
+              value: "nova-monitoring"
+            - name: KC_CLIENT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: admin-panel-secrets
+                  key: kc-client-secret
+            - name: KC_USERNAME
+              value: "yappingboy"
+            - name: KC_PASSWORD
+              value: "y4pp1ngb0y"
+            - name: K8S_API
+              value: "https://172.16.0.20:6443"
+            - name: REDIS_HOST
+              value: "10.43.139.161"
+            - name: REDIS_PORT
+              value: "6379"
+            - name: REDIS_PASSWORD
+              value: "677258544"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            limits:
+              cpu: 500m
+              memory: 256Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+
+# ─── Secrets ─────────────────────────────────────────────────
 apiVersion: v1
-kind: ConfigMap
+kind: Secret
 metadata:
-  name: admin-panel-content
+  name: admin-panel-secrets
   namespace: webapps
-data:
-  placeholder: "true"
----
+  labels:
+    app: admin-panel
+type: Opaque
+stringData:
+  directus-password: "suCNJ5CtDdHEdy3Zhy6azwgG"
+  kc-client-secret: "9lJwF6HKD8z2l8ft9qbheIGASgAZTdrr"
+
+# ─── RBAC ────────────────────────────────────────────────────
 apiVersion: v1
-kind: ConfigMap
+kind: ServiceAccount
 metadata:
-  name: admin-panel-nginx-config
+  name: admin-panel-sa
   namespace: webapps
-data:
-  default.conf: |
-    server {
-        listen       80;
-        listen  [::]:80;
-        server_name  localhost;
+  labels:
+    app: admin-panel
 
-        # Proxy API calls to Node.js backend
-        location /api/ {
-            proxy_pass http://127.0.0.1:8080;
-            proxy_set_header Host $host;
-            proxy_set_header X-Real-IP $remote_addr;
-            proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-            proxy_set_header X-Forwarded-Proto $scheme;
-            proxy_connect_timeout 10s;
-            proxy_read_timeout 30s;
-        }
-
-        location / {
-            root   /usr/share/nginx/html;
-            index  index.html index.htm;
-        }
-
-        # /favicon.svg → /usr/share/nginx/html/favicon.svg
-        location = /favicon.svg {
-            root /usr/share/nginx/html;
-        }
-
-        # /css/style.css → /usr/share/nginx/html/style.css
-        location /css/ {
-            alias /usr/share/nginx/html/;
-        }
-
-        # /js/admin.js → /usr/share/nginx/html/admin.js
-        location /js/ {
-            alias /usr/share/nginx/html/;
-        }
-
-        error_page   500 502 503 504  /50x.html;
-        location = /50x.html {
-            root   /usr/share/nginx/html;
-        }
-    }
 ---
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
 metadata:
-  name: admin-panel-compress
-  namespace: webapps
-spec:
-  compress: {}
+  name: admin-panel-reader
+  labels:
+    app: admin-panel
+rules:
+  - apiGroups: [""]
+    resources: ["pods", "namespaces", "persistentvolumes", "services", "endpoints"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["apps"]
+    resources: ["deployments", "replicasets", "statefulsets"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["cert-manager.io"]
+    resources: ["certificates"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: ["velero.io"]
+    resources: ["backups"]
+    verbs: ["get", "list", "watch"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["get", "list"]
+
 ---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: admin-panel-reader-binding
+  labels:
+    app: admin-panel
+subjects:
+  - kind: ServiceAccount
+    name: admin-panel-sa
+    namespace: webapps
+roleRef:
+  kind: ClusterRole
+  name: admin-panel-reader
+  apiGroup: rbac.authorization.k8s.io
+
+# ─── Certificate ─────────────────────────────────────────────
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
   name: admin-panel
   namespace: webapps
+  labels:
+    app: admin-panel
 spec:
   secretName: admin-panel-tls
   issuerRef:
