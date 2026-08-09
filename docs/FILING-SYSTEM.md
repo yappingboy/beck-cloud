@@ -16,6 +16,12 @@ beck-cloud/
 │   ├── playbooks/               # Numbered playbooks (00-prereqs → 99-uninstall)
 │   │   └── templates/           # Jinja2 templates (sunbeam-manifest, etc.)
 │   └── templates/               # Root-level templates (sops.yaml.j2)
+├── apps-source/                 # All custom application source code
+│   ├── apps/                    # User-facing web apps (landing-page, gridspace, user-invite)
+│   ├── keycloak-theme/          # Keycloak login/login theme
+│   ├── role-enforcer/           # RBAC role enforcement microservice
+│   ├── scripts/                 # Utility scripts (keycloak-role-provision, sync-homepage-services)
+│   └── tools/                   # Microservices (Go/Python): auth-service, base64, beckflow, cron-jobs, dns-monitor, hash, image-editor, load-testing, qr-generator, url-shortener, webhook-relay, yaml-json-tool
 ├── docs/                        # All documentation
 │   ├── ansible/                 # Ansible-specific docs
 │   ├── flux/                    # Flux specific docs
