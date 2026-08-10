@@ -7,14 +7,14 @@ metadata:
     app: admin-panel
     build-phase: "1"
   annotations:
-    job-name: "admin-panel"
+    job-name: "build-admin-panel"
 spec:
   backoffLimit: 1
   template:
     metadata:
       labels:
         app: admin-panel
-        job-name: admin-panel
+        job-name: build-admin-panel
     spec:
       serviceAccountName: default
       containers:
