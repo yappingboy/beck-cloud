@@ -1,0 +1,111 @@
+# ============================================================
+# Image Editor Frontend (nginx)
+# ============================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-image-editor-frontend
+  namespace: toolbox
+  labels:
+    app: image-editor-frontend
+    build-phase: "2"
+spec:
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/tools/image-editor/frontend/* ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/image-editor-frontend:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
+
+# ============================================================
+# BeckFlow Frontend (nginx)
+# ============================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-beckflow-frontend
+  namespace: toolbox
+  labels:
+    app: beckflow-frontend
+    build-phase: "2"
+spec:
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/tools/beckflow/frontend/* ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/beckflow-frontend:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "2"
+              memory: 4Gi
+            requests:
+              cpu: "500m"
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config

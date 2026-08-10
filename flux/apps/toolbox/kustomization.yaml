@@ -5,12 +5,7 @@ namespace: toolbox
 
 resources:
   - namespace.yaml
-  - ../user-invite/secret-ghcr-toolbox.yaml
-  - ../user-invite/kaniko-build.yaml
-  - ../gridspace/kaniko-build.yaml
-  - ../gridspace/tina2s-configmap.yaml
-  - ../gridspace/gridspace-dockerfile-cm.yaml
-  - ../landing-page/kaniko-build.yaml
-  - ../../infrastructure/micro/micro-app/build-jobs.yaml
-  - ../../infrastructure/micro/micro-app/frontend-builds.yaml
-  - admin-panel-build/
+  - secret-ghcr-toolbox.yaml
+  - kaniko-build.yaml
+  - gridspace-dockerfile-cm.yaml
+  - gridspace-tina2s-configmap.yaml

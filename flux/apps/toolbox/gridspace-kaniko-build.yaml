@@ -1,0 +1,77 @@
+# Kaniko build job — builds GridSpace grid-apps from upstream source and pushes to GHCR.
+# Uses an init container to clone the repo, then Kaniko builds from the mounted volume.
+# Run once: kubectl apply -f kaniko-build.yaml -n toolbox
+
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-gridspace
+  namespace: toolbox
+spec:
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: clone-repo
+          image: alpine/git:latest
+          command:
+            - sh
+            - -c
+            - |
+              git clone --branch master --depth 1 https://github.com/GridSpace/grid-apps.git /workspace && \
+              cp /docker/Dockerfile /workspace/Dockerfile && \
+              mkdir -p /workspace/src/cli && \
+              cp /devices/tina2s.json /workspace/src/cli/tina2s.json
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: dockerfile
+              mountPath: /docker
+              readOnly: true
+            - name: devices
+              mountPath: /devices
+              readOnly: true
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/becklab-gridspace:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "2"
+              memory: 6Gi
+            requests:
+              cpu: "1"
+              memory: 2Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: dockerfile
+          configMap:
+            defaultMode: 0644
+            items:
+              - key: Dockerfile
+                path: Dockerfile
+            name: gridspace-dockerfile
+        - name: devices
+          configMap:
+            defaultMode: 0644
+            name: gridspace-tina2s-device
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
