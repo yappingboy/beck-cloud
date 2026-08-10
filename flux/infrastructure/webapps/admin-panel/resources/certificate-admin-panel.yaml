@@ -1,12 +1,14 @@
 apiVersion: cert-manager.io/v1
 kind: Certificate
 metadata:
-  name: sudoku-meals
+  name: admin-panel
   namespace: webapps
+  labels:
+    app: admin-panel
 spec:
-  secretName: sudoku-meals-tls
+  secretName: admin-panel-tls
   issuerRef:
     name: letsencrypt-prod
     kind: ClusterIssuer
   dnsNames:
-    - meals.becklab.cloud
+    - admin.becklab.cloud
