@@ -7,7 +7,7 @@
 ### Cluster at a Glance
 - **Platform:** K3s v1.32.0+k3s1 on Ubuntu 24.04 VMs (OpenNebula CE 7.2 AIO, AlmaLinux 9 host "becklab")
 - **Nodes:** k3s-server (172.16.0.20 / 192.168.100.10) + k3s-worker-1 (192.168.100.11, ProxyJump via server)
-- **CNI:** Cilium v1.17.0 with Hubble
+- **CNI:** Cilium v1.17. **Landing page fix (2026-07-31):** `becklab.cloud` returned 404 because of two mismatches: (a) Certificate named `bechlab` created secret `bechlab-tls` but IngressRoute referenced `landing-page-tls`, (b) IngressRoute pointed to service port `8080` but the Service only exposes port `80`. Fixed by renaming cert to `landing-page` (secret: `landing-page-tls`) and correcting port to `80`.0 with Hubble
 - **Ingress:** Traefik v3.4.3 on NodePort :80/:443 → `*.becklab.cloud` domains
 - **GitOps:** Flux CD → GitHub `yappingboy/beck-cloud` (main branch, 1m sync)
 
@@ -30,7 +30,7 @@
 ### SSO Architecture
 - **Admin chain:** `sso-admin-chain` = oauth2-redirect → keycloak-forwardauth (oauth2-proxy admin tier, requires `/admins` group in LLDAP)
 - **Media chain:** `sso-media-chain` = same pattern with separate oauth2-proxy instance for `/media` group
-- **Crowdsec bouncer:** `crowdsec-bouncer` middleware applied globally to web/websecure entrypoints (stream mode, blocks banned IPs before SSO)
+- **Crowdsec bouncer:** `crowdsec-bouncer` middleware in `traefik` namespace (not `crowdsec`), applied globally to web/websecure entrypoints (stream mode, blocks banned IPs before SSO)
 - Keycloak federates to LLDAP via LDAP on port 389
 
 ### Storage
@@ -50,6 +50,8 @@
 - `bw.becklab.cloud` → bitwarden BSM (no SSO)
 - `cms.becklab.cloud` → Directus (admin SSO)
 - `grafana.becklab.cloud` → Grafana (admin SSO)
+- `lldap.becklab.cloud` → LLDAP admin dashboard (admin SSO + Crowdsec) [2026-08-02]
+- `oauth2.becklab.cloud` → oauth2-proxy admin redirect (TLS only, no SSO) [2026-08-02]
 - `hubble.becklab.cloud` → Hubble UI (admin SSO)
 - `one.becklab.cloud` → OpenNebula Sunstone (admin SSO)
 - `silex.becklab.cloud` → Silex design tool (admin SSO)
@@ -97,6 +99,17 @@ Comprehensive docs in `beck-cloud/docs/`:
 14. **When restructuring namespaces per FILING-SYSTEM.md**, after moving YAML files into service subdirectories, generate `kustomization.yaml` for each service directory listing its YAML files in `resources:`. This is a mandatory step, not optional.
 15. `flux-system` Kustomization has interval 10m — stale status messages in `kubectl get kustomizations` may persist for up to 10m. Use `kubectl annotate kustomization <name> --overwrite fluxcd.io/force-sync=$(date +%s)` to force immediate re-check.
 16. **Provisioning Standardization Complete (2026-07-31):** All services now use IngressRoute (traefik.io/v1alpha1). 24 Certificate resources added for managed TLS. Namespace labels standardized across 14 namespaces. Homepage patches updated to IngressRoute format. PVCs centralized in gaming and identity. Full commit: `7b17550` → pushed to main.
+17. **Kaniko Build Jobs Fix (2026-08-07):** All 13 micro-service build jobs fixed and pushed to GHCR. Issues:
+    - Jobs created in `toolbox` namespace but kustomization applied to `micro` ns
+    - Missing `ghcr-config` secret in `micro` ns → copied from `toolbox`
+    - ResourceQuota too small → increased from 4 CPU/2Gi to 16 CPU/16Gi
+    - Init containers needed resource limits → added 500m CPU/512Mi limits
+    - Kaniko needed more memory → increased from 2Gi to 3Gi per job
+    - Jobs getting stuck at "Found cached layer" → deleted and recreated
+    - yaml-json-tool OOMKilled at 1Gi and 2Gi → resolved at 3Gi
+    - All 13 jobs Complete, images pushed to GHCR:
+      hash, converter, url-shortener, qr-generator, yaml-json-tool, webhook-relay, cron-jobs, dns-monitor, auth-micro, image-editor-api, image-editor-frontend, beckflow, beckflow-frontend
+17. **Keycloak LDAP sync (2026-08-01):** LDAP component ID `VnS4h2_gToCK7G_Yus4j2w` uses `bindCredential: y4pp1ngb0y`, `syncRegistrations: true`, `enabled: true`. Last sync was June 6, 2026 (stale). Passwords stored in LLDAP's SQLite `users.db`, not Keycloak's PostgreSQL credential table. `user_federation_provider` table empty — Keycloak uses `component` system for LDAP storage. `user_attribute` table has `LDAP_ENTRY_DN` and `LDAP_ID` for synced users. audit-sync CronJob fixed: added `apk add --no-cache jq` to command; fixed client ID from `kc-admin-cli` to `admin-cli`. Master realm admin password reset to `y4pp1ngb0y` via Argon2id hash update.
 
 ### Traefik Dashboard Fix (2026-07-29)
 
@@ -173,13 +186,7 @@ Agent configs in `agents/` directory. Each has a README.md.
 - Release Manager role dropped (that's Nova, policy-enforced)
 - Sales/Accounting tabled until BeckCloud becomes commercial
 
-## Promoted From Short-Term Memory (2026-07-22)
+## Promoted From Short-Term Memory (2026-08-11)
 
-<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:23:23 -->
-- public key: age1... ← Leading space! Breaks sops 3.13.x: AGE-SECRET-KEY-1LPXC... ← OK [score=0.828 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:23-23]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:26:26 -->
-- public key: age1... ← Leading space! Breaks sops 3.13.x: I fixed that and local decryption works now. But the cluster's copy of the key is fine (no leading space), so Flux should still be able to decrypt. The error "error decrypting env sources: no kustomization file found" must be something else entirely — not a key issue. [score=0.828 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:26-26]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:14:14 -->
-- public key: age1... ← Leading space! Breaks sops 3.13.x: AGE-SECRET-KEY-1LPXC... ← OK [score=0.800 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:14-14]
-<!-- openclaw-memory-promotion:memory:memory/2026-07-18-0101.md:17:18 -->
-- public key: age1... ← Leading space! Breaks sops 3.13.x: I fixed it and local decryption works now. But the cluster's copy of the key is fine (no leading space), so Flux should still be able to decrypt. The error "error decrypting env sources: no kustomization file found" must mean something else — let me check if there's a reference to an `env` subdirectory somewhere in the repo that got deleted or moved: assistant: You're right — I found the smoking gun. The local age key file had a **leading space on line 2** that was breaking sops parsing: [score=0.800 recalls=0 avg=0.620 source=memory/2026-07-18-0101.md:17-18]
+<!-- openclaw-memory-promotion:memory:memory/2026-08-07.md:10:10 -->
+- Root Cause: `http.ListenAndServe(mux)` Bug (AFFECTS ALL GO SERVICES): Builds retriggered for all. [score=0.815 recalls=0 avg=0.620 source=memory/2026-08-07.md:10-10]
