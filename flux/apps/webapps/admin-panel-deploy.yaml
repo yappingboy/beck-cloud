@@ -23,7 +23,7 @@ spec:
       serviceAccountName: admin-panel-sa
       containers:
       - name: admin-panel
-        image: ghcr.io/yappingboy/admin-panel:latest
+        image: ghcr.io/yappingboy/admin-panel:v1-root-route
         imagePullPolicy: Always
         ports:
         - containerPort: 8080
