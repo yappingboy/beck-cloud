@@ -605,6 +605,72 @@ app.use((req, res, next) => {
 // Routes
 app.get('/health', (req, res) => res.json({ status: 'ok' }));
 
+// Root dashboard (requires SSO)
+app.get('/', (req, res) => {
+  res.set('Content-Type', 'text/html');
+  res.status(200).send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>BeckCloud Admin</title>
+<style>
+body{font-family:system-ui;background:#0f0f0f;color:#e0e0e0;padding:2rem}
+h1{color:#00ff88}
+a{color:#00ff88;text-decoration:none}
+a:hover{text-decoration:underline}
+.list{margin:1rem 0;padding:1rem;background:#1a1a1a;border-radius:8px}
+.badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:.75rem;margin-left:8px}
+.badge-ok{background:#00ff8833;color:#00ff88}
+.badge-err{background:#ff444433;color:#ff4444}
+</style>
+</head>
+<body>
+<h1>BeckCloud Admin Panel</h1>
+<div class="list">
+<h3>Dashboard</h3>
+<a href="/api/dashboard/summary">Dashboard Summary (cluster overview)</a>
+</div>
+<div class="list">
+<h3>Health</h3>
+<a href="/api/health/pods">Pod Health (all namespaces)</a>
+</div>
+<div class="list">
+<h3>Certificates</h3>
+<a href="/api/certs">Certificates (cert-manager)</a>
+</div>
+<div class="list">
+<h3>Users</h3>
+<a href="/api/users/directus">Directus Users</a>
+<a href="/api/users/keycloak" style="display:block;margin-top:4px">Keycloak Users</a>
+</div>
+<div class="list">
+<h3>Tickets</h3>
+<a href="/api/tickets">Tickets (list)</a>
+</div>
+<div class="list">
+<h3>Audit</h3>
+<a href="/api/audit">Audit Log</a>
+</div>
+<div class="list">
+<h3>Backups</h3>
+<a href="/api/backup/status">Backup Status</a>
+<form method="post" action="/api/backup/run" style="margin-top:8px">
+<button type="submit" style="padding:8px 16px;background:#00ff88;color:#000;border:none;border-radius:4px;cursor:pointer">Run Manual Backup</button>
+</form>
+</div>
+<div class="list">
+<h3>System</h3>
+<form method="post" action="/api/redis/flush" style="margin-top:4px">
+<button type="submit" style="padding:8px 16px;background:#ff8800;color:#000;border:none;border-radius:4px;cursor:pointer">Flush Redis DB</button>
+</form>
+</div>
+<div class="list">
+<a href="/health">Health Check</a> <span class="badge badge-ok">API</span>
+</div>
+</body>
+</html>`);
+});
+
 app.get('/api/dashboard/summary', handleDashboardSummary);
 app.get('/api/health/pods', handleHealthPods);
 app.get('/api/certs', handleCerts);
