@@ -131,10 +131,17 @@
         contains: "ENC\\\\[AES256_GCM\\\\]"
       register: encrypted_files
 
+    - name: Find encrypted ansible secrets
+      ansible.builtin.find:
+        paths: "{{ repo_path }}/ansible/inventory/group_vars"
+        patterns: "*.enc"
+        contains: "ENC\\\\[AES256_GCM\\\\]"
+      register: ansible_encrypted_files
+
     - name: List encrypted files
       ansible.builtin.debug:
-        msg: "{{ encrypted_files.files | map(attribute='path') | list }}"
-      when: encrypted_files.matched > 0
+        msg: "Flux: {{ encrypted_files.files | map(attribute='path') | list }} | Ansible: {{ ansible_encrypted_files.files | map(attribute='path') | list }}"
+      when: (encrypted_files.matched > 0) or (ansible_encrypted_files.matched > 0)
 
     # ── Backup old .sops.yaml ──────────────────────────────────────────────
     - name: Backup current .sops.yaml
@@ -214,7 +221,7 @@
             cmd: "{{ sops_bin }} updatekeys --yes {{ item }}"
           args:
             chdir: "{{ repo_path }}"
-          loop: "{{ encrypted_files.files | map(attribute='path') | list }}"
+          loop: "{{ (encrypted_files.files | map(attribute='path') | list) + (ansible_encrypted_files.files | map(attribute='path') | list) }}"
           loop_control:
             label: "{{ item | basename }}"
           environment:
@@ -226,6 +233,11 @@
           ansible.builtin.debug:
             msg: "Re-encrypted {{ reencrypt_results.results | length }} files"
 
+    - name: Warn if ansible encrypted files not found
+      ansible.builtin.debug:
+        msg: "No encrypted ansible secrets found at {{ repo_path }}/ansible/inventory/group_vars/."
+      when: ansible_encrypted_files.matched == 0
+
     - name: Warn if old key not found
       ansible.builtin.debug:
         msg: >
@@ -234,7 +246,7 @@
           Either place the old private key at {{ old_key_path }} and re-run,
           or decrypt and re-encrypt manually with the new key.
       when:
-        - encrypted_files.matched > 0
+        - (encrypted_files.matched > 0) or (ansible_encrypted_files.matched > 0)
         - not old_key_stat.stat.exists
 
     # ── Git commit and push ────────────────────────────────────────────────
@@ -266,8 +278,8 @@
         cmd: "git add {{ item }}"
       args:
         chdir: "{{ repo_path }}"
-      loop: "{{ encrypted_files.files | map(attribute='path') | list }}"
-      when: encrypted_files.matched > 0
+      loop: "{{ (encrypted_files.files | map(attribute='path') | list) + (ansible_encrypted_files.files | map(attribute='path') | list) }}"
+      when: (encrypted_files.matched > 0) or (ansible_encrypted_files.matched > 0)
       changed_when: true
 
     - name: Check git status for changes
