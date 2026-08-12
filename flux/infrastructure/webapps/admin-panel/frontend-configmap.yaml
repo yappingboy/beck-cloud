@@ -1540,44 +1540,53 @@ data:
     \ setTimeout(() => {\n    toast.style.opacity = '0';\n    toast.style.transform
     = 'translateY(1rem)';\n    toast.style.transition = 'opacity 0.3s, transform 0.3s';\n
     \   setTimeout(() => toast.remove(), 300);\n  }, 3000);\n}\n\n// ===== RENDER:
-    DASHBOARD =====\nfunction renderDashboard() {\n  // Stats\n  const healthyCount
-    = Object.values(SERVICE_HEALTH).filter(s => s.status === 'healthy').length;\n
-    \ const activeUsers = users.filter(u => u.status === 'active').length;\n  const
-    openTickets = tickets.filter(t => ['new', 'open'].includes(t.status)).length;\n\n
-    \ const statsContainer = document.getElementById('dashboard-stats');\n  statsContainer.innerHTML
-    = `\n    <div class=\"stat-card\">\n      <div class=\"stat-card-header\">\n        <span
-    class=\"stat-card-label\">Total Users</span>\n        <div class=\"stat-card-icon
-    users\">\n          <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\"
-    stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path
-    d=\"M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2\"/><circle cx=\"9\" cy=\"7\" r=\"4\"/></svg>\n
-    \       </div>\n      </div>\n      <div class=\"stat-card-value\">${users.length}</div>\n
-    \     <div class=\"stat-card-trend\">${activeUsers} active</div>\n    </div>\n
-    \   <div class=\"stat-card\">\n      <div class=\"stat-card-header\">\n        <span
-    class=\"stat-card-label\">Open Tickets</span>\n        <div class=\"stat-card-icon
-    tickets\">\n          <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\"
-    stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path
-    d=\"M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14
-    2 14 8 20 8\"/></svg>\n        </div>\n      </div>\n      <div class=\"stat-card-value\">${openTickets}</div>\n
-    \     <div class=\"stat-card-trend ${openTickets > 3 ? 'down' : 'up'}\">${openTickets
-    > 3 ? '↑ Needs attention' : '↓ Manageable'}</div>\n    </div>\n    <div class=\"stat-card\">\n
-    \     <div class=\"stat-card-header\">\n        <span class=\"stat-card-label\">Services
-    Healthy</span>\n        <div class=\"stat-card-icon services\">\n          <svg
-    width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"
-    stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22
-    12h-4l-3 9L9 3l-3 9H2\"/></svg>\n        </div>\n      </div>\n      <div class=\"stat-card-value\">${healthyCount}/${SERVICES.length}</div>\n
-    \     <div class=\"stat-card-trend up\">${Object.keys(SERVICE_HEALTH).length -
-    healthyCount} degraded</div>\n    </div>\n    <div class=\"stat-card\">\n      <div
-    class=\"stat-card-header\">\n        <span class=\"stat-card-label\">Audit Entries</span>\n
-    \       <div class=\"stat-card-icon audit\">\n          <svg width=\"18\" height=\"18\"
+    DASHBOARD =====\nfunction renderDashboard() {\n  // Use real cluster data if available\n
+    \ const summary = realDashboardSummary || {};\n  const pods = summary.pods ||
+    {};\n  const pv = summary.pv || {};\n  const podTotal = pods.total || 0;\n  const
+    podReady = pods.ready || 0;\n  const podPending = pods.pending || 0;\n  const
+    podCrash = pods.crashLoop || 0;\n  const pvTotal = pv.total || 0;\n  const pvBound
+    = pv.bound || 0;\n  const namespaces = summary.namespaces || 0;\n\n  // Use real
+    pod health if available\n  const realHealthCount = realServiceHealth ? realServiceHealth.filter(s
+    => s.status === 'healthy').length : Object.values(SERVICE_HEALTH).filter(s =>
+    s.status === 'healthy').length;\n  const realHealthTotal = realServiceHealth ?
+    realServiceHealth.length : SERVICES.length;\n  const healthyDegraded = (realServiceHealth
+    ? realServiceHealth.filter(s => s.status !== 'healthy').length : Object.keys(SERVICE_HEALTH).length
+    - realHealthCount);\n\n  const statsContainer = document.getElementById('dashboard-stats');\n
+    \ statsContainer.innerHTML = `\n    <div class=\"stat-card\">\n      <div class=\"stat-card-header\">\n
+    \       <span class=\"stat-card-label\">Pods</span>\n        <div class=\"stat-card-icon
+    services\">\n          <svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\"
+    stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect
+    x=\"3\" y=\"3\" width=\"7\" height=\"7\"/><rect x=\"14\" y=\"3\" width=\"7\" height=\"7\"/><rect
+    x=\"14\" y=\"14\" width=\"7\" height=\"7\"/><rect x=\"3\" y=\"14\" width=\"7\"
+    height=\"7\"/></svg>\n        </div>\n      </div>\n      <div class=\"stat-card-value\">${podReady}/${podTotal}</div>\n
+    \     <div class=\"stat-card-trend\">${podPending} pending${podCrash > 0 ? ',
+    ' + podCrash + ' crash' : ''}</div>\n    </div>\n    <div class=\"stat-card\">\n
+    \     <div class=\"stat-card-header\">\n        <span class=\"stat-card-label\">Namespaces</span>\n
+    \       <div class=\"stat-card-icon users\">\n          <svg width=\"18\" height=\"18\"
     viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"
-    stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M14 2H6a2 2 0 0 0-2
-    2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z\"/><polyline points=\"14 2 14 8 20 8\"/></svg>\n
-    \       </div>\n      </div>\n      <div class=\"stat-card-value\">${auditLog.length}</div>\n
-    \     <div class=\"stat-card-trend\">Today</div>\n    </div>\n  `;\n\n  // Quick
-    actions\n  renderQuickActions('quick-actions-grid');\n\n  // Recent activity\n
-    \ const recentContainer = document.getElementById('recent-activity');\n  recentContainer.innerHTML
-    = auditLog.slice(0, 8).map(entry => `\n    <div class=\"audit-entry\">\n      <span
-    class=\"audit-entry-time\">${entry.time}</span>\n      <span class=\"audit-entry-user\">${entry.user}</span>\n
+    stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 2L2 7l10 5 10-5-10-5z\"/><path
+    d=\"M2 17l10 5 10-5\"/><path d=\"M2 12l10 5 10-5\"/></svg>\n        </div>\n      </div>\n
+    \     <div class=\"stat-card-value\">${namespaces}</div>\n      <div class=\"stat-card-trend\">active</div>\n
+    \   </div>\n    <div class=\"stat-card\">\n      <div class=\"stat-card-header\">\n
+    \       <span class=\"stat-card-label\">Services Healthy</span>\n        <div
+    class=\"stat-card-icon services\">\n          <svg width=\"18\" height=\"18\"
+    viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"
+    stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M22 12h-4l-3 9L9
+    3l-3 9H2\"/></svg>\n        </div>\n      </div>\n      <div class=\"stat-card-value\">${realHealthCount}/${realHealthTotal}</div>\n
+    \     <div class=\"stat-card-trend\">${healthyDegraded > 0 ? healthyDegraded +
+    ' degraded' : 'all good'}</div>\n    </div>\n    <div class=\"stat-card\">\n      <div
+    class=\"stat-card-header\">\n        <span class=\"stat-card-label\">PVs Bound</span>\n
+    \       <div class=\"stat-card-icon tickets\">\n          <svg width=\"18\" height=\"18\"
+    viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\"
+    stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M21 16V8a2 2 0 0
+    0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0
+    0 2 0l7-4A2 2 0 0 0 21 16z\"/></svg>\n        </div>\n      </div>\n      <div
+    class=\"stat-card-value\">${pvBound}/${pvTotal}</div>\n      <div class=\"stat-card-trend\">${pvTotal
+    - pvBound > 0 ? (pvTotal - pvBound) + ' unbound' : 'all bound'}</div>\n    </div>\n
+    \ `;\n\n  // Quick actions\n  renderQuickActions('quick-actions-grid');\n\n  //
+    Recent activity\n  const recentContainer = document.getElementById('recent-activity');\n
+    \ recentContainer.innerHTML = auditLog.slice(0, 8).map(entry => `\n    <div class=\"audit-entry\">\n
+    \     <span class=\"audit-entry-time\">${entry.time}</span>\n      <span class=\"audit-entry-user\">${entry.user}</span>\n
     \     <span class=\"audit-entry-action\">${entry.action}</span>\n      ${entry.target
     ? `<span class=\"audit-entry-target\">→ ${entry.target}</span>` : ''}\n    </div>\n
     \ `).join('');\n\n  // Dashboard health (first 8)\n  renderHealthGrid('dashboard-health',
@@ -1761,11 +1770,14 @@ data:
     = `<div class=\"empty-state\">No audit entries match your filters.</div>`;\n  }\n}\n\nfunction
     filterAuditLog() {\n  const typeFilter = document.getElementById('audit-type-filter')?.value
     || 'all';\n  currentAuditFilter = typeFilter;\n  renderAuditLog();\n}\n\n// =====
-    RENDER: HEALTH =====\nfunction renderHealth() {\n  // Health stats\n  const healthyCount
-    = Object.values(SERVICE_HEALTH).filter(s => s.status === 'healthy').length;\n
-    \ const degradedCount = Object.values(SERVICE_HEALTH).filter(s => s.status ===
-    'degraded').length;\n  const downCount = Object.values(SERVICE_HEALTH).filter(s
-    => s.status === 'down').length;\n\n  document.getElementById('health-stats').innerHTML
+    RENDER: HEALTH =====\nfunction renderHealth() {\n  // Use real pod health if available\n
+    \ const healthData = realServiceHealth || Object.keys(SERVICE_HEALTH).map(id =>
+    ({\n    id, name: SERVICES.find(s => s.id === id)?.name || id,\n    status: SERVICE_HEALTH[id].status,
+    ready: 1, total: 1, namespace: 'unknown',\n  }));\n\n  const healthyCount = healthData.filter(s
+    => s.status === 'healthy').length;\n  const degradedCount = healthData.filter(s
+    => s.status === 'degraded').length;\n  const downCount = healthData.filter(s =>
+    s.status === 'down').length;\n  const totalCount = healthData.length;\n\n  const
+    sourceLabel = realServiceHealth ? 'Kubernetes pods' : 'Simulated';\n\n  document.getElementById('health-stats').innerHTML
     = `\n    <div class=\"stat-card\">\n      <div class=\"stat-card-header\">\n        <span
     class=\"stat-card-label\">Healthy</span>\n        <div class=\"stat-card-icon\"
     style=\"background:rgba(74,222,128,0.12); color:var(--status-success);\">\n          <svg
@@ -1796,26 +1808,37 @@ data:
     width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\"
     stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"2\"
     y=\"3\" width=\"20\" height=\"14\" rx=\"2\"/><path d=\"M8 21h8M12 17v4\"/></svg>\n
-    \       </div>\n      </div>\n      <div class=\"stat-card-value\">${SERVICES.length}</div>\n
-    \     <div class=\"stat-card-trend\">Running</div>\n    </div>\n  `;\n\n  renderHealthGrid('full-health-grid');\n}\n\nfunction
-    renderHealthGrid(containerId, limit = Infinity) {\n  const container = document.getElementById(containerId);\n
-    \ const limitedServices = limit > 0 ? SERVICES.slice(0, limit) : SERVICES;\n\n
-    \ container.innerHTML = limitedServices.map(svc => {\n    const health = SERVICE_HEALTH[svc.id];\n
-    \   if (!health) return '';\n    const statusDot = health.status === 'healthy'
-    ? 'success' : health.status === 'degraded' ? 'warning' : 'danger';\n    const
-    statusLabel = health.status.charAt(0).toUpperCase() + health.status.slice(1);\n
-    \   return `\n      <div class=\"service-health-card\">\n        <div class=\"service-health-icon\">${svc.name.slice(0,
-    2).toUpperCase()}</div>\n        <div class=\"service-health-info\">\n          <div
-    class=\"service-health-name\">${escapeHtml(svc.name)}</div>\n          <div class=\"service-health-url\">${svc.url}</div>\n
-    \       </div>\n        <div class=\"service-health-status\">\n          <div><span
-    class=\"status-dot ${statusDot}\"></span></div>\n          <div style=\"font-size:0.6875rem;
-    color:var(--text-tertiary); margin-top:0.25rem;\">${statusLabel}</div>\n        </div>\n
-    \     </div>\n    `;\n  }).join('');\n}\n\nfunction refreshHealth() {\n  showToast('Health
-    data refreshed.', 'success');\n  // Simulate slight latency change\n  SERVICES.forEach(s
-    => {\n    const current = SERVICE_HEALTH[s.id];\n    if (current) {\n      const
-    newLatency = Math.floor(Math.random() * 500) + 5;\n      current.latency = newLatency
-    < 100 ? `${newLatency}ms` : `${(newLatency / 1000).toFixed(1)}s`;\n    }\n  });\n
-    \ renderHealth();\n}\n\n// ===== INIT =====\nfunction init() {\n  renderDashboard();\n}\n\n//
+    \       </div>\n      </div>\n      <div class=\"stat-card-value\">${totalCount}</div>\n
+    \     <div class=\"stat-card-trend\">Running (${sourceLabel})</div>\n    </div>\n
+    \ `;\n\n  renderHealthGrid('full-health-grid');\n}\n\nfunction renderHealthGrid(containerId,
+    limit = Infinity) {\n  const container = document.getElementById(containerId);\n
+    \ // Use real pod health if available, else fallback to SERVICES\n  const healthData
+    = realServiceHealth || SERVICES.map(s => ({\n    id: s.id, name: s.name, status:
+    SERVICE_HEALTH[s.id]?.status || 'healthy',\n    ready: SERVICE_HEALTH[s.id]?.ready
+    || 1, total: SERVICE_HEALTH[s.id]?.total || 1,\n    namespace: 'unknown', url:
+    s.url,\n  }));\n\n  const limitedServices = limit > 0 ? healthData.slice(0, limit)
+    : healthData;\n\n  container.innerHTML = limitedServices.map(svc => {\n    const
+    statusDot = svc.status === 'healthy' ? 'success' : svc.status === 'degraded' ?
+    'warning' : 'danger';\n    const statusLabel = svc.status.charAt(0).toUpperCase()
+    + svc.status.slice(1);\n    const podInfo = svc.total && svc.ready ? `<div style=\"font-size:0.65rem;
+    color:var(--text-quaternary);\">${svc.ready}/${svc.total} ready</div>` : '';\n
+    \   const nsInfo = svc.namespace && svc.namespace !== 'unknown' ? `<div style=\"font-size:0.625rem;
+    color:var(--text-tertiary);\">${svc.namespace}</div>` : '';\n    const urlInfo
+    = svc.url ? `<div style=\"font-size:0.625rem; color:var(--text-tertiary);\">${svc.url}</div>`
+    : nsInfo;\n    return `\n      <div class=\"service-health-card\">\n        <div
+    class=\"service-health-icon\">${svc.name.slice(0, 2).toUpperCase()}</div>\n        <div
+    class=\"service-health-info\">\n          <div class=\"service-health-name\">${escapeHtml(svc.name)}</div>\n
+    \         ${urlInfo}\n          ${podInfo}\n        </div>\n        <div class=\"service-health-status\">\n
+    \         <div><span class=\"status-dot ${statusDot}\"></span></div>\n          <div
+    style=\"font-size:0.6875rem; color:var(--text-tertiary); margin-top:0.25rem;\">${statusLabel}</div>\n
+    \       </div>\n      </div>\n    `;\n  }).join('');\n}\n\nfunction refreshHealth()
+    {\n  showToast('Health data refreshed.', 'success');\n  // Simulate slight latency
+    change\n  SERVICES.forEach(s => {\n    const current = SERVICE_HEALTH[s.id];\n
+    \   if (current) {\n      const newLatency = Math.floor(Math.random() * 500) +
+    5;\n      current.latency = newLatency < 100 ? `${newLatency}ms` : `${(newLatency
+    / 1000).toFixed(1)}s`;\n    }\n  });\n  renderHealth();\n}\n\n// ===== INIT =====\nasync
+    function init() {\n  await Promise.allSettled([\n    loadDashboardSummary(),\n
+    \   loadRealHealth(),\n    loadRealCerts(),\n    loadRealKcUsers(),\n  ]);\n  renderDashboard();\n}\n\n//
     ===== HELPERS =====\nfunction escapeHtml(str) {\n  const div = document.createElement('div');\n
     \ div.textContent = str;\n  return div.innerHTML;\n}\n\n// Keyboard shortcut:
     Escape closes modals\ndocument.addEventListener('keydown', (e) => {\n  if (e.key

@@ -325,32 +325,44 @@ function showToast(message, type = 'info') {
 
 // ===== RENDER: DASHBOARD =====
 function renderDashboard() {
-  // Stats
-  const healthyCount = Object.values(SERVICE_HEALTH).filter(s => s.status === 'healthy').length;
-  const activeUsers = users.filter(u => u.status === 'active').length;
-  const openTickets = tickets.filter(t => ['new', 'open'].includes(t.status)).length;
+  // Use real cluster data if available
+  const summary = realDashboardSummary || {};
+  const pods = summary.pods || {};
+  const pv = summary.pv || {};
+  const podTotal = pods.total || 0;
+  const podReady = pods.ready || 0;
+  const podPending = pods.pending || 0;
+  const podCrash = pods.crashLoop || 0;
+  const pvTotal = pv.total || 0;
+  const pvBound = pv.bound || 0;
+  const namespaces = summary.namespaces || 0;
+
+  // Use real pod health if available
+  const realHealthCount = realServiceHealth ? realServiceHealth.filter(s => s.status === 'healthy').length : Object.values(SERVICE_HEALTH).filter(s => s.status === 'healthy').length;
+  const realHealthTotal = realServiceHealth ? realServiceHealth.length : SERVICES.length;
+  const healthyDegraded = (realServiceHealth ? realServiceHealth.filter(s => s.status !== 'healthy').length : Object.keys(SERVICE_HEALTH).length - realHealthCount);
 
   const statsContainer = document.getElementById('dashboard-stats');
   statsContainer.innerHTML = `
     <div class="stat-card">
       <div class="stat-card-header">
-        <span class="stat-card-label">Total Users</span>
-        <div class="stat-card-icon users">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/></svg>
+        <span class="stat-card-label">Pods</span>
+        <div class="stat-card-icon services">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         </div>
       </div>
-      <div class="stat-card-value">${users.length}</div>
-      <div class="stat-card-trend">${activeUsers} active</div>
+      <div class="stat-card-value">${podReady}/${podTotal}</div>
+      <div class="stat-card-trend">${podPending} pending${podCrash > 0 ? ', ' + podCrash + ' crash' : ''}</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-header">
-        <span class="stat-card-label">Open Tickets</span>
-        <div class="stat-card-icon tickets">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="stat-card-label">Namespaces</span>
+        <div class="stat-card-icon users">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
         </div>
       </div>
-      <div class="stat-card-value">${openTickets}</div>
-      <div class="stat-card-trend ${openTickets > 3 ? 'down' : 'up'}">${openTickets > 3 ? '↑ Needs attention' : '↓ Manageable'}</div>
+      <div class="stat-card-value">${namespaces}</div>
+      <div class="stat-card-trend">active</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-header">
@@ -359,18 +371,18 @@ function renderDashboard() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         </div>
       </div>
-      <div class="stat-card-value">${healthyCount}/${SERVICES.length}</div>
-      <div class="stat-card-trend up">${Object.keys(SERVICE_HEALTH).length - healthyCount} degraded</div>
+      <div class="stat-card-value">${realHealthCount}/${realHealthTotal}</div>
+      <div class="stat-card-trend">${healthyDegraded > 0 ? healthyDegraded + ' degraded' : 'all good'}</div>
     </div>
     <div class="stat-card">
       <div class="stat-card-header">
-        <span class="stat-card-label">Audit Entries</span>
-        <div class="stat-card-icon audit">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+        <span class="stat-card-label">PVs Bound</span>
+        <div class="stat-card-icon tickets">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/></svg>
         </div>
       </div>
-      <div class="stat-card-value">${auditLog.length}</div>
-      <div class="stat-card-trend">Today</div>
+      <div class="stat-card-value">${pvBound}/${pvTotal}</div>
+      <div class="stat-card-trend">${pvTotal - pvBound > 0 ? (pvTotal - pvBound) + ' unbound' : 'all bound'}</div>
     </div>
   `;
 
@@ -826,10 +838,18 @@ function filterAuditLog() {
 
 // ===== RENDER: HEALTH =====
 function renderHealth() {
-  // Health stats
-  const healthyCount = Object.values(SERVICE_HEALTH).filter(s => s.status === 'healthy').length;
-  const degradedCount = Object.values(SERVICE_HEALTH).filter(s => s.status === 'degraded').length;
-  const downCount = Object.values(SERVICE_HEALTH).filter(s => s.status === 'down').length;
+  // Use real pod health if available
+  const healthData = realServiceHealth || Object.keys(SERVICE_HEALTH).map(id => ({
+    id, name: SERVICES.find(s => s.id === id)?.name || id,
+    status: SERVICE_HEALTH[id].status, ready: 1, total: 1, namespace: 'unknown',
+  }));
+
+  const healthyCount = healthData.filter(s => s.status === 'healthy').length;
+  const degradedCount = healthData.filter(s => s.status === 'degraded').length;
+  const downCount = healthData.filter(s => s.status === 'down').length;
+  const totalCount = healthData.length;
+
+  const sourceLabel = realServiceHealth ? 'Kubernetes pods' : 'Simulated';
 
   document.getElementById('health-stats').innerHTML = `
     <div class="stat-card">
@@ -869,8 +889,8 @@ function renderHealth() {
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
         </div>
       </div>
-      <div class="stat-card-value">${SERVICES.length}</div>
-      <div class="stat-card-trend">Running</div>
+      <div class="stat-card-value">${totalCount}</div>
+      <div class="stat-card-trend">Running (${sourceLabel})</div>
     </div>
   `;
 
@@ -879,19 +899,28 @@ function renderHealth() {
 
 function renderHealthGrid(containerId, limit = Infinity) {
   const container = document.getElementById(containerId);
-  const limitedServices = limit > 0 ? SERVICES.slice(0, limit) : SERVICES;
+  // Use real pod health if available, else fallback to SERVICES
+  const healthData = realServiceHealth || SERVICES.map(s => ({
+    id: s.id, name: s.name, status: SERVICE_HEALTH[s.id]?.status || 'healthy',
+    ready: SERVICE_HEALTH[s.id]?.ready || 1, total: SERVICE_HEALTH[s.id]?.total || 1,
+    namespace: 'unknown', url: s.url,
+  }));
+
+  const limitedServices = limit > 0 ? healthData.slice(0, limit) : healthData;
 
   container.innerHTML = limitedServices.map(svc => {
-    const health = SERVICE_HEALTH[svc.id];
-    if (!health) return '';
-    const statusDot = health.status === 'healthy' ? 'success' : health.status === 'degraded' ? 'warning' : 'danger';
-    const statusLabel = health.status.charAt(0).toUpperCase() + health.status.slice(1);
+    const statusDot = svc.status === 'healthy' ? 'success' : svc.status === 'degraded' ? 'warning' : 'danger';
+    const statusLabel = svc.status.charAt(0).toUpperCase() + svc.status.slice(1);
+    const podInfo = svc.total && svc.ready ? `<div style="font-size:0.65rem; color:var(--text-quaternary);">${svc.ready}/${svc.total} ready</div>` : '';
+    const nsInfo = svc.namespace && svc.namespace !== 'unknown' ? `<div style="font-size:0.625rem; color:var(--text-tertiary);">${svc.namespace}</div>` : '';
+    const urlInfo = svc.url ? `<div style="font-size:0.625rem; color:var(--text-tertiary);">${svc.url}</div>` : nsInfo;
     return `
       <div class="service-health-card">
         <div class="service-health-icon">${svc.name.slice(0, 2).toUpperCase()}</div>
         <div class="service-health-info">
           <div class="service-health-name">${escapeHtml(svc.name)}</div>
-          <div class="service-health-url">${svc.url}</div>
+          ${urlInfo}
+          ${podInfo}
         </div>
         <div class="service-health-status">
           <div><span class="status-dot ${statusDot}"></span></div>
@@ -916,7 +945,13 @@ function refreshHealth() {
 }
 
 // ===== INIT =====
-function init() {
+async function init() {
+  await Promise.allSettled([
+    loadDashboardSummary(),
+    loadRealHealth(),
+    loadRealCerts(),
+    loadRealKcUsers(),
+  ]);
   renderDashboard();
 }
 
