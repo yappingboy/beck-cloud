@@ -11,15 +11,15 @@ spec:
     - web
     - websecure
   routes:
-    # API routes — bypass SSO
+    # API routes — bypass SSO, goes to backend
     - kind: Rule
       match: Host(`admin.becklab.cloud`) && PathPrefix(`/api/`)
       priority: 10
       services:
-        - name: admin-panel
+        - name: admin-panel-api
           port: 8080
           scheme: http
-    # SPA + static — SSO protected
+    # SPA root — SSO protected, goes to frontend
     - kind: Rule
       match: Host(`admin.becklab.cloud`) && PathPrefix(`/`)
       priority: 5
@@ -27,42 +27,44 @@ spec:
         - name: sso-admin-chain
           namespace: identity
       services:
-        - name: admin-panel
-          port: 8080
+        - name: admin-panel-frontend
+          port: 80
           scheme: http
   tls:
     secretName: admin-panel-tls
 
-# ─── Service ─────────────────────────────────────────────────
+---
+# ─── API Service ─────────────────────────────────────────────
 apiVersion: v1
 kind: Service
 metadata:
-  name: admin-panel
+  name: admin-panel-api
   namespace: webapps
   labels:
-    app: admin-panel
+    app: admin-panel-api
 spec:
   selector:
-    app: admin-panel
+    app: admin-panel-api
   ports:
     - name: http
       port: 8080
       targetPort: 8080
       protocol: TCP
 
-# ─── Deployment ──────────────────────────────────────────────
+---
+# ─── API Deployment ──────────────────────────────────────────
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: admin-panel
+  name: admin-panel-api
   namespace: webapps
   labels:
-    app: admin-panel
+    app: admin-panel-api
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: admin-panel
+      app: admin-panel-api
   strategy:
     type: RollingUpdate
     rollingUpdate:
@@ -71,11 +73,11 @@ spec:
   template:
     metadata:
       labels:
-        app: admin-panel
+        app: admin-panel-api
     spec:
       serviceAccountName: admin-panel-sa
       containers:
-        - name: admin-panel
+        - name: admin-panel-api
           image: ghcr.io/yappingboy/admin-panel:latest
           imagePullPolicy: Always
           ports:
@@ -134,6 +136,7 @@ spec:
               cpu: 100m
               memory: 128Mi
 
+---
 # ─── Secrets ─────────────────────────────────────────────────
 apiVersion: v1
 kind: Secret
@@ -147,22 +150,24 @@ stringData:
   directus-password: "suCNJ5CtDdHEdy3Zhy6azwgG"
   kc-client-secret: "9lJwF6HKD8z2l8ft9qbheIGASgAZTdrr"
 
-# ─── RBAC ────────────────────────────────────────────────────
+---
+# ─── ServiceAccount ──────────────────────────────────────────
 apiVersion: v1
 kind: ServiceAccount
 metadata:
   name: admin-panel-sa
   namespace: webapps
   labels:
-    app: admin-panel
+    app: admin-panel-api
 
-  # ---
+---
+# ─── ClusterRole ─────────────────────────────────────────────
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
   name: admin-panel-reader
   labels:
-    app: admin-panel
+    app: admin-panel-api
 rules:
   - apiGroups: [""]
     resources: ["pods", "namespaces", "persistentvolumes", "services", "endpoints"]
@@ -180,13 +185,14 @@ rules:
     resources: ["events"]
     verbs: ["get", "list"]
 
-  # ---
+---
+# ─── ClusterRoleBinding ──────────────────────────────────────
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
   name: admin-panel-reader-binding
   labels:
-    app: admin-panel
+    app: admin-panel-api
 subjects:
   - kind: ServiceAccount
     name: admin-panel-sa
@@ -196,6 +202,7 @@ roleRef:
   name: admin-panel-reader
   apiGroup: rbac.authorization.k8s.io
 
+---
 # ─── Certificate ─────────────────────────────────────────────
 apiVersion: cert-manager.io/v1
 kind: Certificate

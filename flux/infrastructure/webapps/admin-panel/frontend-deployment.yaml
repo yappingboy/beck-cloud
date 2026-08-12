@@ -1,0 +1,43 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: admin-panel-frontend
+  namespace: webapps
+  labels:
+    app: admin-panel-frontend
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: admin-panel-frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: admin-panel-frontend
+    spec:
+      containers:
+        - name: nginx
+          image: nginx:1.27-alpine
+          ports:
+            - containerPort: 80
+              name: http
+          volumeMounts:
+            - name: static-files
+              mountPath: /usr/share/nginx/html
+              readOnly: true
+          resources:
+            limits:
+              cpu: 100m
+              memory: 64Mi
+            requests:
+              cpu: 25m
+              memory: 32Mi
+      volumes:
+        - name: static-files
+          configMap:
+            name: admin-panel-frontend
