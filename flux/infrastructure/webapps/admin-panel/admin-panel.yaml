@@ -75,10 +75,12 @@ spec:
       labels:
         app: admin-panel-api
     spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
       serviceAccountName: admin-panel-sa
       containers:
         - name: admin-panel-api
-          image: ghcr.io/yappingboy/admin-panel:latest
+          image: ghcr.io/yappingboy/admin-panel:v1-root-route
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
