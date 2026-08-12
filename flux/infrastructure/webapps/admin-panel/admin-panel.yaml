@@ -119,7 +119,7 @@ spec:
             - name: REDIS_PASSWORD
               value: "677258544"
             - name: LLDAP_URL
-              value: "http://lldap.identity:389"
+              value: "http://lldap.identity:17170"
             - name: LLDAP_ADMIN_DN
               value: "uid=admin,ou=people,dc=becklab,dc=cloud"
             - name: LLDAP_ADMIN_PASSWORD
