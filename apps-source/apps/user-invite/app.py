@@ -157,8 +157,9 @@ def kc_api(path, method="GET", json=None, params=None):
         params=params,
         headers={
             "Authorization": f"Bearer {token}",
-            "Content-Type": "application/json",
-        },
+        } | ({
+            "Content-Type": "application/json"
+        } if json is not None else {}),
         timeout=15,
     )
     resp.raise_for_status()
