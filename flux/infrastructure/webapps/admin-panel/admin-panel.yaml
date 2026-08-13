@@ -160,7 +160,7 @@ type: Opaque
 stringData:
   directus-password: "suCNJ5CtDdHEdy3Zhy6azwgG"
   kc-client-secret: "9lJwF6HKD8z2l8ft9qbheIGASgAZTdrr"
-  lldap-admin-password: "0VFdWI9LXWugx8H0LpV5hePG"
+  lldap-admin-password: "newpass123"
 
 ---
 # ─── ServiceAccount ──────────────────────────────────────────
