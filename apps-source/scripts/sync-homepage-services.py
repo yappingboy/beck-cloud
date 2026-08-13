@@ -789,7 +789,7 @@ def main():
                 idx = len([x for x in seen if x.startswith(safe_name)]) + 1
                 filename = f"{safe_name}-{idx}.yaml"
             seen.add(filename)
-            patch_files.append(f"patches/{filename}")
+            patch_files.append(filename)
 
             filepath = patches_dir / filename
             with open(filepath, "w") as f:
