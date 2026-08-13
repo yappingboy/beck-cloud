@@ -23,4 +23,8 @@ resources:
   - gridspace
   - micro
 
+# Homepage annotations patches
+patchesStrategicMerge:
+  - webapps/homepage/patches
+
 #  - csi-snapshotter # Can likely be deleted

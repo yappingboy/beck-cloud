@@ -716,16 +716,33 @@ def update_helm_release(root: Path):
         kustom = yaml.safe_load(f)
 
     resources = kustom.get("resources", [])
-    patches_dir = "patches"
-    if patches_dir not in resources:
-        resources.append(patches_dir)
-        kustom["resources"] = resources
+    # Remove 'patches' if it was added as a resource (it should be patchesStrategicMerge at parent level)
+    resources = [r for r in resources if r != "patches"]
+    kustom["resources"] = resources
 
     with open(kustomize_path, "w") as f:
         yaml.dump(kustom, f, default_flow_style=False, sort_keys=False)
         f.write("\n")
 
     print(f"  Updated Kustomization: {kustomize_path}")
+
+    # Update parent infrastructure kustomization to include patches
+    infra_kustom = root / "flux" / "infrastructure" / "kustomization.yaml"
+    with open(infra_kustom, "r") as f:
+        infra = yaml.safe_load(f)
+
+    # Add patchesStrategicMerge if not present
+    patches_key = "webapps/homepage/patches"
+    patches_strategic = infra.get("patchesStrategicMerge", [])
+    if patches_key not in patches_strategic:
+        patches_strategic.append(patches_key)
+        infra["patchesStrategicMerge"] = patches_strategic
+
+    with open(infra_kustom, "w") as f:
+        yaml.dump(infra, f, default_flow_style=False, sort_keys=False)
+        f.write("\n")
+
+    print(f"  Updated Infrastructure Kustomization: {infra_kustom}")
 
 
 # ---------------------------------------------------------------------------
