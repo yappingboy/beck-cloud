@@ -716,7 +716,7 @@ def update_helm_release(root: Path):
         kustom = yaml.safe_load(f)
 
     resources = kustom.get("resources", [])
-    # Remove 'patches' if it was added as a resource (it should be patchesStrategicMerge at parent level)
+    # Remove 'patches' if it was added as a resource
     resources = [r for r in resources if r != "patches"]
     kustom["resources"] = resources
 
@@ -726,17 +726,24 @@ def update_helm_release(root: Path):
 
     print(f"  Updated Kustomization: {kustomize_path}")
 
-    # Update parent infrastructure kustomization to include patches
+    # Update parent infrastructure kustomization to include patches as patchesStrategicMerge
     infra_kustom = root / "flux" / "infrastructure" / "kustomization.yaml"
     with open(infra_kustom, "r") as f:
         infra = yaml.safe_load(f)
 
-    # Add patchesStrategicMerge if not present
-    patches_key = "webapps/homepage/patches"
-    patches_strategic = infra.get("patchesStrategicMerge", [])
-    if patches_key not in patches_strategic:
-        patches_strategic.append(patches_key)
-        infra["patchesStrategicMerge"] = patches_strategic
+    # Build list of patch file paths
+    patch_paths = []
+    for filename in sorted(os.listdir(patches_dir)):
+        if filename.endswith(".yaml") and filename != "kustomization.yaml":
+            patch_paths.append(f"webapps/homepage/patches/{filename}")
+
+    # Remove any existing webapps/homepage/patches entries
+    existing_patches = infra.get("patchesStrategicMerge", [])
+    existing_patches = [p for p in existing_patches if not p.startswith("webapps/homepage/patches/")]
+
+    # Add new patches
+    existing_patches.extend(patch_paths)
+    infra["patchesStrategicMerge"] = existing_patches
 
     with open(infra_kustom, "w") as f:
         yaml.dump(infra, f, default_flow_style=False, sort_keys=False)

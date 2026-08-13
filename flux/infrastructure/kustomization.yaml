@@ -23,8 +23,61 @@ resources:
   - gridspace
   - micro
 
-# Homepage annotations patches
+# Homepage annotations patches (strategic merge)
 patchesStrategicMerge:
-  - webapps/homepage/patches
+  - webapps/homepage/patches/admin-panel.yaml
+  - webapps/homepage/patches/affine.yaml
+  - webapps/homepage/patches/auth-admin.yaml
+  - webapps/homepage/patches/base64.yaml
+  - webapps/homepage/patches/bazarr.yaml
+  - webapps/homepage/patches/beckflow.yaml
+  - webapps/homepage/patches/bitwarden-secrets-manager.yaml
+  - webapps/homepage/patches/bumpmesh.yaml
+  - webapps/homepage/patches/crafty.yaml
+  - webapps/homepage/patches/cron.yaml
+  - webapps/homepage/patches/directus.yaml
+  - webapps/homepage/patches/dns.yaml
+  - webapps/homepage/patches/editor.yaml
+  - webapps/homepage/patches/fdmmonster.yaml
+  - webapps/homepage/patches/fmt.yaml
+  - webapps/homepage/patches/grafana.yaml
+  - webapps/homepage/patches/hash.yaml
+  - webapps/homepage/patches/home-assistant.yaml
+  - webapps/homepage/patches/homebox.yaml
+  - webapps/homepage/patches/hubble-ui.yaml
+  - webapps/homepage/patches/jellyfin.yaml
+  - webapps/homepage/patches/jellyseerr.yaml
+  - webapps/homepage/patches/keycloak.yaml
+  - webapps/homepage/patches/kiri-moto.yaml
+  - webapps/homepage/patches/landing-page.yaml
+  - webapps/homepage/patches/landing-page-gateway.yaml
+  - webapps/homepage/patches/lldap.yaml
+  - webapps/homepage/patches/logout-page.yaml
+  - webapps/homepage/patches/manyfold.yaml
+  - webapps/homepage/patches/markdown.yaml
+  - webapps/homepage/patches/mesh-tool.yaml
+  - webapps/homepage/patches/nzbget.yaml
+  - webapps/homepage/patches/oauth2-admin.yaml
+  - webapps/homepage/patches/openclaw.yaml
+  - webapps/homepage/patches/opennebula.yaml
+  - webapps/homepage/patches/orcaslicer.yaml
+  - webapps/homepage/patches/prowlarr.yaml
+  - webapps/homepage/patches/qr.yaml
+  - webapps/homepage/patches/qbit-gluetun.yaml
+  - webapps/homepage/patches/radarr.yaml
+  - webapps/homepage/patches/resize.yaml
+  - webapps/homepage/patches/sabnzbd.yaml
+  - webapps/homepage/patches/short.yaml
+  - webapps/homepage/patches/silex.yaml
+  - webapps/homepage/patches/sonarr.yaml
+  - webapps/homepage/patches/spoolman.yaml
+  - webapps/homepage/patches/spotweb.yaml
+  - webapps/homepage/patches/sudoku-meals.yaml
+  - webapps/homepage/patches/swiparr.yaml
+  - webapps/homepage/patches/tdarr.yaml
+  - webapps/homepage/patches/traefik-dashboard-https.yaml
+  - webapps/homepage/patches/user-invite.yaml
+  - webapps/homepage/patches/void-form.yaml
+  - webapps/homepage/patches/webhook.yaml
 
 #  - csi-snapshotter # Can likely be deleted
