@@ -293,7 +293,7 @@ let nextUserId = 11;
 let nextTicketId = 1009;
 
 // ===== NAVIGATION =====
-async function navigateTo(section) {
+async function navigateTo(section, scrollToId = null) {
   // Update sidebar
   document.querySelectorAll('.admin-sidebar-link').forEach(link => {
     link.classList.toggle('admin-sidebar-link-active', link.dataset.section === section);
@@ -306,6 +306,12 @@ async function navigateTo(section) {
   const target = document.getElementById('section-' + section);
   if (target) {
     target.classList.add('admin-section-active');
+    if (scrollToId) {
+      const el = document.getElementById(scrollToId);
+      if (el) {
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 100);
+      }
+    }
   }
 
   currentSection = section;
@@ -335,7 +341,7 @@ async function navigateTo(section) {
 document.querySelectorAll('.admin-sidebar-link').forEach(link => {
   link.addEventListener('click', (e) => {
     e.preventDefault();
-    navigateTo(link.dataset.section);
+    navigateTo(link.dataset.section, link.dataset.scroll);
   });
 });
 
@@ -616,7 +622,8 @@ function formatRelativeTime(dateStr) {
 // ===== USER MODAL =====
 function openUserModal(userId = null) {
   document.getElementById('user-edit-id').value = '';
-  document.getElementById('user-form-name').value = '';
+  document.getElementById('user-form-fname').value = '';
+  document.getElementById('user-form-lname').value = '';
   document.getElementById('user-form-email').value = '';
   document.getElementById('user-form-password').value = '';
   document.getElementById('user-form-role').value = 'beckcloud.user';
@@ -804,13 +811,7 @@ function renderGroups() {
 
 // ===== GROUP API FUNCTIONS =====
 async function editGroup(groupId) {
-  const group = groups.find(g => g.id === groupId);
-  if (!group) return;
-
-  document.getElementById('group-edit-id').value = groupId;
-  document.getElementById('group-form-name').value = group.name;
-  document.getElementById('group-modal-title').textContent = 'Edit Group';
-  openModal('group-modal');
+  openGroupModal(groupId);
 }
 
 async function deleteGroup(groupId) {
@@ -834,7 +835,7 @@ async function deleteGroup(groupId) {
 }
 
 // ===== GROUP MODAL =====
-function openGroupModal() {
+function openGroupModal(groupId = null) {
   document.getElementById('group-edit-id').value = '';
   document.getElementById('group-form-name').value = '';
   document.getElementById('group-modal-title').textContent = 'Add Group';
@@ -845,6 +846,15 @@ function openGroupModal() {
     container.innerHTML = SERVICES.filter(s => s.access !== 'public').map(s => `
       <label class="checkbox-item"><input type="checkbox" value="${s.id}"> ${s.name}</label>
     `).join('');
+  }
+
+  if (groupId) {
+    const group = groups.find(g => g.id === groupId);
+    if (group) {
+      document.getElementById('group-edit-id').value = groupId;
+      document.getElementById('group-form-name').value = group.name;
+      document.getElementById('group-modal-title').textContent = 'Edit Group';
+    }
   }
 
   openModal('group-modal');
