@@ -22,6 +22,9 @@ const cfg = {
   kcClientSecret:env('KC_CLIENT_SECRET','9lJwF6HKD8z2l8ft9qbheIGASgAZTdrr'),
   kcUsername:    env('KC_USERNAME',     'yappingboy'),
   kcPassword:    env('KC_PASSWORD',     'y4pp1ngb0y'),
+  lldapURL:      env('LLDAP_URL',       'http://lldap.identity:17170'),
+  lldapUsername: env('LLDAP_USERNAME',  'admin'),
+  lldapPassword: env('LLDAP_PASSWORD',  '0VFdWI9LXWugx8H0LpV5hePG'),
 };
 
 let directusToken = '';
@@ -267,6 +270,49 @@ async function kcGet(path) {
     headers: { Authorization: 'Bearer ' + token },
   });
   return parseJSON(res.body);
+}
+
+// ─── LLDAP ──────────────────────────────────────────────────
+
+let lldapTokenCache = '';
+let lldapTokenExpiry = 0;
+
+async function getLLDAPToken() {
+  const now = Date.now();
+  if (lldapTokenCache && now < lldapTokenExpiry) return lldapTokenCache;
+
+  const url = cfg.lldapURL + '/auth/simple/login';
+  const res = await httpPost(url, {
+    username: cfg.lldapUsername,
+    password: cfg.lldapPassword,
+  });
+
+  const data = parseJSON(res.body);
+  if (!data || !data.token) {
+    throw new Error('LLDAP auth failed: ' + (res.body.slice(0, 200) || res.status));
+  }
+
+  lldapTokenCache = data.token;
+  lldapTokenExpiry = now + 20 * 3600 * 1000; // 20h safety margin (JWT valid 1d)
+  return lldapTokenCache;
+}
+
+async function lldapGraphQL(query, variables) {
+  const token = await getLLDAPToken();
+  const url = cfg.lldapURL + '/api/graphql';
+  const res = await httpPost(url, { query, variables }, {
+    headers: { Authorization: 'Bearer ' + token },
+  });
+
+  const data = parseJSON(res.body);
+  if (!data) {
+    throw new Error('LLDAP GraphQL parse failed: ' + res.body.slice(0, 200));
+  }
+  if (data.errors) {
+    const msgs = data.errors.map(e => e.message || JSON.stringify(e)).join('; ');
+    throw new Error('LLDAP GraphQL error: ' + msgs);
+  }
+  return data.data;
 }
 
 // ─── Audit Logging ──────────────────────────────────────────
@@ -587,6 +633,245 @@ async function handleKeycloakUsers(req, res) {
   }
 }
 
+// ─── LLDAP Route Handlers ───────────────────────────────────
+
+const LLDAP_USER_LIST_QUERY = `
+  query ListUsers($filters: RequestFilter) {
+    users(filters: $filters) {
+      id
+      email
+      displayName
+      firstName
+      lastName
+      creationDate
+      uuid
+      groups { id displayName }
+    }
+  }
+`;
+
+const LLDAP_USER_GET_QUERY = `
+  query GetUser($userId: String!) {
+    user(userId: $userId) {
+      id
+      email
+      displayName
+      firstName
+      lastName
+      creationDate
+      uuid
+      attributes { name value }
+      groups { id displayName }
+    }
+  }
+`;
+
+const LLDAP_GROUP_LIST_QUERY = `
+  query ListGroups {
+    groups {
+      id
+      displayName
+      creationDate
+      uuid
+      users { id email }
+    }
+  }
+`;
+
+const LLDAP_GROUP_GET_QUERY = `
+  query GetGroup($groupId: Int!) {
+    group(groupId: $groupId) {
+      id
+      displayName
+      creationDate
+      uuid
+      users { id email }
+    }
+  }
+`;
+
+async function handleLLDAPUsersList(req, res) {
+  try {
+    const data = await lldapGraphQL(LLDAP_USER_LIST_QUERY, {});
+    res.json({ users: data.users || [], total: (data.users || []).length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPUserGet(req, res) {
+  try {
+    const data = await lldapGraphQL(LLDAP_USER_GET_QUERY, { userId: req.params.id });
+    res.json(data.user || {});
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPUserCreate(req, res) {
+  try {
+    const { id, email, displayName, firstName, lastName } = req.body;
+    if (!id) return res.status(400).json({ error: 'id is required' });
+
+    const query = `
+      mutation CreateUser($user: CreateUserInput!) {
+        createUser(user: $user) {
+          id email displayName firstName lastName uuid
+        }
+      }
+    `;
+    const data = await lldapGraphQL(query, {
+      user: { id, email, displayName, firstName, lastName },
+    });
+    await logAudit('lldap_user', 'created', id);
+    res.status(201).json(data.createUser);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPUserUpdate(req, res) {
+  try {
+    const { email, displayName, firstName, lastName } = req.body;
+
+    const query = `
+      mutation UpdateUser($user: UpdateUserInput!) {
+        updateUser(user: $user) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, {
+      user: { id: req.params.id, email, displayName, firstName, lastName },
+    });
+    await logAudit('lldap_user', 'updated', req.params.id);
+    res.json({ ok: data.updateUser.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPUserDelete(req, res) {
+  try {
+    const query = `
+      mutation DeleteUser($userId: String!) {
+        deleteUser(userId: $userId) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, { userId: req.params.id });
+    await logAudit('lldap_user', 'deleted', req.params.id);
+    res.json({ ok: data.deleteUser.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPGroupsList(req, res) {
+  try {
+    const data = await lldapGraphQL(LLDAP_GROUP_LIST_QUERY, {});
+    res.json({ groups: data.groups || [], total: (data.groups || []).length });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPGroupGet(req, res) {
+  try {
+    const data = await lldapGraphQL(LLDAP_GROUP_GET_QUERY, { groupId: parseInt(req.params.groupId, 10) });
+    res.json(data.group || {});
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPGroupCreate(req, res) {
+  try {
+    const { displayName, name } = req.body;
+    if (!name) return res.status(400).json({ error: 'name is required' });
+
+    const query = `
+      mutation CreateGroup($name: String!) {
+        createGroup(name: $name) {
+          id displayName uuid
+        }
+      }
+    `;
+    const data = await lldapGraphQL(query, { name });
+    await logAudit('lldap_group', 'created', name);
+    res.status(201).json(data.createGroup);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPGroupUpdate(req, res) {
+  try {
+    const { displayName } = req.body;
+
+    const query = `
+      mutation UpdateGroup($group: UpdateGroupInput!) {
+        updateGroup(group: $group) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, {
+      group: { id: parseInt(req.params.groupId, 10), displayName },
+    });
+    await logAudit('lldap_group', 'updated', req.params.groupId);
+    res.json({ ok: data.updateGroup.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPGroupDelete(req, res) {
+  try {
+    const query = `
+      mutation DeleteGroup($groupId: Int!) {
+        deleteGroup(groupId: $groupId) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, { groupId: parseInt(req.params.groupId, 10) });
+    await logAudit('lldap_group', 'deleted', req.params.groupId);
+    res.json({ ok: data.deleteGroup.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPAddUserToGroup(req, res) {
+  try {
+    const query = `
+      mutation AddUserToGroup($userId: String!, $groupId: Int!) {
+        addUserToGroup(userId: $userId, groupId: $groupId) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, {
+      userId: req.params.userId,
+      groupId: parseInt(req.params.groupId, 10),
+    });
+    await logAudit('lldap_group', 'user_added', req.params.groupId);
+    res.json({ ok: data.addUserToGroup.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
+async function handleLLDAPRemoveUserFromGroup(req, res) {
+  try {
+    const query = `
+      mutation RemoveUserFromGroup($userId: String!, $groupId: Int!) {
+        removeUserFromGroup(userId: $userId, groupId: $groupId) { ok }
+      }
+    `;
+    const data = await lldapGraphQL(query, {
+      userId: req.params.userId,
+      groupId: parseInt(req.params.groupId, 10),
+    });
+    await logAudit('lldap_group', 'user_removed', req.params.groupId);
+    res.json({ ok: data.removeUserFromGroup.ok });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+}
+
 // ─── Router ──────────────────────────────────────────────────
 
 const express = require('express');
@@ -682,6 +967,20 @@ app.delete('/api/users/directus/:id', handleUserDelete);
 
 app.get('/api/users/keycloak', handleKeycloakUsers);
 
+app.get('/api/users/lldap', handleLLDAPUsersList);
+app.get('/api/users/lldap/:id', handleLLDAPUserGet);
+app.post('/api/users/lldap', handleLLDAPUserCreate);
+app.patch('/api/users/lldap/:id', handleLLDAPUserUpdate);
+app.delete('/api/users/lldap/:id', handleLLDAPUserDelete);
+
+app.get('/api/groups/lldap', handleLLDAPGroupsList);
+app.get('/api/groups/lldap/:groupId', handleLLDAPGroupGet);
+app.post('/api/groups/lldap', handleLLDAPGroupCreate);
+app.patch('/api/groups/lldap/:groupId', handleLLDAPGroupUpdate);
+app.delete('/api/groups/lldap/:groupId', handleLLDAPGroupDelete);
+app.post('/api/groups/lldap/:groupId/users/:userId', handleLLDAPAddUserToGroup);
+app.delete('/api/groups/lldap/:groupId/users/:userId', handleLLDAPRemoveUserFromGroup);
+
 app.get('/api/tickets', handleTicketsList);
 app.post('/api/tickets', handleTicketsCreate);
 app.patch('/api/tickets/:id', handleTicketUpdate);
@@ -702,5 +1001,6 @@ app.listen(cfg.port, '0.0.0.0', () => {
   console.log(`Admin Panel API on :${cfg.port}`);
   console.log(`  Directus: ${cfg.directusURL}`);
   console.log(`  Keycloak: ${cfg.keycloakURL}`);
+  console.log(`  LLDAP:    ${cfg.lldapURL}`);
   console.log(`  K8s API:  ${cfg.k8sAPI}`);
 });
