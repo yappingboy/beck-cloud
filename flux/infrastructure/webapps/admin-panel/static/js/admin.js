@@ -72,18 +72,18 @@ const ACCESS_MATRIX = {
   'BeckFlow': { admin: true, user: true, media: true, '3dprinting': true, llm: true, opennebula: true },
 };
 
-let users = [
-  { id: 1, name: 'Stephen Beck', email: 'stephen@becklab.cloud', role: 'admin', status: 'active', lastLogin: '2026-07-31 12:45', groups: ['admins'] },
-  { id: 2, name: 'Alex Rivera', email: 'alex@becklab.cloud', role: 'user', status: 'active', lastLogin: '2026-07-30 18:22', groups: [] },
-  { id: 3, name: 'Morgan Chen', email: 'morgan@becklab.cloud', role: 'media', status: 'active', lastLogin: '2026-07-31 09:15', groups: ['media'] },
-  { id: 4, name: 'Jordan Blake', email: 'jordan@becklab.cloud', role: '3dprinting', status: 'active', lastLogin: '2026-07-29 14:30', groups: ['3dprinting'] },
-  { id: 5, name: 'Taylor Kim', email: 'taylor@becklab.cloud', role: 'llm', status: 'active', lastLogin: '2026-07-31 11:00', groups: ['llm'] },
-  { id: 6, name: 'Casey Nguyen', email: 'casey@becklab.cloud', role: 'opennebula', status: 'active', lastLogin: '2026-07-28 16:45', groups: ['opennebula'] },
-  { id: 7, name: 'Riley Foster', email: 'riley@becklab.cloud', role: 'user', status: 'inactive', lastLogin: '2026-07-15 10:00', groups: [] },
-  { id: 8, name: 'Drew Patel', email: 'drew@becklab.cloud', role: 'user', status: 'suspended', lastLogin: '2026-07-20 08:30', groups: [] },
-  { id: 9, name: 'Sam Whitfield', email: 'sam@becklab.cloud', role: 'admin', status: 'active', lastLogin: '2026-07-31 13:10', groups: ['admins', 'opennebula'] },
-  { id: 10, name: 'Jamie Torres', email: 'jamie@becklab.cloud', role: 'user', status: 'active', lastLogin: '2026-07-31 07:00', groups: [] },
-];
+let users = []; // Populated from /api/users/lldap
+let groups = []; // Populated from /api/groups/lldap
+let usersLoaded = false;
+let groupsLoaded = false;
+
+const GROUP_LABELS = {
+  'admins': 'Admin',
+  'media': 'Media',
+  '3dprinting': '3D Printing',
+  'llm': 'LLM',
+  'opennebula': 'OpenNebula',
+};
 
 let tickets = [
   { id: 1001, title: 'Jellyfin 403 on mobile', user: 'morgan@becklab.cloud', service: 'jellyfin', status: 'new', priority: 'normal', created: '2026-07-31 10:15', desc: 'Getting 403 when accessing Jellyfin from phone. Works on desktop.', comments: 0 },
@@ -203,6 +203,72 @@ async function loadRealKcUsers() {
   } catch (e) { console.error('KC users load error:', e); }
 }
 
+// ===== LLDAP: USERS =====
+async function loadLLDAPUsers() {
+  try {
+    const res = await apiFetch('/users/lldap');
+    if (res && res.data && Array.isArray(res.data.users)) {
+      users = res.data.users.map(u => ({
+        id: u.id,
+        email: u.email,
+        name: u.displayName || `${u.firstName || ''} ${u.lastName || ''}`.trim() || u.email,
+        groups: (u.groups || []).map(g => g.displayName || g.id),
+      }));
+      usersLoaded = true;
+    }
+  } catch (e) { console.error('LLDAP users load error:', e); }
+}
+
+// ===== LLDAP: GROUPS =====
+async function loadLLDAPGroups() {
+  try {
+    const res = await apiFetch('/groups/lldap');
+    if (res && res.data && Array.isArray(res.data.groups)) {
+      groups = res.data.groups.map(g => ({
+        id: g.id,
+        name: g.displayName,
+        memberCount: (g.users || []).length,
+        users: (g.users || []).map(u => u.email),
+      }));
+      groupsLoaded = true;
+    }
+  } catch (e) { console.error('LLDAP groups load error:', e); }
+}
+
+// ===== API CALLS: USERS =====
+async function apiCreateUser(data) {
+  return apiFetch('/users/lldap', { method: 'POST', body: JSON.stringify(data) });
+}
+
+async function apiUpdateUser(userId, data) {
+  return apiFetch(`/users/lldap/${userId}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+async function apiDeleteUser(userId) {
+  return apiFetch(`/users/lldap/${userId}`, { method: 'DELETE' });
+}
+
+// ===== API CALLS: GROUPS =====
+async function apiCreateGroup(data) {
+  return apiFetch('/groups/lldap', { method: 'POST', body: JSON.stringify(data) });
+}
+
+async function apiUpdateGroup(groupId, data) {
+  return apiFetch(`/groups/lldap/${groupId}`, { method: 'PATCH', body: JSON.stringify(data) });
+}
+
+async function apiDeleteGroup(groupId) {
+  return apiFetch(`/groups/lldap/${groupId}`, { method: 'DELETE' });
+}
+
+async function apiAddUserToGroup(groupId, userId) {
+  return apiFetch(`/groups/lldap/${groupId}/users/${userId}`, { method: 'POST' });
+}
+
+async function apiRemoveUserFromGroup(groupId, userId) {
+  return apiFetch(`/groups/lldap/${groupId}/users/${userId}`, { method: 'DELETE' });
+}
+
 // Real backup status
 let realBackups = null;
 async function loadRealBackups() {
@@ -227,7 +293,7 @@ let nextUserId = 11;
 let nextTicketId = 1009;
 
 // ===== NAVIGATION =====
-function navigateTo(section) {
+async function navigateTo(section) {
   // Update sidebar
   document.querySelectorAll('.admin-sidebar-link').forEach(link => {
     link.classList.toggle('admin-sidebar-link-active', link.dataset.section === section);
@@ -250,8 +316,14 @@ function navigateTo(section) {
   // Refresh section data
   switch (section) {
     case 'dashboard': renderDashboard(); break;
-    case 'users': renderUsers(); break;
-    case 'groups': renderGroups(); break;
+    case 'users':
+      if (!usersLoaded) await loadLLDAPUsers();
+      renderUsers();
+      break;
+    case 'groups':
+      if (!groupsLoaded) await loadLLDAPGroups();
+      renderGroups();
+      break;
     case 'tickets': renderTickets(); break;
     case 'audit': renderAuditLog(); break;
     case 'health': renderHealth(); break;
@@ -472,7 +544,7 @@ function renderUsers() {
 
   tbody.innerHTML = filtered.map(user => {
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    const roleBadge = getRoleBadge(user.role);
+    const roleBadge = getRoleBadge(user.groups);
     const statusBadge = getStatusBadge(user.status);
     const lastLogin = user.lastLogin ? formatRelativeTime(user.lastLogin) : 'Never';
 
@@ -492,8 +564,8 @@ function renderUsers() {
         <td style="color:var(--text-secondary); font-size:0.8125rem;">${lastLogin}</td>
         <td>
           <div style="display:flex; gap:0.375rem;">
-            <button class="btn btn-secondary btn-sm" onclick="editUser(${user.id})">Edit</button>
-            <button class="btn btn-danger btn-sm" onclick="deleteUser(${user.id})">Delete</button>
+            <button class="btn btn-secondary btn-sm" onclick="editUser('${user.id}')">Edit</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUser('${user.id}')">Delete</button>
           </div>
         </td>
       </tr>
@@ -505,16 +577,20 @@ function filterUsers() {
   renderUsers();
 }
 
-function getRoleBadge(role) {
+function getRoleBadge(groups) {
+  if (!groups || groups.length === 0) {
+    return '<span class="badge badge-user">User</span>';
+  }
   const badges = {
-    admin: '<span class="badge badge-admin">Admin</span>',
-    user: '<span class="badge badge-user">User</span>',
+    admins: '<span class="badge badge-admin">Admin</span>',
     media: '<span class="badge badge-media">Media</span>',
     '3dprinting': '<span class="badge badge-3d">3D</span>',
     llm: '<span class="badge badge-llm">LLM</span>',
     opennebula: '<span class="badge badge-opennebula">ONE</span>',
   };
-  return badges[role] || '<span class="badge badge-user">User</span>';
+  return groups
+    .map(g => badges[g] || `<span class="badge badge-user">${g}</span>`)
+    .join(' ');
 }
 
 function getStatusBadge(status) {
@@ -554,14 +630,24 @@ function openUserModal(userId = null) {
     const user = users.find(u => u.id === userId);
     if (user) {
       document.getElementById('user-edit-id').value = user.id;
-      document.getElementById('user-form-name').value = user.name;
       document.getElementById('user-form-email').value = user.email;
-      document.getElementById('user-form-role').value = 'beckcloud.' + user.role;
-      document.getElementById('user-form-status').value = user.status;
+
+      // Derive display name parts if possible
+      const name = user.name || '';
+      if (name.includes(' ')) {
+        const parts = name.split(' ');
+        document.getElementById('user-form-fname').value = parts[0];
+        document.getElementById('user-form-lname').value = parts.slice(1).join(' ');
+      } else {
+        document.getElementById('user-form-fname').value = '';
+        document.getElementById('user-form-lname').value = name;
+      }
+
+      document.getElementById('user-form-status').value = user.status || 'active';
       document.getElementById('user-modal-title').textContent = 'Edit User';
 
       document.querySelectorAll('#user-form-groups input[type="checkbox"]').forEach(cb => {
-        cb.checked = user.groups.includes(cb.value);
+        cb.checked = (user.groups || []).includes(cb.value);
       });
     }
   }
@@ -573,58 +659,75 @@ function editUser(id) {
   openUserModal(id);
 }
 
-function saveUser() {
-  const name = document.getElementById('user-form-name').value.trim();
+async function saveUser() {
   const email = document.getElementById('user-form-email').value.trim();
-  const role = document.getElementById('user-form-role').value.replace('beckcloud.', '');
-  const status = document.getElementById('user-form-status').value;
+  const password = document.getElementById('user-form-password').value.trim();
   const groups = [];
   document.querySelectorAll('#user-form-groups input[type="checkbox"]:checked').forEach(cb => groups.push(cb.value));
 
-  if (!name || !email) {
-    showToast('Name and email are required.', 'error');
+  if (!email) {
+    showToast('Email is required.', 'error');
     return;
   }
 
   const editId = document.getElementById('user-edit-id').value;
-  if (editId) {
-    // Edit existing
-    const user = users.find(u => u.id === parseInt(editId));
-    if (user) {
-      user.name = name;
-      user.email = email;
-      user.role = role;
-      user.status = status;
-      user.groups = groups;
-      showToast(`User "${name}" updated.`, 'success');
+
+  try {
+    if (editId) {
+      // Update existing
+      const payload = { id: editId };
+      if (groups.length > 0) payload.groups = groups;
+      const res = await apiUpdateUser(editId, payload);
+      if (res?.error) {
+        showToast(res.error || 'Failed to update user.', 'error');
+        return;
+      }
+      showToast('User updated.', 'success');
+    } else {
+      // Create new
+      const fname = document.getElementById('user-form-fname')?.value?.trim() || '';
+      const lname = document.getElementById('user-form-lname')?.value?.trim() || '';
+      const payload = { email, groups };
+      if (fname) payload.firstName = fname;
+      if (lname) payload.lastName = lname;
+      if (password) payload.password = password;
+      const res = await apiCreateUser(payload);
+      if (res?.error) {
+        showToast(res.error || 'Failed to create user.', 'error');
+        return;
+      }
+      showToast('User created.', 'success');
     }
-  } else {
-    // Create new
-    users.push({
-      id: nextUserId++,
-      name,
-      email,
-      role,
-      status,
-      lastLogin: null,
-      groups,
-    });
-    showToast(`User "${name}" created.`, 'success');
-    auditLog.unshift({ time: new Date().toTimeString().slice(0,5), user: 'Stephen Beck', action: 'Created user', target: name, type: 'user' });
+
+    // Reload
+    usersLoaded = false;
+    await loadLLDAPUsers();
+    renderUsers();
+  } catch (e) {
+    showToast('API error: ' + e.message, 'error');
   }
 
   closeModal('user-modal');
-  renderUsers();
 }
 
-function deleteUser(id) {
+async function deleteUser(id) {
   const user = users.find(u => u.id === id);
   if (!user) return;
   if (!confirm(`Delete user "${user.name}"?`)) return;
-  users = users.filter(u => u.id !== id);
-  showToast(`User "${user.name}" deleted.`, 'success');
-  auditLog.unshift({ time: new Date().toTimeString().slice(0,5), user: 'Stephen Beck', action: 'Deleted user', target: user.name, type: 'user' });
-  renderUsers();
+
+  try {
+    const res = await apiDeleteUser(id);
+    if (res?.error) {
+      showToast(res.error || 'Failed to delete user.', 'error');
+      return;
+    }
+    showToast('User deleted.', 'success');
+    usersLoaded = false;
+    await loadLLDAPUsers();
+    renderUsers();
+  } catch (e) {
+    showToast('API error: ' + e.message, 'error');
+  }
 }
 
 // ===== FILTER MODAL =====
@@ -640,65 +743,147 @@ function applyFilters() {
 
 // ===== RENDER: GROUPS =====
 function renderGroups() {
+  // LLDAP Groups table
+  const tbody = document.getElementById('lldap-groups-body');
+  if (!tbody) return;
+
+  if (!groups.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state">No groups loaded.</div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = groups.map(g => `
+    <tr>
+      <td><strong>${escapeHtml(g.name)}</strong><br><span style="font-size:0.75rem; color:var(--text-tertiary)">${escapeHtml(g.id)}</span></td>
+      <td>${g.memberCount}</td>
+      <td style="font-size:0.75rem; color:var(--text-tertiary)">${(g.users || []).slice(0,3).map(u => escapeHtml(u)).join(', ')}${g.memberCount > 3 ? '...' : ''}</td>
+      <td>
+        <div style="display:flex; gap:0.375rem;">
+          <button class="btn btn-secondary btn-sm" onclick="editGroup('${g.id}')">Edit</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteGroup('${g.id}')">Delete</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+
   // Role cards
   const roleCards = document.getElementById('role-cards');
-  roleCards.innerHTML = ROLES.map(role => {
-    const userCount = users.filter(u => u.role === role.slug.split('.')[1] || u.role === role.slug.split('beckcloud.')[1]).length;
-    return `
-      <div class="service-health-card">
-        <div class="service-health-icon" style="background:rgba(124,92,252,0.12); color:var(--brand-secondary); font-size:0.75rem;">
-          ${role.slug.split('.')[1].toUpperCase().slice(0,4)}
+  if (roleCards) {
+    roleCards.innerHTML = ROLES.map(role => {
+      const roleName = role.slug.split('beckcloud.')[1];
+      const userCount = users.filter(u => (u.groups || []).includes(roleName)).length;
+      return `
+        <div class="service-health-card">
+          <div class="service-health-icon" style="background:rgba(124,92,252,0.12); color:var(--brand-secondary); font-size:0.75rem;">
+            ${role.slug.split('.')[1].toUpperCase().slice(0,4)}
+          </div>
+          <div class="service-health-info">
+            <div class="service-health-name">${role.name}</div>
+            <div class="service-health-url">${role.slug} · ${userCount} assigned</div>
+          </div>
+          <div class="service-health-status">${getRoleBadge([roleName])}</div>
         </div>
-        <div class="service-health-info">
-          <div class="service-health-name">${role.name}</div>
-          <div class="service-health-url">${role.slug} · ${userCount} assigned</div>
-        </div>
-        <div class="service-health-status">${getRoleBadge(role.slug.split('beckcloud.')[1])}</div>
-      </div>
-    `;
-  }).join('');
+      `;
+    }).join('');
+  }
 
   // Access matrix
   const matrixBody = document.getElementById('access-matrix-body');
-  const roles = ['admin', 'user', 'media', '3dprinting', 'llm', 'opennebula'];
-  const roleLabels = { admin: 'Admin', user: 'User', media: 'Media', '3dprinting': '3D', llm: 'LLM', opennebula: 'ONE' };
+  if (matrixBody) {
+    const roles = ['admin', 'user', 'media', '3dprinting', 'llm', 'opennebula'];
+    matrixBody.innerHTML = Object.entries(ACCESS_MATRIX).map(([service, access]) => `
+      <tr>
+        <td>${escapeHtml(service)}</td>
+        ${roles.map(r => `
+          <td>${access[r] ? '<span class="matrix-check">✓</span>' : '<span class="matrix-cross">✕</span>'}</td>
+        `).join('')}
+      </tr>
+    `).join('');
+  }
+}
 
-  matrixBody.innerHTML = Object.entries(ACCESS_MATRIX).map(([service, access]) => `
-    <tr>
-      <td>${escapeHtml(service)}</td>
-      ${roles.map(r => `
-        <td>${access[r] ? '<span class="matrix-check">✓</span>' : '<span class="matrix-cross">✕</span>'}</td>
-      `).join('')}
-    </tr>
-  `).join('');
+// ===== GROUP API FUNCTIONS =====
+async function editGroup(groupId) {
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return;
+
+  document.getElementById('group-edit-id').value = groupId;
+  document.getElementById('group-form-name').value = group.name;
+  document.getElementById('group-modal-title').textContent = 'Edit Group';
+  openModal('group-modal');
+}
+
+async function deleteGroup(groupId) {
+  const group = groups.find(g => g.id === groupId);
+  if (!group) return;
+  if (!confirm(`Delete group "${group.name}"?`)) return;
+
+  try {
+    const res = await apiDeleteGroup(groupId);
+    if (res?.error) {
+      showToast(res.error || 'Failed to delete group.', 'error');
+      return;
+    }
+    showToast('Group deleted.', 'success');
+    groupsLoaded = false;
+    await loadLLDAPGroups();
+    renderGroups();
+  } catch (e) {
+    showToast('API error: ' + e.message, 'error');
+  }
 }
 
 // ===== GROUP MODAL =====
 function openGroupModal() {
+  document.getElementById('group-edit-id').value = '';
   document.getElementById('group-form-name').value = '';
-  document.getElementById('group-form-slug').value = '';
+  document.getElementById('group-modal-title').textContent = 'Add Group';
 
   // Populate service checkboxes
   const container = document.getElementById('group-form-services');
-  container.innerHTML = SERVICES.filter(s => s.access !== 'public').map(s => `
-    <label class="checkbox-item"><input type="checkbox" value="${s.id}"> ${s.name}</label>
-  `).join('');
+  if (container) {
+    container.innerHTML = SERVICES.filter(s => s.access !== 'public').map(s => `
+      <label class="checkbox-item"><input type="checkbox" value="${s.id}"> ${s.name}</label>
+    `).join('');
+  }
 
   openModal('group-modal');
 }
 
-function saveGroup() {
+async function saveGroup() {
   const name = document.getElementById('group-form-name').value.trim();
-  const slug = document.getElementById('group-form-slug').value.trim();
-  if (!name || !slug) {
-    showToast('Name and slug are required.', 'error');
+  if (!name) {
+    showToast('Name is required.', 'error');
     return;
   }
 
-  showToast(`Role "${name}" (${slug}) created.`, 'success');
-  auditLog.unshift({ time: new Date().toTimeString().slice(0,5), user: 'Stephen Beck', action: 'Created role', target: slug, type: 'role' });
+  const editId = document.getElementById('group-edit-id').value;
+
+  try {
+    if (editId) {
+      const res = await apiUpdateGroup(editId, { displayName: name });
+      if (res?.error) {
+        showToast(res.error || 'Failed to update group.', 'error');
+        return;
+      }
+      showToast('Group updated.', 'success');
+    } else {
+      const res = await apiCreateGroup({ displayName: name });
+      if (res?.error) {
+        showToast(res.error || 'Failed to create group.', 'error');
+        return;
+      }
+      showToast('Group created.', 'success');
+    }
+
+    groupsLoaded = false;
+    await loadLLDAPGroups();
+    renderGroups();
+  } catch (e) {
+    showToast('API error: ' + e.message, 'error');
+  }
+
   closeModal('group-modal');
-  renderGroups();
 }
 
 // ===== RENDER: TICKETS =====
@@ -951,6 +1136,8 @@ async function init() {
     loadRealHealth(),
     loadRealCerts(),
     loadRealKcUsers(),
+    loadLLDAPUsers(),
+    loadLLDAPGroups(),
   ]);
   renderDashboard();
 }

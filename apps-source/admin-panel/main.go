@@ -1,7 +1,7 @@
 package main
 
 import (
-	"context"
+	"bytes"
 	"crypto/tls"
 	"encoding/json"
 	"fmt"
@@ -9,6 +9,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"sync"
 	"time"
@@ -31,6 +32,11 @@ type config struct {
 	redisPort     int
 	redisPass     string
 	port          string
+	lldapURL      string
+	lldapAdminUser string
+	lldapAdminPass string
+	lldapToken     string
+	lldapTokenTTL  int // seconds before refresh
 }
 
 var cfg config
@@ -286,8 +292,8 @@ func redisCmd(cmd ...string) ([]interface{}, error) {
 func kcGet(path string) ([]byte, error) {
 	clientID := os.Getenv("KC_CLIENT_ID")
 	clientSecret := os.Getenv("KC_CLIENT_SECRET")
-	username := os.Getenv("KC_USERNAME")
-	password := os.Getenv("KC_PASSWORD")
+	_ = os.Getenv("KC_USERNAME")
+	_ = os.Getenv("KC_PASSWORD")
 
 	tokenURL := cfg.keycloakURL + "/realms/homelab/protocol/openid-connect/token"
 	payload := fmt.Sprintf("grant_type=client_credentials&client_id=%s&client_secret=%s", clientID, clientSecret)
@@ -1047,15 +1053,16 @@ func handleKeycloakUsers(w http.ResponseWriter, r *http.Request) {
 	defer resp.Body.Close()
 
 	if resp.StatusCode >= 400 {
-		body, _ := io.ReadAll(resp.Body)
+		respBody, _ := io.ReadAll(resp.Body)
 		w.Header().Set("Content-Type", "application/json")
 		w.WriteHeader(resp.StatusCode)
-		w.Write(body)
+		w.Write(respBody)
 		return
 	}
 
+	respBody, _ := io.ReadAll(resp.Body)
 	w.Header().Set("Content-Type", "application/json")
-	w.Write(body)
+	w.Write(respBody)
 }
 
 // ---- Router ----
@@ -1072,7 +1079,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 
 	// API routes
 	if strings.HasPrefix(path, "api/") {
-		apiPath := "api/" + strings.TrimPrefix(path, "api/")
+		apiPath := strings.TrimPrefix(path, "api/")
 
 		switch {
 		// Dashboard
@@ -1093,7 +1100,7 @@ func router(w http.ResponseWriter, r *http.Request) {
 			handleUsersList(w, r)
 			return
 		case strings.HasPrefix(apiPath, "users/directus/") && strings.HasSuffix(apiPath, "/items"):
-			itemPath := strings.TrimPrefix(apiPath, "users/directus/")
+			_ = strings.TrimPrefix(apiPath, "users/directus/")
 			if r.Method == "POST" {
 				handleUsersCreate(w, r)
 				return
@@ -1146,6 +1153,44 @@ func router(w http.ResponseWriter, r *http.Request) {
 		case apiPath == "redis/flush":
 			handleRedisFlush(w, r)
 			return
+
+		// LLDAP users
+		case apiPath == "users/lldap" && (r.Method == "GET" || r.Method == "POST"):
+			if r.Method == "GET" {
+				handleLLDAPUsersList(w, r)
+			} else {
+				handleLLDAPUsersCreate(w, r)
+			}
+			return
+		case strings.HasPrefix(apiPath, "users/lldap/") && (r.Method == "PATCH" || r.Method == "DELETE"):
+			if r.Method == "PATCH" {
+				handleLLDAPUserUpdate(w, r)
+			} else {
+				handleLLDAPUserDelete(w, r)
+			}
+			return
+
+		// LLDAP groups
+		case apiPath == "groups/lldap" && (r.Method == "GET" || r.Method == "POST"):
+			if r.Method == "GET" {
+				handleLLDAPGroupsList(w, r)
+			} else {
+				handleLLDAPGroupsCreate(w, r)
+			}
+			return
+		case strings.HasPrefix(apiPath, "groups/lldap/") && (r.Method == "PATCH" || r.Method == "DELETE"):
+			if r.Method == "PATCH" {
+				handleLLDAPGroupUpdate(w, r)
+			} else {
+				handleLLDAPGroupDelete(w, r)
+			}
+			return
+		case strings.HasPrefix(apiPath, "groups/lldap/") && strings.Contains(apiPath, "/users/") && r.Method == "POST":
+			handleLLDAPAddUserToGroup(w, r)
+			return
+		case strings.HasPrefix(apiPath, "groups/lldap/") && strings.Contains(apiPath, "/users/") && r.Method == "DELETE":
+			handleLLDAPRemoveUserFromGroup(w, r)
+			return
 		}
 
 		w.Header().Set("Content-Type", "application/json")
@@ -1157,6 +1202,423 @@ func router(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(404)
 	json.NewEncoder(w).Encode(map[string]string{"error": "not found"})
+}
+
+// ---- LLDAP Helpers ----
+
+// LLDAP GraphQL auth
+func lldapAuth() (string, error) {
+	url := cfg.lldapURL + "/auth/simple/login"
+	reqBody, _ := json.Marshal(map[string]string{
+		"username": cfg.lldapAdminUser,
+		"password": cfg.lldapAdminPass,
+	})
+	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	if resp.StatusCode == 403 {
+		return "", fmt.Errorf("lldap auth failed: invalid credentials")
+	}
+	if resp.StatusCode >= 400 {
+		return "", fmt.Errorf("lldap auth %d: %s", resp.StatusCode, string(body))
+	}
+
+	var authResp map[string]interface{}
+	if err := json.Unmarshal(body, &authResp); err != nil {
+		return "", fmt.Errorf("lldap auth parse: %v", err)
+	}
+	token, ok := authResp["token"].(string)
+	if !ok || token == "" {
+		return "", fmt.Errorf("lldap auth: no token in response")
+	}
+	log.Printf("LLDAP auth succeeded (token len=%d)", len(token))
+	return token, nil
+}
+
+// GraphQL query helper with auth header
+func lldapGraphQL(query string, variables map[string]interface{}) ([]byte, error) {
+	url := cfg.lldapURL + "/api/graphql"
+	reqBody, err := json.Marshal(map[string]interface{}{
+		"query":     query,
+		"variables": variables,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	req, err := http.NewRequest("POST", url, bytes.NewReader(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	req.Header.Set("Accept", "application/json")
+	if cfg.lldapToken != "" {
+		req.Header.Set("Authorization", "Bearer "+cfg.lldapToken)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, err
+	}
+	defer resp.Body.Close()
+	body, _ := io.ReadAll(resp.Body)
+
+	// Refresh token on 401
+	if resp.StatusCode == 401 && cfg.lldapToken != "" {
+		newToken, err := lldapAuth()
+		if err != nil {
+			return nil, fmt.Errorf("lldap token refresh failed: %v", err)
+		}
+		cfg.lldapToken = newToken
+		req.Header.Set("Authorization", "Bearer "+cfg.lldapToken)
+		resp, err = http.DefaultClient.Do(req)
+		if err != nil {
+			return nil, err
+		}
+		defer resp.Body.Close()
+		body, _ = io.ReadAll(resp.Body)
+	}
+
+	if resp.StatusCode >= 400 {
+		return nil, fmt.Errorf("lldap graphql %d: %s", resp.StatusCode, string(body))
+	}
+
+	return body, nil
+}
+
+// GraphQL mutation helper returning true/false + errors
+func lldapMutate(query string, variables map[string]interface{}) (bool, error) {
+	body, err := lldapGraphQL(query, variables)
+	if err != nil {
+		return false, err
+	}
+
+	var result map[string]interface{}
+	if err := json.Unmarshal(body, &result); err != nil {
+		return false, fmt.Errorf("lldap parse: %v", err)
+	}
+	if errs, ok := result["errors"].([]interface{}); ok && len(errs) > 0 {
+		return false, fmt.Errorf("lldap graphql error: %v", errs[0])
+	}
+	return true, nil
+}
+
+// ---- LLDAP Handlers ----
+
+func handleLLDAPUsersList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(405)
+		return
+	}
+
+	query := `query { users { id email displayName firstName lastName groups { id displayName } } }`
+	data, err := lldapGraphQL(query, nil)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPUsersCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		return
+	}
+	_, body := readBody(w, r)
+	if body == nil {
+		return
+	}
+
+	query := `mutation CreateUser($user: CreateUserInput!) { createUser(user: $user) { id email displayName } }`
+	vars := map[string]interface{}{"user": body}
+
+	data, err := lldapGraphQL(query, vars)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-user", "created", body)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	w.Write(data)
+}
+
+func handleLLDAPUserUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PATCH" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	userID := pathParts[len(pathParts)-1]
+
+	_, body := readBody(w, r)
+	if body == nil {
+		return
+	}
+
+	query := `mutation UpdateUser($user: UpdateUserInput!) { updateUser(user: $user) { ok } }`
+	vars := map[string]interface{}{
+		"user": map[string]interface{}{"id": userID},
+	}
+	// Merge request body into user input
+	if upd, ok := body.(map[string]interface{}); ok {
+		for k, v := range upd {
+			vars["user"].(map[string]interface{})[k] = v
+		}
+	}
+
+	data, err := lldapGraphQL(query, vars)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-user", "updated", userID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPUserDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	userID := pathParts[len(pathParts)-1]
+
+	query := `mutation DeleteUser($userId: String!) { deleteUser(userId: $userId) { ok } }`
+	data, err := lldapGraphQL(query, map[string]interface{}{"userId": userID})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-user", "deleted", userID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPGroupsList(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "GET" {
+		w.WriteHeader(405)
+		return
+	}
+
+	query := `query { groups { id displayName users { id email displayName } } }`
+	data, err := lldapGraphQL(query, nil)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPGroupsCreate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		return
+	}
+	_, body := readBody(w, r)
+	if body == nil {
+		return
+	}
+
+	query := `mutation CreateGroup($name: String!) { createGroup(name: $name) { id displayName } }`
+	name := ""
+	if grp, ok := body.(map[string]interface{}); ok {
+		if n, ok := grp["name"].(string); ok {
+			name = n
+		}
+		if n, ok := grp["displayName"].(string); ok && name == "" {
+			name = n
+		}
+	}
+	if name == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "name or displayName required"})
+		return
+	}
+
+	data, err := lldapGraphQL(query, map[string]interface{}{"name": name})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-group", "created", body)
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(201)
+	w.Write(data)
+}
+
+func handleLLDAPGroupUpdate(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "PATCH" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	groupID := pathParts[len(pathParts)-1]
+
+	_, body := readBody(w, r)
+	if body == nil {
+		return
+	}
+
+	query := `mutation UpdateGroup($group: UpdateGroupInput!) { updateGroup(group: $group) { ok } }`
+	gid := 0
+	if f, ok := parseFloat(groupID); ok {
+		gid = int(f)
+	}
+
+	vars := map[string]interface{}{
+		"group": map[string]interface{}{"id": gid},
+	}
+	if upd, ok := body.(map[string]interface{}); ok {
+		for k, v := range upd {
+			vars["group"].(map[string]interface{})[k] = v
+		}
+	}
+
+	data, err := lldapGraphQL(query, vars)
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-group", "updated", groupID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPGroupDelete(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	groupID := pathParts[len(pathParts)-1]
+
+	query := `mutation DeleteGroup($groupId: Int!) { deleteGroup(groupId: $groupId) { ok } }`
+	gid := 0
+	if f, ok := parseFloat(groupID); ok {
+		gid = int(f)
+	}
+	data, err := lldapGraphQL(query, map[string]interface{}{"groupId": gid})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-group", "deleted", groupID)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPAddUserToGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "POST" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	// /api/groups/lldap/<groupId>/users/<userId> => last=userId, second-last=users, third-last=groupId
+	if len(pathParts) < 5 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid path"})
+		return
+	}
+	userId := pathParts[len(pathParts)-1]
+	groupID := pathParts[len(pathParts)-3]
+
+	query := `mutation AddUserToGroup($userId: String!, $groupId: Int!) { addUserToGroup(userId: $userId, groupId: $groupId) { ok } }`
+	gid := 0
+	if f, ok := parseFloat(groupID); ok {
+		gid = int(f)
+	}
+	data, err := lldapGraphQL(query, map[string]interface{}{"userId": userId, "groupId": gid})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-group", "user_added", groupID+"/"+userId)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func handleLLDAPRemoveUserFromGroup(w http.ResponseWriter, r *http.Request) {
+	if r.Method != "DELETE" {
+		w.WriteHeader(405)
+		return
+	}
+	pathParts := strings.Split(strings.Trim(r.URL.Path, "/"), "/")
+	if len(pathParts) < 5 {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "invalid path"})
+		return
+	}
+	userId := pathParts[len(pathParts)-1]
+	groupID := pathParts[len(pathParts)-3]
+
+	query := `mutation RemoveUserFromGroup($userId: String!, $groupId: Int!) { removeUserFromGroup(userId: $userId, groupId: $groupId) { ok } }`
+	gid := 0
+	if f, ok := parseFloat(groupID); ok {
+		gid = int(f)
+	}
+	data, err := lldapGraphQL(query, map[string]interface{}{"userId": userId, "groupId": gid})
+	if err != nil {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(500)
+		json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+		return
+	}
+
+	logAudit(w, "lldap-group", "user_removed", groupID+"/"+userId)
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(data)
+}
+
+func parseFloat(s string) (float64, bool) {
+	var f float64
+	_, err := fmt.Sscanf(s, "%f", &f)
+	return f, err == nil
 }
 
 // ---- CORS Middleware ----
@@ -1188,11 +1650,26 @@ func main() {
 		redisPort:     6379,
 		redisPass:     getEnv("REDIS_PASSWORD", ""),
 		port:          getEnv("PORT", "8080"),
+		lldapURL:       getEnv("LLDAP_URL", "http://lldap.identity:17170"),
+		lldapAdminUser: getEnv("LLDAP_ADMIN_USER", "admin"),
+		lldapAdminPass: getEnv("LLDAP_ADMIN_PASSWORD", ""),
+		lldapTokenTTL:  getIntEnv("LLDAP_TOKEN_TTL", 3600),
 	}
 
 	log.Printf("Admin Panel API starting on port %s", cfg.port)
 	log.Printf("Directus: %s", cfg.directusURL)
 	log.Printf("Keycloak: %s", cfg.keycloakURL)
+	log.Printf("LLDAP: %s", cfg.lldapURL)
+
+	// Pre-auth with LLDAP
+	if cfg.lldapAdminUser != "" && cfg.lldapAdminPass != "" {
+		if token, err := lldapAuth(); err != nil {
+			log.Printf("LLDAP auth failed on startup: %v", err)
+		} else {
+			cfg.lldapToken = token
+			log.Printf("LLDAP token cached (TTL=%ds)", cfg.lldapTokenTTL)
+		}
+	}
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", corsMiddleware(router))
@@ -1211,6 +1688,15 @@ func main() {
 func getEnv(key, fallback string) string {
 	if val := os.Getenv(key); val != "" {
 		return val
+	}
+	return fallback
+}
+
+func getIntEnv(key string, fallback int) int {
+	if val := os.Getenv(key); val != "" {
+		if n, err := strconv.Atoi(val); err == nil {
+			return n
+		}
 	}
 	return fallback
 }

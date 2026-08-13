@@ -247,7 +247,7 @@
         <div class="admin-topbar">
           <div class="admin-topbar-title">
             <h1>Groups &amp; Roles</h1>
-            <p>RBAC groups and role assignments via Keycloak.</p>
+            <p>RBAC groups and role assignments via LLDAP.</p>
           </div>
           <div class="admin-topbar-actions">
             <button class="btn btn-primary" onclick="openGroupModal()">
@@ -269,6 +269,32 @@
 
         <div class="service-health-grid" id="role-cards">
           <!-- Filled by JS -->
+        </div>
+
+        <!-- LLDAP Groups -->
+        <div class="section-header">
+          <div>
+            <h2 class="section-title">LLDAP Groups</h2>
+            <p class="section-desc">Groups managed directly in LLDAP.</p>
+          </div>
+        </div>
+
+        <div class="admin-card">
+          <div style="overflow-x: auto;">
+            <table class="admin-table" id="lldap-groups-table">
+              <thead>
+                <tr>
+                  <th>Group</th>
+                  <th>Members</th>
+                  <th>Sample Users</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="lldap-groups-body">
+                <!-- Filled by JS -->
+              </tbody>
+            </table>
+          </div>
         </div>
 
         <!-- Service Access Matrix -->
@@ -440,13 +466,17 @@
         <form id="user-form" novalidate>
           <input type="hidden" id="user-edit-id" value="">
           <div class="form-group">
-            <label class="form-label" for="user-form-name">Full Name <span style="color:var(--brand-accent)">*</span></label>
-            <input type="text" class="form-input" id="user-form-name" placeholder="John Doe" required>
+            <label class="form-label" for="user-form-fname">First Name</label>
+            <input type="text" class="form-input" id="user-form-fname" placeholder="John">
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="user-form-lname">Last Name</label>
+            <input type="text" class="form-input" id="user-form-lname" placeholder="Doe">
           </div>
           <div class="form-group">
             <label class="form-label" for="user-form-email">Email <span style="color:var(--brand-accent)">*</span></label>
             <input type="email" class="form-input" id="user-form-email" placeholder="john@becklab.cloud" required>
-            <div class="form-hint">Used for Keycloak account creation and login.</div>
+            <div class="form-hint">Used for LLDAP account creation and login.</div>
           </div>
           <div class="form-group">
             <label class="form-label" for="user-form-password">Password</label>
@@ -495,7 +525,7 @@
   <div class="modal-overlay" id="group-modal">
     <div class="modal">
       <div class="modal-header">
-        <h3 class="modal-title">Add Role</h3>
+        <h3 class="modal-title">Add Group</h3>
         <button class="modal-close" onclick="closeModal('group-modal')" aria-label="Close">
           <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
             <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
@@ -504,14 +534,10 @@
       </div>
       <div class="modal-body">
         <form id="group-form" novalidate>
+          <input type="hidden" id="group-edit-id" value="">
           <div class="form-group">
-            <label class="form-label" for="group-form-name">Role Name <span style="color:var(--brand-accent)">*</span></label>
-            <input type="text" class="form-input" id="group-form-name" placeholder="e.g. Developer">
-          </div>
-          <div class="form-group">
-            <label class="form-label" for="group-form-slug">Keycloak Slug</label>
-            <input type="text" class="form-input" id="group-form-slug" placeholder="beckcloud.developer">
-            <div class="form-hint">Lowercase, hyphens or underscores only.</div>
+            <label class="form-label" for="group-form-name">Group Name <span style="color:var(--brand-accent)">*</span></label>
+            <input type="text" class="form-input" id="group-form-name" placeholder="e.g. admins">
           </div>
           <div class="form-group">
             <label class="form-label">Service Access</label>
@@ -523,7 +549,7 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('group-modal')">Cancel</button>
-        <button class="btn btn-primary" onclick="saveGroup()">Create Role</button>
+        <button class="btn btn-primary" onclick="saveGroup()">Save Group</button>
       </div>
     </div>
   </div>

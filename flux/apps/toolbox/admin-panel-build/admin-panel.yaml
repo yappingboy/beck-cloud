@@ -9,6 +9,7 @@ metadata:
   annotations:
     job-name: "build-admin-panel"
 spec:
+  parallelism: 1
   backoffLimit: 1
   template:
     metadata:
@@ -16,10 +17,24 @@ spec:
         app: admin-panel
         job-name: build-admin-panel
     spec:
-      serviceAccountName: default
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/admin-panel/* . && cp /workspace/src/apps-source/admin-panel/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
       containers:
         - name: kaniko
-          image: gcr.io/kaniko-project/executor:latest
+          image: gcr.io/kaniko-project/executor:v1.24.0
           args:
             - --dockerfile=/workspace/Dockerfile
             - --context=dir:///workspace
@@ -27,17 +42,25 @@ spec:
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 3Gi
           volumeMounts:
-            - name: docker-config
-              mountPath: /kaniko/.docker/
-              readOnly: true
-              subPath: .dockerconfigjson
             - name: workspace
               mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
       volumes:
+        - name: workspace
+          emptyDir: {}
         - name: docker-config
           secret:
             secretName: ghcr-config
-        - name: workspace
-          emptyDir: {}
-      restartPolicy: Never

@@ -9,3 +9,4 @@ resources:
   - kaniko-build.yaml
   - gridspace-dockerfile-cm.yaml
   - gridspace-tina2s-configmap.yaml
+  - admin-panel-build/
