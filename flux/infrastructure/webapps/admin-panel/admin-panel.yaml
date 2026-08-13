@@ -80,7 +80,7 @@ spec:
       serviceAccountName: admin-panel-sa
       containers:
         - name: admin-panel-api
-          image: ghcr.io/yappingboy/admin-panel:v2-lldap-graphql
+          image: ghcr.io/yappingboy/admin-panel:latest
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
