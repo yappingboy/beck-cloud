@@ -66,7 +66,6 @@ patchesStrategicMerge:
   - webapps/homepage/patches/qbit-gluetun.yaml
   - webapps/homepage/patches/radarr.yaml
   - webapps/homepage/patches/resize.yaml
-  - webapps/homepage/patches/sabnzbd.yaml
   - webapps/homepage/patches/short.yaml
   - webapps/homepage/patches/silex.yaml
   - webapps/homepage/patches/sonarr.yaml
@@ -76,7 +75,6 @@ patchesStrategicMerge:
   - webapps/homepage/patches/swiparr.yaml
   - webapps/homepage/patches/tdarr.yaml
   - webapps/homepage/patches/traefik-dashboard-https.yaml
-  - webapps/homepage/patches/user-invite.yaml
   - webapps/homepage/patches/void-form.yaml
   - webapps/homepage/patches/webhook.yaml
 
