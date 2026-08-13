@@ -10,3 +10,4 @@ metadata:
     gethomepage.dev/icon: mdi-web
     gethomepage.dev/name: Spotweb
     gethomepage.dev/weight: '12'
+    gethomepage.dev/href: https://spotweb.becklab.cloud

@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: keycloak
     gethomepage.dev/widget.url: https://keycloak.becklab.cloud
     gethomepage.dev/weight: '1'
+    gethomepage.dev/href: https://keycloak.becklab.cloud

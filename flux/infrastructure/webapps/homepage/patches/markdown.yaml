@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: markdown
+  namespace: micro
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Markdown preview
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-format-text
+    gethomepage.dev/name: Markdown Tool
+    gethomepage.dev/weight: '4'
+    gethomepage.dev/href: https://markdown.tools.becklab.cloud

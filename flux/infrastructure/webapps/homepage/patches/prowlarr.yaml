@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: prowlarr
     gethomepage.dev/widget.url: https://prowlarr.becklab.cloud
     gethomepage.dev/weight: '5'
+    gethomepage.dev/href: https://prowlarr.becklab.cloud

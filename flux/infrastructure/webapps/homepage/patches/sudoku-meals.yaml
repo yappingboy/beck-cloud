@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: sudoku-meals
+  namespace: webapps
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Meal planner
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-food
+    gethomepage.dev/name: Sudoku Meals
+    gethomepage.dev/weight: '14'
+    gethomepage.dev/href: https://meals.becklab.cloud

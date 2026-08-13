@@ -10,3 +10,4 @@ metadata:
     gethomepage.dev/icon: mdi-account-group
     gethomepage.dev/name: LDAP
     gethomepage.dev/weight: '2'
+    gethomepage.dev/href: https://lldap.becklab.cloud

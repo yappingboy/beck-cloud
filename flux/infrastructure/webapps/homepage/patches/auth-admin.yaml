@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: auth-admin
+  namespace: micro
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Auth microservice admin
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-shield-key
+    gethomepage.dev/name: Auth Micro
+    gethomepage.dev/weight: '13'
+    gethomepage.dev/href: https://auth.tools.becklab.cloud

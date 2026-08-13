@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: webhook
+  namespace: micro
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: Webhook testing
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-webhook
+    gethomepage.dev/name: Webhook Relay
+    gethomepage.dev/weight: '8'
+    gethomepage.dev/href: https://webhook.tools.becklab.cloud

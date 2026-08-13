@@ -1,22 +1,30 @@
 {
   "generated_at": "2026-07-20",
-  "total_resources_scanned": 37,
-  "total_patches": 37,
+  "total_resources_scanned": 56,
+  "total_patches": 56,
   "services_by_group": {
-    "Identity": 5,
+    "Identity": 8,
     "3D Printing": 5,
     "Gaming": 2,
-    "Apps": 9,
-    "Media": 11,
+    "Apps": 23,
+    "Media": 12,
     "Monitoring": 2,
-    "Infrastructure": 3
+    "Infrastructure": 4
   },
   "services": [
     {
       "name": "User Invite",
       "group": "Identity",
+      "host": "user-invite.becklab.cloud",
+      "namespace": "apps",
+      "widget": null,
+      "icon": "mdi-account-plus"
+    },
+    {
+      "name": "User Invite",
+      "group": "Identity",
       "host": "admin.becklab.cloud",
-      "namespace": "identity",
+      "namespace": "webapps",
       "widget": null,
       "icon": "mdi-account-plus"
     },
@@ -125,6 +133,14 @@
       "icon": "mdi-logout-variant"
     },
     {
+      "name": "OAuth2 Proxy",
+      "group": "Identity",
+      "host": "oauth2.becklab.cloud",
+      "namespace": "identity",
+      "widget": null,
+      "icon": "mdi-shield-check"
+    },
+    {
       "name": "Bazarr",
       "group": "Media",
       "host": "bazarr.becklab.cloud",
@@ -175,7 +191,7 @@
     {
       "name": "qBittorrent",
       "group": "Media",
-      "host": "qbit.becklab.cloud",
+      "host": "qbittorrent.becklab.cloud",
       "namespace": "media",
       "widget": "qbittorrent",
       "icon": "si-qbittorrent"
@@ -213,12 +229,124 @@
       "icon": "mdi-web"
     },
     {
+      "name": "Swiparr",
+      "group": "Media",
+      "host": "swiparr.becklab.cloud",
+      "namespace": "media",
+      "widget": null,
+      "icon": "mdi-television-play"
+    },
+    {
       "name": "Tdarr",
       "group": "Media",
       "host": "tdarr.becklab.cloud",
       "namespace": "media",
       "widget": "tdarr",
       "icon": "mdi-filmstrip-box"
+    },
+    {
+      "name": "Hash Tool",
+      "group": "Apps",
+      "host": "hash.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-hash"
+    },
+    {
+      "name": "URL Shortener",
+      "group": "Apps",
+      "host": "short.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-link"
+    },
+    {
+      "name": "Base64 Tool",
+      "group": "Apps",
+      "host": "base64.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-lock"
+    },
+    {
+      "name": "Markdown Tool",
+      "group": "Apps",
+      "host": "markdown.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-format-text"
+    },
+    {
+      "name": "Image Resize",
+      "group": "Apps",
+      "host": "resize.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-crop"
+    },
+    {
+      "name": "Cron Tool",
+      "group": "Apps",
+      "host": "cron.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-clock-alert"
+    },
+    {
+      "name": "DNS Tool",
+      "group": "Apps",
+      "host": "dns.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-network"
+    },
+    {
+      "name": "Webhook Relay",
+      "group": "Apps",
+      "host": "webhook.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-webhook"
+    },
+    {
+      "name": "YAML/JSON Tool",
+      "group": "Apps",
+      "host": "fmt.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-code-braces"
+    },
+    {
+      "name": "QR Generator",
+      "group": "Apps",
+      "host": "qr.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-qrcode"
+    },
+    {
+      "name": "Image Editor",
+      "group": "Apps",
+      "host": "editor.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-image-edit"
+    },
+    {
+      "name": "Beckflow",
+      "group": "Apps",
+      "host": "beckflow.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-flowchart"
+    },
+    {
+      "name": "Auth Micro",
+      "group": "Apps",
+      "host": "auth.tools.becklab.cloud",
+      "namespace": "micro",
+      "widget": null,
+      "icon": "mdi-shield-key"
     },
     {
       "name": "Grafana",
@@ -251,6 +379,14 @@
       "namespace": "traefik",
       "widget": null,
       "icon": "mdi-server"
+    },
+    {
+      "name": "User Invite",
+      "group": "Identity",
+      "host": "admin.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-account-plus"
     },
     {
       "name": "Affine",
@@ -293,6 +429,14 @@
       "icon": "mdi-domain"
     },
     {
+      "name": "BeckCloud",
+      "group": "Infrastructure",
+      "host": "becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-domain"
+    },
+    {
       "name": "Silex",
       "group": "Apps",
       "host": "silex.becklab.cloud",
@@ -307,6 +451,14 @@
       "namespace": "webapps",
       "widget": null,
       "icon": "mdi-robot"
+    },
+    {
+      "name": "Sudoku Meals",
+      "group": "Apps",
+      "host": "meals.becklab.cloud",
+      "namespace": "webapps",
+      "widget": null,
+      "icon": "mdi-food"
     }
   ]
 }

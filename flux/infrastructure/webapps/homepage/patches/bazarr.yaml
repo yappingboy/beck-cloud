@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: bazarr
     gethomepage.dev/widget.url: https://bazarr.becklab.cloud
     gethomepage.dev/weight: '4'
+    gethomepage.dev/href: https://bazarr.becklab.cloud

@@ -301,6 +301,99 @@ SERVICE_REGISTRY: Dict[tuple, ServiceMeta] = {
         weight=10,
         enabled=False,
     ),
+
+    # -- Additional services --
+    ("apps", "user-invite.becklab.cloud"): ServiceMeta(
+        name="User Invite", description="User provisioning",
+        group="Identity", icon="mdi-account-plus",
+        weight=5,
+    ),
+    ("identity", "oauth2.becklab.cloud"): ServiceMeta(
+        name="OAuth2 Proxy", description="SSO redirect",
+        group="Identity", icon="mdi-shield-check",
+        weight=98,
+    ),
+    ("media", "qbittorrent.becklab.cloud"): ServiceMeta(
+        name="qBittorrent", description="Torrent downloads",
+        group="Media", icon="si-qbittorrent",
+        widget_type="qbittorrent", widget_url="https://qbittorrent.becklab.cloud",
+        weight=8,
+    ),
+    ("media", "swiparr.becklab.cloud"): ServiceMeta(
+        name="Swiparr", description="Media search",
+        group="Media", icon="mdi-television-play",
+        weight=13,
+    ),
+    ("micro", "hash.tools.becklab.cloud"): ServiceMeta(
+        name="Hash Tool", description="Hash generator",
+        group="Apps", icon="mdi-hash",
+        weight=1,
+    ),
+    ("micro", "short.tools.becklab.cloud"): ServiceMeta(
+        name="URL Shortener", description="Link shortener",
+        group="Apps", icon="mdi-link",
+        weight=2,
+    ),
+    ("micro", "base64.tools.becklab.cloud"): ServiceMeta(
+        name="Base64 Tool", description="Base64 encode/decode",
+        group="Apps", icon="mdi-lock",
+        weight=3,
+    ),
+    ("micro", "markdown.tools.becklab.cloud"): ServiceMeta(
+        name="Markdown Tool", description="Markdown preview",
+        group="Apps", icon="mdi-format-text",
+        weight=4,
+    ),
+    ("micro", "resize.tools.becklab.cloud"): ServiceMeta(
+        name="Image Resize", description="Image resizing",
+        group="Apps", icon="mdi-crop",
+        weight=5,
+    ),
+    ("micro", "cron.tools.becklab.cloud"): ServiceMeta(
+        name="Cron Tool", description="Cron expression builder",
+        group="Apps", icon="mdi-clock-alert",
+        weight=6,
+    ),
+    ("micro", "dns.tools.becklab.cloud"): ServiceMeta(
+        name="DNS Tool", description="DNS lookup",
+        group="Apps", icon="mdi-network",
+        weight=7,
+    ),
+    ("micro", "webhook.tools.becklab.cloud"): ServiceMeta(
+        name="Webhook Relay", description="Webhook testing",
+        group="Apps", icon="mdi-webhook",
+        weight=8,
+    ),
+    ("micro", "fmt.tools.becklab.cloud"): ServiceMeta(
+        name="YAML/JSON Tool", description="Format converter",
+        group="Apps", icon="mdi-code-braces",
+        weight=9,
+    ),
+    ("micro", "qr.tools.becklab.cloud"): ServiceMeta(
+        name="QR Generator", description="QR code generator",
+        group="Apps", icon="mdi-qrcode",
+        weight=10,
+    ),
+    ("micro", "editor.tools.becklab.cloud"): ServiceMeta(
+        name="Image Editor", description="Image editing",
+        group="Apps", icon="mdi-image-edit",
+        weight=11,
+    ),
+    ("micro", "beckflow.tools.becklab.cloud"): ServiceMeta(
+        name="Beckflow", description="Workflow automation",
+        group="Apps", icon="mdi-flowchart",
+        weight=12,
+    ),
+    ("micro", "auth.tools.becklab.cloud"): ServiceMeta(
+        name="Auth Micro", description="Auth microservice admin",
+        group="Apps", icon="mdi-shield-key",
+        weight=13,
+    ),
+    ("webapps", "meals.becklab.cloud"): ServiceMeta(
+        name="Sudoku Meals", description="Meal planner",
+        group="Apps", icon="mdi-food",
+        weight=14,
+    ),
 }
 
 
@@ -508,7 +601,7 @@ def generate_settings_yaml() -> str:
     return yaml.dump({
         "title": "Becklab",
         "theme": "dark",
-        "color": "auto",
+        "color": "slate",
         "headerStyle": "clean",
         "background": {
             "image": "https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80",

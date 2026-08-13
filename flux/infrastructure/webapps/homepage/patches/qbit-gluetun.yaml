@@ -10,5 +10,6 @@ metadata:
     gethomepage.dev/icon: si-qbittorrent
     gethomepage.dev/name: qBittorrent
     gethomepage.dev/widget.type: qbittorrent
-    gethomepage.dev/widget.url: https://qbit.becklab.cloud
+    gethomepage.dev/widget.url: https://qbittorrent.becklab.cloud
     gethomepage.dev/weight: '8'
+    gethomepage.dev/href: https://qbittorrent.becklab.cloud

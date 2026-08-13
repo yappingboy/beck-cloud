@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: sonarr
     gethomepage.dev/widget.url: https://sonarr.becklab.cloud
     gethomepage.dev/weight: '2'
+    gethomepage.dev/href: https://sonarr.becklab.cloud

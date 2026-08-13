@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: radarr
     gethomepage.dev/widget.url: https://radarr.becklab.cloud
     gethomepage.dev/weight: '3'
+    gethomepage.dev/href: https://radarr.becklab.cloud

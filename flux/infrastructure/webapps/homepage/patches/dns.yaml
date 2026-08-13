@@ -1,0 +1,13 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: dns
+  namespace: micro
+  annotations:
+    gethomepage.dev/enabled: 'true'
+    gethomepage.dev/description: DNS lookup
+    gethomepage.dev/group: Apps
+    gethomepage.dev/icon: mdi-network
+    gethomepage.dev/name: DNS Tool
+    gethomepage.dev/weight: '7'
+    gethomepage.dev/href: https://dns.tools.becklab.cloud

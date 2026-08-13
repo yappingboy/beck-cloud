@@ -12,3 +12,4 @@ metadata:
     gethomepage.dev/widget.type: nzbget
     gethomepage.dev/widget.url: https://nzbget.becklab.cloud
     gethomepage.dev/weight: '7'
+    gethomepage.dev/href: https://nzbget.becklab.cloud

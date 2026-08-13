@@ -11,7 +11,3 @@ metadata:
     gethomepage.dev/name: Silex
     gethomepage.dev/weight: '4'
     gethomepage.dev/href: https://silex.becklab.cloud
-rules:
-  - match: Host(`silex.becklab.cloud`)
-    middlewares:
-      - sso-admin-chain
