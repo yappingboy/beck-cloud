@@ -80,7 +80,7 @@ spec:
       serviceAccountName: admin-panel-sa
       containers:
         - name: admin-panel-api
-          image: ghcr.io/yappingboy/admin-panel:v1-lldap-integration
+          image: ghcr.io/yappingboy/admin-panel:v2-lldap-graphql
           imagePullPolicy: Always
           ports:
             - containerPort: 8080
@@ -120,8 +120,8 @@ spec:
               value: "677258544"
             - name: LLDAP_URL
               value: "http://lldap.identity:17170"
-            - name: LLDAP_ADMIN_DN
-              value: "uid=admin,ou=people,dc=becklab,dc=cloud"
+            - name: LLDAP_ADMIN_USER
+              value: "admin"
             - name: LLDAP_ADMIN_PASSWORD
               valueFrom:
                 secretKeyRef:
