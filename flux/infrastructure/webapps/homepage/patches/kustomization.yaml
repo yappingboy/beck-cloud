@@ -9,7 +9,6 @@ resources:
 - orcaslicer.yaml
 - spoolman.yaml
 - crafty.yaml
-- crafty-2.yaml
 - kiri-moto.yaml
 - mesh-tool.yaml
 - void-form.yaml
@@ -47,7 +46,6 @@ resources:
 - hubble-ui.yaml
 - opennebula.yaml
 - traefik-dashboard-https.yaml
-- admin-panel-2.yaml
 - affine.yaml
 - bitwarden-secrets-manager.yaml
 - directus.yaml
