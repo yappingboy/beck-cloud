@@ -231,8 +231,28 @@ async function loadLLDAPGroups() {
         users: (g.users || []).map(u => u.email),
       }));
       groupsLoaded = true;
+      renderUserFormGroupCheckboxes();
     }
   } catch (e) { console.error('LLDAP groups load error:', e); }
+}
+
+// Render group checkboxes in the user modal
+function renderUserFormGroupCheckboxes() {
+  const container = document.getElementById('user-form-groups');
+  if (!container) return;
+  container.innerHTML = '';
+  // Sort by displayName
+  const sorted = [...groups].sort((a, b) => a.name.localeCompare(b.name));
+  sorted.forEach(g => {
+    const label = document.createElement('label');
+    label.className = 'checkbox-item';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = g.name; // displayName is what we match against
+    label.appendChild(cb);
+    label.appendChild(document.createTextNode(g.name));
+    container.appendChild(label);
+  });
 }
 
 // ===== API CALLS: USERS =====
