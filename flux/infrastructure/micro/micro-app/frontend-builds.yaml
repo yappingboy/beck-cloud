@@ -17,6 +17,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/apps-source/tools/image-editor/frontend/* ."]
           volumeMounts:
             - name: workspace
@@ -73,6 +80,13 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
           command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/apps-source/tools/beckflow/frontend/* ."]
           volumeMounts:
             - name: workspace
