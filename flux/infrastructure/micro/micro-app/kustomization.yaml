@@ -10,7 +10,6 @@ resources:
   - kaniko-sa.yaml
   - build-jobs.yaml
   - frontend-builds.yaml
-  - beckflow-frontend-build.yaml
 
 images:
   # Hash / Base64 / URL Shortener / QR / YAML-JSON / Webhook / Cron / DNS
