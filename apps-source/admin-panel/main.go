@@ -1379,10 +1379,13 @@ func handleLLDAPUserUpdate(w http.ResponseWriter, r *http.Request) {
 	vars := map[string]interface{}{
 		"user": map[string]interface{}{"id": userID},
 	}
-	// Merge request body into user input
+	// Merge request body into user input, but strip fields not valid for UpdateUserInput
+	// (groups must be managed via addUserToGroup/removeUserFromGroup mutations)
 	if upd, ok := body.(map[string]interface{}); ok {
 		for k, v := range upd {
-			vars["user"].(map[string]interface{})[k] = v
+			if k != "groups" && k != "id" {
+				vars["user"].(map[string]interface{})[k] = v
+			}
 		}
 	}
 
