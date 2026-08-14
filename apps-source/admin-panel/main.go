@@ -1346,7 +1346,20 @@ func handleLLDAPUsersCreate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `mutation CreateUser($user: CreateUserInput!) { createUser(user: $user) { id email displayName } }`
-	vars := map[string]interface{}{"user": body}
+
+	// Filter request body to only CreateUserInput fields
+	// (groups/password must be managed via separate mutations)
+	userInput := map[string]interface{}{}
+	if upd, ok := body.(map[string]interface{}); ok {
+		allowed := map[string]bool{"id": true, "email": true, "displayName": true,
+			"firstName": true, "lastName": true, "avatar": true, "attributes": true}
+		for k, v := range upd {
+			if allowed[k] {
+				userInput[k] = v
+			}
+		}
+	}
+	vars := map[string]interface{}{"user": userInput}
 
 	data, err := lldapGraphQL(query, vars)
 	if err != nil {
@@ -1376,18 +1389,19 @@ func handleLLDAPUserUpdate(w http.ResponseWriter, r *http.Request) {
 	}
 
 	query := `mutation UpdateUser($user: UpdateUserInput!) { updateUser(user: $user) { ok } }`
-	vars := map[string]interface{}{
-		"user": map[string]interface{}{"id": userID},
-	}
-	// Merge request body into user input, but strip fields not valid for UpdateUserInput
+	// Filter request body to only UpdateUserInput fields
 	// (groups must be managed via addUserToGroup/removeUserFromGroup mutations)
+	userInput := map[string]interface{}{"id": userID}
+	allowed := map[string]bool{"email": true, "displayName": true, "firstName": true,
+		"lastName": true, "avatar": true, "removeAttributes": true, "insertAttributes": true}
 	if upd, ok := body.(map[string]interface{}); ok {
 		for k, v := range upd {
-			if k != "groups" && k != "id" {
-				vars["user"].(map[string]interface{})[k] = v
+			if allowed[k] {
+				userInput[k] = v
 			}
 		}
 	}
+	vars := map[string]interface{}{"user": userInput}
 
 	data, err := lldapGraphQL(query, vars)
 	if err != nil {

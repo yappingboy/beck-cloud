@@ -710,7 +710,7 @@ async function handleLLDAPUserGet(req, res) {
 
 async function handleLLDAPUserCreate(req, res) {
   try {
-    const { id, email, displayName, firstName, lastName } = req.body;
+    const { id, email, displayName, firstName, lastName, avatar } = req.body;
     if (!id) return res.status(400).json({ error: 'id is required' });
 
     const query = `
@@ -720,9 +720,15 @@ async function handleLLDAPUserCreate(req, res) {
         }
       }
     `;
-    const data = await lldapGraphQL(query, {
-      user: { id, email, displayName, firstName, lastName },
-    });
+    // Only pass fields valid for CreateUserInput (groups/password are separate mutations)
+    const user = { id };
+    if (email) user.email = email;
+    if (displayName) user.displayName = displayName;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (avatar) user.avatar = avatar;
+
+    const data = await lldapGraphQL(query, { user });
     await logAudit('lldap_user', 'created', id);
     res.status(201).json(data.createUser);
   } catch (err) {
@@ -732,16 +738,22 @@ async function handleLLDAPUserCreate(req, res) {
 
 async function handleLLDAPUserUpdate(req, res) {
   try {
-    const { email, displayName, firstName, lastName } = req.body;
+    const { email, displayName, firstName, lastName, avatar } = req.body;
 
     const query = `
       mutation UpdateUser($user: UpdateUserInput!) {
         updateUser(user: $user) { ok }
       }
     `;
-    const data = await lldapGraphQL(query, {
-      user: { id: req.params.id, email, displayName, firstName, lastName },
-    });
+    // Only pass fields valid for UpdateUserInput (groups/password are separate mutations)
+    const user = { id: req.params.id };
+    if (email) user.email = email;
+    if (displayName) user.displayName = displayName;
+    if (firstName) user.firstName = firstName;
+    if (lastName) user.lastName = lastName;
+    if (avatar) user.avatar = avatar;
+
+    const data = await lldapGraphQL(query, { user });
     await logAudit('lldap_user', 'updated', req.params.id);
     res.json({ ok: data.updateUser.ok });
   } catch (err) {
