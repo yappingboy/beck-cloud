@@ -30,7 +30,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/hash/* . && cp /workspace/src/tools/hash/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/hash/* . && cp /workspace/src/apps-source/tools/hash/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -95,7 +95,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/base64/* . && cp /workspace/src/tools/base64/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/base64/* . && cp /workspace/src/apps-source/tools/base64/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -160,7 +160,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/url-shortener/* . && cp /workspace/src/tools/url-shortener/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/url-shortener/* . && cp /workspace/src/apps-source/tools/url-shortener/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -225,7 +225,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/qr-generator/* . && cp /workspace/src/tools/qr-generator/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/qr-generator/* . && cp /workspace/src/apps-source/tools/qr-generator/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -290,7 +290,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/yaml-json-tool/* . && cp /workspace/src/tools/yaml-json-tool/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/yaml-json-tool/* . && cp /workspace/src/apps-source/tools/yaml-json-tool/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -355,7 +355,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/webhook-relay/* . && cp /workspace/src/tools/webhook-relay/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/webhook-relay/* . && cp /workspace/src/apps-source/tools/webhook-relay/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -420,7 +420,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/cron-jobs/* . && cp /workspace/src/tools/cron-jobs/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/cron-jobs/* . && cp /workspace/src/apps-source/tools/cron-jobs/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -431,71 +431,6 @@ spec:
             - --dockerfile=/workspace/Dockerfile
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/cron-jobs:latest
-            - --cache=true
-            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
-            - --skip-tls-verify
-            - --push-retry=3
-          resources:
-            limits:
-              cpu: "1"
-              memory: 3Gi
-            requests:
-              cpu: 250m
-              memory: 3Gi
-          volumeMounts:
-            - name: workspace
-              mountPath: /workspace
-            - name: docker-config
-              mountPath: /kaniko/.docker/config.json
-              subPath: .dockerconfigjson
-              readOnly: true
-      restartPolicy: Never
-      volumes:
-        - name: workspace
-          emptyDir: {}
-        - name: docker-config
-          secret:
-            secretName: ghcr-config
-
-# ============================================================
-# 9. Image Editor API
-# ============================================================
----
-apiVersion: batch/v1
-kind: Job
-metadata:
-  name: build-image-editor-api
-  namespace: toolbox
-  labels:
-    app: image-editor-api
-    build-phase: "1"
-spec:
-  parallelism: 1
-  backoffLimit: 1
-  template:
-    spec:
-      serviceAccountName: kaniko-builder
-      initContainers:
-        - name: copy-source
-          image: alpine/git:latest
-          resources:
-            limits:
-              cpu: "500m"
-              memory: 512Mi
-            requests:
-              cpu: 100m
-              memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/image-editor/api/* . && cp /workspace/src/tools/image-editor/api/Dockerfile ."]
-          volumeMounts:
-            - name: workspace
-              mountPath: /workspace
-      containers:
-        - name: kaniko
-          image: gcr.io/kaniko-project/executor:v1.24.0
-          args:
-            - --dockerfile=/workspace/Dockerfile
-            - --context=dir:///workspace
-            - --destination=ghcr.io/yappingboy/image-editor-api:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
@@ -550,7 +485,7 @@ spec:
             requests:
               cpu: 100m
               memory: 128Mi
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/tools/dns-monitor/* . && cp /workspace/src/tools/dns-monitor/Dockerfile ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/dns-monitor/* . && cp /workspace/src/apps-source/tools/dns-monitor/Dockerfile ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -561,7 +496,202 @@ spec:
             - --dockerfile=/workspace/Dockerfile
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/dns-monitor:latest
-            - --cache=false
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 3Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
+
+# ============================================================
+# 9. Auth Microservice
+# ============================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-auth-micro
+  namespace: toolbox
+  labels:
+    app: auth-micro
+    build-phase: "1"
+spec:
+  parallelism: 1
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/auth-service/* . && cp /workspace/src/apps-source/tools/auth-service/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/auth-micro:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 3Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
+
+# ============================================================
+# 10. Image Editor API
+# ============================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-image-editor-api
+  namespace: toolbox
+  labels:
+    app: image-editor-api
+    build-phase: "1"
+spec:
+  parallelism: 1
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/image-editor/api/* . && cp /workspace/src/apps-source/tools/image-editor/api/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/image-editor-api:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 3Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config
+
+# ============================================================
+# 11. BeckFlow API
+# ============================================================
+---
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-beckflow-api
+  namespace: toolbox
+  labels:
+    app: beckflow-api
+    build-phase: "1"
+spec:
+  parallelism: 1
+  backoffLimit: 1
+  template:
+    spec:
+      serviceAccountName: kaniko-builder
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r /workspace/src/apps-source/tools/beckflow/api/* . && cp /workspace/src/apps-source/tools/beckflow/api/Dockerfile ."]
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=/workspace/Dockerfile
+            - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/beckflow:latest
+            - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
             - --skip-tls-verify
             - --push-retry=3

@@ -17,7 +17,7 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/tools/image-editor/frontend/* ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/apps-source/tools/image-editor/frontend/* ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
@@ -73,7 +73,7 @@ spec:
       initContainers:
         - name: copy-source
           image: alpine/git:latest
-          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/tools/beckflow/frontend/* ."]
+          command: ["sh", "-c", "cd /workspace && git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src && cp -r src/apps-source/tools/beckflow/frontend/* ."]
           volumeMounts:
             - name: workspace
               mountPath: /workspace
