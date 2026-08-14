@@ -669,8 +669,8 @@ function editUser(id) {
 async function saveUser() {
   const email = document.getElementById('user-form-email').value.trim();
   const password = document.getElementById('user-form-password').value.trim();
-  const groups = [];
-  document.querySelectorAll('#user-form-groups input[type="checkbox"]:checked').forEach(cb => groups.push(cb.value));
+  const checkedGroupNames = [];
+  document.querySelectorAll('#user-form-groups input[type="checkbox"]:checked').forEach(cb => checkedGroupNames.push(cb.value));
 
   if (!email) {
     showToast('Email is required.', 'error');
@@ -681,20 +681,25 @@ async function saveUser() {
 
   try {
     if (editId) {
-      // Update existing (groups/password managed via separate endpoints)
+      // Update existing user profile
       const payload = {};
       const fname = document.getElementById('user-form-fname')?.value?.trim() || '';
       const lname = document.getElementById('user-form-lname')?.value?.trim() || '';
       if (fname) payload.firstName = fname;
       if (lname) payload.lastName = lname;
-      const res = await apiUpdateUser(editId, payload);
-      if (res?.error) {
-        showToast(res.error || 'Failed to update user.', 'error');
-        return;
+      if (Object.keys(payload).length > 0) {
+        const res = await apiUpdateUser(editId, payload);
+        if (res?.error) {
+          showToast(res.error || 'Failed to update user.', 'error');
+          return;
+        }
       }
+
+      // Sync group membership
+      await syncUserGroups(editId, checkedGroupNames);
       showToast('User updated.', 'success');
     } else {
-      // Create new
+      // Create new user
       const fname = document.getElementById('user-form-fname')?.value?.trim() || '';
       const lname = document.getElementById('user-form-lname')?.value?.trim() || '';
       const userId = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
@@ -706,6 +711,9 @@ async function saveUser() {
         showToast(res.error || 'Failed to create user.', 'error');
         return;
       }
+
+      // Add to selected groups
+      await syncUserGroups(userId, checkedGroupNames);
       showToast('User created.', 'success');
     }
 
@@ -718,6 +726,34 @@ async function saveUser() {
   }
 
   closeModal('user-modal');
+}
+
+// Sync user's groups: add new memberships, remove old ones
+async function syncUserGroups(userId, targetGroupNames) {
+  if (!groupsLoaded) {
+    await loadLLDAPGroups();
+  }
+
+  // Map group name → id for selected checkboxes
+  const nameToId = {};
+  groups.forEach(g => { nameToId[g.name] = g.id; });
+
+  // Current group IDs for this user
+  const userObj = users.find(u => u.id === userId);
+  const currentGroupNames = (userObj?.groups || []);
+
+  // Names to add / remove
+  const toAdd = targetGroupNames.filter(n => !currentGroupNames.includes(n));
+  const toRemove = currentGroupNames.filter(n => !targetGroupNames.includes(n));
+
+  for (const name of toAdd) {
+    const gid = nameToId[name];
+    if (gid) await apiAddUserToGroup(gid, userId);
+  }
+  for (const name of toRemove) {
+    const gid = nameToId[name];
+    if (gid) await apiRemoveUserFromGroup(gid, userId);
+  }
 }
 
 async function deleteUser(id) {
