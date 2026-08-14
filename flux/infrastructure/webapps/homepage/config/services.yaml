@@ -1,0 +1,159 @@
+# Homepage services with widget credentials
+# API keys reference env vars from the homepage-widgets Secret
+# Homepage supports ${VAR_NAME} substitution in services.yaml
+
+- Media:
+  - Jellyfin:
+    icon: si-jellyfin
+    href: https://jellyfin.becklab.cloud
+    description: Media streaming
+    # widget:
+    #   type: jellyfin
+    #   url: https://jellyfin.becklab.cloud
+    #   key: ${JELLYFIN_API_KEY}
+  - Sonarr:
+    icon: si-sonarr
+    href: https://sonarr.becklab.cloud
+    description: TV show manager
+    widget:
+      type: sonarr
+      url: https://sonarr.becklab.cloud
+      key: ${SONARR_API_KEY}
+  - Radarr:
+    icon: si-radarr
+    href: https://radarr.becklab.cloud
+    description: Movie manager
+    widget:
+      type: radarr
+      url: https://radarr.becklab.cloud
+      key: ${RADARR_API_KEY}
+  - Bazarr:
+    icon: bazarr
+    href: https://bazarr.becklab.cloud
+    description: Subtitle manager
+    # widget:
+    #   type: bazarr
+    #   url: https://bazarr.becklab.cloud
+    #   key: ${BAZARR_API_KEY}
+  - Prowlarr:
+    icon: mdi-rss
+    href: https://prowlarr.becklab.cloud
+    description: Indexer manager
+    widget:
+      type: prowlarr
+      url: https://prowlarr.becklab.cloud
+      key: ${PROWLARR_API_KEY}
+  - SABnzbd:
+    icon: mdi-download
+    href: https://sabnzbd.becklab.cloud
+    description: NZB downloader
+    widget:
+      type: sabnzbd
+      url: https://sabnzbd.becklab.cloud
+      username: sabnzbd
+      password: ${SABNZBD_PASSWORD}
+      key: ${SABNZBD_API_KEY}
+  - NZBGet:
+    icon: mdi-download-circle
+    href: https://nzbget.becklab.cloud
+    description: NZB downloader
+    widget:
+      type: nzbget
+      url: https://nzbget.becklab.cloud
+      username: ${NZBGET_USERNAME}
+      password: ${NZBGET_PASSWORD}
+  - qBittorrent:
+    icon: si-qbittorrent
+    href: https://qbit.becklab.cloud
+    description: Torrent downloads
+    # widget:
+    #   type: qbittorrent
+    #   url: https://qbit.becklab.cloud
+    #   username: admin
+    #   password: ${QBIT_PASSWORD}
+  - Tdarr:
+    icon: mdi-filmstrip-box
+    href: https://tdarr.becklab.cloud
+    description: Media transcoding
+    widget:
+      type: tdarr
+      url: https://tdarr.becklab.cloud
+      key: ${TDARR_API_KEY}
+  - Jellyseerr:
+    icon: mdi-television-box
+    href: https://requests.becklab.cloud
+    description: Media requests
+    # widget:
+    #   type: seerr
+    #   url: https://requests.becklab.cloud
+    #   key: ${JELLYSEERR_API_KEY}
+  - Homebox:
+    icon: mdi-box
+    href: https://homebox.becklab.cloud
+    description: Home inventory
+    # widget:
+    #   type: homebox
+    #   url: https://homebox.becklab.cloud
+    #   token: ${HOMEBOX_TOKEN}
+
+- Monitoring:
+  - Grafana:
+    icon: si-grafana
+    href: https://grafana.becklab.cloud
+    description: Dashboards
+    widget:
+      type: grafana
+      url: https://grafana.becklab.cloud
+      username: ${GRAFANA_USERNAME}
+      password: ${GRAFANA_PASSWORD}
+      fields:
+        - cpu
+        - memory
+        - disk
+        - net
+        - temp
+  - Hubble:
+    icon: mdi-network
+    href: https://hubble.becklab.cloud
+    description: CNI observability
+
+- 3D Printing:
+  - Spoolman:
+    icon: mdi-spool
+    href: https://spoolman.becklab.cloud
+    description: Filament tracker
+    # widget:
+    #   type: spoolman
+    #   url: https://spoolman.becklab.cloud
+    #   token: ${SPOOLMAN_TOKEN}
+
+- Identity:
+  - Keycloak:
+    icon: keycloak.png
+    href: https://keycloak.becklab.cloud
+    description: SSO / Identity
+    widget:
+      type: keycloak
+      url: https://keycloak.becklab.cloud
+      realms:
+        - homelab
+
+- Apps:
+  - Home Assistant:
+    icon: si-homeassistant
+    href: https://ha.becklab.cloud
+    description: Smart home
+    widget:
+      type: homeassistant
+      url: https://ha.becklab.cloud
+      token: ${HA_TOKEN}
+
+- Gaming:
+  - Crafty Controller:
+    icon: crafty-controller
+    href: https://crafty.becklab.cloud
+    description: Minecraft server
+    widget:
+      type: minecraft
+      url: https://crafty.becklab.cloud
+      port: 25565

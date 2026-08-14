@@ -44,6 +44,7 @@ spec:
   postRenderers:
   - kustomize:
       patches:
+      # Patch ConfigMap with services.yaml (widget credentials via env vars)
       - target:
           version: v1
           kind: ConfigMap
@@ -58,10 +59,52 @@ spec:
           \   \\  Monitoring:\\n    style: row\\n    columns: 4\\n  Identity:\\n \
           \   style: row\\n\\\n    \\    columns: 4\\n  Infrastructure:\\n    style:\
           \ row\\n    columns: 4\\n  Gaming:\\n\\\n    \\    style: row\\n    columns:\
-          \ 2\\n\"\n  widgets.yaml: \"resources:\\n  cpu: true\\n  memory: true\\\
+          \  2\\n\"\n  widgets.yaml: \"resources:\\n  cpu: true\\n  memory: true\\\
           n  label: Cluster\\ndatetime:\\n\\\n    \\  text_size: xl\\n  format:\\\
           n    timeStyle: short\\n    dateStyle: short\\nsearch:\\n\\\n    \\  provider:\
-          \ duckduckgo\\n  target: _blank\\n\"\n  services.yaml: ''\n  bookmarks.yaml:\
-          \ '[]\n\n    '\n  kubernetes.yaml: 'mode: cluster\n\n    ingress: true\n\
-          \n    traefik: true\n\n    '\n  docker.yaml: '{}\n\n    '\n"
-
+          \ duckduckgo\\n  target: _blank\\n\"\n  services.yaml: \"- Media:\\n  - Sonarr:\
+          \\n    icon: si-sonarr\\n    href: https://sonarr.becklab.cloud\\n    description:\
+          \ TV show manager\\n    widget:\\n      type: sonarr\\n      url: https://sonarr.becklab.cloud\\\
+          n      key: ${SONARR_API_KEY}\\n  - Radarr:\\n    icon: si-radarr\\n    href:\
+          \ https://radarr.becklab.cloud\\n    description: Movie manager\\n    widget:\
+          \\n      type: radarr\\n      url: https://radarr.becklab.cloud\\n      key:\
+          \ ${RADARR_API_KEY}\\n  - Bazarr:\\n    icon: bazarr\\n    href: https://bazarr.becklab.cloud\\\
+          n    description: Subtitle manager\\n  - Prowlarr:\\n    icon: mdi-rss\\\
+          n    href: https://prowlarr.becklab.cloud\\n    description: Indexer manager\\\
+          n    widget:\\n      type: prowlarr\\n      url: https://prowlarr.becklab.cloud\\\
+          n      key: ${PROWLARR_API_KEY}\\n  - SABnzbd:\\n    icon: mdi-download\\\
+          n    href: https://sabnzbd.becklab.cloud\\n    description: NZB downloader\\\
+          n    widget:\\n      type: sabnzbd\\n      url: https://sabnzbd.becklab.cloud\\\
+          n      username: sabnzbd\\n      password: ${SABNZBD_PASSWORD}\\n      key:\
+          \ ${SABNZBD_API_KEY}\\n  - NZBGet:\\n    icon: mdi-download-circle\\n    href:\
+          \ https://nzbget.becklab.cloud\\n    description: NZB downloader\\n    widget:\
+          \\n      type: nzbget\\n      url: https://nzbget.becklab.cloud\\n      username:\
+          \ ${NZBGET_USERNAME}\\n      password: ${NZBGET_PASSWORD}\\n  - Tdarr:\\n\
+          \    icon: mdi-filmstrip-box\\n    href: https://tdarr.becklab.cloud\\n \
+          \   description: Media transcoding\\n    widget:\\n      type: tdarr\\n \
+          \     url: https://tdarr.becklab.cloud\\n      key: ${TDARR_API_KEY}\\n\\\
+          \  - Monitoring:\\n  - Grafana:\\n    icon: si-grafana\\n    href: https://grafana.becklab.cloud\\\
+          n    description: Dashboards\\n    widget:\\n      type: grafana\\n      url:\
+          \ https://grafana.becklab.cloud\\n      username: ${GRAFANA_USERNAME}\\n \
+          \     password: ${GRAFANA_PASSWORD}\\n      fields:\\n        - cpu\\n \
+          \       - memory\\n        - disk\\n        - net\\n        - temp\\n\\n\
+          \  - Identity:\\n  - Keycloak:\\n    icon: keycloak.png\\n    href: https://keycloak.becklab.cloud\\\
+          n    description: SSO / Identity\\n    widget:\\n      type: keycloak\\n \
+          \     url: https://keycloak.becklab.cloud\\n      realms:\\n        - homelab\\\
+          n\\n  - Apps:\\n  - Home Assistant:\\n    icon: si-homeassistant\\n    href:\
+          \ https://ha.becklab.cloud\\n    description: Smart home\\n    widget:\\n\
+          \      type: homeassistant\\n      url: https://ha.becklab.cloud\\n      token:\
+          \ ${HA_TOKEN}\\n\\n  - Gaming:\\n  - Crafty Controller:\\n    icon: crafty-controller\\\
+          n    href: https://crafty.becklab.cloud\\n    description: Minecraft server\\\
+          n    widget:\\n      type: minecraft\\n      url: https://crafty.becklab.cloud\\\
+          n      port: 25565\\n\"\n  bookmarks.yaml: '[]\n\n    '\n  kubernetes.yaml:\
+          \ 'mode: cluster\n\n    ingress: true\n\n    traefik: true\n\n    '\n  docker.yaml:\
+          \ '{}\n\n    '\n"
+      # Patch Deployment to mount the homepage-widgets secret as env vars
+      - target:
+          version: apps/v1
+          kind: Deployment
+          name: homepage
+        patch: "apiVersion: apps/v1\nkind: Deployment\nmetadata:\n  name: homepage\nspec:\n\
+          \  template:\n    spec:\n      containers:\n      - name: homepage\n        envFrom:\n\
+          \        - secretRef:\n            name: homepage-widgets\n"
