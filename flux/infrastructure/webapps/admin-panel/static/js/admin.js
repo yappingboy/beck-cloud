@@ -681,9 +681,12 @@ async function saveUser() {
 
   try {
     if (editId) {
-      // Update existing
-      const payload = { id: editId };
-      if (groups.length > 0) payload.groups = groups;
+      // Update existing (groups/password managed via separate endpoints)
+      const payload = {};
+      const fname = document.getElementById('user-form-fname')?.value?.trim() || '';
+      const lname = document.getElementById('user-form-lname')?.value?.trim() || '';
+      if (fname) payload.firstName = fname;
+      if (lname) payload.lastName = lname;
       const res = await apiUpdateUser(editId, payload);
       if (res?.error) {
         showToast(res.error || 'Failed to update user.', 'error');
@@ -694,10 +697,10 @@ async function saveUser() {
       // Create new
       const fname = document.getElementById('user-form-fname')?.value?.trim() || '';
       const lname = document.getElementById('user-form-lname')?.value?.trim() || '';
-      const payload = { email, groups };
+      const userId = email.split('@')[0].toLowerCase().replace(/[^a-z0-9._-]/g, '');
+      const payload = { id: userId, email };
       if (fname) payload.firstName = fname;
       if (lname) payload.lastName = lname;
-      if (password) payload.password = password;
       const res = await apiCreateUser(payload);
       if (res?.error) {
         showToast(res.error || 'Failed to create user.', 'error');

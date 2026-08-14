@@ -1359,6 +1359,13 @@ func handleLLDAPUsersCreate(w http.ResponseWriter, r *http.Request) {
 			}
 		}
 	}
+	// LLDAP CreateUserInput requires id to be non-null
+	if _, ok := userInput["id"]; !ok || userInput["id"] == nil || userInput["id"] == "" {
+		w.Header().Set("Content-Type", "application/json")
+		w.WriteHeader(400)
+		json.NewEncoder(w).Encode(map[string]string{"error": "id is required for user creation"})
+		return
+	}
 	vars := map[string]interface{}{"user": userInput}
 
 	data, err := lldapGraphQL(query, vars)
