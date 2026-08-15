@@ -226,18 +226,17 @@ spec:
             style: row
             columns: 2
       widgets:
-        resources:
-          cpu: true
-          memory: true
-          label: Cluster
-        datetime:
-          text_size: xl
-          format:
-            timeStyle: short
-            dateStyle: short
-        search:
-          provider: duckduckgo
-          target: _blank
+        - resources:
+            cpu: true
+            memory: true
+            label: Cluster
+        - datetime:
+            format:
+              timeStyle: short
+              dateStyle: short
+        - search:
+            provider: duckduckgo
+            target: _blank
     ingress:
       main:
         enabled: true
