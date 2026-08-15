@@ -2,11 +2,10 @@
 # API keys reference env vars from the homepage-widgets Secret
 # Homepage supports ${VAR_NAME} substitution in services.yaml
 #
-# IMPORTANT: widget.url must be the INTERNAL cluster URL (http://<svc>.<ns>:<port>)
-# so the server-side status probe bypasses the SSO oauth2-proxy chain.
-# href stays as the public https://*.becklab.cloud URL for the click target.
-# Probing the public URL returns a 401 -> "Signing in..." redirect (no auth cookie
-# server-side), which homepage renders as "not found".
+# NOTE: widget.url points at the INTERNAL cluster service (http://<svc>.<ns>:<port>)
+# so the server-side status probe bypasses the SSO oauth2-proxy, which would
+# otherwise return a 401 "Signing in..." redirect that Homepage reads as "not
+# found". href stays as the public https://*.becklab.cloud URL for clicking.
 
 - Media:
   - Jellyfin:
@@ -122,6 +121,7 @@
     icon: mdi-network
     href: https://hubble.becklab.cloud
     description: CNI observability
+    excludeStatusCheck: true
 
 - 3D Printing:
   - Spoolman:
@@ -161,5 +161,5 @@
     description: Minecraft server
     widget:
       type: minecraft
-      url: http://crafty-minecraft.gaming
+      url: crafty-minecraft.gaming
       port: 25565
