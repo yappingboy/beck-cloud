@@ -1,23 +1,29 @@
 # Homepage services with widget credentials
 # API keys reference env vars from the homepage-widgets Secret
 # Homepage supports ${VAR_NAME} substitution in services.yaml
+#
+# IMPORTANT: widget.url must be the INTERNAL cluster URL (http://<svc>.<ns>:<port>)
+# so the server-side status probe bypasses the SSO oauth2-proxy chain.
+# href stays as the public https://*.becklab.cloud URL for the click target.
+# Probing the public URL returns a 401 -> "Signing in..." redirect (no auth cookie
+# server-side), which homepage renders as "not found".
 
 - Media:
   - Jellyfin:
     icon: si-jellyfin
     href: https://jellyfin.becklab.cloud
     description: Media streaming
-    # widget:
-    #   type: jellyfin
-    #   url: https://jellyfin.becklab.cloud
-    #   key: ${JELLYFIN_API_KEY}
+    widget:
+      type: jellyfin
+      url: http://jellyfin.media:8096
+      key: ${JELLYFIN_API_KEY}
   - Sonarr:
     icon: si-sonarr
     href: https://sonarr.becklab.cloud
     description: TV show manager
     widget:
       type: sonarr
-      url: https://sonarr.becklab.cloud
+      url: http://sonarr.media:8989
       key: ${SONARR_API_KEY}
   - Radarr:
     icon: si-radarr
@@ -25,23 +31,23 @@
     description: Movie manager
     widget:
       type: radarr
-      url: https://radarr.becklab.cloud
+      url: http://radarr.media:7878
       key: ${RADARR_API_KEY}
   - Bazarr:
     icon: bazarr
     href: https://bazarr.becklab.cloud
     description: Subtitle manager
-    # widget:
-    #   type: bazarr
-    #   url: https://bazarr.becklab.cloud
-    #   key: ${BAZARR_API_KEY}
+    widget:
+      type: bazarr
+      url: http://bazarr.media:6767
+      key: ${BAZARR_API_KEY}
   - Prowlarr:
     icon: mdi-rss
     href: https://prowlarr.becklab.cloud
     description: Indexer manager
     widget:
       type: prowlarr
-      url: https://prowlarr.becklab.cloud
+      url: http://prowlarr.media:9696
       key: ${PROWLARR_API_KEY}
   - SABnzbd:
     icon: mdi-download
@@ -49,7 +55,7 @@
     description: NZB downloader
     widget:
       type: sabnzbd
-      url: https://sabnzbd.becklab.cloud
+      url: http://sabnzbd.media:8080
       username: sabnzbd
       password: ${SABNZBD_PASSWORD}
       key: ${SABNZBD_API_KEY}
@@ -59,42 +65,42 @@
     description: NZB downloader
     widget:
       type: nzbget
-      url: https://nzbget.becklab.cloud
+      url: http://nzbget.media:6789
       username: ${NZBGET_USERNAME}
       password: ${NZBGET_PASSWORD}
   - qBittorrent:
     icon: si-qbittorrent
     href: https://qbit.becklab.cloud
     description: Torrent downloads
-    # widget:
-    #   type: qbittorrent
-    #   url: https://qbit.becklab.cloud
-    #   username: admin
-    #   password: ${QBIT_PASSWORD}
+    widget:
+      type: qbittorrent
+      url: http://qbit-gluetun.media:8080
+      username: admin
+      password: ${QBIT_PASSWORD}
   - Tdarr:
     icon: mdi-filmstrip-box
     href: https://tdarr.becklab.cloud
     description: Media transcoding
     widget:
       type: tdarr
-      url: https://tdarr.becklab.cloud
+      url: http://tdarr.media:8265
       key: ${TDARR_API_KEY}
   - Jellyseerr:
     icon: mdi-television-box
     href: https://requests.becklab.cloud
     description: Media requests
-    # widget:
-    #   type: seerr
-    #   url: https://requests.becklab.cloud
-    #   key: ${JELLYSEERR_API_KEY}
+    widget:
+      type: seerr
+      url: http://jellyseerr.media:5055
+      key: ${JELLYSEERR_API_KEY}
   - Homebox:
     icon: mdi-box
     href: https://homebox.becklab.cloud
     description: Home inventory
-    # widget:
-    #   type: homebox
-    #   url: https://homebox.becklab.cloud
-    #   token: ${HOMEBOX_TOKEN}
+    widget:
+      type: homebox
+      url: http://homebox.media:7745
+      token: ${HOMEBOX_TOKEN}
 
 - Monitoring:
   - Grafana:
@@ -103,7 +109,7 @@
     description: Dashboards
     widget:
       type: grafana
-      url: https://grafana.becklab.cloud
+      url: http://kube-prometheus-stack-grafana.monitoring:80
       username: ${GRAFANA_USERNAME}
       password: ${GRAFANA_PASSWORD}
       fields:
@@ -122,10 +128,10 @@
     icon: mdi-spool
     href: https://spoolman.becklab.cloud
     description: Filament tracker
-    # widget:
-    #   type: spoolman
-    #   url: https://spoolman.becklab.cloud
-    #   token: ${SPOOLMAN_TOKEN}
+    widget:
+      type: spoolman
+      url: http://spoolman.3dprinting:7912
+      token: ${SPOOLMAN_TOKEN}
 
 - Identity:
   - Keycloak:
@@ -134,7 +140,7 @@
     description: SSO / Identity
     widget:
       type: keycloak
-      url: https://keycloak.becklab.cloud
+      url: http://keycloak.identity:8080
       realms:
         - homelab
 
@@ -145,7 +151,7 @@
     description: Smart home
     widget:
       type: homeassistant
-      url: https://ha.becklab.cloud
+      url: http://home-assistant.webapps:8123
       token: ${HA_TOKEN}
 
 - Gaming:
@@ -155,5 +161,5 @@
     description: Minecraft server
     widget:
       type: minecraft
-      url: https://crafty.becklab.cloud
+      url: http://crafty-minecraft.gaming
       port: 25565
