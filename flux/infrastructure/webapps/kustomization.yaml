@@ -12,3 +12,4 @@ resources:
   - home-assistant
   - openclaw
   - sudoku-meals
+  - searxng

@@ -1,0 +1,51 @@
+# SearXNG settings + limiter config
+# https://docs.searxng.org/admin/settings/settings_server.html
+# https://docs.searxng.org/admin/searx.limiter.html
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: searxng-config
+  namespace: webapps
+  labels:
+    app: searxng
+data:
+  settings.yml: |
+    use_default_settings: true
+
+    general:
+      debug: false
+      instance_name: "BeckCloud SearXNG"
+      enable_metrics: true
+
+    server:
+      bind_address: "0.0.0.0"
+      port: 8080
+      limiter: true
+      public_instance: false
+      image_proxy: false
+      method: "GET"
+      default_http_headers:
+        X-Content-Type-Options: nosniff
+        X-Download-Options: noopen
+        X-Robots-Tag: noindex, nofollow
+        Referrer-Policy: no-referrer
+
+    valkey:
+      url: "valkey://searxng-valkey.webapps.svc.cluster.local:6379/0"
+
+    ui:
+      static_use_hash: true
+
+  limiter.toml: |
+    [botdetection]
+    # Traefik is the trusted proxy; client IP comes from X-Forwarded-For.
+    # Values must be the pod CIDRs (Cilium) so pod IPs are treated as
+    # internal proxies, not clients.
+    # trusted_proxies = ["10.42.0.0/16"]
+
+    [botdetection.ip_limit]
+    ip_limit = 100
+    link_token = false
+
+    [botdetection.suspicious]
+    threshold = 0.6

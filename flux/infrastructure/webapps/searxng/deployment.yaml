@@ -1,0 +1,157 @@
+---
+# SearXNG web app
+# https://docs.searxng.org/admin/installation-docker.html
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng
+  namespace: webapps
+  labels:
+    app: searxng
+    app.kubernetes.io/name: searxng
+    app.kubernetes.io/part-of: beck-cloud
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searxng
+  template:
+    metadata:
+      labels:
+        app: searxng
+    spec:
+      containers:
+        - name: searxng
+          image: docker.io/searxng/searxng:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+              protocol: TCP
+          env:
+            - name: SEARXNG_BASE_URL
+              value: "https://searx.becklab.cloud"
+            - name: SEARXNG_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: searxng-secrets
+                  key: secret-key
+            - name: SEARXNG_LIMITER
+              value: "true"
+            - name: SEARXNG_PUBLIC_INSTANCE
+              value: "false"
+            - name: SEARXNG_OPEN_METRICS
+              valueFrom:
+                secretKeyRef:
+                  name: searxng-secrets
+                  key: open-metrics-password
+          envFrom:
+            - configMapRef:
+                name: searxng-config
+          resources:
+            limits:
+              cpu: 500m
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: searxng-config
+              mountPath: /etc/searxng
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+      volumes:
+        - name: searxng-config
+          configMap:
+            name: searxng-config
+---
+# Valkey for the bot-protection limiter
+# https://docs.searxng.org/admin/searx.limiter.html
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: searxng-valkey
+  namespace: webapps
+  labels:
+    app: searxng-valkey
+    app.kubernetes.io/name: searxng-valkey
+    app.kubernetes.io/part-of: beck-cloud
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: searxng-valkey
+  template:
+    metadata:
+      labels:
+        app: searxng-valkey
+    spec:
+      containers:
+        - name: valkey
+          image: docker.io/valkey/valkey:9-alpine
+          args:
+            - valkey-server
+            - --save
+            - "30"
+            - "1"
+            - --loglevel
+            - warning
+          ports:
+            - containerPort: 6379
+              name: valkey
+              protocol: TCP
+          resources:
+            limits:
+              cpu: 100m
+              memory: 128Mi
+            requests:
+              cpu: 10m
+              memory: 32Mi
+          volumeMounts:
+            - name: valkey-data
+              mountPath: /data
+      volumes:
+        - name: valkey-data
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng
+  namespace: webapps
+  labels:
+    app: searxng
+spec:
+  selector:
+    app: searxng
+  ports:
+    - port: 80
+      targetPort: 8080
+      protocol: TCP
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: searxng-valkey
+  namespace: webapps
+  labels:
+    app: searxng-valkey
+spec:
+  selector:
+    app: searxng-valkey
+  ports:
+    - port: 6379
+      targetPort: valkey
+      protocol: TCP

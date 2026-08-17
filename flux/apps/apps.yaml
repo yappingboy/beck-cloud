@@ -45,3 +45,7 @@ spec:
       kind: Deployment
       name: home-assistant
       namespace: webapps
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: searxng
+      namespace: webapps
