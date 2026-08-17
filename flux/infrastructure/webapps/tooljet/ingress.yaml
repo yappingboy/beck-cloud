@@ -1,0 +1,19 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tooljet
+  namespace: webapps
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`tooljet.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: tooljet
+          port: 3000
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+  tls:
+    secretName: tooljet-tls

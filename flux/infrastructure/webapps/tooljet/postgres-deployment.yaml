@@ -1,0 +1,93 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tooljet-postgres
+  namespace: webapps
+  labels:
+    app: tooljet-postgres
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tooljet-postgres
+  template:
+    metadata:
+      labels:
+        app: tooljet-postgres
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          # Creates the app database on first boot. ToolJet Database
+          # (tooljet_db) is created by the tooljet migration init container.
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              /usr/local/bin/docker-entrypoint.sh postgres &
+              PG_PID=$!
+              until pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} >/dev/null 2>&1; do sleep 2; done
+              psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d ${POSTGRES_DB} \
+                -c "CREATE DATABASE \"${TOOLJET_DB_NAME}\" OWNER \"${POSTGRES_USER}\";"
+              wait ${PG_PID}
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 200m
+              memory: 256Mi
+          env:
+            - name: POSTGRES_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: username
+            - name: POSTGRES_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: password
+            - name: POSTGRES_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: database-name
+            - name: TOOLJET_DB_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: tooljet-db
+            - name: PGDATA
+              value: /var/lib/postgresql/data/pgdata
+          ports:
+            - containerPort: 5432
+              name: postgres
+              protocol: TCP
+          volumeMounts:
+            - name: pgdata
+              mountPath: /var/lib/postgresql/data
+          livenessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - tooljet
+            initialDelaySeconds: 30
+            periodSeconds: 10
+          readinessProbe:
+            exec:
+              command:
+                - pg_isready
+                - -U
+                - tooljet
+            initialDelaySeconds: 15
+            periodSeconds: 5
+      volumes:
+        - name: pgdata
+          persistentVolumeClaim:
+            claimName: tooljet-postgres-data

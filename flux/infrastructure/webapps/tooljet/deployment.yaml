@@ -1,0 +1,216 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tooljet
+  namespace: webapps
+  labels:
+    app: tooljet
+spec:
+  revisionHistoryLimit: 1
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tooljet
+  template:
+    metadata:
+      labels:
+        app: tooljet
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      initContainers:
+        - name: tooljet-migration
+          image: tooljet/tooljet:ee-lts-latest
+          command:
+            - sh
+            - -c
+            - |
+              # Wait for Postgres, then run migrations for both databases
+              for i in $(seq 1 90); do
+                if node -e "
+                  const net = require('net');
+                  const c = new net.Socket();
+                  c.setTimeout(3000);
+                  c.on('connect', () => { c.destroy(); process.exit(0); });
+                  c.on('timeout', () => process.exit(1));
+                  c.on('error', () => process.exit(1));
+                  c.connect(5432, process.env.PG_HOST);
+                "; then
+                  break
+                fi
+                echo "Waiting for postgres... ($i)"
+                sleep 5
+              done
+              node ./bin/tooljet-migrate
+          env:
+            - name: PG_HOST
+              value: tooljet-postgres.webapps.svc.cluster.local
+            - name: PG_PORT
+              value: "5432"
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: username
+            - name: PG_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: password
+            - name: PG_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: database-name
+            - name: TOOLJET_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: tooljet-db
+            - name: TOOLJET_DB_HOST
+              value: tooljet-postgres.webapps.svc.cluster.local
+            - name: TOOLJET_DB_PORT
+              value: "5432"
+            - name: TOOLJET_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: username
+            - name: TOOLJET_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: password
+            - name: LOCKBOX_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: lockbox-master-key
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: secret-key-base
+            - name: PGRST_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: pgrst-jwt-secret
+          resources:
+            limits:
+              cpu: "1"
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          volumeMounts:
+            - name: storage
+              mountPath: /opt/tooljet/data
+      containers:
+        - name: tooljet
+          image: tooljet/tooljet:ee-lts-latest
+          resources:
+            limits:
+              cpu: "2"
+              memory: 3Gi
+            requests:
+              cpu: 500m
+              memory: 1Gi
+          env:
+            - name: TOOLJET_HOST
+              value: https://tooljet.becklab.cloud
+            - name: DEPLOYMENT_PLATFORM
+              value: k8s
+            - name: WORKER
+              value: "true"
+            - name: PG_HOST
+              value: tooljet-postgres.webapps.svc.cluster.local
+            - name: PG_PORT
+              value: "5432"
+            - name: PG_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: username
+            - name: PG_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: password
+            - name: PG_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: database-name
+            - name: TOOLJET_DB
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: tooljet-db
+            - name: TOOLJET_DB_HOST
+              value: tooljet-postgres.webapps.svc.cluster.local
+            - name: TOOLJET_DB_PORT
+              value: "5432"
+            - name: TOOLJET_DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: username
+            - name: TOOLJET_DB_PASS
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: password
+            - name: LOCKBOX_MASTER_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: lockbox-master-key
+            - name: SECRET_KEY_BASE
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: secret-key-base
+            - name: REDIS_HOST
+              value: localhost
+            - name: REDIS_PORT
+              value: "6379"
+            - name: PGRST_HOST
+              value: localhost:3001
+            - name: PGRST_SERVER_PORT
+              value: "3001"
+            - name: PGRST_JWT_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: pgrst-jwt-secret
+            - name: PGRST_DB_PRE_CONFIG
+              value: postgrest.pre_config
+            - name: PGRST_DB_URI
+              valueFrom:
+                secretKeyRef:
+                  name: tooljet-db
+                  key: pgrst-db-uri
+            - name: PGRST_LOG_LEVEL
+              value: info
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: storage
+              mountPath: /opt/tooljet/data
+          livenessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 120
+            periodSeconds: 30
+          readinessProbe:
+            tcpSocket:
+              port: 3000
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: storage
+          persistentVolumeClaim:
+            claimName: tooljet-storage

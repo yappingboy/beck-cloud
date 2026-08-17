@@ -49,3 +49,7 @@ spec:
       kind: Deployment
       name: searxng
       namespace: webapps
+    - apiVersion: apps/v1
+      kind: Deployment
+      name: tooljet
+      namespace: webapps
