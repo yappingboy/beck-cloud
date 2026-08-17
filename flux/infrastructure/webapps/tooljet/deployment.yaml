@@ -23,6 +23,9 @@ spec:
       containers:
         - name: tooljet
           image: tooljet/tooljet:ee-lts-latest
+          # Image's default CMD waits on PGRST_HOST which we don't set;
+          # invoke the same npm start:prod the upstream k8s manifest uses.
+          args: ["npm", "run", "start:prod"]
           resources:
             limits:
               cpu: "2"
