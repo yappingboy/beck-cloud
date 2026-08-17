@@ -34,7 +34,7 @@ spec:
             - name: TOOLJET_HOST
               value: https://tooljet.becklab.cloud
             - name: DEPLOYMENT_PLATFORM
-              value: k8s
+              value: docker
             - name: WORKER
               value: "true"
             - name: PG_HOST
