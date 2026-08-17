@@ -8,14 +8,15 @@
 #   kubectl delete job build-cadam -n toolbox
 #   kubectl apply -f build-job.yaml -n toolbox
 #
-# Patches: the four patched source files live in the repo at
+# Patches: the patched source files live in the repo at
 #   flux/apps/cadam/patches/
 # Build the cadam-patched-files Secret from them:
 #   kubectl create secret generic cadam-patched-files -n toolbox \
-#     --from-file=src-server-aiChat.ts=patches/src-server-aiChat.ts \
-#     --from-file=src-lib-utils.ts=patches/src-lib-utils.ts \
-#     --from-file=src-views-PromptView.tsx=patches/src-views-PromptView.tsx \
-#     --from-file=src-views-EditorView.tsx=patches/src-views-EditorView.tsx
+#     --from-file=src-server-aiChat.ts=flux/apps/cadam/patches/src-server-aiChat.ts \
+#     --from-file=src-lib-utils.ts=flux/apps/cadam/patches/src-lib-utils.ts \
+#     --from-file=src-views-PromptView.tsx=flux/apps/cadam/patches/src-views-PromptView.tsx \
+#     --from-file=src-views-EditorView.tsx=flux/apps/cadam/patches/src-views-EditorView.tsx \
+#     --from-file=package.json=flux/apps/cadam/patches/package.json
 apiVersion: v1
 kind: ConfigMap
 metadata:
@@ -26,9 +27,8 @@ data:
     FROM node:22-slim AS build
     WORKDIR /app
     ENV HUSKY=0
-    COPY package.json package-lock.json .npmrc ./
-    RUN npm ci --ignore-scripts
     COPY . .
+    RUN rm -f package-lock.json && npm install --ignore-scripts
     ARG VITE_SUPABASE_URL=http://localhost:54321
     ARG VITE_SUPABASE_ANON_KEY=placeholder
     ARG ENVIRONMENT=local
@@ -106,6 +106,7 @@ spec:
               cp /patches/src-lib-utils.ts         /workspace/src/lib/utils.ts
               cp /patches/src-views-PromptView.tsx /workspace/src/views/PromptView.tsx
               cp /patches/src-views-EditorView.tsx /workspace/src/views/EditorView.tsx
+              cp /patches/package.json             /workspace/package.json
               cp /dockerfile/Dockerfile            /workspace/Dockerfile
               mkdir -p /workspace/deploy
               cp /nginx/nginx.conf                 /workspace/deploy/nginx.conf
