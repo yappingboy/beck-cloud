@@ -25,5 +25,5 @@ spec:
     requests.memory: 6Gi
     # 2026-08-17: raised from 8/12Gi to fit ToolJet (2 CPU/3 Gi limit).
     # Worker node has ~32 GiB RAM, 18 GiB free at raise time.
-    limits.cpu: "12"
+    limits.cpu: "13"
     limits.memory: 16Gi
