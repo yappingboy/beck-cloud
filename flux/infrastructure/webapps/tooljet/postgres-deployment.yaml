@@ -21,8 +21,10 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
-          # Creates the app database on first boot. ToolJet Database
-          # (tooljet_db) is created by the tooljet migration init container.
+          # Creates both databases if missing (idempotent). tooljet_production
+          # is the app DB, tooljet_db is the ToolJet Database (PostgREST) DB.
+          # POSTGRES_DB is a fixed value: the alpine entrypoint uses it during
+          # first-boot init and cannot resolve secretKeyRef env vars there.
           command:
             - sh
             - -c
@@ -30,9 +32,15 @@ spec:
               set -e
               /usr/local/bin/docker-entrypoint.sh postgres &
               PG_PID=$!
-              until pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB} >/dev/null 2>&1; do sleep 2; done
-              psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d ${POSTGRES_DB} \
-                -c "CREATE DATABASE \"${TOOLJET_DB_NAME}\" OWNER \"${POSTGRES_USER}\";"
+              until pg_isready -U ${POSTGRES_USER} >/dev/null 2>&1; do sleep 2; done
+              psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d postgres -tAc \
+                "SELECT 1 FROM pg_database WHERE datname='${POSTGRES_DB}'" | grep -q 1 \
+                || psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d postgres \
+                     -c "CREATE DATABASE \"${POSTGRES_DB}\" OWNER \"${POSTGRES_USER}\";"
+              psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d postgres -tAc \
+                "SELECT 1 FROM pg_database WHERE datname='${TOOLJET_DB_NAME}'" | grep -q 1 \
+                || psql -v ON_ERROR_STOP=1 -U ${POSTGRES_USER} -d postgres \
+                     -c "CREATE DATABASE \"${TOOLJET_DB_NAME}\" OWNER \"${POSTGRES_USER}\";"
               wait ${PG_PID}
           resources:
             limits:
