@@ -1,6 +1,6 @@
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
-import { createOllamaChat } from 'ollama-ai-provider';
+import { createOllama } from 'ollama-ai-provider';
 import { createOpenRouter } from '@openrouter/ai-sdk-provider';
 import { chatTools, type AppUIMessage, type AppTools } from '@shared/chatAi';
 import { cleanAssistantText, getParametricText } from '@shared/parametricParts';
@@ -359,21 +359,21 @@ function normalizedAnthropicBaseURL(): string | undefined {
 type ChatProviders = {
   anthropic: () => AnthropicProvider;
   google: () => GoogleProvider;
-  ollama: () => ReturnType<typeof createOllamaChat>;
+  ollama: () => ReturnType<typeof createOllama>;
   openrouter: () => ReturnType<typeof createOpenRouter>;
 };
 
 function createChatProviders(): ChatProviders {
   let anthropic: AnthropicProvider | undefined;
   let google: GoogleProvider | undefined;
-  let ollama: ReturnType<typeof createOllamaChat> | undefined;
+  let ollama: ReturnType<typeof createOllama> | undefined;
   let openrouter: ReturnType<typeof createOpenRouter> | undefined;
   return {
     ollama: () => {
       if (!ollama) {
         const raw = env('OLLAMA_BASE_URL').replace(/\/+$/, '');
         const baseURL = raw || 'http://172.16.0.7:11434';
-        ollama = createOllamaChat({ baseURL });
+        ollama = createOllama({ baseURL });
       }
       return ollama;
     },
@@ -422,7 +422,8 @@ function buildChatModel(
   if (modelId.startsWith('ollama/')) {
     const id = modelId.slice('ollama/'.length);
     return {
-      model: providers.ollama()(id),
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      model: providers.ollama()(id) as any,
     };
   }
 

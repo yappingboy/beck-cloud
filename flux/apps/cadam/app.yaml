@@ -2,6 +2,12 @@
 # Source: https://github.com/Adam-CAD/CADAM (GPLv3)
 # Forked and patched with Ollama provider support for local LLM inference.
 # Serves the SPA at /cadam under cadam.becklab.cloud behind sso-admin-chain.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cadam
+  namespace: cadam
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -31,7 +37,7 @@ spec:
       containers:
         - name: cadam
           image: ghcr.io/yappingboy/cadam:latest
-          imagePullPolicy: IfNotPresent
+          imagePullPolicy: Always
           ports:
             - name: http
               containerPort: 3000
@@ -79,7 +85,9 @@ spec:
           emptyDir: {}
         - name: nginx-logs
           emptyDir: {}
-      serviceAccountName: default
+      imagePullSecrets:
+        - name: ghcr-credentials
+      serviceAccountName: cadam
       automountServiceAccountToken: false
 ---
 apiVersion: v1
@@ -119,6 +127,8 @@ spec:
         - name: cadam
           namespace: cadam
           port: 80
+  tls:
+    secretName: cadam-tls
 ---
 apiVersion: cert-manager.io/v1
 kind: Certificate

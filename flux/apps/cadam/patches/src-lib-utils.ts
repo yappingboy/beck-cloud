@@ -255,7 +255,6 @@ export const PARAMETRIC_MODELS: ModelConfig[] = [
     supportsVision: false,
   },
   {
-  {
     id: 'google/gemini-3.1-pro-preview',
     name: 'Gemini 3.1 Pro',
     description: 'Latest Google model with excellent multi-modal capabilities',
