@@ -21,10 +21,9 @@ spec:
       containers:
         - name: postgres
           image: postgres:16-alpine
-          # Creates both databases if missing (idempotent). tooljet_production
-          # is the app DB, tooljet_db is the ToolJet Database (PostgREST) DB.
-          # POSTGRES_DB is a fixed value: the alpine entrypoint uses it during
-          # first-boot init and cannot resolve secretKeyRef env vars there.
+          # tooljet_db is created idempotently below. TOOLJET_DB_NAME is a
+          # fixed value: the alpine entrypoint uses first-boot env resolution
+          # which cannot reference secrets, so it must stay a literal.
           command:
             - sh
             - -c
@@ -66,10 +65,7 @@ spec:
             - name: POSTGRES_DB
               value: tooljet_production
             - name: TOOLJET_DB_NAME
-              valueFrom:
-                secretKeyRef:
-                  name: tooljet-db
-                  key: tooljet-db
+              value: tooljet_db
             - name: PGDATA
               value: /var/lib/postgresql/data/pgdata
           ports:
