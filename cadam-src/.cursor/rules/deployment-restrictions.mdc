@@ -1,0 +1,39 @@
+---
+globs: supabase/**/*
+alwaysApply: false
+---
+# Deployment Restrictions
+version: 1.0.0
+
+## Function Deployment
+
+### NEVER Deploy Functions
+- **NEVER** run `supabase functions deploy` commands
+- **NEVER** run `npx supabase functions deploy` commands
+- **NEVER** attempt to deploy any Supabase Edge Functions
+- **NEVER** suggest or recommend deploying functions
+
+### Local Development Only
+- All function testing should be done locally with `supabase functions serve`
+- Use local Supabase instance for development and testing
+- Function deployment is exclusively the responsibility of the human developer
+
+### Code Changes Only
+- AI assistant should only:
+  - Modify function code
+  - Update type definitions
+  - Make local code changes
+  - Run type checks
+  - Test locally if needed
+
+### Deployment Handoff
+- After making function changes, simply inform the user that:
+  - The code changes are complete
+  - Function deployment is required for the changes to take effect
+  - The user needs to deploy manually when ready
+
+## Rationale
+- Production deployments require human oversight
+- Deployment credentials should not be accessed by AI
+- Local testing is sufficient for development workflow
+- Human developer maintains control over when and what gets deployed

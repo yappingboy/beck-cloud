@@ -1,0 +1,93 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# Adam - AI-Powered 3D CAD Model Generation Platform
+
+## Project Overview
+Adam is a web application that enables users to generate 3D CAD models through AI-powered natural language, images, and direct manipulation. The platform combines parametric modeling with creative AI generation.
+
+## Tech Stack
+- **Frontend**: React 19 + TypeScript + Vite
+- **UI Framework**: Radix UI + Tailwind CSS + shadcn/ui
+- **3D Graphics**: Three.js + React Three Fiber
+- **Backend**: Supabase (PostgreSQL + Edge Functions)
+- **Authentication**: Supabase Auth
+- **AI Services**: Anthropic Claude
+- **State Management**: React Query + Context API
+- **Routing**: React Router v6
+
+## Project Structure
+```
+adam/
+├── src/                    # Frontend source code
+│   ├── components/         # Reusable UI components
+│   ├── views/             # Page-level components
+│   ├── contexts/          # React contexts
+│   ├── hooks/             # Custom React hooks
+│   ├── services/          # API service functions
+│   ├── utils/             # Utility functions
+│   ├── types/             # TypeScript type definitions
+│   ├── lib/               # Third-party library configurations
+│   └── worker/            # Web Worker for OpenSCAD processing
+├── supabase/              # Backend configuration
+│   ├── functions/         # Edge functions
+│   ├── migrations/        # Database migrations
+│   ├── schemas/           # Database schemas
+│   └── config.toml        # Supabase configuration
+├── public/                # Static assets
+└── shared/                # Items shared between backend and frontend
+```
+
+## Development Conventions
+
+### Code Style
+- Use TypeScript for all new code
+- Follow React 19 patterns and hooks
+- Use functional components with hooks
+- Implement proper error boundaries
+- Use React Query for server state management
+
+### Component Structure
+- Components in `src/components/` are reusable
+- Views in `src/views/` are page-level components
+- Use proper TypeScript interfaces for props
+- Implement proper loading and error states
+
+### State Management
+- Use React Context for global state (auth, user data)
+- Use React Query for server state
+- Use local state for component-specific data
+- Implement proper loading states and error handling
+
+### API Integration
+- All API calls go through Supabase Edge Functions
+- Use React Query for caching and synchronization
+- Implement proper error handling and retry logic
+- Use TypeScript interfaces for API responses.
+
+### 3D Graphics
+- Use Three.js for 3D rendering
+- Implement proper cleanup for Three.js resources
+- Use React Three Fiber for React integration
+- Handle WebGL context loss gracefully
+
+### Security
+- All sensitive operations go through authenticated Edge Functions
+- Implement proper CORS policies
+- Validate all user inputs
+- Use environment variables for sensitive data
+
+## Environment Setup
+- Frontend: `.env.local` for Vite environment variables
+- Backend: `supabase/functions/.env` for Edge Function environment variables
+- Use ngrok for local webhook development
+
+## Common Patterns
+- Use React Query for data fetching and caching
+- Implement proper loading states with skeleton components
+- Use toast notifications for user feedback
+- Implement proper error boundaries
+- Use React Router for navigation
+- Follow the established component hierarchy

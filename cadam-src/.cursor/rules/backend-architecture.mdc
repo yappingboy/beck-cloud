@@ -1,0 +1,94 @@
+---
+alwaysApply: true
+---
+# Backend Architecture - Supabase
+
+## Overview
+The backend is built on Supabase, providing PostgreSQL database, authentication, and Edge Functions for serverless API endpoints.
+
+## Database Structure
+
+### Core Tables
+- `conversations`: Chat conversations between users and AI
+- `messages`: Individual messages within conversations
+
+### Key Relationships
+- Users have many conversations
+- Conversations have many messages
+- Users have one subscription
+
+## Edge Functions (`supabase/functions/`)
+
+### Authentication & User Management
+- User registration and login handled by Supabase Auth
+- JWT tokens for API authentication
+
+### Core Functions
+
+#### Chat Functions
+- `chat/`: Parametric AI generation chat
+
+### Shared Utilities (`_shared/`)
+- `cors.ts`: Simple file with cors headers
+- `messageUtils.ts`: Utility functions for formating user messages
+- `parseParameter.ts`: Parameter parsing utilities
+- `supabaseClient.ts`: Functions for getting supabase client
+
+## API Patterns
+
+### Authentication
+- All sensitive functions require JWT authentication
+- Use Supabase client for user verification
+- Implement proper role-based access control
+
+### Error Handling
+- Consistent error response format
+- Proper HTTP status codes
+- Detailed error messages for debugging
+
+### CORS Configuration
+- Configured for frontend domain
+- Handle preflight requests
+- Support for development and production
+
+### Environment Variables
+- Stored in `supabase/functions/.env`
+- Include API keys for external services
+- Environment-specific configurations
+
+### Configuration
+- New functions should be put in config.toml
+- Persistent storage buckets can be put either in a migration or in config.toml
+
+## External Service Integration
+
+### AI Services
+- **Anthropic Claude**: Text generation and chat
+
+## Database Migrations
+
+### Migration Files
+- Located in `supabase/migrations/`
+- Version-controlled database schema changes
+- Include both schema and data migrations
+
+### Migration Patterns
+- Use descriptive migration names
+- Test migrations in development first
+
+## Development Workflow
+
+### Local Development
+- Use `supabase start` for local database
+- `supabase functions serve` for local functions
+- ngrok so model can access
+
+### Testing
+- Test functions locally before deployment
+- Use Supabase CLI for database operations
+- Validate webhook endpoints
+
+### Deployment
+- Functions deployed via Supabase CLI
+- Database migrations applied automatically
+- Environment variables configured in Supabase dashboard

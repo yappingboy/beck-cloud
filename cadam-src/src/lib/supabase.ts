@@ -1,0 +1,56 @@
+import { createClient, Provider, User } from '@supabase/supabase-js';
+import { Database } from '@shared/database';
+
+const rawSupabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const rawSupabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
+// Flag used by the UI to show a helpful message instead of crashing
+export const isSupabaseConfigMissing = !rawSupabaseUrl || !rawSupabaseKey;
+
+// Optional SSO-only mode. Set VITE_SSO_PROVIDER to any Supabase OAuth
+// provider slug (e.g. 'custom:my-idp' for a custom OIDC provider configured
+// in the Supabase dashboard) and the app root becomes the only auth surface:
+// its existing signed-out UI stays as-is, but every sign-in/sign-up
+// affordance redirects to the provider instead of the native auth routes
+// (which bounce back to root), and unauthenticated deep links redirect
+// straight to the provider. Leave it unset to keep the native auth UI —
+// the local Supabase CLI stack can't host custom OIDC providers, so it
+// stays unset in local dev.
+export const ssoProvider = (import.meta.env.VITE_SSO_PROVIDER ||
+  null) as Provider | null;
+
+// Optional external account-management URL. When SSO mode is on and the
+// identity is owned by an external provider, the deployment can point profile
+// / password / delete management at that provider's account page (the
+// accounts.google.com model) instead of editing them here. Set
+// VITE_ACCOUNT_URL to that page's URL; when unset (or when SSO is off) the
+// native in-app account controls are used. Provider-agnostic — self-hosters
+// point it anywhere or leave it blank.
+export const accountUrl = (import.meta.env.VITE_ACCOUNT_URL || '') as string;
+
+// The single "Adam owns this profile" flag: true only when SSO is on AND an
+// external account page exists — i.e. name / avatar / password / delete are
+// managed by the provider, not in-app. Every SSO gate (UserAvatar, SettingsView,
+// useProfile) imports THIS constant, so the condition can't drift between them.
+// False in self-host, or SSO without an account page (in-app controls win).
+export const ssoManaged = Boolean(ssoProvider && accountUrl);
+
+// The fresh provider-owned claims for the signed-in user: the SSO identity's
+// identity_data, which GoTrue refreshes from the OIDC token on EVERY sign-in.
+// This is the ONE source for provider-owned profile fields (name, picture, …)
+// under SSO — `user_metadata` is NOT refreshed by GoTrue (it keeps the
+// first-login value), so it must never be read for these. Matched by the
+// configured provider, so it's the Adam identity here (and the right provider
+// for a self-hoster). undefined when SSO isn't managing the profile.
+export function ssoClaims(user: User | null) {
+  if (!ssoManaged || !user) return undefined;
+  return user.identities?.find((i) => i.provider === ssoProvider)?.identity_data;
+}
+
+// Fallback values keep the client constructable so imports don't throw
+// when env vars are missing. The app should gate on isSupabaseConfigMissing
+// and avoid making real requests in this state.
+const supabaseUrl = rawSupabaseUrl || 'http://localhost';
+const supabaseKey = rawSupabaseKey || 'public-anon-key';
+
+export const supabase = createClient<Database>(supabaseUrl, supabaseKey);

@@ -1,0 +1,40 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Code Style Conventions
+version: 1.0.0
+
+## TypeScript Rules
+
+### Naming Conventions
+- Variables: `^[a-z][a-zA-Z0-9]*$`
+- Functions: `^[a-z][a-zA-Z0-9]*$`
+- Classes: `^[A-Z][a-zA-Z0-9]*$`
+- Interfaces: `^[A-Z][a-zA-Z0-9]*$`
+- Types: `^[A-Z][a-zA-Z0-9]*$`
+
+### Formatting
+- Max line length: 100 characters
+- Indentation: 2 spaces
+- Semicolons: required
+- Quotes: single quotes
+
+## React Rules
+- Component naming: `^[A-Z][a-zA-Z0-9]*$`
+- File naming: `^[A-Z][a-zA-Z0-9]*\.tsx$`
+- Props interface: `^[A-Z][a-zA-Z0-9]*Props$`
+
+## Import Rules
+### Order
+1. react
+2. external-libraries
+3. components
+4. hooks
+5. utils
+6. types
+7. styles
+
+### Grouping
+- Use newlines between import groups

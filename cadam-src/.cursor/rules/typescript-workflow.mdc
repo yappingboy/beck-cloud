@@ -1,0 +1,119 @@
+---
+description: 
+globs: *.ts,*.tsx
+alwaysApply: false
+---
+# TypeScript Workflow Rules
+version: 1.1.0
+
+## Type Checking
+
+### Always Run Type Check After Type Changes
+- When modifying database schemas that affect TypeScript types
+- When updating type definitions or interfaces
+- When there are potential type conflicts or errors
+- When the LLM cannot see all related files that might be affected
+
+### Type Check Commands
+
+#### Frontend (Node.js/TypeScript)
+For files in `src/`, `shared/`, and other frontend directories:
+```bash
+npm run typecheck
+```
+
+#### Supabase Edge Functions (Deno)
+For files in `supabase/functions/`, you must cd into each function directory:
+```bash
+cd supabase/functions/[function-name]
+deno check index.ts
+```
+
+Example:
+```bash
+cd supabase/functions/chat
+deno check index.ts
+```
+
+You can also run the npm command
+```bash
+npm run lint:supabase
+```
+
+## When to Run Type Check
+
+### Database Schema Changes
+- After running `supabase gen types typescript --local`
+- After applying migrations that change table structures
+- When adding new columns, tables, or modifying existing ones
+
+### Type Definition Updates
+- After modifying `src/types/` or `shared/*.ts` files
+- When updating component prop interfaces
+- When changing API response types
+- When modifying context or hook return types
+
+### Potential Type Issues
+- When using `any` types as workarounds
+- When there are TypeScript errors in the editor
+- When importing/exporting between files with type dependencies
+- When the LLM cannot see all related files in the conversation
+
+## Workflow Integration
+
+### With Database Changes
+1. Edit schema files in `supabase/schemas/`
+2. Generate migration: `supabase db diff -f <name>`
+3. Apply migration: `supabase start && supabase migration up`
+4. Regenerate types: `supabase gen types typescript --local > shared/database.ts`
+5. **Run type check**: 
+   - Frontend: `npx tsc -b`
+   - Edge Functions: `cd supabase/functions/[function-name] && deno check index.ts`
+6. Fix any type errors in the codebase
+
+### With Frontend Changes
+1. Modify TypeScript files in `src/` or `shared/`
+2. **Run type check**: `npx tsc -b`
+3. Fix any type errors
+4. Continue with implementation
+
+### With Supabase Edge Function Changes
+1. Modify TypeScript files in `supabase/functions/`
+2. **Run type check**: `cd supabase/functions/[function-name] && deno check index.ts`
+3. Fix any type errors
+4. Continue with implementation
+
+## Error Resolution
+
+### Common Type Issues
+- Missing properties in interfaces
+- Incorrect return types from functions
+- Type mismatches between components
+- Missing imports for type definitions
+
+### Resolution Steps
+1. Run appropriate type check command based on file location:
+   - Frontend: `npx tsc -b`
+   - Edge Functions: `cd supabase/functions/[function-name] && deno check index.ts`
+2. Fix errors systematically, starting with the most critical
+3. Re-run type check after each fix
+4. Ensure all type errors are resolved before proceeding
+
+## Best Practices
+
+### Type Safety
+- Avoid using `any` types unless absolutely necessary
+- Use proper TypeScript interfaces and types
+- Leverage the generated Supabase types
+- Maintain type consistency across the codebase
+
+### Development Workflow
+- Run type checks frequently during development
+- Fix type errors immediately when they appear
+- Use TypeScript strict mode settings
+- Keep type definitions up to date with schema changes
+
+### Environment-Specific Considerations
+- **Frontend**: Uses Node.js TypeScript compiler, supports all standard TypeScript features
+- **Edge Functions**: Uses Deno's TypeScript compiler, may have different import/export requirements
+- **Shared Types**: Files in `shared/` are used by both environments, ensure compatibility

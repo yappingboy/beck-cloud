@@ -1,0 +1,30 @@
+# For detailed configuration reference documentation, visit:
+# https://supabase.com/docs/guides/local-development/cli/config
+# A string used to distinguish different Supabase projects on the same host. Defaults to the
+# working directory name when running `supabase init`.
+project_id = "cadam"
+
+[auth.email]
+enable_signup = true
+
+[auth.external.google]
+enabled = true
+client_id = "env(GOOGLE_CLIENT_ID)"
+secret = "env(GOOGLE_SECRET)"
+
+[storage.buckets.meshes]
+public = false
+
+[storage.buckets.images]
+public = false
+
+[storage.buckets.previews]
+public = false
+
+[db.migrations]
+schema_paths = [
+  "./schemas/types.sql",
+  "./schemas/conversations.sql",
+  "./schemas/prompts.sql",
+  "./schemas/*.sql",
+]
