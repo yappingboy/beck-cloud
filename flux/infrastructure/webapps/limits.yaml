@@ -23,5 +23,7 @@ spec:
     pods: "20"
     requests.cpu: "4"
     requests.memory: 6Gi
-    limits.cpu: "8"
-    limits.memory: 12Gi
+    # 2026-08-17: raised from 8/12Gi to fit ToolJet (2 CPU/3 Gi limit).
+    # Worker node has ~32 GiB RAM, 18 GiB free at raise time.
+    limits.cpu: "12"
+    limits.memory: 16Gi
