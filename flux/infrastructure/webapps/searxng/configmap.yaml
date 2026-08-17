@@ -39,13 +39,8 @@ data:
   limiter.toml: |
     [botdetection]
     # Traefik is the trusted proxy; client IP comes from X-Forwarded-For.
-    # Values must be the pod CIDRs (Cilium) so pod IPs are treated as
-    # internal proxies, not clients.
+    # Add pod CIDRs here so pod IPs are treated as internal proxies, not clients.
     # trusted_proxies = ["10.42.0.0/16"]
 
     [botdetection.ip_limit]
-    ip_limit = 100
     link_token = false
-
-    [botdetection.suspicious]
-    threshold = 0.6
