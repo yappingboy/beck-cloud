@@ -150,6 +150,7 @@ spec:
           args:
             - --dockerfile=Dockerfile
             - --context=dir:///workspace
+            - --destination=ghcr.io/yappingboy/cadam:latest-$(BUILD_ID)
             - --destination=ghcr.io/yappingboy/cadam:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache
