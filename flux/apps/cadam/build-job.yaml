@@ -106,11 +106,14 @@ spec:
               cp /dockerfile/Dockerfile            /workspace/Dockerfile
               mkdir -p /workspace/deploy
               cp /nginx/nginx.conf                 /workspace/deploy/nginx.conf
+              # SPA mode: serve a static shell so nginx SPA-fallback has
+              # /index.html to rewrite to (Vite build only emits _shell.html).
+              cp /workspace/.output/public/_shell.html /workspace/.output/public/index.html
               echo "Patch applied OK"
           resources:
             limits:
               cpu: "1"
-              memory: 512Mi
+              memory: 1Gi
           volumeMounts:
             - name: workspace
               mountPath: /workspace

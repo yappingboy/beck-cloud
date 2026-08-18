@@ -37,7 +37,10 @@ spec:
       containers:
         - name: cadam
           image: ghcr.io/yappingboy/cadam:latest
-          imagePullPolicy: Always
+          # Pinned at 2026-08-18: image is SPA (nginx + _shell.html). Rebuild via
+          # build-job.yaml (clones upstream, so any upstream change invalidates
+          # the build). Bump manually after each rebuild.
+          imagePullPolicy: IfNotPresent
           ports:
             - name: http
               containerPort: 3000
