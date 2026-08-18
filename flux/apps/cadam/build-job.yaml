@@ -40,10 +40,20 @@ data:
         OLLAMA_BASE_URL=$OLLAMA_BASE_URL
     ENV SENTRY_DISABLE=true
     RUN npm run build
-    RUN cp .output/public/_shell.html .output/public/index.html
+    # SPA mode (nginx + _shell.html): Vite emits the public dir at
+    # /app/dist/cadam/ (vite.config.ts outDir). The app expects the base path
+    # in the URL (index.html refs /cadam/...), and nginx root is
+    # /usr/share/nginx/html, so:
+    #  1. copy the built tree into html/cadam/
+    #  2. add index.html (the SPA shell) for the nginx SPA fallback
+    #  3. also keep a root index.html for the / -> /cadam/ redirect edge case
+    RUN mkdir -p /app/html/cadam \
+        && cp -r /app/dist/cadam/. /app/html/cadam/ \
+        && cp /app/html/cadam/_shell.html /app/html/cadam/index.html \
+        && cp /app/html/cadam/index.html /app/html/index.html
     FROM nginx:1.27-alpine AS runtime
     COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-    COPY --from=build /app/.output/public/ /usr/share/nginx/html/
+    COPY --from=build /app/html/ /usr/share/nginx/html/
 ---
 apiVersion: v1
 kind: ConfigMap
@@ -112,10 +122,9 @@ spec:
               # nginx root is /usr/share/nginx/html, so:
               #  1. copy the built tree into html/cadam/
               #  2. add index.html (the SPA shell) for the nginx SPA fallback
-              cp -r /workspace/dist/cadam /workspace/.output/public/cadam
-              cp /workspace/.output/public/cadam/_shell.html /workspace/.output/public/cadam/index.html
-              cp /workspace/.output/public/cadam/index.html /workspace/.output/public/index.html
-              echo "Patch applied OK"
+              # NOTE: must run AFTER kaniko build stage — dist/cadam/ doesn't
+              # exist yet in the clone (build runs inside the image build).
+              echo "Patch applied OK (dist/cadam handled by Dockerfile stage)"
           resources:
             limits:
               cpu: "1"
