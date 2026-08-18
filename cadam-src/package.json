@@ -18,6 +18,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^3.0.78",
+    "ollama-ai-provider": "^1.2.0",
     "@ai-sdk/google": "^3.0.75",
     "@ai-sdk/react": "^3.0.100",
     "@anthropic-ai/sdk": "^0.96.0",
