@@ -122,9 +122,7 @@ spec:
   routes:
     - kind: Rule
       match: Host(`cadam.becklab.cloud`)
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
+      middlewares: []
       services:
         - name: cadam
           namespace: cadam
