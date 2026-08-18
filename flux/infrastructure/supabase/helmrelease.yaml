@@ -20,6 +20,8 @@ spec:
         namespace: flux-system
   values:
     # --- credentials: all pulled from the SOPS-encrypted supabase-secrets ---
+    # Each block remaps its keys via secretRefKey to distinct keys in the secret
+    # (the chart defaults several blocks to a shared key name like `password`).
     secret:
       jwt:
         anonKey: ""
@@ -27,50 +29,58 @@ spec:
         secret: ""
         secretRef: supabase-secrets
         secretRefKey:
-          anonKey: ANON_KEY
-          serviceKey: SERVICE_KEY
-          secret: JWT_SECRET
+          anonKey: jwtAnonKey
+          serviceKey: jwtServiceKey
+          secret: jwtSecret
       db:
         password: ""
-        database: postgres
+        database: ""
         secretRef: supabase-secrets
         secretRefKey:
-          password: POSTGRES_PASSWORD
+          password: dbPassword
+          database: dbDatabase
       dashboard:
-        username: supabase
+        username: ""
         password: ""
         openAiApiKey: ""
         secretRef: supabase-secrets
         secretRefKey:
-          password: DASHBOARD_PASSWORD
+          username: dashUsername
+          password: dashPassword
+          openAiApiKey: dashOpenAiKey
       realtime:
         secretKeyBase: ""
         dbEncKey: ""
         secretRef: supabase-secrets
         secretRefKey:
-          secretKeyBase: REALTIME_SECRET_KEY_BASE
-          dbEncKey: REALTIME_DB_ENC_KEY
+          secretKeyBase: rtSecretKeyBase
+          dbEncKey: rtDbEncKey
       meta:
         cryptoKey: ""
         secretRef: supabase-secrets
         secretRefKey:
-          cryptoKey: META_CRYPTO_KEY
+          cryptoKey: metaCryptoKey
       minio:
-        user: supa-storage
+        user: ""
         password: ""
         secretRef: supabase-secrets
         secretRefKey:
-          password: MINIO_PASSWORD
+          user: minioUser
+          password: minioPassword
       s3:
         keyId: ""
         accessKey: ""
         secretRef: supabase-secrets
         secretRefKey:
-          keyId: S3_KEY_ID
-          accessKey: S3_ACCESS_KEY
+          keyId: s3KeyId
+          accessKey: s3AccessKey
       smtp:
-        username: fake_mail_user
-        password: fake_mail_password
+        username: ""
+        password: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          username: smtpUsername
+          password: smtpPassword
 
     # --- trim the stack: disable analytics + functions we don't use ---
     deployment:
