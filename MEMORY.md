@@ -190,3 +190,15 @@ Agent configs in `agents/` directory. Each has a README.md.
 
 <!-- openclaw-memory-promotion:memory:memory/2026-08-07.md:10:10 -->
 - Root Cause: `http.ListenAndServe(mux)` Bug (AFFECTS ALL GO SERVICES): Builds retriggered for all. [score=0.815 recalls=0 avg=0.620 source=memory/2026-08-07.md:10-10]
+
+### CADAM (2026-08-18)
+- cadam.becklab.cloud: text-to-CAD (Adam-CAD/CADAM fork), `cadam` ns, Ollama at 172.16.0.7:11434
+- Served at /cadam/ base path (Vite base /cadam, TanStack router basepath /cadam)
+- Build: kaniko job in toolbox ns (flux/apps/cadam/build-job.yaml) — clones upstream, patches, builds
+- SPA: nginx + _shell.html as index.html (static shell, no SSR)
+- Image pinned by digest in app.yaml — bump after each rebuild
+- Build pushes both latest-<build> and latest tags
+- Vite build output: .output/public/ (nitro plugin overrides vite.config outDir)
+- nginx serves html/cadam/ (built tree) with SPA fallback /cadam/index.html
+- Gotcha: 'latest' tag + IfNotPresent + Flux 1m sync = race. Pin by digest.
+- Gotcha: vite.config.ts outDir says dist/cadam but nitro emits to .output/public — trust the build log
