@@ -1,0 +1,35 @@
+# Expose Supabase Kong gateway at supabase.becklab.cloud behind SSO.
+# Browser supabase-js talks to /auth (gotrue), /rest (postgrest), /storage directly.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: supabase
+  namespace: supabase
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`supabase.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: supabase-supabase-kong
+          port: 8000
+          scheme: http
+      middlewares:
+        - name: sso-admin-chain
+          namespace: identity
+  tls:
+    secretName: supabase-tls
+---
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: supabase
+  namespace: supabase
+spec:
+  secretName: supabase-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  dnsNames:
+    - supabase.becklab.cloud

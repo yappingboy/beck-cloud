@@ -16,6 +16,7 @@ resources:
   - velero
   - opennebula
   - webapps           # bitwarden, cms/directus, landing-page/silex, affine, homepage
+  - supabase          # self-hosted Supabase (CADAM backend + Keycloak SSO)
   # - ticketing
   # - support
   - gaming

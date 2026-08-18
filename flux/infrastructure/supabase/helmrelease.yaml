@@ -1,0 +1,166 @@
+# Supabase self-host — CADAM backend (auth + postgres + postgrest + storage)
+# Chart: supabase-community/supabase (Helm, not the early-stage Operator)
+# Auth federates to Keycloak (realm homelab) via gotrue's keycloak provider.
+# CADAM's own DB schema (supabase/schemas + migrations) is applied separately
+# via a one-shot Job, NOT the chart's `migration.sql` (too large to inline).
+apiVersion: helm.toolkit.fluxcd.io/v2
+kind: HelmRelease
+metadata:
+  name: supabase
+  namespace: supabase
+spec:
+  interval: 1h
+  chart:
+    spec:
+      chart: supabase
+      version: "0.7.2"
+      sourceRef:
+        kind: HelmRepository
+        name: supabase
+        namespace: flux-system
+  values:
+    # --- credentials: all pulled from the SOPS-encrypted supabase-secrets ---
+    secret:
+      jwt:
+        anonKey: ""
+        serviceKey: ""
+        secret: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          anonKey: ANON_KEY
+          serviceKey: SERVICE_KEY
+          secret: JWT_SECRET
+      db:
+        password: ""
+        database: postgres
+        secretRef: supabase-secrets
+        secretRefKey:
+          password: POSTGRES_PASSWORD
+      dashboard:
+        username: supabase
+        password: ""
+        openAiApiKey: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          password: DASHBOARD_PASSWORD
+      realtime:
+        secretKeyBase: ""
+        dbEncKey: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          secretKeyBase: REALTIME_SECRET_KEY_BASE
+          dbEncKey: REALTIME_DB_ENC_KEY
+      meta:
+        cryptoKey: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          cryptoKey: META_CRYPTO_KEY
+      minio:
+        user: supa-storage
+        password: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          password: MINIO_PASSWORD
+      s3:
+        keyId: ""
+        accessKey: ""
+        secretRef: supabase-secrets
+        secretRefKey:
+          keyId: S3_KEY_ID
+          accessKey: S3_ACCESS_KEY
+      smtp:
+        username: fake_mail_user
+        password: fake_mail_password
+
+    # --- trim the stack: disable analytics + functions we don't use ---
+    deployment:
+      analytics:
+        enabled: false
+      functions:
+        enabled: false
+      studio:
+        enabled: true
+      auth:
+        enabled: true
+      db:
+        enabled: true
+      rest:
+        enabled: true
+      storage:
+        enabled: true
+      realtime:
+        enabled: true
+      meta:
+        enabled: true
+      minio:
+        enabled: true
+      imgproxy:
+        enabled: true
+      kong:
+        enabled: true
+      vector:
+        enabled: false
+
+    # --- gotrue auth: point at Keycloak, keep email autoconfirm for local dev ---
+    environment:
+      auth:
+        - name: GOTRUE_SITE_URL
+          value: https://cadam.becklab.cloud
+        - name: GOTRUE_URI_ALLOW_LIST
+          value: https://cadam.becklab.cloud
+        - name: GOTRUE_DISABLE_SIGNUP
+          value: "false"
+        - name: GOTRUE_MAILER_AUTOCONFIRM
+          value: "true"
+        - name: GOTRUE_EXTERNAL_EMAIL_ENABLED
+          value: "true"
+        # Keycloak OIDC provider (realm homelab, client cadam-sso)
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_ENABLED
+          value: "true"
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: supabase-secrets
+              key: KEYCLOAK_CLIENT_ID
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: supabase-secrets
+              key: KEYCLOAK_CLIENT_SECRET
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_URL
+          value: https://keycloak.becklab.cloud/realms/homelab
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_REDIRECT_URI
+          value: https://supabase.becklab.cloud/auth/v1/callback
+      studio:
+        - name: SUPABASE_PUBLIC_URL
+          value: http://supabase-supabase-kong.supabase.svc.cluster.local:8000
+
+    # persistence sizes (local-path provisioner)
+    persistence:
+      db:
+        enabled: true
+        size: 20Gi
+      minio:
+        enabled: true
+        size: 5Gi
+      storage:
+        enabled: true
+        size: 5Gi
+      imgproxy:
+        enabled: true
+        size: 1Gi
+      snippets:
+        enabled: true
+        size: 1Gi
+      pgsodium:
+        enabled: true
+        size: 100Mi
+      # functions disabled above; keep PVCs off
+      functions:
+        enabled: false
+      deno:
+        enabled: false
+
+    # no built-in ingress — we add a Traefik IngressRoute for supabase.becklab.cloud
+    ingress:
+      enabled: false
