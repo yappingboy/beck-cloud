@@ -50,7 +50,10 @@ data:
     RUN mkdir -p /app/html/cadam \
         && cp -r /app/.output/public/. /app/html/cadam/ \
         && cp /app/html/cadam/_shell.html /app/html/cadam/index.html \
-        && cp /app/html/cadam/index.html /app/html/index.html
+        && cp /app/html/cadam/index.html /app/html/index.html \
+        && ls /app/html/cadam/ | head -5 \
+        && test -f /app/html/cadam/index.html \
+        && test -f /app/html/cadam/assets/$(ls /app/html/cadam/assets/ | grep -m1 '\.js$')
     FROM nginx:1.27-alpine AS runtime
     COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
     COPY --from=build /app/html/ /usr/share/nginx/html/
