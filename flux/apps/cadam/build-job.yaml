@@ -109,6 +109,8 @@ spec:
               set -e
               echo "Cloning CADAM from GitHub..."
               git clone --depth 1 https://github.com/Adam-CAD/CADAM.git /workspace
+              git -C /workspace rev-parse HEAD > /workspace/.commit
+              echo "Build source commit: $(cat /workspace/.commit)"
               echo "Applying local patches..."
               cp /patches/src-server-aiChat.ts     /workspace/src/server/aiChat.ts
               cp /patches/src-lib-utils.ts         /workspace/src/lib/utils.ts
@@ -120,14 +122,12 @@ spec:
               mkdir -p /workspace/deploy
               cp /nginx/nginx.conf                 /workspace/deploy/nginx.conf
               # SPA mode (nginx + _shell.html): the Vite build emits its public
-              # dir at /app/dist/cadam/ (see vite.config.ts outDir), and the app
-              # expects the base path in the URL (index.html refs /cadam/...).
-              # nginx root is /usr/share/nginx/html, so:
+              # dir at /app/.output/public/ (vite.config.ts + nitro plugin), and
+              # the app expects the base path in the URL (index.html refs
+              # /cadam/...). The Dockerfile stage does the html/ layout:
               #  1. copy the built tree into html/cadam/
               #  2. add index.html (the SPA shell) for the nginx SPA fallback
-              # NOTE: must run AFTER kaniko build stage — dist/cadam/ doesn't
-              # exist yet in the clone (build runs inside the image build).
-              echo "Patch applied OK (dist/cadam handled by Dockerfile stage)"
+              echo "Patch applied OK (html/ layout handled by Dockerfile stage)"
           resources:
             limits:
               cpu: "1"
