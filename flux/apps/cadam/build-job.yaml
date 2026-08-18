@@ -65,7 +65,7 @@ data:
             try_files $uri =404;
         }
         location /cadam/ {
-            try_files $uri $uri/ /index.html;
+            try_files $uri $uri/ /cadam/index.html;
         }
         location = / {
             return 302 /cadam/;
@@ -106,9 +106,15 @@ spec:
               cp /dockerfile/Dockerfile            /workspace/Dockerfile
               mkdir -p /workspace/deploy
               cp /nginx/nginx.conf                 /workspace/deploy/nginx.conf
-              # SPA mode: serve a static shell so nginx SPA-fallback has
-              # /index.html to rewrite to (Vite build only emits _shell.html).
-              cp /workspace/.output/public/_shell.html /workspace/.output/public/index.html
+              # SPA mode (nginx + _shell.html): the Vite build emits its public
+              # dir at /app/dist/cadam/ (see vite.config.ts outDir), and the app
+              # expects the base path in the URL (index.html refs /cadam/...).
+              # nginx root is /usr/share/nginx/html, so:
+              #  1. copy the built tree into html/cadam/
+              #  2. add index.html (the SPA shell) for the nginx SPA fallback
+              cp -r /workspace/dist/cadam /workspace/.output/public/cadam
+              cp /workspace/.output/public/cadam/_shell.html /workspace/.output/public/cadam/index.html
+              cp /workspace/.output/public/cadam/index.html /workspace/.output/public/index.html
               echo "Patch applied OK"
           resources:
             limits:

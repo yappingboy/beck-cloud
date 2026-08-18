@@ -71,13 +71,13 @@ spec:
               mountPath: /var/log/nginx
           livenessProbe:
             httpGet:
-              path: /cadam/
+              path: /cadam/cadam/
               port: http
             initialDelaySeconds: 5
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /cadam/
+              path: /cadam/cadam/
               port: http
             initialDelaySeconds: 3
             periodSeconds: 10
