@@ -41,14 +41,14 @@ data:
     ENV SENTRY_DISABLE=true
     RUN npm run build
     # SPA mode (nginx + _shell.html): Vite emits the public dir at
-    # /app/dist/cadam/ (vite.config.ts outDir). The app expects the base path
-    # in the URL (index.html refs /cadam/...), and nginx root is
-    # /usr/share/nginx/html, so:
+    # /app/.output/public/ (vite.config.ts + nitro plugin), and the app
+    # expects the base path in the URL (index.html refs /cadam/...).
+    # nginx root is /usr/share/nginx/html, so:
     #  1. copy the built tree into html/cadam/
     #  2. add index.html (the SPA shell) for the nginx SPA fallback
-    #  3. also keep a root index.html for the / -> /cadam/ redirect edge case
+    #  3. keep a root index.html for the / -> /cadam/ redirect edge case
     RUN mkdir -p /app/html/cadam \
-        && cp -r /app/dist/cadam/. /app/html/cadam/ \
+        && cp -r /app/.output/public/. /app/html/cadam/ \
         && cp /app/html/cadam/_shell.html /app/html/cadam/index.html \
         && cp /app/html/cadam/index.html /app/html/index.html
     FROM nginx:1.27-alpine AS runtime
