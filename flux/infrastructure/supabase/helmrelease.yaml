@@ -19,64 +19,50 @@ spec:
         name: supabase
         namespace: flux-system
   values:
-    # --- credentials: all pulled from the SOPS-encrypted supabase-secrets ---
-    # Each block remaps its keys via secretRefKey to distinct keys in the secret
-    # (the chart defaults several blocks to a shared key name like `password`).
+    # --- credentials: pulled from SOPS-encrypted supabase-secrets ---
+    # The secret holds BOTH flat keys (jwtAnonKey, dbPassword, ... used by the
+    # environment blocks below) AND nested keys (.jwt.secret, .db.password, ...
+    # used natively by the chart's secret.* resolution). Only secretRef +
+    # secretRefKey are set here — do NOT add empty-string value overrides:
+    # the chart treats a set value as "no ref" and silently drops the ref.
     secret:
       jwt:
-        anonKey: ""
-        serviceKey: ""
-        secret: ""
         secretRef: supabase-secrets
         secretRefKey:
           anonKey: jwtAnonKey
           serviceKey: jwtServiceKey
           secret: jwtSecret
       db:
-        password: ""
-        database: ""
         secretRef: supabase-secrets
         secretRefKey:
           password: dbPassword
           database: dbDatabase
       dashboard:
-        username: ""
-        password: ""
-        openAiApiKey: ""
         secretRef: supabase-secrets
         secretRefKey:
           username: dashUsername
           password: dashPassword
           openAiApiKey: dashOpenAiKey
       realtime:
-        secretKeyBase: ""
-        dbEncKey: ""
         secretRef: supabase-secrets
         secretRefKey:
           secretKeyBase: rtSecretKeyBase
           dbEncKey: rtDbEncKey
       meta:
-        cryptoKey: ""
         secretRef: supabase-secrets
         secretRefKey:
           cryptoKey: metaCryptoKey
       minio:
-        user: ""
-        password: ""
         secretRef: supabase-secrets
         secretRefKey:
           user: minioUser
           password: minioPassword
       s3:
-        keyId: ""
-        accessKey: ""
         secretRef: supabase-secrets
         secretRefKey:
           keyId: s3KeyId
           accessKey: s3AccessKey
       smtp:
-        username: ""
-        password: ""
         secretRef: supabase-secrets
         secretRefKey:
           username: smtpUsername
@@ -111,9 +97,43 @@ spec:
       vector:
         enabled: false
 
-    # --- gotrue auth: point at Keycloak, keep email autoconfirm for local dev ---
+    # --- gotrue auth env ---
+    # NOTE: environment.* lists REPLACE the chart defaults (Helm list semantics),
+    # so this list must include every chart-default var we still want.
+    # Base values copied from chart v0.7.2 values.yaml environment.auth,
+    # with our overrides applied (URLs, Keycloak provider, autoconfirm).
     environment:
       auth:
+        # chart defaults (kept)
+        - name: GOTRUE_API_HOST
+          value: "0.0.0.0"
+        - name: GOTRUE_API_PORT
+          value: "9999"
+        - name: GOTRUE_JWT_DEFAULT_GROUP_NAME
+          value: authenticated
+        - name: GOTRUE_JWT_ADMIN_ROLES
+          value: service_role
+        - name: GOTRUE_JWT_AUD
+          value: authenticated
+        - name: GOTRUE_JWT_EXP
+          value: "3600"
+        - name: GOTRUE_EXTERNAL_ANONYMOUS_USERS_ENABLED
+          value: "false"
+        - name: GOTRUE_EXTERNAL_PHONE_ENABLED
+          value: "false"
+        - name: GOTRUE_SMS_AUTOCONFIRM
+          value: "true"
+        - name: GOTRUE_MAILER_URLPATHS_INVITE
+          value: /auth/v1/verify
+        - name: GOTRUE_MAILER_URLPATHS_CONFIRMATION
+          value: /auth/v1/verify
+        - name: GOTRUE_MAILER_URLPATHS_RECOVERY
+          value: /auth/v1/verify
+        - name: GOTRUE_MAILER_URLPATHS_EMAIL_CHANGE
+          value: /auth/v1/verify
+        # our overrides
+        - name: API_EXTERNAL_URL
+          value: http://supabase-supabase-auth.supabase.svc.cluster.local:9999
         - name: GOTRUE_SITE_URL
           value: https://cadam.becklab.cloud
         - name: GOTRUE_URI_ALLOW_LIST
@@ -141,7 +161,31 @@ spec:
           value: https://keycloak.becklab.cloud/realms/homelab
         - name: GOTRUE_EXTERNAL_KEYCLOAK_REDIRECT_URI
           value: https://supabase.becklab.cloud/auth/v1/callback
+        # gotrue provider name shown on the login screen
+        - name: GOTRUE_EXTERNAL_KEYCLOAK_REDIRECT_ENABLED
+          value: "true"
+        # SMTP: none (autoconfirm on; no mail server in the homelab)
+        - name: GOTRUE_SMTP_ADMIN_EMAIL
+          value: admin@becklab.cloud
+        - name: GOTRUE_SMTP_HOST
+          value: ""
+        - name: GOTRUE_SMTP_PORT
+          value: "25"
+        - name: GOTRUE_SMTP_SENDER_NAME
+          value: BeckCloud
       studio:
+        # chart defaults (kept)
+        - name: HOSTNAME
+          value: "::"
+        - name: STUDIO_PORT
+          value: "3000"
+        - name: DEFAULT_ORGANIZATION_NAME
+          value: Default Organization
+        - name: DEFAULT_PROJECT_NAME
+          value: Default Project
+        - name: NEXT_ANALYTICS_BACKEND_PROVIDER
+          value: postgres
+        # our override
         - name: SUPABASE_PUBLIC_URL
           value: http://supabase-supabase-kong.supabase.svc.cluster.local:8000
 
