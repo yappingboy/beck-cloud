@@ -80,6 +80,21 @@ spec:
         enabled: true
       db:
         enabled: true
+        # Mount a custom pg_hba.conf that adds a trust rule for the reserved
+        # superuser 'supabase_admin' on the pod CIDR. The reserved role's SCRAM
+        # verifier is baked into the AMI image and CANNOT be changed (ALTER USER
+        # fails with 'reserved role'; init script runs as the demoted non-superuser
+        # postgres role). Realtime connects as supabase_admin over 10.0.0.0/8 and
+        # can only authenticate via a trust rule. Homelab-only, single-tenant,
+        # Cilium-isolated — acceptable.
+        volumes:
+          - name: pg-hba-custom
+            configMap:
+              name: supabase-pg-hba
+        volumeMounts:
+          - name: pg-hba-custom
+            mountPath: /etc/postgresql/pg_hba.conf
+            subPath: pg_hba.conf
       rest:
         enabled: true
       storage:
@@ -96,22 +111,6 @@ spec:
         enabled: true
       vector:
         enabled: false
-      db:
-        # Mount a custom pg_hba.conf that adds a trust rule for the reserved
-        # superuser 'supabase_admin' on the pod CIDR. The reserved role's SCRAM
-        # verifier is baked into the AMI image and CANNOT be changed (ALTER USER
-        # fails with 'reserved role'; init script runs as the demoted non-superuser
-        # postgres role). Realtime connects as supabase_admin over 10.0.0.0/8 and
-        # can only authenticate via a trust rule. Homelab-only, single-tenant,
-        # Cilium-isolated — acceptable.
-        volumes:
-          - name: pg-hba-custom
-            configMap:
-              name: supabase-pg-hba
-        volumeMounts:
-          - name: pg-hba-custom
-            mountPath: /etc/postgresql/pg_hba.conf
-            subPath: pg_hba.conf
 
     # --- gotrue auth env ---
     # NOTE: environment.* lists REPLACE the chart defaults (Helm list semantics),
