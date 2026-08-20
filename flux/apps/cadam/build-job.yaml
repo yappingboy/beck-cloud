@@ -30,8 +30,6 @@ data:
     ENV HUSKY=0
     COPY . .
     RUN rm -f package-lock.json && npm install --ignore-scripts
-    # Self-host (BeckCloud): build with the TanStack Start SSR server
-    # enabled (CADAM_SELF_HOST=1) and real Supabase creds baked in.
     ARG VITE_SUPABASE_URL=https://supabase.becklab.cloud
     ARG VITE_SUPABASE_ANON_KEY=placeholder
     ARG ENVIRONMENT=local
@@ -45,8 +43,6 @@ data:
         WEBHOOK_BASE_URL=$WEBHOOK_BASE_URL \
         SENTRY_DISABLE=true
     RUN npm run build
-    # Sanity: built shell must reference /cadam/ assets + SSR bundle must
-    # exist (SPA + SSR layout must not regress).
     RUN test -f .output/public/index.html \
         && test -f .output/server/index.mjs \
         && grep -q "cadam/assets" .output/public/index.html \
@@ -65,6 +61,7 @@ data:
     HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
       CMD wget -qO- http://127.0.0.1:3000/cadam/ >/dev/null || exit 1
     CMD ["node", ".output/server/index.mjs"]
+---
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -124,7 +121,6 @@ spec:
             - --dockerfile=Dockerfile
             - --build-arg=VITE_SUPABASE_ANON_KEY=$(SUPERBASE_ANON_KEY)
             - --context=dir:///workspace
-            - --destination=ghcr.io/yappingboy/cadam:latest-$(BUILD_ID)
             - --destination=ghcr.io/yappingboy/cadam:latest
             - --cache=true
             - --cache-repo=ghcr.io/yappingboy/kaniko-cache

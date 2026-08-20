@@ -50,78 +50,74 @@ function serveOpenScadWasmInDev(): Plugin {
 //   /cadam/assets/*    → verbatim files (hashed, immutable)
 //   /cadam/<anything>  → SPA fallback to index.html
 // Everything else (/api/*, /cadam/api/*) is handled by TanStack routes.
-function cadamStaticAssets(): Plugin {
+function cadamStaticAssets(): any {
   const root = path.resolve(__dirname, '.output/public');
   const safeRoot = `${root.replace(/\\/g, '/')}/`;
   const norm = (p: string) => p.split('?')[0];
+  const types: Record<string, string> = {
+    '.js': 'application/javascript',
+    '.mjs': 'application/javascript',
+    '.css': 'text/css',
+    '.wasm': 'application/wasm',
+    '.svg': 'image/svg+xml',
+    '.png': 'image/png',
+    '.jpg': 'image/jpeg',
+    '.json': 'application/json',
+    '.woff': 'font/woff',
+    '.woff2': 'font/woff2',
+    '.ico': 'image/x-icon',
+    '.map': 'application/json',
+    '.html': 'text/html; charset=utf-8',
+  };
   return {
     name: 'cadam-static-assets',
-    // Runs once the client build has emitted .output/public (build order:
-    // client → server, both before nitro bundle).
-    async buildServerStart() {
+    // nitroPlugin is the Nitro-idiomatic hook for the SSR build (the
+    // `buildServerStart` vite hook does not exist on Plugin types).
+    nitroPlugin: (nitro: any) => {
       if (process.env.CADAM_SELF_HOST !== '1') return;
-      const nitro = (await import('nitropack')).useNitro();
-
+      const send = (event: any, file: string, cache: boolean) => {
+        const ext = path.extname(file);
+        event.node.res.statusCode = 200;
+        event.node.res.setHeader(
+          'Content-Type',
+          types[ext] ?? 'application/octet-stream',
+        );
+        if (cache) {
+          event.node.res.setHeader(
+            'Cache-Control',
+            'public, max-age=31536000, immutable',
+          );
+        }
+        event.node.res.end(fs.readFileSync(file));
+      };
       nitro.options.plugins.push(
         (nitroApp: any) => {
-          const types: Record<string, string> = {
-            '.js': 'application/javascript',
-            '.mjs': 'application/javascript',
-            '.css': 'text/css',
-            '.wasm': 'application/wasm',
-            '.svg': 'image/svg+xml',
-            '.png': 'image/png',
-            '.jpg': 'image/jpeg',
-            '.json': 'application/json',
-            '.woff': 'font/woff',
-            '.woff2': 'font/woff2',
-            '.ico': 'image/x-icon',
-            '.map': 'application/json',
-            '.html': 'text/html; charset=utf-8',
-          };
-          const send = (event: any, file: string, cache: boolean) => {
-            const ext = path.extname(file);
-            event.node.res.statusCode = 200;
-            event.node.res.setHeader(
-              'Content-Type',
-              types[ext] ?? 'application/octet-stream',
+          nitroApp.hooks.addHook('request', async (event: any) => {
+            const host = event.headers.get('host') ?? 'localhost';
+            const p = norm(
+              new URL(event.path, `http://${host}`).pathname,
             );
-            if (cache) {
-              event.node.res.setHeader(
-                'Cache-Control',
-                'public, max-age=31536000, immutable',
-              );
+            // Let TanStack route handlers run for API calls.
+            if (p.startsWith('/api/')) return;
+            if (!p.startsWith(`${normalizedAppBase}/`)) return;
+            const rel = p.slice(normalizedAppBase.length + 1);
+            const file = path.join(root, rel);
+            if (
+              file.startsWith(safeRoot) &&
+              fs.existsSync(file) &&
+              fs.statSync(file).isFile()
+            ) {
+              send(event, file, p.includes('/assets/'));
+              return;
             }
-            event.node.res.end(fs.readFileSync(file));
-          };
-          // order: 10 — early; static assets must beat the SPA renderer.
-          nitroApp.hooks.hookRequest?.(null as any); // no-op, keeps types
-          nitroApp.hooks.addHook(
-            'request',
-            async (event: any) => {
-              const host = event.headers.get('host') ?? 'localhost';
-              const p = norm(new URL(event.path, `http://${host}`).pathname);
-              if (p.startsWith('/api/')) return; // let TanStack routes run
-              if (!p.startsWith(`${normalizedAppBase}/`)) return;
-              const rel = p.slice(normalizedAppBase.length + 1);
-              const file = path.join(root, rel);
-              if (
-                file.startsWith(safeRoot) &&
-                fs.existsSync(file) &&
-                fs.statSync(file).isFile()
-              ) {
-                send(event, file, p.includes('/assets/'));
-                return;
-              }
-              const shell = path.join(root, 'index.html');
-              if (fs.existsSync(shell)) {
-                send(event, shell, false);
-                return;
-              }
-              event.node.res.statusCode = 404;
-              event.node.res.end('not found');
-            },
-          );
+            const shell = path.join(root, 'index.html');
+            if (fs.existsSync(shell)) {
+              send(event, shell, false);
+              return;
+            }
+            event.node.res.statusCode = 404;
+            event.node.res.end('not found');
+          });
         },
       );
     },
