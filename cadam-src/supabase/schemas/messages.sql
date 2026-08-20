@@ -15,11 +15,29 @@ CREATE TABLE IF NOT EXISTS "public"."messages" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS messages_pkey ON "public"."messages" USING btree (id);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_pkey') THEN
 ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_pkey" PRIMARY KEY USING INDEX "messages_pkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_conversation_id_fkey') THEN
 ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_conversation_id_fkey') THEN
 ALTER TABLE "public"."messages" VALIDATE CONSTRAINT "messages_conversation_id_fkey";
+  END IF;
+END
+$$;
 
 
 CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON "public"."messages" USING btree (conversation_id);

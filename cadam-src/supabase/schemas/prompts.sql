@@ -7,11 +7,29 @@ CREATE TABLE IF NOT EXISTS "public"."prompts" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS prompts_pkey ON "public"."prompts" USING btree (id);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'prompts_pkey') THEN
 ALTER TABLE "public"."prompts" ADD CONSTRAINT "prompts_pkey" PRIMARY KEY USING INDEX "prompts_pkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'prompts_user_id_fkey') THEN
 ALTER TABLE "public"."prompts" ADD CONSTRAINT "prompts_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'prompts_user_id_fkey') THEN
 ALTER TABLE "public"."prompts" VALIDATE CONSTRAINT "prompts_user_id_fkey";
+  END IF;
+END
+$$;
 
 CREATE POLICY "Users can view their own prompts" ON "public"."prompts" FOR SELECT USING ((SELECT "auth"."uid"()) = "user_id");
 

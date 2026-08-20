@@ -11,19 +11,61 @@ CREATE TABLE IF NOT EXISTS "public"."previews" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS previews_pkey ON "public"."previews" USING btree (id);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_pkey') THEN
 ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_pkey" PRIMARY KEY USING INDEX "previews_pkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_user_id_fkey') THEN
 ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_user_id_fkey') THEN
 ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_user_id_fkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_conversation_id_fkey') THEN
 ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_conversation_id_fkey') THEN
 ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_conversation_id_fkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_mesh_id_fkey') THEN
 ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_mesh_id_fkey" FOREIGN KEY (mesh_id) REFERENCES meshes(id) ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_mesh_id_fkey') THEN
 ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_mesh_id_fkey";
+  END IF;
+END
+$$;
 
 
 ALTER TABLE "public"."previews" ENABLE ROW LEVEL SECURITY;

@@ -11,15 +11,45 @@ CREATE TABLE IF NOT EXISTS "public"."images" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS images_pkey ON "public"."images" USING btree (id);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_pkey') THEN
 ALTER TABLE "public"."images" ADD CONSTRAINT "images_pkey" PRIMARY KEY USING INDEX "images_pkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_conversation_id_fkey') THEN
 ALTER TABLE "public"."images" ADD CONSTRAINT "images_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_conversation_id_fkey') THEN
 ALTER TABLE "public"."images" VALIDATE CONSTRAINT "images_conversation_id_fkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_user_id_fkey') THEN
 ALTER TABLE "public"."images" ADD CONSTRAINT "images_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_user_id_fkey') THEN
 ALTER TABLE "public"."images" VALIDATE CONSTRAINT "images_user_id_fkey";
+  END IF;
+END
+$$;
 
 
 CREATE INDEX IF NOT EXISTS idx_images_image_generation_call_id ON "public"."images" USING "btree" ("image_generation_call_id");

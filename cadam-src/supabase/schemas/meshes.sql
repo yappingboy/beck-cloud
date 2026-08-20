@@ -12,15 +12,45 @@ CREATE TABLE IF NOT EXISTS "public"."meshes" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS meshes_pkey ON "public"."meshes" USING btree (id);
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_pkey') THEN
 ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_pkey" PRIMARY KEY USING INDEX "meshes_pkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_conversation_id_fkey') THEN
 ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_conversation_id_fkey" FOREIGN KEY (conversation_id) REFERENCES conversations(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_conversation_id_fkey') THEN
 ALTER TABLE "public"."meshes" VALIDATE CONSTRAINT "meshes_conversation_id_fkey";
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_user_id_fkey') THEN
 ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_user_id_fkey" FOREIGN KEY (user_id) REFERENCES auth.users(id) ON UPDATE CASCADE ON DELETE CASCADE not valid;
+  END IF;
+END
+$$;
 
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_user_id_fkey') THEN
 ALTER TABLE "public"."meshes" VALIDATE CONSTRAINT "meshes_user_id_fkey";
+  END IF;
+END
+$$;
 
 
 CREATE POLICY "Everyone can view meshes associated with public conversations" ON "public"."meshes" FOR SELECT TO "authenticated", "anon" USING ((EXISTS ( SELECT 1
