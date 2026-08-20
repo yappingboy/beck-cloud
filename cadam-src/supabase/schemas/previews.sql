@@ -70,4 +70,5 @@ $$;
 
 ALTER TABLE "public"."previews" ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS "Users can manage their own previews" ON "public"."previews";
 CREATE POLICY "Users can manage their own previews" ON "public"."previews" USING ( (SELECT "auth"."uid"()) = "user_id" );

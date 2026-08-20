@@ -53,10 +53,12 @@ END
 $$;
 
 
+DROP POLICY IF EXISTS "Everyone can view meshes associated with public conversations" ON "public"."meshes";
 CREATE POLICY "Everyone can view meshes associated with public conversations" ON "public"."meshes" FOR SELECT TO "authenticated", "anon" USING ((EXISTS ( SELECT 1
    FROM "public"."conversations"
   WHERE (("conversations"."id" = "meshes"."conversation_id") AND ("conversations"."privacy" = 'public'::"public"."privacy_type")))));
 
+DROP POLICY IF EXISTS "Users can manage their meshes" ON "public"."meshes";
 CREATE POLICY "Users can manage their meshes" ON "public"."meshes" USING ( (SELECT "auth"."uid"()) = "user_id" );
 
 ALTER TABLE "public"."meshes" ENABLE ROW LEVEL SECURITY;

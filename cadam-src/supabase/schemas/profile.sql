@@ -34,6 +34,7 @@ ALTER TABLE "public"."profiles" VALIDATE CONSTRAINT "profiles_user_id_fkey";
 END
 $$;
 
+DROP POLICY IF EXISTS "Users can manage their own profile" ON "public"."profiles";
 CREATE POLICY "Users can manage their own profile" ON "public"."profiles" USING ( (SELECT "auth"."uid"()) = "user_id" );
 
 ALTER TABLE "public"."profiles" ENABLE ROW LEVEL SECURITY;

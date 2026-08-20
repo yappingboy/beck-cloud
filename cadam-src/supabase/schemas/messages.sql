@@ -43,10 +43,12 @@ $$;
 CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON "public"."messages" USING btree (conversation_id);
 
 
+DROP POLICY IF EXISTS "Public conversations messages" ON "public"."messages";
 CREATE POLICY "Public conversations messages" ON "public"."messages" FOR SELECT TO "authenticated", "anon" USING ((EXISTS ( SELECT 1
    FROM "public"."conversations"
   WHERE (("conversations"."id" = "messages"."conversation_id") AND ("conversations"."privacy" = 'public'::"public"."privacy_type")))));
 
+DROP POLICY IF EXISTS "Users can manage messages in their conversations" ON "public"."messages";
 CREATE POLICY "Users can manage messages in their conversations" ON "public"."messages" USING (((SELECT "auth"."uid"()) IN ( SELECT "conversations"."user_id"
    FROM "public"."conversations"
   WHERE ("conversations"."id" = "messages"."conversation_id"))));

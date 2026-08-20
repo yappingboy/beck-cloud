@@ -31,6 +31,7 @@ ALTER TABLE "public"."prompts" VALIDATE CONSTRAINT "prompts_user_id_fkey";
 END
 $$;
 
+DROP POLICY IF EXISTS "Users can view their own prompts" ON "public"."prompts";
 CREATE POLICY "Users can view their own prompts" ON "public"."prompts" FOR SELECT USING ((SELECT "auth"."uid"()) = "user_id");
 
 ALTER TABLE "public"."prompts" ENABLE ROW LEVEL SECURITY;

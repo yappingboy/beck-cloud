@@ -45,8 +45,10 @@ CREATE INDEX IF NOT EXISTS conversations_updated_at_idx ON "public"."conversatio
 CREATE INDEX IF NOT EXISTS conversations_user_id_idx ON "public"."conversations" USING btree (user_id);
 
 
+DROP POLICY IF EXISTS "Anyone can view a public conversation" ON "public"."conversations";
 CREATE POLICY "Anyone can view a public conversation" ON "public"."conversations" FOR SELECT TO "authenticated", "anon" USING (("privacy" = 'public'::"public"."privacy_type"));
 
+DROP POLICY IF EXISTS "Users can manage their own conversations" ON "public"."conversations";
 CREATE POLICY "Users can manage their own conversations" ON "public"."conversations" USING ( (SELECT "auth"."uid"()) = "user_id" );
 
 ALTER TABLE "public"."conversations" ENABLE ROW LEVEL SECURITY;

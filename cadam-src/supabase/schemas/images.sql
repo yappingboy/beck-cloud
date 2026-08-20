@@ -55,10 +55,12 @@ $$;
 CREATE INDEX IF NOT EXISTS idx_images_image_generation_call_id ON "public"."images" USING "btree" ("image_generation_call_id");
 
 
+DROP POLICY IF EXISTS "Public conversations images" ON "public"."images";
 CREATE POLICY "Public conversations images" ON "public"."images" FOR SELECT TO "authenticated", "anon" USING ((EXISTS ( SELECT 1
    FROM "public"."conversations"
   WHERE (("conversations"."id" = "images"."conversation_id") AND ("conversations"."privacy" = 'public'::"public"."privacy_type")))));
 
+DROP POLICY IF EXISTS "User can manage their data" ON "public"."images";
 CREATE POLICY "User can manage their data" ON "public"."images" TO "authenticated" USING ((( SELECT "auth"."uid"()) = "user_id")) WITH CHECK ((( SELECT "auth"."uid"()) = "user_id"));
 
 ALTER TABLE "public"."images" ENABLE ROW LEVEL SECURITY;
