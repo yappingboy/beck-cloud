@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS "public"."images" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS images_pkey ON "public"."images" USING btree (id);
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_pkey') THEN
@@ -18,7 +19,9 @@ ALTER TABLE "public"."images" ADD CONSTRAINT "images_pkey" PRIMARY KEY USING IND
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_conversation_id_fkey') THEN
@@ -26,7 +29,9 @@ ALTER TABLE "public"."images" ADD CONSTRAINT "images_conversation_id_fkey" FOREI
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_conversation_id_fkey') THEN
@@ -34,7 +39,9 @@ ALTER TABLE "public"."images" VALIDATE CONSTRAINT "images_conversation_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_user_id_fkey') THEN
@@ -42,7 +49,9 @@ ALTER TABLE "public"."images" ADD CONSTRAINT "images_user_id_fkey" FOREIGN KEY (
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'images_user_id_fkey') THEN
@@ -50,6 +59,7 @@ ALTER TABLE "public"."images" VALIDATE CONSTRAINT "images_user_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
 
 CREATE INDEX IF NOT EXISTS idx_images_image_generation_call_id ON "public"."images" USING "btree" ("image_generation_call_id");

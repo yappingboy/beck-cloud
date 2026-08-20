@@ -11,6 +11,7 @@ CREATE TABLE IF NOT EXISTS "public"."previews" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS previews_pkey ON "public"."previews" USING btree (id);
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_pkey') THEN
@@ -18,7 +19,9 @@ ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_pkey" PRIMARY KEY USING
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_user_id_fkey') THEN
@@ -26,7 +29,9 @@ ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_user_id_fkey" FOREIGN K
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_user_id_fkey') THEN
@@ -34,7 +39,9 @@ ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_user_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_conversation_id_fkey') THEN
@@ -42,7 +49,9 @@ ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_conversation_id_fkey" F
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_conversation_id_fkey') THEN
@@ -50,7 +59,9 @@ ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_conversation_id_fk
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_mesh_id_fkey') THEN
@@ -58,7 +69,9 @@ ALTER TABLE "public"."previews" ADD CONSTRAINT "previews_mesh_id_fkey" FOREIGN K
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'previews_mesh_id_fkey') THEN
@@ -66,6 +79,7 @@ ALTER TABLE "public"."previews" VALIDATE CONSTRAINT "previews_mesh_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
 
 ALTER TABLE "public"."previews" ENABLE ROW LEVEL SECURITY;

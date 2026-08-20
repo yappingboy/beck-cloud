@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS "public"."messages" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS messages_pkey ON "public"."messages" USING btree (id);
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_pkey') THEN
@@ -22,7 +23,9 @@ ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_pkey" PRIMARY KEY USING
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_conversation_id_fkey') THEN
@@ -30,7 +33,9 @@ ALTER TABLE "public"."messages" ADD CONSTRAINT "messages_conversation_id_fkey" F
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'messages_conversation_id_fkey') THEN
@@ -38,6 +43,7 @@ ALTER TABLE "public"."messages" VALIDATE CONSTRAINT "messages_conversation_id_fk
   END IF;
 END
 $$;
+COMMIT;
 
 
 CREATE INDEX IF NOT EXISTS messages_conversation_id_idx ON "public"."messages" USING btree (conversation_id);

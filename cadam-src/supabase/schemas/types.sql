@@ -1,6 +1,7 @@
 -- Idempotent enum types. PostgreSQL has no CREATE TYPE IF NOT EXISTS,
 -- so each type is created via a DO block guarded by pg_type.
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'conversation-type') THEN
@@ -23,3 +24,4 @@ BEGIN
   END IF;
 END
 $$;
+COMMIT;

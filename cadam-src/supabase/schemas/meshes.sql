@@ -12,6 +12,7 @@ CREATE TABLE IF NOT EXISTS "public"."meshes" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS meshes_pkey ON "public"."meshes" USING btree (id);
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_pkey') THEN
@@ -19,7 +20,9 @@ ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_pkey" PRIMARY KEY USING IND
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_conversation_id_fkey') THEN
@@ -27,7 +30,9 @@ ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_conversation_id_fkey" FOREI
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_conversation_id_fkey') THEN
@@ -35,7 +40,9 @@ ALTER TABLE "public"."meshes" VALIDATE CONSTRAINT "meshes_conversation_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_user_id_fkey') THEN
@@ -43,7 +50,9 @@ ALTER TABLE "public"."meshes" ADD CONSTRAINT "meshes_user_id_fkey" FOREIGN KEY (
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'meshes_user_id_fkey') THEN
@@ -51,6 +60,7 @@ ALTER TABLE "public"."meshes" VALIDATE CONSTRAINT "meshes_user_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
 
 DROP POLICY IF EXISTS "Everyone can view meshes associated with public conversations" ON "public"."meshes";

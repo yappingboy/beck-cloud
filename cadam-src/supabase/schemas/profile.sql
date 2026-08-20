@@ -10,6 +10,7 @@ CREATE TABLE IF NOT EXISTS "public"."profiles" (
 
 CREATE UNIQUE INDEX IF NOT EXISTS profiles_pkey ON "public"."profiles" USING btree (id);
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_pkey') THEN
@@ -17,7 +18,9 @@ ALTER TABLE "public"."profiles" ADD CONSTRAINT "profiles_pkey" PRIMARY KEY USING
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_user_id_fkey') THEN
@@ -25,7 +28,9 @@ ALTER TABLE "public"."profiles" ADD CONSTRAINT "profiles_user_id_fkey" FOREIGN K
   END IF;
 END
 $$;
+COMMIT;
 
+BEGIN;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'profiles_user_id_fkey') THEN
@@ -33,6 +38,7 @@ ALTER TABLE "public"."profiles" VALIDATE CONSTRAINT "profiles_user_id_fkey";
   END IF;
 END
 $$;
+COMMIT;
 
 DROP POLICY IF EXISTS "Users can manage their own profile" ON "public"."profiles";
 CREATE POLICY "Users can manage their own profile" ON "public"."profiles" USING ( (SELECT "auth"."uid"()) = "user_id" );
