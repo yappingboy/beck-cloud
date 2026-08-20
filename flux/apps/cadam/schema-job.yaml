@@ -55,8 +55,8 @@ spec:
                 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f" \
                   || { echo "FAILED at $f"; exit 1; }
               done
-              shopt -s nullglob
               for f in /sql/20*.sql; do
+                [ -f "$f" ] || continue
                 echo "-- migration $f"
                 psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f" \
                   || { echo "FAILED at $f"; exit 1; }
