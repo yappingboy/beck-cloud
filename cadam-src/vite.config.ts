@@ -110,8 +110,16 @@ function cadamStaticAssets(): any {
               send(event, file, p.includes('/assets/'));
               return;
             }
-            const shell = path.join(root, 'index.html');
-            if (fs.existsSync(shell)) {
+            // SPA shell fallback. TanStack Start SPA mode emits the shell as
+            // .output/public/_shell.html (not index.html). Fall back to
+            // index.html too, for safety across versions.
+            const shellCandidates = [
+              path.join(root, '_shell.html'),
+              path.join(root, 'index.html'),
+              path.join(root, normalizedAppBase.replace(/^\//, ''), 'index.html'),
+            ];
+            const shell = shellCandidates.find((c) => fs.existsSync(c));
+            if (shell) {
               send(event, shell, false);
               return;
             }

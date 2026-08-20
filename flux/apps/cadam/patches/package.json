@@ -75,6 +75,7 @@
     "clsx": "^2.1.1",
     "cmdk": "^1.0.0",
     "date-fns": "^3.6.0",
+    "destr": "^2.0.5",
     "embla-carousel-react": "^8.6.0",
     "fflate": "^0.8.2",
     "framer-motion": "^12.16.0",

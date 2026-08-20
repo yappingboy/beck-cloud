@@ -43,10 +43,12 @@ data:
         WEBHOOK_BASE_URL=$WEBHOOK_BASE_URL \
         SENTRY_DISABLE=true
     RUN npm run build
-    RUN test -f .output/public/index.html \
-        && test -f .output/server/index.mjs \
-        && grep -q "cadam/assets" .output/public/index.html \
-        && ls .output/public/assets | head -3
+    # Sanity: SSR server bundle + SPA shell + client assets must all exist.
+    # TanStack Start SPA mode emits the shell as .output/public/_shell.html.
+    RUN test -f .output/server/index.mjs \
+        && test -f .output/public/_shell.html \
+        && ls .output/public/assets | head -3 \
+        && echo "SSR build sanity check passed"
     FROM node:22-slim AS runtime
     WORKDIR /app
     ENV NODE_ENV=production \
@@ -54,12 +56,14 @@ data:
         ENVIRONMENT=local \
         VITE_SUPABASE_URL=https://supabase.becklab.cloud \
         WEBHOOK_BASE_URL=https://cadam.becklab.cloud
-    RUN addgroup -S app && adduser -S app -G app
-    USER app
-    COPY --from=build --chown=app:app /app/.output ./
+    # Use the node image's built-in `node` user (uid/gid 1000) — matches the
+    # deployment's runAsUser/runAsGroup: 1000 and avoids the Debian `addgroup
+    # -S` flag-ambiguity that breaks the Alpine-style user creation.
+    USER node:node
+    COPY --from=build --chown=node:node /app/.output ./
     EXPOSE 3000
     HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
-      CMD wget -qO- http://127.0.0.1:3000/cadam/ >/dev/null || exit 1
+      CMD node -e "fetch('http://127.0.0.1:3000/cadam/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
     CMD ["node", ".output/server/index.mjs"]
 ---
 apiVersion: batch/v1
