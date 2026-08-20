@@ -29,9 +29,9 @@ spec:
     spec:
       securityContext:
         runAsNonRoot: true
-        runAsUser: 101
-        runAsGroup: 101
-        fsGroup: 101
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
         seccompProfile:
           type: RuntimeDefault
       containers:
@@ -49,43 +49,46 @@ spec:
               value: "http://172.16.0.7:11434"
             - name: ENVIRONMENT
               value: "local"
+            - name: VITE_SUPABASE_URL
+              value: "https://supabase.becklab.cloud"
+            - name: VITE_SUPABASE_ANON_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: cadam-build-env
+                  key: SUPERBASE_ANON_KEY
+            - name: WEBHOOK_BASE_URL
+              value: "https://cadam.becklab.cloud"
+          envFrom:
+            - secretRef:
+                name: cadam-build-env
           resources:
             requests:
-              cpu: 100m
-              memory: 128Mi
-            limits:
-              cpu: "1"
+              cpu: 250m
               memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
           securityContext:
             allowPrivilegeEscalation: false
-            readOnlyRootFilesystem: true
             capabilities:
               drop: ["ALL"]
           volumeMounts:
-            - name: nginx-cache
-              mountPath: /var/cache/nginx
-            - name: nginx-run
-              mountPath: /var/run
-            - name: nginx-logs
-              mountPath: /var/log/nginx
+            - name: tmp
+              mountPath: /tmp
           livenessProbe:
             httpGet:
-              path: /cadam/cadam/
+              path: /cadam/
               port: http
-            initialDelaySeconds: 5
+            initialDelaySeconds: 40
             periodSeconds: 30
           readinessProbe:
             httpGet:
-              path: /cadam/cadam/
+              path: /cadam/
               port: http
-            initialDelaySeconds: 3
+            initialDelaySeconds: 10
             periodSeconds: 10
       volumes:
-        - name: nginx-cache
-          emptyDir: {}
-        - name: nginx-run
-          emptyDir: {}
-        - name: nginx-logs
+        - name: tmp
           emptyDir: {}
       imagePullSecrets:
         - name: ghcr-credentials
@@ -105,7 +108,7 @@ spec:
   ports:
     - name: http
       port: 80
-      targetPort: http
+      targetPort: 3000
       protocol: TCP
   type: ClusterIP
 ---

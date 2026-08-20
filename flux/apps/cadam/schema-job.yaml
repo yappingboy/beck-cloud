@@ -1,0 +1,89 @@
+# CADAM Supabase schema — one-shot Job.
+#
+# Applies the CADAM schema into the self-hosted Supabase DB
+# (supabase-supabase-db.supabase:5432, db `postgres`):
+#   1. schemas/*.sql (fresh full schema: types → tables → triggers → policies)
+#   2. migrations/*.sql (in filename order; idempotent ALTERs + new tables)
+#
+# Usage (one-shot, NOT part of Flux sync):
+#   kubectl create secret generic cadam-sql -n cadam --dry-run=client -o yaml | \
+#     kubectl apply -f -   # (see below: built from cadam-src/supabase/)
+#   kubectl apply -f schema-job.yaml
+#   kubectl wait --for=condition=complete job/cadam-schema -n cadam --timeout=10m
+#
+# Re-run after schema changes: kubectl delete job cadam-schema -n cadam && kubectl apply -f schema-job.yaml
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: cadam-schema
+  namespace: cadam
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 86400
+  template:
+    spec:
+      containers:
+        - name: schema
+          image: postgres:17-alpine
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              echo "== CADAM schema apply start =="
+              # Storage buckets the policies reference must exist first.
+              psql "$DB_URL" -tAc "
+                insert into storage.buckets (id, name, public)
+                values ('images', 'images', false)
+                on conflict (id) do nothing;
+                insert into storage.buckets (id, name, public)
+                values ('meshes', 'meshes', false)
+                on conflict (id) do nothing;"
+              i=0
+              for f in /sql/schemas/types.sql \
+                       /sql/schemas/profile.sql \
+                       /sql/schemas/conversations.sql \
+                       /sql/schemas/messages.sql \
+                       /sql/schemas/previews.sql \
+                       /sql/schemas/images.sql \
+                       /sql/schemas/meshes.sql \
+                       /sql/schemas/prompts.sql \
+                       /sql/schemas/triggers.sql \
+                       /sql/schemas/storage_policies.sql; do
+                i=$((i+1))
+                echo "-- [$i] $f"
+                psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f" \
+                  || { echo "FAILED at $f"; exit 1; }
+              done
+              for f in $(ls /sql/migrations/*.sql | sort); do
+                echo "-- migration $f"
+                psql "$DB_URL" -v ON_ERROR_STOP=1 -q -f "$f" \
+                  || { echo "FAILED at $f"; exit 1; }
+              done
+              echo "== public tables =="
+              psql "$DB_URL" -tAc "select tablename from pg_tables where schemaname='public' order by 1"
+              echo "== CADAM schema apply done =="
+          env:
+            - name: DB_URL
+              valueFrom:
+                secretKeyRef:
+                  name: cadam-build-env
+                  key: CADAM_DB_URL
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: sql
+              mountPath: /sql
+              readOnly: true
+      restartPolicy: Never
+      volumes:
+        - name: sql
+          secret:
+            secretName: cadam-sql
+      imagePullSecrets:
+        - name: ghcr-credentials

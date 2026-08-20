@@ -30,63 +30,41 @@ data:
     ENV HUSKY=0
     COPY . .
     RUN rm -f package-lock.json && npm install --ignore-scripts
-    ARG VITE_SUPABASE_URL=http://localhost:54321
+    # Self-host (BeckCloud): build with the TanStack Start SSR server
+    # enabled (CADAM_SELF_HOST=1) and real Supabase creds baked in.
+    ARG VITE_SUPABASE_URL=https://supabase.becklab.cloud
     ARG VITE_SUPABASE_ANON_KEY=placeholder
     ARG ENVIRONMENT=local
     ARG OLLAMA_BASE_URL=http://172.16.0.7:11434
-    ENV VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+    ARG WEBHOOK_BASE_URL=https://cadam.becklab.cloud
+    ENV CADAM_SELF_HOST=1 \
+        VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
         VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
         ENVIRONMENT=$ENVIRONMENT \
-        OLLAMA_BASE_URL=$OLLAMA_BASE_URL
-    ENV SENTRY_DISABLE=true
+        OLLAMA_BASE_URL=$OLLAMA_BASE_URL \
+        WEBHOOK_BASE_URL=$WEBHOOK_BASE_URL \
+        SENTRY_DISABLE=true
     RUN npm run build
-    # SPA mode (nginx + _shell.html): Vite emits the public dir at
-    # /app/.output/public/ (vite.config.ts + nitro plugin), and the app
-    # expects the base path in the URL (index.html refs /cadam/...).
-    # nginx root is /usr/share/nginx/html, so:
-    #  1. copy the built tree into html/cadam/
-    #  2. add index.html (the SPA shell) for the nginx SPA fallback
-    #  3. keep a root index.html for the / -> /cadam/ redirect edge case
-    RUN mkdir -p /app/html/cadam \
-        && cp -r /app/.output/public/. /app/html/cadam/ \
-        && cp /app/html/cadam/_shell.html /app/html/cadam/index.html \
-        && cp /app/html/cadam/index.html /app/html/index.html \
-        && ls /app/html/cadam/ | head -5 \
-        && test -f /app/html/cadam/index.html \
-        && test -f /app/html/cadam/assets/$(ls /app/html/cadam/assets/ | grep -m1 '\.js$')
-    FROM nginx:1.27-alpine AS runtime
-    COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
-    COPY --from=build /app/html/ /usr/share/nginx/html/
----
-apiVersion: v1
-kind: ConfigMap
-metadata:
-  name: cadam-nginx
-  namespace: toolbox
-data:
-  nginx.conf: |
-    server {
-        listen 3000;
-        server_name _;
-        root /usr/share/nginx/html;
-        index index.html;
-        client_max_body_size 256m;
-        gzip on;
-        gzip_types text/css application/javascript application/json application/wasm image/svg+xml;
-        location /cadam/assets/ {
-            add_header Cache-Control "public, max-age=31536000, immutable";
-            try_files $uri =404;
-        }
-        location /cadam/ {
-            try_files $uri $uri/ /cadam/index.html;
-        }
-        location = / {
-            return 302 /cadam/;
-        }
-        access_log /var/log/nginx/cadam.access.log;
-        error_log  /var/log/nginx/cadam.error.log;
-    }
----
+    # Sanity: built shell must reference /cadam/ assets + SSR bundle must
+    # exist (SPA + SSR layout must not regress).
+    RUN test -f .output/public/index.html \
+        && test -f .output/server/index.mjs \
+        && grep -q "cadam/assets" .output/public/index.html \
+        && ls .output/public/assets | head -3
+    FROM node:22-slim AS runtime
+    WORKDIR /app
+    ENV NODE_ENV=production \
+        OLLAMA_BASE_URL=http://172.16.0.7:11434 \
+        ENVIRONMENT=local \
+        VITE_SUPABASE_URL=https://supabase.becklab.cloud \
+        WEBHOOK_BASE_URL=https://cadam.becklab.cloud
+    RUN addgroup -S app && adduser -S app -G app
+    USER app
+    COPY --from=build --chown=app:app /app/.output ./
+    EXPOSE 3000
+    HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
+      CMD wget -qO- http://127.0.0.1:3000/cadam/ >/dev/null || exit 1
+    CMD ["node", ".output/server/index.mjs"]
 apiVersion: batch/v1
 kind: Job
 metadata:
@@ -118,16 +96,11 @@ spec:
               cp /patches/src-views-EditorView.tsx /workspace/src/views/EditorView.tsx
               cp /patches/src-utils-meshPrintProcessUtils.ts /workspace/src/utils/meshPrintProcessUtils.ts
               cp /patches/package.json             /workspace/package.json
+              cp /patches/vite.config.ts         /workspace/vite.config.ts
               cp /dockerfile/Dockerfile            /workspace/Dockerfile
-              mkdir -p /workspace/deploy
-              cp /nginx/nginx.conf                 /workspace/deploy/nginx.conf
-              # SPA mode (nginx + _shell.html): the Vite build emits its public
-              # dir at /app/.output/public/ (vite.config.ts + nitro plugin), and
-              # the app expects the base path in the URL (index.html refs
-              # /cadam/...). The Dockerfile stage does the html/ layout:
-              #  1. copy the built tree into html/cadam/
-              #  2. add index.html (the SPA shell) for the nginx SPA fallback
-              echo "Patch applied OK (html/ layout handled by Dockerfile stage)"
+              # Self-host mode: vite.config.ts carries the CADAM_SELF_HOST=1
+              # nitro plugin; the Dockerfile stage assembles the node runtime
+              echo "Patch applied OK (SSR build via CADAM_SELF_HOST=1)"
           resources:
             limits:
               cpu: "1"
@@ -138,17 +111,18 @@ spec:
             - name: dockerfile
               mountPath: /dockerfile
               readOnly: true
-            - name: nginx-conf
-              mountPath: /nginx
-              readOnly: true
             - name: patches
               mountPath: /patches
               readOnly: true
       containers:
         - name: kaniko
           image: gcr.io/kaniko-project/executor:v1.24.0
+          envFrom:
+            - secretRef:
+                name: cadam-build-env
           args:
             - --dockerfile=Dockerfile
+            - --build-arg=VITE_SUPABASE_ANON_KEY=$(SUPERBASE_ANON_KEY)
             - --context=dir:///workspace
             - --destination=ghcr.io/yappingboy/cadam:latest-$(BUILD_ID)
             - --destination=ghcr.io/yappingboy/cadam:latest
@@ -177,9 +151,6 @@ spec:
         - name: dockerfile
           configMap:
             name: cadam-dockerfile
-        - name: nginx-conf
-          configMap:
-            name: cadam-nginx
         - name: patches
           secret:
             secretName: cadam-patched-files
