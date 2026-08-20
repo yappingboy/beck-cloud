@@ -3,4 +3,6 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - build-env-secret.yaml
   - app.yaml
+  - schema-job.yaml
