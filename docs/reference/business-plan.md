@@ -10,7 +10,7 @@
 
 ## Executive Summary
 
-BeckCloud is a homelab running ~45 services across a K3s cluster, backed by 140+ TB of storage and exposed to the internet via Traefik with SSO. The infrastructure already exists, already works, and is already overprovisioned for personal use. This plan identifies which services and capabilities can generate revenue without adding meaningful operational load.
+BeckCloud is a homelab running ~45 services across a K3s cluster. It is backed by 140+ TB of storage and exposed to the internet via Traefik with SSO. The infrastructure exists, works, and is overprovisioned for personal use. This plan identifies which services can generate revenue without adding operational load.
 
 **Core thesis:** The bottleneck isn't compute — it's attention. Every revenue stream should be "set it and forget it" after initial config. No new VMs, no new hardware, no new dependencies unless the ROI justifies it.
 

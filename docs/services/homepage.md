@@ -2,7 +2,7 @@
 
 **Purpose:** Dashboard landing page for BeckCloud administrators.
 
-**What it does:** A simple static HTML/JS dashboard that provides quick links to core services (Keycloak, Traefik, Wazuh.) and displays cluster health widgets. It runs as an ephemeral container with no persistent storage. All content is baked into the image. The service is accessible via the internal network and proxied by Traefik — it does not have a dedicated IngressRoute, so it's effectively only reachable from within the cluster (or via direct service IP if needed).
+**What it does:** A static HTML/JS dashboard providing quick links to core services (Keycloak, Traefik, Wazuh) and cluster health widgets. It runs as an ephemeral container with no persistent storage. All content is baked into the image. It is accessible via the internal network and proxied by Traefik, with no dedicated IngressRoute. This makes it reachable only from within the cluster or via direct service IP.
 
 **Resources:**
 | Type | Details |

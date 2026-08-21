@@ -2,7 +2,7 @@
 
 **Purpose:** User invitation form — admin-only portal for granting new accounts.
 
-**What it does:** `user-invite` is a simple web application that lets BeckCloud administrators send password-reset links or direct account invitations to users. It integrates with LLDAP and Keycloak: when an invite is sent, the service creates the user in LLDAP (if they don't exist) and triggers a password-reset email via the `smtp-relay` service. The UI is minimal — essentially a form where you enter the target email and choose the action.
+**What it does:** `user-invite` is a web application for administrators to send password-reset links or account invitations to users. It integrates with LLDAP and Keycloak. When an invite is sent, the service creates the user in LLDAP (if they do not exist) and triggers a password-reset email via the `smtp-relay` service. The UI is a minimal form where you enter the target email and choose the action.
 
 **Resources:**
 | Type | Details |

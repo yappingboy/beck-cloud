@@ -2,7 +2,7 @@
 
 **Purpose:** Silex — BeckCloud's internal design and UI prototyping tool.
 
-**What it does:** Silex is a web application used by admins to create UI mockups and prototypes. It runs as a container exposing an HTTP server (port 8080) and also provides an MCP (Model Context Protocol) endpoint on port 6807 for integration with other AI tools. The service stores project files and assets in persistent volumes.
+**What it does:** Silex is a web application for creating UI mockups and prototypes. It runs as a container exposing an HTTP server (port 8080) and an MCP (Model Context Protocol) endpoint on port 6807 for AI tool integration. It stores project files and assets in persistent volumes.
 
 **Resources:**
 | Type | Details |

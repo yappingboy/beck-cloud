@@ -2,7 +2,7 @@
 
 **Purpose:** Wazuh agent — lightweight security monitoring daemon.
 
-**What it does:** Installed on every host (via DaemonSet), the agent collects logs, monitors file integrity, executes active responses, and reports metrics/alerts back to the Wazuh manager. It runs with minimal footprint: only 50m CPU and 64Mi RAM by default, scaling up if needed.
+**What it does:** Installed on every host (via DaemonSet), the agent collects logs, monitors file integrity, and reports metrics to the Wazuh manager. It runs with a minimal footprint: 50m CPU and 64Mi RAM by default, scaling up if needed.
 
 **Resources:**
 | Type | Details |

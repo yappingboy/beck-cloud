@@ -2,7 +2,7 @@
 
 **Purpose:** Wazuh manager node — central coordination, rule/decoder updates, and cluster management.
 
-**What it does:** The master manager orchestrates the Wazuh cluster: it distributes configuration (rules, decoders, active responses), coordinates indexers for log storage, and acts as the primary admin interface. It runs as a StatefulSet with persistent storage for its internal database and configuration files.
+**What it does:** The master manager orchestrates the Wazuh cluster. It distributes configuration (rules, decoders, active responses), coordinates indexers for log storage, and acts as the primary admin interface. It runs as a StatefulSet with persistent storage for its database and configuration files.
 
 **Resources:**
 | Type | Details |

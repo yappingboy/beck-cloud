@@ -2,7 +2,7 @@
 
 **Purpose:** Wazuh indexer — stores all security logs, alerts, and agent data.
 
-**What it does:** The indexer is a distributed Elasticsearch-compatible cluster that ingests logs from agents via the Wazuh manager, applies ILM (index lifecycle management), and serves read requests to the dashboard and API. It runs as a StatefulSet with a 50 GiB persistent volume for each node.
+**What it does:** The indexer is a distributed Elasticsearch-compatible cluster. It ingests logs from agents via the Wazuh manager, applies ILM (index lifecycle management), and serves read requests to the dashboard and API. It runs as a StatefulSet with a 50 GiB persistent volume for each node.
 
 **Resources:**
 | Type | Details |

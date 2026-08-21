@@ -200,7 +200,7 @@ BeckCloud Micro — 13 stateless micro-services exposed to the internet under `*
 | editor-service | Image editor (browser-facing) |
 | beckflow-service | Workflow orchestration (browser-facing) |
 
-**Security:** Rate limiting per service, CORS for browser services, auth middleware for paid tier, IP whitelist for admin, request size limits (50MB image / 10MB default), shared 10 GiB PVC, 4 CPU / 2 GiB resource quota.
+**Security:** Rate limiting per service, CORS for browser services, auth middleware for paid tier, IP whitelist for admin. Request size limits apply. Shared 10 GiB PVC. 4 CPU / 2 GiB resource quota.
 
 ---
 

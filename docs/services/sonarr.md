@@ -2,7 +2,7 @@
 
 **Purpose:** Sonarr — automated TV show manager (downloads, organizes, and monitors series).
 
-**What it does:** Sonarr watches RSS feeds for new episodes of series, triggers qBittorrent/Gluetun to download them, then renames and moves the files into Jellyfin's library. It runs as a single container with its configuration persisted locally.
+**What it does:** Sonarr watches RSS feeds for new episodes. It triggers qBittorrent/Gluetun to download them, then renames and moves the files into Jellyfin's library. It runs as a single container with its configuration persisted locally.
 
 **Resources:**
 | Type | Details |

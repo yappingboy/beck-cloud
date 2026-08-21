@@ -2,7 +2,7 @@
 
 **Purpose:** Prowlarr — universal indexer interface for all media services.
 
-**What it does:** Prowlarr aggregates RSS feeds and API endpoints from multiple trackers (NZB, torrent), providing a unified way for Sonarr, Radarr, nzbget, and SABnzbd to query them. It runs as a lightweight container with minimal resource usage.
+**What it does:** Prowlarr aggregates RSS feeds and API endpoints from multiple trackers (NZB, torrent). It provides a unified way for Sonarr, Radarr, nzbget, and SABnzbd to query them. It runs as a lightweight container with minimal resource usage.
 
 **Resources:**
 | Type | Details |

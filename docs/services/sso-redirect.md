@@ -2,7 +2,7 @@
 
 **Purpose:** Nginx landing page that routes SSO redirect traffic to the appropriate oauth2-proxy instance.
 
-**What it does:** When Traefik's middleware chains detect an unauthenticated request, they redirect the user to `sso-redirect`, which serves a JavaScript-based redirect page. The page determines which oauth2-proxy to send the user to based on the URL path:
+**What it does:** When Traefik's middleware chains detect an unauthenticated request, they redirect the user to `sso-redirect`. This service serves a JavaScript-based redirect page. The page determines the correct oauth2-proxy based on the URL path:
 - `/admin/*` → redirects to `https://oauth2.becklab.cloud/oauth2/start?rd=<original URL>` (admin tier).
 - `/media/*` → redirects to `https://oauth2-media.becklab.cloud/oauth2/start?rd=<original URL>` (media tier).
 
@@ -24,4 +24,4 @@ Both redirect pages display "Signing in, please wait..." while the browser perfo
   - `/usr/share/nginx/html/admin/index.html` (admin redirect page)
   - `/usr/share/nginx/html/media/index.html` (media redirect page)
 
-**Notes:** Deployed via Flux CD Kustomize (`kustomize.toolkit.fluxcd.io/name=infrastructure`). Uses `nginx:1.27-alpine`. Acts as the entry point for the SSO login flow — users hit this page when their session expires or they access a protected route without authentication.
+**Notes:** Deployed via Flux CD Kustomize (`kustomize.toolkit.fluxcd.io/name=infrastructure`). Uses `nginx:1.27-alpine`. This service is the entry point for the SSO login flow. Users hit this page when their session expires or they access a protected route without authentication.

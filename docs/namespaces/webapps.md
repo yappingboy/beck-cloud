@@ -10,4 +10,4 @@
 - **Home Assistant** — smart home interface
 - **Silex** — design tool (admin-only)
 
-Support services: dedicated Redis and PostgreSQL instances (e.g., `affine-postgres`, `affine-redis`) that back the data-heavy apps. The namespace also runs Bitwarden Secrets Manager (`bitwarden-secrets-manager`), which stores encrypted secrets for the cluster — it does **not** use SSO and is accessed via its own service endpoint.
+Support services: dedicated Redis and PostgreSQL instances (for example, `affine-postgres`, `affine-redis`) that back the data-heavy apps. The namespace also runs Bitwarden Secrets Manager (`bitwarden-secrets-manager`). It stores encrypted secrets for the cluster. It does **not** use SSO and is accessed via its own service endpoint.

@@ -2,7 +2,7 @@
 
 **Purpose:** BumpMesh — browser-based 3D mesh processing and manipulation tool.
 
-**What it does:** BumpMesh is an online tool for editing 3D meshes directly in the browser. It supports operations like adding supports, generating bumps, and modifying STL/OBJ files. The deployment uses an init container (`busybox:latest`) that downloads the BumpMesh frontend from the [MarkusNiewoehner/BumpMesh](https://github.com/MarkusNiewoehner/BumpMesh) GitHub repository on startup, extracting the `index.html`, `style.css`, `logo.png`, `js/`, and `textures/` directories into a shared volume. The main container is a lightweight `nginx:alpine-slim` that serves these static files. This keeps the pod small while always pulling the latest version from GitHub.
+**What it does:** BumpMesh is an online tool for editing 3D meshes in the browser. It supports adding supports, generating bumps, and modifying STL/OBJ files. An init container (`busybox:latest`) downloads the BumpMesh frontend from the [MarkusNiewoehner/BumpMesh](https://github.com/MarkusNiewoehner/BumpMesh) GitHub repository on startup. It extracts `index.html`, `style.css`, `logo.png`, `js/`, and `textures/` into a shared volume. The main container is `nginx:alpine-slim` serving these static files. This keeps the pod small while pulling the latest version.
 
 **Resources:**
 | Type | Details |

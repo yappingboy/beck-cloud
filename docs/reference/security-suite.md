@@ -13,7 +13,7 @@
 
 BeckCloud's security stack provides defense-in-depth across four complementary layers: runtime host monitoring, network traffic inspection, centralized log correlation and SIEM, and continuous vulnerability assessment. All four components operate within the `security` namespace and are managed through Flux CD GitOps alongside the rest of the cluster.
 
-The suite is purpose-built for a two-node K3s homelab running on OpenNebula VMs — resource-aware, open-source only, and designed to integrate with existing Prometheus/Grafana/Alertmanager in `monitoring` and Keycloak SSO in `identity`.
+The suite targets a two-node K3s homelab on OpenNebula VMs. It is resource-aware, open-source only, and integrates with Prometheus, Grafana, Alertmanager in `monitoring` and Keycloak SSO in `identity`.
 
 ### Current Deployment Status (2026-07-20)
 

@@ -2,7 +2,7 @@
 
 **Purpose:** Static Nginx page served as the post-logout redirect target for oauth2-proxy.
 
-**What it does:** After a user logs out via oauth2-proxy (which clears the session cookie and invalidates the Redis session), they are redirected to this simple Nginx instance. The page displays a "Logged Out" message with a link back to the home page (`https://home.becklab.cloud`). The HTML content is stored in the `logout-page-html` ConfigMap and mounted at `/usr/share/nginx/html`.
+**What it does:** After a user logs out via oauth2-proxy, the proxy clears the session cookie and invalidates the Redis session. The user is then redirected to this Nginx instance. The page displays a "Logged Out" message with a link to the home page (`https://home.becklab.cloud`). The HTML is stored in the `logout-page-html` ConfigMap and mounted at `/usr/share/nginx/html`.
 
 The ConfigMap contains two pages:
 - `index.html` — auto-redirect (meta refresh) to `https://home.becklab.cloud`.

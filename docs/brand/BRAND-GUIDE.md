@@ -97,7 +97,7 @@ The voice is **dry**. Not dead — dry. There's wit in there, but it doesn't ann
 
 **Be slightly sarcastic, never condescending.** There's a line between "this server survived three power cycles and a firmware update" and "you wouldn't know how this works if you tried." Stay on the right side. Snark is seasoning, not the meal.
 
-**Be proud without being loud.** The homelab culture is built on quiet competence. People who run K3s clusters at home don't need to be told they're doing something impressive. They already know. The tone should acknowledge that shared understanding — like two people in a room who both know what `kubectl get pods --all-namespaces` does and find that both funny and tragic.
+**Be proud without being loud.** The homelab culture values quiet competence. People who run K3s clusters at home know they're doing something impressive. They already know. The tone should acknowledge that shared understanding. Two people in a room both know what `kubectl get pods --all-namespaces` does. Both find that funny and tragic.
 
 ### Examples
 
@@ -126,7 +126,7 @@ See [LOGO.md](./LOGO.md) for the full technical specification.
 
 ### Quick Summary
 
-The BeckCloud mark is a **geometric hexagon** (referencing K3s/cluster architecture) with an **ember-like core** inside — a warm, organic shape that contrasts with the rigid geometry. The wordmark uses JetBrains Mono with a subtle gradient from Ember Gold to Coral Pulse on the "Cloud" portion.
+The BeckCloud mark is a **geometric hexagon** (referencing K3s cluster architecture) with an **ember-like core** inside. The warm, organic shape contrasts with the rigid geometry. The wordmark uses JetBrains Mono with a subtle gradient from Ember Gold to Coral Pulse on the "Cloud" portion.
 
 The hexagon says "infrastructure." The ember says "human." Together they say "infrastructure with a heartbeat."
 

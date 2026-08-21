@@ -2,7 +2,7 @@
 
 **Purpose:** External-facing entry point for the BeckCloud public website.
 
-**What it does:** A lightweight static site serving the public landing page (branding, links to services, and basic info). It runs as a small container with no persistent storage. All content is baked into the image. The service listens on port 80 and is exposed via Traefik — it likely has an IngressRoute that maps external hostname(s) to this service (exact hostnames are defined in the Helm values for the webapps stack).
+**What it does:** A lightweight static site serving the public landing page (branding, service links, basic info). It runs as a small container with no persistent storage. All content is baked into the image. It listens on port 80 and is exposed via Traefik. An IngressRoute maps external hostnames to this service, with exact hostnames defined in the Helm values.
 
 **Resources:**
 | Type | Details |

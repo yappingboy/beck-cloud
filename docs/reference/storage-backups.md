@@ -190,18 +190,18 @@ All schedules use `snapshotVolumes: false` and `defaultVolumesToFsBackup: true`,
 
 All namespaces have active restic maintain jobs running periodically. Note:
 
-- **⚠️ Warning:** `velero-default-restic-c76vn` maintain jobs for the velero namespace itself are repeatedly entering Error state (3 failed attempts in the last 12 minutes at time of audit). This may indicate a self-referential backup issue where Velero struggles to back up its own PVC.
+- **⚠️ Warning:** `velero-default-restic-c76vn` maintain jobs for the velero namespace are repeatedly entering Error state (3 failed attempts in the last 12 minutes). This may indicate a self-referential backup issue where Velero struggles to back up its own PVC.
 
 ### Important Notes
 - **Volume data IS included** via FS backup (node-agent reads PVC content on each node)
-- **Minio-data PV itself** lives in velero namespace — Velero backs up its own storage backend's metadata but the actual S3 buckets are stored on the minio-data LVM volume
-- **Media library files** (the 180+ TiB of movies/shows/anime) are NOT backed up by Velero — these live on large LVM PVs that would take impractical time to backup at full frequency. Recovery plan for media should be documented separately.
+- **Minio-data PV itself** lives in velero namespace. Velero backs up its own storage backend's metadata. The actual S3 buckets are stored on the minio-data LVM volume.
+- **Media library files** (the 180+ TiB of movies/shows/anime) are NOT backed up by Velero. These live on large LVM PVs that would take impractical time to backup at full frequency. Document the recovery plan separately.
 
 ---
 
 ## CSI Snapshotter
 
-The cluster has a snapshot class deployed via Flux (`flux/infrastructure/csi-snapshotter/`), though `snapshotVolumes: false` is set on all Velero schedules, so snapshots are currently not being used in backups. This may be for future use or manual disaster recovery procedures.
+The cluster has a snapshot class deployed via Flux (`flux/infrastructure/csi-snapshotter/`). However, `snapshotVolumes: false` is set on all Velero schedules, so snapshots are not used in backups. This may be for future use or manual disaster recovery.
 
 ---
 
