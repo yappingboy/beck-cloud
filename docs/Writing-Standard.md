@@ -45,7 +45,7 @@ These are the rules that, if violated, make the doc fail review:
 7. **Consistent terminology.** Same object = same noun, same action = same verb. Pick one, use it everywhere.
 8. **No undefined abbreviations.** First use: `Keycloak (the identity provider)`. After that: `Keycloak`.
 9. **Pronouns unambiguous.** If `it` / `they` can refer to two nouns, spell the noun out.
-10. **No `e.g.`, `i.e.`, `etc.`** Use `for example`, `that is`, or omit.
+10. **No Latin abbreviations.** Use `for example`, `that is`, or omit.
 
 ## The soft rules (recommended, not blocking)
 
@@ -72,7 +72,7 @@ STE does not cover formatting. The house rules:
 - **Code blocks:** always labeled. ```` ```bash`, ```` ```yaml`, ```` ```python`.
 - **Tables:** for structured data (services, ports, namespaces). Bullets for actions.
 - **Safety callouts:** `WARNING:` (injury/death risk), `CAUTION:` (equipment damage), `NOTE:` (information only, no instruction). All-caps body, STE-compliant sentence.
-- **Cross-references:** relative path, e.g. `See [Networks & Ingress](../reference/networking-ingress.md).`
+- **Cross-references:** relative path, for example: `See [Networks & Ingress](../reference/networking-ingress.md).`
 - **Dates:** ISO 8601 (`YYYY-MM-DD`).
 - **Numbers + units:** space between, `10 °C`, `20 kg`, `172.16.0.20`.
 
@@ -134,8 +134,8 @@ STE does not cover formatting. The house rules:
 - [ ] Same object = same noun throughout the doc.
 - [ ] First use of an abbreviation is expanded.
 - [ ] No ambiguous pronouns.
-- [ ] No `e.g.`, `i.e.`, `etc.`.
-- [ ] Every numbered step starts with a verb.
+- [ ] No `e.g.`, `i.e.`, `etc.` (Latin abbreviations).
+- [ ] Every numbered step starts with a verb (do, make sure, remove, install).
 - [ ] Safety callouts: `WARNING` / `CAUTION` / `NOTE` used correctly.
 - [ ] Tables for structured data, bullets for actions.
 - [ ] Filenames kebab-case, headings sentence case.
@@ -143,11 +143,11 @@ STE does not cover formatting. The house rules:
 ## Enforcement
 
 - **Manual:** every doc PR (or direct commit) is checked against this standard before merge.
-- **Automated:** `docs/scripts/ste-check.py` (planned) scans for:
-  - Sentence length > 25 words (flag)
+- **Automated:** `docs/scripts/ste-check.py` scans for:
+  - Sentence length > 25 words (fail)
   - Semicolons (fail)
   - Known phrasal verbs (fail)
-  - `e.g.`, `i.e.`, `etc.` (fail)
-  - Pronoun ambiguity (warn)
+  - Latin abbreviations (fail)
+  - Pronoun ambiguity (manual)
   - Undefined abbreviations (warn)
 - **Drift:** if a doc drifts from this standard, the fix is to rewrite the doc in STE, not to relax the standard.
