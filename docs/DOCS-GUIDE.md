@@ -2,6 +2,8 @@
 
 This file explains how the BeckCloud documentation is organized, formatted, and maintained. Read this before making changes to any docs.
 
+> **Writing standard:** every doc in this repo follows [Writing-Standard.md](./Writing-Standard.md). Read it before writing or editing any doc. STE (ASD-STE100 Issue 9) applies to all technical content in this repo. The SOUL.md persona does not.
+
 ---
 
 ## Repository Structure
