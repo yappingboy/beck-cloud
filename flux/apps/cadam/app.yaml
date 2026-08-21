@@ -36,9 +36,10 @@ spec:
           type: RuntimeDefault
       containers:
         - name: cadam
-          # Pinned by digest (2026-08-18, SPA build). After each rebuild via
-          # build-job.yaml, bump this to the new image digest and let Flux roll.
-          image: ghcr.io/yappingboy/cadam@sha256:3b871da622b4039996de56a3f1b11d46225e0702d01fceae319ee038d25ab74c
+          # Pinned by digest (2026-08-21, SSO mode: VITE_SSO_PROVIDER=custom:keycloak).
+          # After each rebuild via build-job.yaml, bump this to the new image
+          # digest and let Flux roll.
+          image: ghcr.io/yappingboy/cadam@sha256:7c27c54b080f3a271c59aa4bdddd66414a0343b6ed0eae14622b6c4dc7c9f9b7
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
