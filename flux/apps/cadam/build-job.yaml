@@ -35,9 +35,13 @@ data:
     ARG ENVIRONMENT=local
     ARG OLLAMA_BASE_URL=http://172.16.0.7:11434
     ARG WEBHOOK_BASE_URL=https://cadam.becklab.cloud
+    # Route the app's sign-in through the Supabase keycloak provider (GoTrue
+    # OIDC federation) instead of the dead native sign-up form.
+    ARG VITE_SSO_PROVIDER=custom:keycloak
     ENV CADAM_SELF_HOST=1 \
         VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
         VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
+        VITE_SSO_PROVIDER=$VITE_SSO_PROVIDER \
         ENVIRONMENT=$ENVIRONMENT \
         OLLAMA_BASE_URL=$OLLAMA_BASE_URL \
         WEBHOOK_BASE_URL=$WEBHOOK_BASE_URL \
