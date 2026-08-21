@@ -262,6 +262,30 @@ KNOWN_ABBREVS = {
     "CMS", "NZB", "CNI", "ASCII",
     # Web and media (additional)
     "REST", "GPU", "CORS", "PWA", "MCP", "TTL", "RCON", "PIA", "NET", "ILM", "HGST", "VRAM", "RSS", "BYOD", "TMDB",
+    # 3D printing and materials
+    "FDM", "SLA", "SLM", "SLS", "PLA", "PETG", "ABS", "TPU", "Nylon", "PETG-CF", "ABS-CF", "HIPS", "PVA", "SBS", "WAX",
+    # Kubernetes and infrastructure
+    "CRD", "CNAME", "CGO", "ACME", "ATX", "AIO",
+    # Security and compliance
+    "MITRE", "CISA", "CIS", "NSA", "CTI", "SOA", "SSD", "HDD",
+    # Java and JVM
+    "JVM", "JDBC", "JAR", "JDK", "JRE", "JSP", "MVC",
+    # Network and DNS
+    "DNS", "NTP", "SMTP", "IMAP", "POP3", "DMARC", "DKIM", "SPF", "BIMI", "ARC", "MIME", "MSP", "VNC", "RDP",
+    # Cloud providers
+    "AWS", "AZURE", "GCP", "IBM", "ORACLE", "ALIBABA", "TENCENT", "DO", "LINODE", "VULTR", "DIGITALOCEAN",
+    # Web and frontend
+    "SPA", "MPA", "SSR", "SSG", "ISR", "ISR", "ISR", "SEO", "SEO", "SEM", "SEM", "CTR", "CTA", "ROI",
+    # Color and display
+    "RGB", "RGBW", "CMYK", "CMY", "HEIC", "HEIF", "ICC", "ICC", "ICC",
+    # Status words (not abbreviations)
+    "UPGRADED", "DEPLOYED", "BLOCKED", "COMPLETE", "COLORS", "COLOR", "TOOLS", "NEW", "FREE",
+    # DNS record types
+    "AAAA", "SOA", "CAA", "SRV", "PTR", "NS", "MX", "TXT", "TLSA", "DNSKEY", "DS", "NSEC", "NSEC3", "RRSIG", "SIG",
+    # Other
+    "WPA", "WPA2", "WPA3", "SSID", "SMS", "OTP", "OSS", "OOM", "JDBC", "JAR",
+    "EVE", "ONE", "CTI", "CTA", "ISP", "ATT", "ARMO", "UTM", "UFW", "RVW", "SOA",
+    "BSM", "WCAG", "VAS", "RWX", "CNCF", "BYOP", "ASP", "AAA",
 }
 
 # Words that are NOT abbreviations (common all-caps words in tech docs)
@@ -289,7 +313,8 @@ NOT_ABBREVS = {
     "BUILT", "BUILD", "BUILDS", "BURN", "BURNS", "BURNING", "BURNT",
     "BROKE", "BREAK", "BREAKS", "BRING", "BRINGS", "BROUGHT",
     "CHOSE", "CHOOSE", "CHOOSES", "CHOSEN", "DROVE", "DRIVE",
-    "DRIVES", "DRIVEN", "EAT", "EATS", "ATE", "EATEN",
+    "DRIVES", "DRIVEN", "EAT", "EATS", "ATE", "EATEN", "EVE",
+    "FLEW", "FLY", "FLIES", "FLEW", "FOUGHT", "FIGHT", "FIGHTS",
     "FLEW", "FLY", "FLIES", "FLEW", "FOUGHT", "FIGHT", "FIGHTS",
     "FELL", "FEEL", "FEELS", "FEELING", "FELT", "FOKED",
     "FORGET", "FORGETS", "FORGOT", "FORGOTTEN", "FOUND", "FROZE",
@@ -314,6 +339,7 @@ NOT_ABBREVS = {
     "SOUGHT", "SEEK", "SEEKS", "SEEKING", "SPOKE", "SPEAK", "SPEAKS",
     "SPEAKING", "SPUN", "SPIN", "SPINS", "SPINNING", "SLEPT", "SLEEP",
     "SLEEPS", "SLEEPING", "SPREAD", "SPREAD", "SLEW", "SLAY",
+    "UPGRADED", "DEPLOYED", "BLOCKED", "COMPLETE", "COLORS", "COLOR", "TOOLS", "NEW", "FREE", "LESS", "LOGO", "FIXED",
 }
 
 # Safety callout words (not abbreviations, they are STE terms)
