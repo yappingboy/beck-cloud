@@ -150,4 +150,4 @@ STE does not cover formatting. The house rules:
   - Latin abbreviations (fail)
   - Pronoun ambiguity (manual)
   - Undefined abbreviations (warn)
-- **Drift:** if a doc drifts from this standard, the fix is to rewrite the doc in STE, not to relax the standard.
+- **Drift:** if a doc drifts from this standard, rewrite it in STE. Do not relax the standard.

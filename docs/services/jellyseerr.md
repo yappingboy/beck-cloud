@@ -15,11 +15,11 @@
 - Default Jellyseerr port is 5055 (HTTP). Exposed internally.
 
 **Middleware / Ingress:**
-- Internal only; no public hostname in current config.
+- Internal only. No public hostname in current config.
 
 **Environment variables (Helm defaults):**
 - `JELLYSEERR_DATABASE_URL` — internal PostgreSQL.
 - `JELLYFIN_BASE_URL` — points to Jellyfin service for media serving.
-- Other defaults for theme, auth, etc.
+- Other defaults for theme, auth.
 
 **Notes:** Jellyseerr depends on Homebox for metadata and on Radarr/Sonarr for fulfillment.

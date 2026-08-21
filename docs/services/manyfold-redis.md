@@ -2,7 +2,7 @@
 
 **Purpose:** Redis (Valkey) cache and job queue backend for Manyfold.
 
-**What it does:** Runs Valkey 8 (the open-source Redis fork, Alpine edition) to provide caching and background job queuing for Manyfold. Manyfold uses Sidekiq for asynchronous tasks like library scanning, thumbnail generation, and model analysis — all of which rely on this Redis instance. Unlike the database, this deployment has no persistent storage; data is ephemeral and rebuilt on restart.
+**What it does:** Runs Valkey 8 (the open-source Redis fork, Alpine edition) to provide caching and background job queuing for Manyfold. Manyfold uses Sidekiq for asynchronous tasks like library scanning, thumbnail generation, and model analysis — all of which rely on this Redis instance. Unlike the database, this deployment has no persistent storage. Data is ephemeral and rebuilt on restart.
 
 **Resources:**
 | Type | Details |

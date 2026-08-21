@@ -15,11 +15,11 @@
 - `8096` — Jellyfin HTTP (web UI + API). Exposed by Traefik with TLS.
 
 **Middleware / Ingress:**
-- Route(s): Defined in the Helm chart; typically serves under `media.jellyfin.becklab.cloud` or similar. No SSO required for media consumption.
+- Route(s): Defined in the Helm chart. Typically serves under `media.jellyfin.becklab.cloud` or similar. No SSO required for media consumption.
 
 **Environment variables (Helm defaults):**
 - `JELLYFIN_PUBLICURL` — external URL for remote clients.
 - `JELLYFIN_CONFIG_ROOT` — points to the PVC mount.
 - Transcoding and network settings as per the chart.
 
-**Notes:** Jellyfin is the core media player; all other media services (Sonarr, Radarr, etc.) feed it with metadata.
+**Notes:** Jellyfin is the core media player. All other media services (Sonarr, Radarr.) feed it with metadata.

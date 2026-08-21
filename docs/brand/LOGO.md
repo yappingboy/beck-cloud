@@ -174,7 +174,7 @@ Maintain a clear space around the logo equal to **half the height of the hexagon
 - **Don't** stretch, skew, or rotate the logo. Ever.
 - **Don't** add drop shadows, outlines, or effects to the logo.
 - **Don't** place the logo on a background that doesn't meet contrast requirements (minimum 3:1 for logos).
-- **Don't** change the color of individual elements (e.g., making the hexagon blue while keeping the ember gold).
+- **Don't** change the color of individual elements (for example, making the hexagon blue while keeping the ember gold).
 - **Don't** use the logo as a background pattern or texture.
 - **Don't** add text underneath the logo (no taglines in the lockup).
 - **Don't** use the primary lockup in spaces narrower than 240px — switch to mark-only.

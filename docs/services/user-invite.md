@@ -9,10 +9,10 @@
 |------|---------|
 | CPU | 50m request / none set |
 | RAM | 128Mi request / 256Mi limit |
-| PVCs | None (ephemeral; data stored in LLDAP and Keycloak) |
+| PVCs | None (ephemeral. Data stored in LLDAP and Keycloak) |
 
 **Ports:**
-- `80` — HTTP form. Exposed internally; likely routed via Traefik with the SSO admin chain if you want it reachable from outside the cluster.
+- `80` — HTTP form. Exposed internally. Likely routed via Traefik with the SSO admin chain if you want it reachable from outside the cluster.
 
 **Middleware / Ingress:**
 - Service selector: `app=user-invite`.
@@ -21,6 +21,6 @@
 **Environment variables (Helm defaults):**
 - `LLDAP_URL`, `LDAP_BIND_DN`, `LDAP_PASSWORD` — for creating users.
 - `SMTP_RELAY_ENDPOINT` — points to `smtp-relay`.
-- Other defaults for branding, redirect URLs, etc.
+- Other defaults for branding, redirect URLs.
 
-**Notes:** This is a lightweight admin utility; it doesn't store any persistent data itself, just orchestrates between LLDAP, Keycloak, and the SMTP relay.
+**Notes:** This is a lightweight admin utility. It does not store any persistent data itself, just orchestrates between LLDAP, Keycloak, and the SMTP relay.

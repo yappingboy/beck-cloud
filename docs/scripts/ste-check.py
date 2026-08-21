@@ -218,6 +218,50 @@ KNOWN_ABBREVS = {
     "NOTE", "WARNING", "CAUTION",
     "DRIFT", "ENFORCEMENT",
     "README", "CHANGELOG", "LICENSE",
+    # Web and data formats
+    "CSS", "HTML", "YAML", "JSON", "XML", "SVG", "PNG", "JPG", "JPEG", "GIF", "WEBP", "PDF", "TXT", "CSV", "XLSX", "DOC", "DOCX", "PPTX", "ZIP", "TAR", "GZ", "BZ2",
+    # Networking and protocols
+    "VPN", "SMTP", "IMAP", "POP", "FTP", "SFTP", "NFS", "CIFS", "SMB", "SAML", "WAF",
+    # Security
+    "IDS", "IPS", "SIEM", "FIM", "RBAC", "ABAC", "MFA", "2FA", "TOTP", "HMAC", "SHA", "MD5", "AES", "RSA", "DSA", "ECDSA", "PKI", "CA", "CSR", "CRL", "OCSP", "HSM", "TPM", "SGX", "SBOM", "CPE", "CVE", "CVSS", "NVD", "SCAP", "STIG", "DISA", "FIPS",
+    # Storage and disk
+    "XFS", "iSCSI", "FC", "FCoE", "JBOD", "CABLE", "DATABLOCK", "PARITY", "STRIPE", "MIRROR", "NVM", "NVMe", "SATA", "SAS", "SMART", "SED",
+    # Compute and virtualization
+    "KVM", "QEMU", "XEN", "HYPERVISOR", "GUEST", "HOST", "BAREMETAL", "BARE", "METAL", "CLOUD", "ROM", "BIOS", "UEFI", "MBR", "GPT", "EFI", "GRUB", "CPUID", "AVX", "AVX2", "SSE", "SSE2", "SSE3", "SSSE3", "FMA", "BMI1", "BMI2", "LZCNT", "POPCNT", "X86", "ARM", "RISC-V", "MIPS", "POWER", "SPARC",
+    # Kubernetes and container
+    "Containerd", "CRI-O", "ArgoCD", "Ksonnet", "Kpt", "OCI", "ACR", "ECR", "GCR", "JFrog", "Artifactory", "Harbor",
+    # Monitoring and observability
+    "Loki", "Tempo", "Mimir", "Alertmanager", "Thanos", "Cortex", "Jaeger", "Zipkin", "OpenTelemetry", "OTel", "PromQL",
+    # Databases
+    "MariaDB", "Memcached", "Couchbase", "Cassandra", "HBase", "Elasticsearch", "Kibana", "InfluxDB", "TimescaleDB", "CockroachDB", "Spanner", "BigQuery",
+    # Machine learning and AI
+    "DL", "NLP", "CV", "CNN", "RNN", "LSTM", "GRU", "GAN", "VAE", "BERT", "GPT", "CLIP", "Diffusion", "StableDiffusion", "SD", "SDXL", "Midjourney", "DALL-E", "Imagen",
+    # 3D printing and CAD
+    "SLA", "SLM", "SLS", "MJF", "EBM", "3D", "CAD", "CAM", "CNC", "STL", "OBJ", "STEP", "IGES", "3MF", "GCODE",
+    # Media
+    "HDTV", "UHD", "4K", "8K", "HEVC", "AVC", "AV1", "VP9", "VP8", "MPEG", "MKV", "MP4", "AVI", "MOV", "FLV", "WEBM", "OGG", "MP3", "FLAC", "WAV", "AAC", "AC3", "EAC3", "DTS", "TrueHD", "Dolby", "DolbyVision", "HDR", "HDR10",
+    # Gaming
+    "RTX", "Vulkan", "OpenGL", "DirectX", "Steam", "PlayStation", "Xbox", "Nintendo", "Switch", "PS4", "PS5", "XboxOne", "Forge", "Fabric", "Vanilla",
+    # Email and messaging
+    "IMAP", "POP3", "DMARC", "DKIM", "SPF", "BIMI", "ARC", "MIME", "MSP",
+    # File and data
+    "S3", "GCS", "AzureBlob", "Backblaze", "B2", "Wasabi", "iDrive", "Dropbox", "GoogleDrive", "OneDrive", "Syncplicity", "Resilio", "Syncthing", "Nextcloud", "Seafile", "Owncloud",
+    # Networking hardware
+    "Router", "Switch", "Firewall", "LoadBalancer", "LB", "VIP", "VXLAN", "BGP", "OSPF", "RIP", "EIGRP", "MPLS", "QinQ", "WiFi", "WiFi6", "WiFi6E", "WiFi7", "WiGig", "5G", "4G", "LTE", "HSPA", "3G", "2G",
+    # Certificates and identity
+    "IdP", "SP", "RP", "JWS", "JWE", "JWK", "JWKS", "PKCE", "PEM", "DER", "PKCS7", "PKCS12", "PKCS11",
+    # Code and dev
+    "SDK", "DLL", "GUID", "UUID", "AD", "LDAPS", "Kerberos", "NTLM",
+    # Business and finance
+    "SaaS", "PaaS", "IaaS", "FaaS", "BaaS", "DBaaS", "MSP", "MSSP", "XDR", "EDR", "MDR",
+    # Other common
+    "TODO", "FIXME", "INFO", "DEBUG", "TRACE", "VERBOSE", "QUIET", "SILENT", "DRY",
+    "BUILD", "TEST", "DEPLOY", "ROLLBACK", "RETRY", "RESUME", "PAUSE", "ABORT", "CANCEL", "SKIP", "FORCE", "OVERWRITE", "PRESERVE", "KEEP",
+    "DELETE", "REMOVE", "ADD", "CREATE", "UPDATE", "EDIT", "MODIFY", "CHANGE",
+    "GET", "PUT", "POST", "PATCH", "HEAD", "OPTIONS", "CONNECT", "PURGE",
+    "CMS", "NZB", "CNI", "ASCII",
+    # Web and media (additional)
+    "REST", "GPU", "CORS", "PWA", "MCP", "TTL", "RCON", "PIA", "NET", "ILM", "HGST", "VRAM", "RSS", "BYOD", "TMDB",
 }
 
 # Words that are NOT abbreviations (common all-caps words in tech docs)

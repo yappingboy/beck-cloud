@@ -14,7 +14,7 @@ beck-cloud/
 ├── ansible/                     # Bare-metal provisioning
 │   ├── inventory/               # Host inventories
 │   ├── playbooks/               # Numbered playbooks (00-prereqs → 99-uninstall)
-│   │   └── templates/           # Jinja2 templates (sunbeam-manifest, etc.)
+│   │   └── templates/           # Jinja2 templates (sunbeam-manifest.)
 │   └── templates/               # Root-level templates (sops.yaml.j2)
 ├── apps-source/                 # All custom application source code
 │   ├── apps/                    # User-facing web apps (landing-page, gridspace, user-invite)
@@ -65,7 +65,7 @@ Each service is contained entirely in its own directory. Each directory will con
 ├── secret.yaml                  # Contains any secrets the service may need, such as credentials, or other sensitve data. All secrets are encrypted.
 └── service.yaml                 # Define all the ports that need to be forwarded to the ingress.
 ```
-In the case there are multiple ingress/deployments etc. in a single service, concat them into a single file, separated by ---.
+In the case there are multiple ingress/deployments in a single service, concat them into a single file, separated by ---.
 
 ## 03 Design
 
@@ -77,7 +77,7 @@ In the case there are multiple ingress/deployments etc. in a single service, con
 
 ** Purpose: ** a short description of the purpose of this namespace
 
-** What it does: ** an "elevator pitch" of what this service is for. A short description of the type of services it offers (such as media servers, or game servers etc.).
+** What it does: ** an "elevator pitch" of what this service is for. A short description of the type of services it offers (such as media servers, or game servers).
 
 ** Special resource: ** any specific/special resources this namespace needs access to, such as a special hardware, storage, or other.
 

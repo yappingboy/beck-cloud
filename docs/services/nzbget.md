@@ -15,11 +15,11 @@
 - Default NZBGet port is 6789 (HTTP API). Exposed internally.
 
 **Middleware / Ingress:**
-- Internal only; no public hostname.
+- Internal only. No public hostname.
 
 **Environment variables (Helm defaults):**
 - `NZBGET_CONFIG_DIR` — points to PVC.
 - `CATALOG` — shared media directory path.
-- Other defaults for categories, scheduling, etc.
+- Other defaults for categories, scheduling.
 
-**Notes:** NZBGet is one of two download engines in the stack (the other being SABnzbd); both feed into the same storage pool.
+**Notes:** NZBGet is one of two download engines in the stack (the other being SABnzbd). Both feed into the same storage pool.

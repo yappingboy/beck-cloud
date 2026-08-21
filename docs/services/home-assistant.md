@@ -2,7 +2,7 @@
 
 **Purpose:** Smart home management dashboard and API.
 
-**What it does:** Home Assistant runs as a containerized instance, providing a web UI for controlling IoT devices, automations, and integrations. It exposes its local API on port 8123; external access is via Traefik (typically behind an IngressRoute with SSO protection or direct if configured). The service stores configuration, user data, and device states in a persistent volume.
+**What it does:** Home Assistant runs as a containerized instance, providing a web UI for controlling IoT devices, automations, and integrations. It exposes its local API on port 8123. External access is via Traefik (typically behind an IngressRoute with SSO protection or direct if configured). The service stores configuration, user data, and device states in a persistent volume.
 
 **Resources:**
 | Type | Details |
@@ -21,4 +21,4 @@
 - `HASS_CONFIG_DIR` — points to the PVC mount.
 - Other defaults for integrations and add-ons.
 
-**Notes:** Home Assistant is primarily used by admins; user access may require authentication depending on how the IngressRoute is configured.
+**Notes:** Home Assistant is primarily used by admins. User access may require authentication depending on how the IngressRoute is configured.

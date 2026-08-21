@@ -114,7 +114,7 @@ BeckCloud is a homelab running ~45 services across a K3s cluster, backed by 140+
 **Why it works:** Browser-based with `canvas` API — no server-side processing for basic edits. Server only handles saving/loading (free tier: 24h ephemeral storage, paid: persistent).
 **Price:** Free tier (basic tools, 24h ephemeral saves) + $3/month for layers, history, persistent storage, batch processing.
 **Target:** Non-designers who need quick edits without Photoshop. Bloggers, social media managers.
-**Effort:** ~3 hours (UI work is the bulk; backend is just save/load via S3/local storage).
+**Effort:** ~3 hours (UI work is the bulk. Backend is just save/load via S3/local storage).
 **Differentiation:** No signup required, works offline (PWA), runs in browser.
 
 ### The Interconnectivity Layer — "BeckFlow"
@@ -180,7 +180,7 @@ This is what ties the micro-services together and makes them more valuable than 
 
 ### Tier 1b — Bundled Offer: "BeckCloud Micro"
 
-Bundle 3+ of the above into a single subscription. Most customers want 2–3 services; bundling increases perceived value without increasing marginal cost.
+Bundle 3+ of the above into a single subscription. Most customers want 2–3 services. Bundling increases perceived value without increasing marginal cost.
 
 | Tier | Price | What's Included |
 |------|-------|----------------|
@@ -338,7 +338,7 @@ Bundle 3+ of the above into a single subscription. Most customers want 2–3 ser
 1. **Upload bandwidth** — check ISP speed and data cap before launching anything bandwidth-heavy
 2. **GPU concurrency** — RTX Titan = 1 session max at full quality, queue-based for others
 3. **Worker RAM** — 44 GiB total, currently at 23 GiB. VMs eat RAM fast (each medium = 4 GiB)
-4. **IP reputation** — unknown for email; monitor bounce rates closely
+4. **IP reputation** — unknown for email. Monitor bounce rates closely
 
 ---
 
@@ -405,12 +405,12 @@ Key selling points:
 
 | Risk | Likelihood | Impact | Mitigation |
 |------|-----------|--------|------------|
-| ISP uptime drops | Medium | High | Keep personal access; customers don't need 99.99% |
+| ISP uptime drops | Medium | High | Keep personal access. Customers don't need 99.99% |
 | ISP data cap hit | High (if streaming/LLM) | High | Bandwidth limits per customer, $/GB overage |
 | GPU blocks on long runs | Medium | Medium | Queue system, max duration per customer, priority tiers |
 | Hardware failure (one node) | Low-Medium | High | Worker can handle all workloads with reduced capacity |
 | Customer churn | Medium | Low | Low prices = low churn commitment. Easy to replace 1 customer. |
-| IP blacklisted by email providers | Medium | High | Monitor bounce rates; use Mailgun relay as backup |
+| IP blacklisted by email providers | Medium | High | Monitor bounce rates. Use Mailgun relay as backup |
 | RAM exhaustion on worker | Low | Medium | Resource quotas per client, 17 GiB headroom |
 | Port blocking by ISP | Medium | Medium | Cloudflare Tunnel for fallback routing |
 

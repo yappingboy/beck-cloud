@@ -9,7 +9,7 @@
 |------|---------|
 | CPU | 50m request / 100m limit |
 | RAM | 64Mi request / 128Mi limit |
-| PVCs | None — all data sent to the manager; local files are monitored but not stored in K8s PVCs |
+| PVCs | None — all data sent to the manager. Local files are monitored but not stored in K8s PVCs |
 
 **Ports:**
 - `514` — Syslog (agent → manager)
@@ -17,11 +17,11 @@
 - `5044` — API communication (for remote management)
 
 **Middleware / Ingress:**
-- Internal to the cluster; agents register with the master manager service.
+- Internal to the cluster. Agents register with the master manager service.
 
 **Environment variables (Helm defaults):**
 - `WAZUH_MANAGER` — hostname/IP of the master manager.
 - `WAZUH_AGENT_NAME`, `WAZUH_NODE_NAME` — unique identifiers per host.
 - `WAZUH_REGISTRATION_PASSWORD` — for onboarding.
 
-**Notes:** The agent is the eyes and ears of the security stack; its health is critical for any alerting gaps.
+**Notes:** The agent is the eyes and ears of the security stack. Its health is critical for any alerting gaps.

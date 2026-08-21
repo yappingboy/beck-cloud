@@ -15,11 +15,11 @@
 - `8989` — Sonarr HTTP API. Exposed by Traefik (internal use only).
 
 **Middleware / Ingress:**
-- No public hostname; accessed internally via the service name.
+- No public hostname. Accessed internally via the service name.
 
 **Environment variables (Helm defaults):**
 - `SONARR_CONFIG_DIR` — points to the PVC.
 - `RSS_ADDRESSES` — list of feed URLs.
-- Other defaults for language, quality profiles, etc.
+- Other defaults for language, quality profiles.
 
-**Notes:** Sonarr is tightly coupled with Jellyfin and qBittorrent; it doesn't serve media directly.
+**Notes:** Sonarr is tightly coupled with Jellyfin and qBittorrent. It does not serve media directly.

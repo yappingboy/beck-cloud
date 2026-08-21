@@ -545,8 +545,8 @@ Actually, since we haven't pushed yet, just validate locally:
 ```bash
 cd /root/beck-cloud
 # Check that kustomization references all exist
-for f in $(grep '^  - ' flux/infrastructure/media/kustomization.yaml | sed 's/.*- //'); do
-  if [ ! -f "flux/infrastructure/media/$f" ]; then
+for f in $(grep '^  - ' flux/infrastructure/media/kustomization.yaml | sed 's/.*- //'). Do
+  if [ ! -f "flux/infrastructure/media/$f" ]. Then
     echo "MISSING: $f"
   fi
 done
@@ -719,7 +719,7 @@ Should show `JellyfinSSO.dll`.
 **Step 6: Check logs for errors**
 
 ```bash
-ssh -o StrictHostKeyChecking=no -i /root/.ssh/K3s ubuntu@192.168.100.10 "kubectl -n media logs deploy/jellyfin --tail=30 2>&1; echo '==='; kubectl -n media logs deploy/jellyseerr --tail=30" 2>&1
+ssh -o StrictHostKeyChecking=no -i /root/.ssh/K3s ubuntu@192.168.100.10 "kubectl -n media logs deploy/jellyfin --tail=30 2>&1. Echo '==='. Kubectl -n media logs deploy/jellyseerr --tail=30" 2>&1
 ```
 
 Look for:

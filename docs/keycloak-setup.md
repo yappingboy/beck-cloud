@@ -58,7 +58,7 @@ https://keycloak.becklab.cloud — log in with the credentials from `secret-keyc
 This tells Keycloak to use LLDAP as its user directory.
 
 1. In the `homelab` realm → **User Federation** → **Add provider** → **LDAP**
-2. Fill in:
+2. Complete:
 
 | Field | Value |
 |-------|-------|
@@ -181,9 +181,9 @@ click **Evaluate**. The generated token should contain a `groups` array like `["
 
 After completing the above:
 
-1. Visit a protected service, e.g. https://sonarr.becklab.cloud
+1. Visit a protected service, for example https://sonarr.becklab.cloud
 2. You should be redirected to Keycloak → log in → redirected back and granted access.
-3. A user in `/admins` gets access to admin-tier services; a user in `/media` gets access to media-tier services.
+3. A user in `/admins` gets access to admin-tier services. A user in `/media` gets access to media-tier services.
 
 If access is denied, check:
 

@@ -2,7 +2,7 @@
 
 **Purpose:** FDM Monster — real-time 3D printer monitoring and tracking dashboard.
 
-**What it does:** FDM Monster connects to FDM (Fused Deposition Modeling) 3D printers via their APIs (Prusa, Bambu Lab, etc.) to provide live monitoring of print jobs, including progress, temperature, camera feeds, and estimated time remaining. It aggregates printer status into a single dashboard and stores historical print data locally. The deployment runs the official `fdmmonster/fdm-monster:latest` image with two PVCs for database and media storage.
+**What it does:** FDM Monster connects to FDM (Fused Deposition Modeling) 3D printers via their APIs (Prusa, Bambu Lab.) to provide live monitoring of print jobs, including progress, temperature, camera feeds, and estimated time remaining. It aggregates printer status into a single dashboard and stores historical print data locally. The deployment runs the official `fdmmonster/fdm-monster:latest` image with two PVCs for database and media storage.
 
 **Resources:**
 | Type | Details |

@@ -305,7 +305,7 @@ package main
 
 **Capabilities:**
 - Resize by dimensions (exact, fit, fill, crop)
-- Format conversion (PNG → WebP, JPEG → WebP, etc.)
+- Format conversion (PNG → WebP, JPEG → WebP.)
 - Quality control (1-100)
 - Auto-format detection (accept image/*, returns optimal format)
 - URL input (fetch from URL, resize, cache)
@@ -776,7 +776,7 @@ Manual Kaniko build per service (not automated — we control releases). Flux sy
 - [ ] Load test passes (see above)
 - [ ] Docs written (API reference, pricing page)
 - [ ] Marketing post drafted (r/selfhosted, r/homelab)
-- [ ] Founding member pricing set up (50% off first 10)
+- [ ] Founding member pricing configured (50% off first 10)
 
 ---
 

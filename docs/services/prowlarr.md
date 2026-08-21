@@ -15,7 +15,7 @@
 - Default Prowlarr port is 9696 (HTTP API). Exposed internally.
 
 **Middleware / Ingress:**
-- Internal only; no public hostname.
+- Internal only. No public hostname.
 
 **Environment variables (Helm defaults):**
 - `PROWLARR_CONFIG_DIR` — points to PVC.

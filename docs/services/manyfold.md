@@ -2,7 +2,7 @@
 
 **Purpose:** Manyfold — self-hosted 3D model library and repository management system.
 
-**What it does:** Manyfold organizes, catalogs, and serves 3D model files (STL, OBJ, 3MF, etc.) stored on disk. It provides a web UI for browsing, searching, and previewing models, with support for collections, tags, and metadata extraction. The deployment uses an init container (`alpine:3.21`) to fix filesystem permissions (`chown -R 1000:1000`) on the libraries, tmp, and log directories before the main app starts. It depends on `manyfold-db` (PostgreSQL) for metadata and `manyfold-redis` (Valkey) for caching and background job queuing.
+**What it does:** Manyfold organizes, catalogs, and serves 3D model files (STL, OBJ, 3MF.) stored on disk. It provides a web UI for browsing, searching, and previewing models, with support for collections, tags, and metadata extraction. The deployment uses an init container (`alpine:3.21`) to fix filesystem permissions (`chown -R 1000:1000`) on the libraries, tmp, and log directories before the main app starts. It depends on `manyfold-db` (PostgreSQL) for metadata and `manyfold-redis` (Valkey) for caching and background job queuing.
 
 **Resources:**
 | Type | Details |

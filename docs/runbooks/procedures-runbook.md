@@ -30,7 +30,7 @@ traefik.becklab.cloud    -> <YOUR_PUBLIC_IP>
 void.becklab.cloud       -> <YOUR_PUBLIC_IP>       (NEW — Gridspace Void:Form)
 ```
 
-> Media services (jellyfin, sonarr, etc.) have TLS certificates but no IngressRoutes yet.
+> Media services (jellyfin, sonarr.) have TLS certificates but no IngressRoutes yet.
 > DNS records for those can be added when routes are deployed.
 
 ### Verify Deployment
@@ -111,7 +111,7 @@ For services that send email through the cluster:
    ```
 2. **DMARC record** — Add TXT record for `_dmarc.becklab.cloud`:
    ```
-   v=DMARC1; p=none; rua=admin@becklab.cloud
+   v=DMARC1. P=none. Rua=admin@becklab.cloud
    ```
 
 > The legacy Mailu setup (full email server with IMAP/SMTP) was removed.

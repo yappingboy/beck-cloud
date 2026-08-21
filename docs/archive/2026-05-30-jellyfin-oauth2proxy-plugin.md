@@ -112,7 +112,7 @@ public class OAuthProxyPlugin : BasePlugin<PluginConfiguration>, IHasWebPages
         Instance = this;
     }
 
-    public static OAuthProxyPlugin? Instance { get; private set; }
+    public static OAuthProxyPlugin? Instance { get. Private set; }
 
     public override string Name => "OAuthProxy-SSO";
 
@@ -162,45 +162,45 @@ public class PluginConfiguration : BasePluginConfiguration
     /// Internal K8s URL to reach oauth2-proxy's /oauth2/userinfo endpoint.
     /// Use the media instance for Jellyfin: http://oauth2-proxy-media.identity.svc.cluster.local/oauth2/userinfo
     /// </summary>
-    public string UserInfoUrl { get; set; } = "http://oauth2-proxy-media.identity.svc.cluster.local/oauth2/userinfo";
+    public string UserInfoUrl { get. Set; } = "http://oauth2-proxy-media.identity.svc.cluster.local/oauth2/userinfo";
 
     /// <summary>
     /// Name of the oauth2-proxy session cookie.
     /// Media instance uses: _oauth2_media
     /// Admin instance uses: _oauth2_admin
     /// </summary>
-    public string CookieName { get; set; } = "_oauth2_media";
+    public string CookieName { get. Set; } = "_oauth2_media";
 
     /// <summary>
     /// Comma-separated list of groups that receive Jellyfin admin rights.
     /// Example: /admins
     /// Leave empty to grant admin to no SSO users.
     /// </summary>
-    public string AdminGroups { get; set; } = "/admins";
+    public string AdminGroups { get. Set; } = "/admins";
 
     /// <summary>
     /// Comma-separated list of groups allowed to sign in.
     /// Leave empty to allow all authenticated users.
     /// </summary>
-    public string AllowedGroups { get; set; } = "";
+    public string AllowedGroups { get. Set; } = "";
 
     /// <summary>
     /// Automatically create Jellyfin users on first SSO login.
     /// </summary>
-    public bool AutoCreateUsers { get; set; } = true;
+    public bool AutoCreateUsers { get. Set; } = true;
 
     /// <summary>
     /// oauth2-proxy sign-in URL (public-facing, browser redirect).
     /// Use the media instance: https://oauth2-media.becklab.cloud/oauth2/start
     /// </summary>
-    public string OAuth2ProxyStartUrl { get; set; } = "https://oauth2-media.becklab.cloud/oauth2/start";
+    public string OAuth2ProxyStartUrl { get. Set; } = "https://oauth2-media.becklab.cloud/oauth2/start";
 
     /// <summary>
     /// Public-facing base URL of this Jellyfin instance.
     /// Example: https://jellyfin.becklab.cloud
     /// Used to build the redirect URI sent to oauth2-proxy.
     /// </summary>
-    public string JellyfinPublicUrl { get; set; } = "https://jellyfin.becklab.cloud";
+    public string JellyfinPublicUrl { get. Set; } = "https://jellyfin.becklab.cloud";
 }
 ```
 
@@ -228,10 +228,10 @@ namespace Jellyfin.Plugin.OAuthProxy;
 /// </summary>
 public class PendingAuth
 {
-    public required string Username { get; init; }
-    public required string Email { get; init; }
-    public bool IsAdmin { get; init; }
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
+    public required string Username { get. Init; }
+    public required string Email { get. Init; }
+    public bool IsAdmin { get. Init; }
+    public DateTime CreatedAt { get. Init; } = DateTime.UtcNow;
     public bool IsExpired => (DateTime.UtcNow - CreatedAt).TotalMinutes > 2;
 }
 ```
@@ -258,13 +258,13 @@ namespace Jellyfin.Plugin.OAuthProxy;
 public class UserInfoResponse
 {
     [JsonPropertyName("user")]
-    public string? User { get; set; }
+    public string? User { get. Set; }
 
     [JsonPropertyName("email")]
-    public string? Email { get; set; }
+    public string? Email { get. Set; }
 
     [JsonPropertyName("groups")]
-    public List<string>? Groups { get; set; }
+    public List<string>? Groups { get. Set; }
 }
 ```
 
@@ -592,11 +592,11 @@ public class OAuthProxyController : ControllerBase
 
 public class AuthRequest
 {
-    public string? Nonce { get; set; }
-    public string? DeviceId { get; set; }
-    public string? DeviceName { get; set; }
-    public string? AppName { get; set; }
-    public string? AppVersion { get; set; }
+    public string? Nonce { get. Set; }
+    public string? DeviceId { get. Set; }
+    public string? DeviceName { get. Set; }
+    public string? AppName { get. Set; }
+    public string? AppVersion { get. Set; }
 }
 ```
 

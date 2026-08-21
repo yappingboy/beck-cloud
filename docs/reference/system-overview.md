@@ -8,7 +8,7 @@
 
 ## Executive Summary
 
-BeckCloud is a self-hosted private cloud platform running on bare metal hardware, virtualized through OpenNebula CE 7.2, hosting a K3s Kubernetes cluster managed entirely via Flux CD GitOps. It provides SSO-authenticated access to ~45 services across media management, infrastructure monitoring, password vaulting, CMS, email relay, gaming, security, 3D printing, collaborative wiki, and home automation — all exposed through Traefik with Let's Encrypt TLS.
+BeckCloud is a self-hosted private cloud platform. It runs on bare metal hardware, virtualized through OpenNebula CE 7.2, hosting a K3s Kubernetes cluster managed via Flux CD GitOps. It provides SSO-authenticated access to ~45 services across media, monitoring, password vaulting, CMS, email, gaming, security, 3D printing, wiki, and home automation. All services are exposed through Traefik with Let's Encrypt TLS.
 
 ### Key Numbers
 - **2 K3s nodes** (1 master + 1 worker) on Ubuntu 24.04
@@ -67,7 +67,7 @@ Traefik v3.4.3 (NodePort :80/:443) ← Cert-manager + Let's Encrypt
 | **Host** | `becklab` (hostname), bare metal |
 | **OS** | AlmaLinux 9 |
 | **Virtualization** | OpenNebula CE 7.2 (AIO mode — frontend + KVM node) |
-| **Management** | Ansible playbooks (`01-zfs.yml`, `02-opennebula.yml`, etc.) |
+| **Management** | Ansible playbooks (`01-zfs.yml`, `02-opennebula.yml`.) |
 | **Storage** | ZFS on host, LVM inside VMs for media storage |
 
 ### OpenNebula VMs (K3s Nodes)
@@ -147,7 +147,7 @@ Currently exposed via Traefik IngressRoutes:
 | `traefik.becklab.cloud` | traefik | api@internal (Traefik dashboard) | Admin SSO |
 | `void.becklab.cloud` | gridspace | void-form | None |
 
-> **Note:** Media services (Jellyfin, Sonarr, etc.) have no IngressRoutes — accessible only within the cluster network. Certificates exist for most but routes not yet deployed.
+> **Note:** Media services (Jellyfin, Sonarr.) have no IngressRoutes — accessible only within the cluster network. Certificates exist for most but routes not yet deployed.
 
 ### SSO Architecture
 
@@ -230,7 +230,7 @@ All managed by ClusterIssuer `letsencrypt-prod`. Notable certificates:
 | Name | Path | Interval | Purpose |
 |------|------|----------|---------|
 | `flux-system` | `./flux` | 10m | Core Flux system components |
-| `infrastructure` | `./flux/infrastructure` | 1m | All infrastructure services (identity, media, monitoring, etc.) |
+| `infrastructure` | `./flux/infrastructure` | 1m | All infrastructure services (identity, media, monitoring.) |
 | `traefik-config` | `./flux/infrastructure/traefik-config` | 5m | Traefik middleware, security headers, HTTPS redirect |
 | `cert-manager-config` | `./flux/infrastructure/cert-manager-config` | 5m | ClusterIssuer for Let's Encrypt |
 | `apps` | `./flux/apps` | 5m | User-facing apps (homepage, toolbox, user-invite) |
@@ -267,7 +267,7 @@ Playbooks in order of execution (numbered for sequencing):
 | `05-k3s.yml` | Install K3s on VMs, bootstrap cluster |
 | `06-flux.yml` | Install Flux CD, configure GitOps sync |
 | `07-snapshotter.yml` | CSI Snapshotter setup |
-| `08-ai-sysadmin.yml` | AI sysadmin tooling (OpenClaw, etc.) |
+| `08-ai-sysadmin.yml` | AI sysadmin tooling (OpenClaw.) |
 | `09-backup-media-nfs.yml` | NFS backup share for media |
 | `10-sops-rotate.yml` | SOPS age key rotation |
 | `99-uninstall.yml` | Full teardown playbook |

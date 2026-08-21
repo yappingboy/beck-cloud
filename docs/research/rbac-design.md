@@ -92,7 +92,7 @@ New middleware types:
 Implementation options:
 - **Option A:** Traefik `plugins` — custom Go plugin (e.g., `traefik-role-checker`)
 - **Option B:** Nginx-like `auth_request` to a small Go/Node middleware service
-- **Option C:** oauth2-proxy `extraArgs: --set-xauthrequest=true` already sets `X-Auth-Request-Groups`; we can add role headers in a lightweight sidecar
+- **Option C:** oauth2-proxy `extraArgs: --set-xauthrequest=true` already sets `X-Auth-Request-Groups`. We can add role headers in a lightweight sidecar
 
 **Chosen approach:** Option B — a small Go `role-enforcer` service that:
 - Receives the OAuth2 proxy auth request

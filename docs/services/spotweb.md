@@ -12,7 +12,7 @@
 | PVCs | `spotweb-config` (1 GiB, local-path) for database and user data |
 
 **Ports:**
-- Default Spotweb port is 80 (HTTP). Exposed internally; likely proxied via Traefik with a custom hostname if needed.
+- Default Spotweb port is 80 (HTTP). Exposed internally. Likely proxied via Traefik with a custom hostname if needed.
 
 **Middleware / Ingress:**
 - Internal only in current config.
@@ -21,4 +21,4 @@
 - `SPOTWEB_CONFIG_DIR` — points to PVC.
 - Tracker URLs and API keys stored as secrets.
 
-**Notes:** Spotweb is the backbone of the BeckCloud's private torrent network; all download clients post completed torrents back to Spotweb for indexing.
+**Notes:** Spotweb is the backbone of the BeckCloud's private torrent network. All download clients post completed torrents back to Spotweb for indexing.

@@ -20,4 +20,4 @@
 - `POSTGRES_PASSWORD` — from `keycloak-postgres-password` secret.
 - `PGDATA=/var/lib/postgresql/data/pgdata`
 
-**Notes:** Deployed via Flux CD Kustomize (`kustomize.toolkit.fluxcd.io/name=infrastructure`). Uses the official `postgres:16` image. The headless service (`ClusterIP: None`) enables direct pod-to-pod communication via the StatefulSet hostname. Backups are handled externally (e.g., Velero snapshots of the PVC).
+**Notes:** Deployed via Flux CD Kustomize (`kustomize.toolkit.fluxcd.io/name=infrastructure`). Uses the official `postgres:16` image. The headless service (`ClusterIP: None`) enables direct pod-to-pod communication via the StatefulSet hostname. Backups are handled externally (for example, Velero snapshots of the PVC).

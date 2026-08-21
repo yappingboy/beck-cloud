@@ -23,4 +23,4 @@
 - Authentication secret referenced via `DIRECTUS_SECRET`.
 - CORS and host headers configured for external access.
 
-**Notes:** Directus is the backend for most public-facing pages; all API calls are authenticated through Keycloak, ensuring only authorized admins can modify content.
+**Notes:** Directus is the backend for most public-facing pages. All API calls are authenticated through Keycloak, ensuring only authorized admins can modify content.

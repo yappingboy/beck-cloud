@@ -9,4 +9,4 @@
 - **Two oauth2-proxy instances:** `oauth2-proxy` secures admin-only endpoints (the "admin chain"), while `oauth2-proxy-media` protects all media-stack services (Jellyfin, Sonarr, etc.).
 - **Postfix-relay service:** Provides SMTP relay for internal mail.
 
-**External access:** `identity` namespace itself is not directly exposed; services are routed via Traefik with SSO middleware chains.
+**External access:** `identity` namespace itself is not directly exposed. Services are routed via Traefik with SSO middleware chains.

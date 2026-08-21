@@ -15,11 +15,11 @@
 - Default Homebox port is 7745 (HTTP). Exposed internally.
 
 **Middleware / Ingress:**
-- Internal only; no public hostname configured.
+- Internal only. No public hostname configured.
 
 **Environment variables (Helm defaults):**
 - `HOMEBOX_DATABASE_URL` — points to the internal PostgreSQL instance (also in this namespace).
 - `HOMEBOX_UPLOAD_PATH` — mounted from PVC.
-- Other defaults for UI theme, etc.
+- Other defaults for UI theme.
 
-**Notes:** Homebox is tightly coupled with Jellyseerr; together they form the "request" workflow for movies and shows.
+**Notes:** Homebox is tightly coupled with Jellyseerr. Together they form the "request" workflow for movies and shows.

@@ -7,7 +7,7 @@
 **Resources:**
 | Type | Details |
 |------|---------|
-| CPU/RAM | Not explicitly set; uses Helm defaults (typically 1 CPU / 2 GiB) |
+| CPU/RAM | Not explicitly set. Uses Helm defaults (typically 1 CPU / 2 GiB) |
 | PVCs | `kube-prometheus-stack-grafana` (10 GiB, local-path) for dashboards and provisioning |
 
 **Ports:**
@@ -20,6 +20,6 @@
 **Environment variables (Helm defaults):**
 - `GRAANA_ADMIN_USER` / `ADMIN_PASSWORD` — admin credentials (from Helm secrets).
 - `GF_SECURITY_ADMIN_EMAIL`, `GF_SERVER_ROOT_URL` — set to the Ingress hostname.
-- Data source URLs for Prometheus, etc.
+- Data source URLs for Prometheus.
 
-**Notes:** Grafana is the front-end for all observability; without it, you have no way to visualize metrics or run ad-hoc queries.
+**Notes:** Grafana is the front-end for all observability. Without it, you have no way to visualize metrics or run ad-hoc queries.

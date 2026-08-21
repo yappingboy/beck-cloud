@@ -80,7 +80,7 @@ This handles:
 
 ### Phase 3: K3s Media Stack
 
-- Deploy Jellyfin, Sonarr, Radarr, etc. on k3s-worker-1
+- Deploy Jellyfin, Sonarr, Radarr. on k3s-worker-1
 - Mount BecklabMedia DATABLOCK at /mnt/media
 - Configure media libraries
 

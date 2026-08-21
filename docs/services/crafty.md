@@ -17,11 +17,11 @@
 - `25565` → NodePort `31337` — Minecraft gameplay traffic (external access via `crafty-minecraft` service).
 
 **Middleware / Ingress:**
-- No external IngressRoute; the NodePort exposes the game directly to the network. Admin tools likely connect internally via 8443/8123.
+- No external IngressRoute. The NodePort exposes the game directly to the network. Admin tools likely connect internally via 8443/8123.
 
 **Environment variables (Helm defaults):**
 - `MINECRAFT_SERVER_JAR` — path to the server JAR inside the PVC.
 - `WORLDS_PATH` — mount point for `crafty-world`.
 - Backup and logging paths tied to respective PVCs.
 
-**Notes:** Crafty is a fairly heavy service due to the JVM; its resource limits are generous to avoid frequent GC pauses. The world data lives on durable PVCs, so server restarts preserve player progress.
+**Notes:** Crafty is a fairly heavy service due to the JVM. Its resource limits are generous to avoid frequent GC pauses. The world data lives on durable PVCs, so server restarts preserve player progress.

@@ -17,7 +17,7 @@
 - `8080` — qBittorrent WebUI (ClusterIP `10.43.119.44`, internal only).
 
 **Middleware / Ingress:**
-- No external IngressRoute. The WebUI is internal-only; access is via cluster-internal service or port-forwarding.
+- No external IngressRoute. The WebUI is internal-only. Access is via cluster-internal service or port-forwarding.
 
 **Init container (Gluetun):**
 - **Image:** `qmcgaw/gluetun:latest`
@@ -42,4 +42,4 @@
 - `/config` → `qbit-config` PVC — qBittorrent settings, RSS feeds, watch folders.
 - `/downloads` → `media-downloads` PVC — completed downloads, shared RWX with the rest of the media stack.
 
-**Notes:** Gluetun runs as an init container and exits after the VPN tunnel is established; qBittorrent inherits the VPN network namespace. The Stockholm server region is hardcoded — changing it requires updating the `SERVER_REGIONS` env var. Managed by Flux (`kustomize.toolkit.fluxcd.io/name=infrastructure`).
+**Notes:** Gluetun runs as an init container and exits after the VPN tunnel is established. QBittorrent inherits the VPN network namespace. The Stockholm server region is hardcoded — changing it requires updating the `SERVER_REGIONS` env var. Managed by Flux (`kustomize.toolkit.fluxcd.io/name=infrastructure`).

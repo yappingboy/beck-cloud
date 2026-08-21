@@ -31,7 +31,7 @@
 #### 2. No Per-Service Authentication for Paid Tiers
 **Severity:** 🔴 High  
 **Current state:** No `forwardAuth`, `basicAuth`, or `digestAuth` middleware exists. No API key auth pattern defined.
-**Risk:** Any free-tier user can call paid endpoints; no way to distinguish free vs paid traffic.
+**Risk:** Any free-tier user can call paid endpoints. No way to distinguish free vs paid traffic.
 **Fix:** JWT-based API key auth via Traefik forwardAuth middleware pointing to a lightweight auth service (Go, <5MB).
 
 #### 3. No IngressRoute-Level Middleware Chaining for Micro Services

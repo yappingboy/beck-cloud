@@ -15,11 +15,11 @@
 - Default SABnzbd port is 8080 (HTTP API). Exposed internally.
 
 **Middleware / Ingress:**
-- Internal only; no public hostname.
+- Internal only. No public hostname.
 
 **Environment variables (Helm defaults):**
 - `SABNZBD_CONFIG_DIR` — points to PVC.
 - `CATALOG` — shared media directory.
-- Other defaults for sorting, post-processing, etc.
+- Other defaults for sorting, post-processing.
 
-**Notes:** Both NZBGet and SABnzbd write to the same storage pool; Jellyfin's library scanning picks up files from either source.
+**Notes:** Both NZBGet and SABnzbd write to the same storage pool. Jellyfin's library scanning picks up files from either source.

@@ -523,7 +523,7 @@ Swiparr turns "what should we watch?" into a collaborative swipe-based discovery
 | `JELLYFIN_URL` | Yes* | — | Internal URL of media server |
 | `JELLYFIN_PUBLIC_URL` | No | — | Public URL (for client-side access) |
 | `TMDB_ACCESS_TOKEN` | Yes* | — | TMDB read-only API token |
-| `AUTH_SECRET` | No | Auto-gen | Min 32 chars; auto-generated on boot if missing |
+| `AUTH_SECRET` | No | Auto-gen | Min 32 chars. Auto-generated on boot if missing |
 | `DATABASE_URL` | No | `file:/app/data/swiparr.db` | SQLite path or Turso URL |
 | `USE_SECURE_COOKIES` | No | `false` | Set `true` for HTTPS |
 | `URL_BASE_PATH` | No | — | Subpath deployment (build-time) |

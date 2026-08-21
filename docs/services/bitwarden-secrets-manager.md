@@ -2,7 +2,7 @@
 
 **Purpose:** Vaultwarden (Bitwarden Server Side) — cluster-wide secrets manager.
 
-**What it does:** This service hosts the Bitwarden BSM API (`bw.becklab.cloud`) which stores encrypted secrets for all BeckCloud services. Unlike other apps, BSM is **not** protected by SSO; it uses its own authentication flow (self-service registration) and serves as the central vault for credentials, API keys, and certificates.
+**What it does:** This service hosts the Bitwarden BSM API (`bw.becklab.cloud`) which stores encrypted secrets for all BeckCloud services. Unlike other apps, BSM is **not** protected by SSO. It uses its own authentication flow (self-service registration) and serves as the central vault for credentials, API keys, and certificates.
 
 **Resources:**
 | Type | Details |
@@ -15,7 +15,7 @@
 - `80` — BSM API (HTTP). Exposed by Traefik with TLS at `https://bw.becklab.cloud`.
 
 **Middleware / Ingress:**
-- Route: `bitwarden-secrets-manager` → Service (no SSO middleware; direct access after TLS termination).
+- Route: `bitwarden-secrets-manager` → Service (no SSO middleware. Direct access after TLS termination).
 
 **Environment variables (Helm defaults):**
 - `BITWARDEN_RS_ADMINS` — list of admin email addresses.

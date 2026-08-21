@@ -16,11 +16,11 @@
 - `6807` — MCP protocol for AI tool integration.
 
 **Middleware / Ingress:**
-- The service is internal-only; no public IngressRoute exists in the current config. If external access is ever needed, an IngressRoute would map a hostname to port 8080.
+- The service is internal-only. No public IngressRoute exists in the current config. If external access is ever needed, an IngressRoute would map a hostname to port 8080.
 
 **Environment variables (Helm defaults):**
 - `SILEX_PORT=8080`
 - `MCP_PORT=6807`
-- Database and file paths point to the PVC mounts.
+- Database and file paths show the PVC mounts.
 
-**Notes:** Silex is not user-facing; it's a developer/admin tool for UI work.
+**Notes:** Silex is not user-facing. It's a developer/admin tool for UI work.

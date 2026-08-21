@@ -2,7 +2,7 @@
 
 **Authored:** 2026-07-08 by Nova (AI Sysadmin)  
 **Last updated:** 2026-07-20
-**Status:** Wazuh + Suricata + Crowdsec deployed; Trivy Operator blocked by resource quota; Falco still planned  
+**Status:** Wazuh + Suricata + Crowdsec deployed. Trivy Operator blocked by resource quota. Falco still planned
 **Namespaces:** `security`, `crowdsec`  
 **GitOps paths:** `flux/infrastructure/security/`, `flux/infrastructure/crowdsec/`  
 **Last audited against current sources:** 2026-07-20
@@ -109,7 +109,7 @@ Traefik access logs → Crowdsec Agent → LAPI → Scenario analysis
 | **Purpose** | Deep packet inspection with signature-based and anomaly detection |
 | **What it detects** | Known attack signatures (Emerging Threats ruleset), SQL injection, XSS, command injection, C2 traffic, cryptomining, DNS tunneling, port scanning, SSH brute force, Kubernetes-specific threats |
 | **Deployment model** | DaemonSet with host networking for packet capture on all nodes |
-| **Mode** | **IDS (detect-only)** initially; graduate to IPS after rule tuning |
+| **Mode** | **IDS (detect-only)** initially. Graduate to IPS after rule tuning |
 | **Image** | `jasonish/suricata:8.0.6` |
 | **Ruleset** | Emerging Threats Open (ETOpen) — free, community-maintained |
 | **Output** | EVE JSON logs → forwarded to Wazuh manager (via wazuh-manager-worker:514/TCP syslog listener); Prometheus metrics via suricata_exporter |
@@ -141,7 +141,7 @@ Traefik access logs → Crowdsec Agent → LAPI → Scenario analysis
 | Attribute | Value |
 |-----------|-------|
 | **Purpose** | Centralized log correlation, intrusion detection, file integrity monitoring (FIM), compliance dashboards, MITRE ATT&CK mapping |
-| **What it does** | Ingests alerts from Suricata EVE logs; correlates events against built-in rule sets; provides FIM across monitored hosts; generates compliance reports (PCI DSS, HIPAA, GDPR) |
+| **What it does** | Ingests alerts from Suricata EVE logs. Correlates events against built-in rule sets. Provides FIM across monitored hosts. Generates compliance reports (PCI DSS, HIPAA, GDPR) |
 | **Components** | Wazuh Manager + OpenSearch Indexer + Wazuh Dashboard (React UI) |
 | **Chart** | `morgoved/wazuh-helm` (chart version 2.0.0, Wazuh 4.14.3) |
 | **Ingestion sources** | Suricata (EVE JSON via syslog), system logs, FIM agents |
@@ -181,11 +181,11 @@ Traefik access logs → Crowdsec Agent → LAPI → Scenario analysis
 |-----------|-------|
 | **Purpose** | Continuous vulnerability scanning of container images, Kubernetes configurations, exposed secrets, and cluster components |
 | **What it detects** | CVEs in OS packages and language dependencies, Kubernetes misconfigurations (OPA policies), exposed secrets in pods/configmaps, RBAC issues, CIS Kubernetes Benchmark compliance, Pod Security Standards violations |
-| **Deployment model** | Deployment + CronJob-based scanning; watches K8s for pod creation to trigger scans automatically |
+| **Deployment model** | Deployment + CronJob-based scanning. Watches K8s for pod creation to trigger scans automatically |
 | **Chart** | `trivy-operator v0.32.0` (image: `mirror.gcr.io/aquasec/trivy-operator:0.30.0`) |
-| **Output** | Kubernetes SecurityReports CRDs, ComplianceReports CRDs, SBOM generation; results queryable via `kubectl` and integrable with Wazuh |
+| **Output** | Kubernetes SecurityReports CRDs, ComplianceReports CRDs, SBOM generation. Results queryable via `kubectl` and integrable with Wazuh |
 | **Scan cadence** | Daily scheduled rescans + automatic scan on new pod creation |
-| **Resource footprint** | ~256-512 MiB RAM during scans, idle otherwise; CPU limit: 500m |
+| **Resource footprint** | ~256-512 MiB RAM during scans, idle otherwise. CPU limit: 500m |
 | **Live status** | ⚠️ **Blocked by ResourceQuota** — deployment exists but 0/1 pods scheduled |
 
 **Issue: ResourceQuota Blocking Trivy Operator**
@@ -223,13 +223,13 @@ used: limits.cpu=7300m, limited: limits.cpu=7350m
 |-----------|-------|
 | **Purpose** | Behavioral analysis + IP reputation WAF that blocks malicious traffic at the ingress edge |
 | **What it detects** | Brute force login attempts, directory scanning, path traversal, API abuse, known malicious IPs (community CTI when enrolled), rate limiting violations |
-| **Deployment model** | LAPI (1 replica) + Agents (1 per node) in `crowdsec` namespace; bouncer plugin runs inside Traefik pods |
+| **Deployment model** | LAPI (1 replica) + Agents (1 per node) in `crowdsec` namespace. Bouncer plugin runs inside Traefik pods |
 | **Chart** | `crowdsec/crowdsec` v0.20.0 from `https://crowdsecurity.github.io/helm-charts` |
 | **Bouncer** | `maxlerebourg/crowdsec-bouncer-traefik-plugin` v1.4.5 (experimental Traefik plugin) |
 | **Mode** | Stream mode — real-time decision streaming from LAPI to bouncer via HTTP long-poll |
 | **Scope** | Global — applied to all traffic on `web` and `websecure` entrypoints via Traefik `additionalArguments` |
 | **Enrollment** | Local-only (no Crowdsec cloud console). Community CTI available by adding `ENROLL_KEY` |
-| **Resource footprint** | LAPI ~128-256 MiB RAM; agents ~64 MiB each; bouncer plugin negligible (runs in Traefik process) |
+| **Resource footprint** | LAPI ~128-256 MiB RAM. Agents ~64 MiB each. Bouncer plugin negligible (runs in Traefik process) |
 | **Live status** | ✅ LAPI 1/1, agents 2/2, bouncer streaming active |
 
 **Architecture:**
@@ -417,7 +417,7 @@ Suricata has no official public Helm repo — uses a custom Kustomization overla
 
 **Total estimated:** ~1.3 CPU cores, ~7-8 GiB RAM across the suite  
 **Server node remaining after Wazuh stack:** ~24 GiB free (of 32 GiB) — comfortable margin  
-**ResourceQuota issue:** `security-quota` caps CPU at 7350m; Wazuh uses ~7300m, blocking Trivy's 500m request
+**ResourceQuota issue:** `security-quota` caps CPU at 7350m. Wazuh uses ~7300m, blocking Trivy's 500m request
 
 ---
 
@@ -471,12 +471,12 @@ All security tools feed into existing observability:
 
 | Risk | Impact | Mitigation |
 |------|--------|------------|
-| Trivy Operator blocked by ResourceQuota | VAS non-functional | Increase `security-quota` CPU limit or reduce Wazuh limits; see Trivy section for options |
-| Wazuh stack exceeds node memory | Node OOM, pod evictions | Pod affinity pins to server (32 GB); resource limits enforce ceiling; monitor actual usage and adjust |
-| Suricata IDS generates excessive false positives | Alert fatigue | Start in IDS mode only; tune rules over 1-2 weeks before considering IPS |
-| Trivy scan storms during peak hours | CPU/memory spikes on worker | Schedule daily scans during off-peak (03:00 PST); auto-scans on pod creation are lightweight per-image |
+| Trivy Operator blocked by ResourceQuota | VAS non-functional | Increase `security-quota` CPU limit or reduce Wazuh limits. See Trivy section for options |
+| Wazuh stack exceeds node memory | Node OOM, pod evictions | Pod affinity pins to server (32 GB). Resource limits enforce ceiling. Monitor actual usage and adjust |
+| Suricata IDS generates excessive false positives | Alert fatigue | Start in IDS mode only. Tune rules over 1-2 weeks before considering IPS |
+| Trivy scan storms during peak hours | CPU/memory spikes on worker | Schedule daily scans during off-peak (03:00 PST). Auto-scans on pod creation are lightweight per-image |
 | Security namespace becomes single point of failure | Blindness to all security events | Critical alerts also route to Alertmanager independently; Wazuh has built-in clustering for future HA |
-| Falco eBPF driver crashes under KVM/Cilium | HIDS non-functional | Fall back to `kmod` driver; if that fails, revisit with kernel header alignment or defer to Tetragon |
+| Falco eBPF driver crashes under KVM/Cilium | HIDS non-functional | Fall back to `kmod` driver. If that fails, revisit with kernel header alignment or defer to Tetragon |
 
 ---
 
@@ -485,15 +485,15 @@ All security tools feed into existing observability:
 | Date | Decision | Rationale |
 |------|----------|-----------|
 | 2026-07-08 | Falco over Tetragon for HIDS | Simpler, broader rule ecosystem, sufficient for homelab scale; Tetragon available later if enforcement needed |
-| 2026-07-08 | Suricata in IDS mode initially | Prevent accidental disruption during tuning period; graduate to IPS after validation |
+| 2026-07-08 | Suricata in IDS mode initially | Prevent accidental disruption during tuning period. Graduate to IPS after validation |
 | 2026-07-08 | Wazuh over Security Onion for SIEM | SO resource requirements exceed cluster capacity; Wazuh provides full SIEM+XDR at feasible footprint |
 | 2026-07-08 | Trivy Operator over CLI-only VAS | Kubernetes-native CRDs, automatic re-scanning, compliance reporting built-in |
 | 2026-07-08 | Wazuh Dashboard externally accessible via admin SSO | Consistent with existing admin tooling pattern (Grafana, Traefik, Hubble); Stephen requested admin SSO access |
-| 2026-07-08 | Daily Trivy scan cadence | Balances freshness of vulnerability data against resource consumption; can increase frequency later if needed |
+| 2026-07-08 | Daily Trivy scan cadence | Balances freshness of vulnerability data against resource consumption. Can increase frequency later if needed |
 | 2026-07-20 | Suricata deployed (was planned) | 2/2 Running stable in `security` namespace, EVE JSON → Wazuh via syslog |
-| 2026-07-20 | Wazuh re-deployed (was unstable) | Fresh deployment resolved 641+ restart issue; all pods now stable with 0 restarts |
-| 2026-07-20 | Trivy Operator blocked by quota | `security-quota` CPU limit (7350m) exceeded by Wazuh stack (~7300m); needs adjustment before Trivy can schedule |
-| 2026-07-20 | Crowdsec deployed | LAPI + agents in dedicated `crowdsec` namespace; Traefik bouncer plugin v1.4.5 in stream mode; global middleware on web/websecure entrypoints; local-only (no cloud enrollment) |
+| 2026-07-20 | Wazuh re-deployed (was unstable) | Fresh deployment resolved 641+ restart issue. All pods now stable with 0 restarts |
+| 2026-07-20 | Trivy Operator blocked by quota | `security-quota` CPU limit (7350m) exceeded by Wazuh stack (~7300m). Needs adjustment before Trivy can schedule |
+| 2026-07-20 | Crowdsec deployed | LAPI + agents in dedicated `crowdsec` namespace; Traefik bouncer plugin v1.4.5 in stream mode. Global middleware on web/websecure entrypoints. Local-only (no cloud enrollment) |
 
 ---
 

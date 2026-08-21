@@ -2,7 +2,7 @@
 
 **Purpose:** OAuth2 reverse proxy (v7.6.0) for SSO authentication of media-tier services.
 
-**What it does:** Identical in architecture to `oauth2-proxy`, but configured for the media stack. It intercepts requests to media services (Jellyfin, Radarr, Sonarr, etc.) and validates sessions against Keycloak via OIDC. Both `/admins` and `/media` Keycloak groups are allowed through. Sessions are stored in the shared Redis instance.
+**What it does:** Identical in architecture to `oauth2-proxy`, but configured for the media stack. It intercepts requests to media services (Jellyfin, Radarr, Sonarr.) and validates sessions against Keycloak via OIDC. Both `/admins` and `/media` Keycloak groups are allowed through. Sessions are stored in the shared Redis instance.
 
 The media instance is reached via `https://oauth2-media.becklab.cloud` and is used by the **sso-media-chain** middleware for `/media` endpoints. Cookie name: `_oauth2_media`.
 

@@ -119,7 +119,7 @@ truncate -s 0 /var/log/k3s-server.log
 1. Document current state (take screenshots of key dashboards)
 2. Provision a fresh VM
 3. Run deployment runbook from scratch
-4. Verify all services come up correctly
+4. Verify that all services start correctly
 5. Compare against documented state
 6. Update runbook with any discrepancies found
 

@@ -21,6 +21,6 @@
 **Key environment variables (set via Helm):**
 - Database: `AFFINE_DATABASE_URL` pointing to the internal PostgreSQL (same namespace).
 - Cache: `AFFINE_REDIS_URL` for session and real-time sync.
-- Other defaults: host headers, CORS, etc.
+- Other defaults: host headers, CORS.
 
-**Notes:** Affine is one of the few services that directly serves end users; all requests are authenticated through Keycloak via the admin SSO chain.
+**Notes:** Affine is one of the few services that directly serves end users. All requests are authenticated through Keycloak via the admin SSO chain.

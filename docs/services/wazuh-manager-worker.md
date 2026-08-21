@@ -16,11 +16,11 @@
 - `1516` — Internal cluster heartbeat between workers and master
 
 **Middleware / Ingress:**
-- Internal only; no external exposure. The master manages cluster membership via these ports.
+- Internal only. No external exposure. The master manages cluster membership via these ports.
 
 **Environment variables (Helm defaults):**
 - `WAZUH_MANAGER` — points to the master manager service.
 - `WAZUH_INDEXER` — indexer endpoint for log shipping.
 - `NODE_NAME` and cluster-related vars injected by Helm.
 
-**Notes:** Workers are stateless from an application perspective; all persistent data lives on their PVCs. They scale out easily if more agent volume is expected.
+**Notes:** Workers are stateless from an application perspective. All persistent data lives on their PVCs. They scale out easily if more agent volume is expected.

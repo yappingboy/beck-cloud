@@ -2,7 +2,7 @@
 
 **Auditor:** Nova (AI Sysadmin)  
 **Audit scope:** All 7 research docs + operational procedures  
-**Previous audit:** 2026-07-12 (5 of 7 docs updated; procedures-runbook and security-suite ran out of time)
+**Previous audit:** 2026-07-12 (5 of 7 docs updated. Procedures-runbook and security-suite ran out of time)
 
 ---
 
@@ -79,10 +79,10 @@ This audit completed the update cycle started on 2026-07-12. All 7 research docu
 
 ### `security-suite.md` (Updated this cycle)
 - **Suricata status:** Changed from ✅ Deployed (July 12) to ✅ Deployed with live pod details (2/2 Running, 0 restarts, ~5d10h age)
-- **Wazuh status:** Updated from "641+ restarts investigating" to stable — all pods Running with 0 restarts (fresh deployment ~6d ago); added live pod table
+- **Wazuh status:** Updated from "641+ restarts investigating" to stable — all pods Running with 0 restarts (fresh deployment ~6d ago). Added live pod table
 - **Trivy Operator:** Changed from ✅ Deployed to ⚠️ Blocked — `security-quota` ResourceQuota prevents pod scheduling (CPU: requested 500m, 7300m/7350m already used by Wazuh)
 - **Architecture diagram:** Updated to show Trivy blocked, removed Falco from live flow
-- **Deployment Phases:** Phase 3 (IDS) marked ✅ COMPLETE; Phase 2 VAS updated to reflect Trivy blockage
+- **Deployment Phases:** Phase 3 (IDS) marked ✅ COMPLETE. Phase 2 VAS updated to reflect Trivy blockage
 - **Decision Log:** Added 3 new entries (Suricata deployed, Wazuh re-deployed, Trivy blocked)
 - **Known Risks:** Added Trivy quota blockage and Falco eBPF issues
 - **Live data:** Added pod tables with actual IPs, nodes, ages, and restart counts
@@ -95,12 +95,12 @@ This audit completed the update cycle started on 2026-07-12. All 7 research docu
 |---------------|-----------------|------------|
 | Suricata planned but not deployed | Suricata 2/2 Running in `security` since ~5d ago | ✅ security-suite.md updated |
 | Wazuh pods with 641+ restarts | All pods Running, 0 restarts (fresh deploy ~6d ago) | ✅ security-suite.md updated |
-| Trivy Operator in `trivy-system` namespace | Moved to `security` namespace but blocked by quota | ✅ All docs updated; runbook includes troubleshooting |
+| Trivy Operator in `trivy-system` namespace | Moved to `security` namespace but blocked by quota | ✅ All docs updated. Runbook includes troubleshooting |
 | Postfix relay in `email` namespace | Moved to `identity` namespace | ✅ procedures-runbook updated |
 | Services in individual namespaces (affine, bitwarden, cms, etc.) | All migrated to `webapps` | ✅ All docs updated |
 | SpotWeb in `spotweb` namespace | Moved to `media` | ✅ All docs updated |
 | qBittorrent in `torrent` namespace | Moved to `media` | ✅ All docs updated |
-| `oauth2-proxy` HelmRelease status `False` | Pods actually Running/Ready | ⚠️ Transient Helm sync issue; pods healthy |
+| `oauth2-proxy` HelmRelease status `False` | Pods actually Running/Ready | ⚠️ Transient Helm sync issue. Pods healthy |
 | `security-quota` not documented | CPU limit 7350m blocking Trivy scheduling | ✅ Added to runbook and security-suite |
 
 ---

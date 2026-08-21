@@ -1,6 +1,6 @@
 # Archived Files
 
-Files moved here during repo restructures. Kept for reference; git history is the primary record.
+Files moved here during repo restructures. Kept for reference. Git history is the primary record.
 
 ## Completed Plans
 

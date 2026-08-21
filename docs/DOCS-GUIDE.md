@@ -16,7 +16,7 @@ beck-cloud/
 │   ├── requirements.yml
 │   ├── inventory/               # Host inventories
 │   ├── playbooks/               # Numbered playbooks (00-prereqs → 99-uninstall)
-│   │   └── templates/           # Jinja2 templates (sunbeam-manifest, etc.)
+│   │   └── templates/           # Jinja2 templates (sunbeam-manifest.)
 │   └── templates/               # Root-level templates (sops.yaml.j2)
 ├── apps/                        # Application source code
 │   ├── gridspace/               # Gridspace Dockerfile + build
@@ -64,7 +64,7 @@ beck-cloud/
 │   │   ├── crowdsec/            # Crowdsec LAPI + bouncer
 │   │   ├── monitoring/          # Prometheus, Grafana, Hubble
 │   │   ├── media/               # Jellyfin stack, downloaders
-│   │   ├── webapps/             # Affine, Bitwarden, Directus, HA, etc.
+│   │   ├── webapps/             # Affine, Bitwarden, Directus, HA.
 │   │   ├── opennebula/          # Sunstone
 │   │   ├── velero/              # Velero + MinIO
 │   │   ├── rbac/                # Cluster roles
@@ -172,7 +172,7 @@ Use ATX-style headers with clear hierarchy:
 ```
 
 - H1 is the document title only.
-- H2 for major sections (Namespace Inventory, Port Matrix, etc.).
+- H2 for major sections (Namespace Inventory, Port Matrix.).
 - H3 for subsections within a section.
 - Avoid going deeper than H4.
 
@@ -199,11 +199,11 @@ Brief description paragraph.
 
 ### Tables
 
-Use tables for structured data (namespaces, services, PVCs, etc.):
+Use tables for structured data (namespaces, services, PVCs.):
 
 - Include a brief description before the table explaining what it shows.
 - Column headers should be concise but clear.
-- Sort alphabetically or by logical grouping (e.g., system namespaces first, then user namespaces).
+- Sort alphabetically or by logical grouping (for example, system namespaces first, then user namespaces).
 
 ### Status Indicators
 
@@ -280,7 +280,7 @@ docs: restructure reference/runbooks/maintenance directories
 
 - **Don't** create new top-level `.md` files in `beck-cloud/` root for documentation — put everything under `docs/`.
 - **Don't** keep service credentials or plaintext secrets in any doc file — reference encrypted secrets instead.
-- **Don't** mix Helm chart versions with container image versions (e.g., Traefik v3.4.3 is the image, 36.3.0 is the Helm chart).
+- **Don't** mix Helm chart versions with container image versions (for example, Traefik v3.4.3 is the image, 36.3.0 is the Helm chart).
 - **Don't** assume IngressRoutes exist just because TLS certificates do — verify with `kubectl get ingressroute -A`.
 - **Don't** leave "TODO" or "FIXME" comments in docs without a corresponding GitHub issue or tracking item.
 

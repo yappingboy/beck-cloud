@@ -29,7 +29,7 @@ Browser → Traefik → [oauth2-proxy forwardAuth] → Service
 
 | Service | SSO Chain | Config Method | Notes |
 |---------|-----------|---------------|-------|
-| **Grafana** | admin | IngressRoute middleware | auth.proxy enabled; auto_sign_up; disable_login_form |
+| **Grafana** | admin | IngressRoute middleware | auth.proxy enabled. Auto_sign_up. Disable_login_form |
 | **Prometheus** | admin | Ingress annotation | |
 | **Alertmanager** | admin | Ingress annotation | |
 | **Hubble UI** | admin | IngressRoute middleware | Cilium network observability |

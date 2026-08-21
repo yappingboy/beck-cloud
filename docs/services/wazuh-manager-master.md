@@ -17,11 +17,11 @@
 - `514` — Syslog (if enabled)
 
 **Middleware / Ingress:**
-- Internal service; not exposed directly. The dashboard (`wazuh-dashboard`) provides the web UI at port 5601, which may be routed via Traefik if needed.
+- Internal service. Not exposed directly. The dashboard (`wazuh-dashboard`) provides the web UI at port 5601, which may be routed via Traefik if needed.
 
 **Environment variables (Helm defaults):**
 - `WAZUH_MANAGER` — hostname of the master manager.
 - `WAZUH_INDEXER` — indexers endpoint (`wazuh-indexer`).
-- Cluster settings (`CLUSTER_NAME`, `NODE_NAME`, etc.).
+- Cluster settings (`CLUSTER_NAME`, `NODE_NAME`.).
 
-**Notes:** The manager is the brain of the Wazuh stack; all agents report to it, and it pushes updates to them.
+**Notes:** The manager is the brain of the Wazuh stack. All agents report to it, and it pushes updates to them.

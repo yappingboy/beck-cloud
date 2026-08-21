@@ -16,11 +16,11 @@
 - `9300` — Inter-node communication (transport protocol).
 
 **Middleware / Ingress:**
-- Internal only; no public hostname. The dashboard accesses it directly via the service name.
+- Internal only. No public hostname. The dashboard accesses it directly via the service name.
 
 **Environment variables (Helm defaults):**
 - `discovery.type: single-node` — runs as a solo indexer in this deployment.
 - `INDEX_PREFIX` — typically `wazuh-alerts-*`.
 - ILM and rollover policies injected by Helm.
 
-**Notes:** This is the data lake for all security events; its health directly impacts alerting reliability.
+**Notes:** This is the data lake for all security events. Its health directly impacts alerting reliability.

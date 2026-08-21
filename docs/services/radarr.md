@@ -15,11 +15,11 @@
 - Default Radarr port is 7878 (HTTP API). Exposed by Traefik internally.
 
 **Middleware / Ingress:**
-- Internal-only; no public hostname configured.
+- Internal-only. No public hostname configured.
 
 **Environment variables (Helm defaults):**
 - `RADARR_CONFIG_DIR` — points to the PVC.
 - `MONITORING_ENABLED=true` — sends stats to Prometheus.
-- Other defaults for language, quality, etc.
+- Other defaults for language, quality.
 
-**Notes:** Radarr and Sonarr share the same qBittorrent service for downloads; they are both essential for keeping Jellyfin up-to-date.
+**Notes:** Radarr and Sonarr share the same qBittorrent service for downloads. They are both essential for keeping Jellyfin up-to-date.

@@ -12,13 +12,13 @@
 | PVCs | `mariadb-data` (not listed in the previous scan, but implied by StatefulSet) — typically ~5–10 GiB depending on chart defaults |
 
 **Ports:**
-- `3306` — MySQL/MariaDB protocol. Exposed as a ClusterIP service; accessed only internally by Homebox and other services.
+- `3306` — MySQL/MariaDB protocol. Exposed as a ClusterIP service. Accessed only internally by Homebox and other services.
 
 **Middleware / Ingress:**
-- No external exposure; purely internal database.
+- No external exposure. Purely internal database.
 
 **Environment variables (Helm defaults):**
 - `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — credentials injected via Kubernetes secret.
 - `PGDATA` — mounted from PVC.
 
-**Notes:** While named "mariadb", the container image is actually PostgreSQL; the service name follows the chart conventions. It's a critical backend for media metadata and should be kept healthy.
+**Notes:** While named "mariadb", the container image is actually PostgreSQL. The service name follows the chart conventions. It's a critical backend for media metadata and should be kept healthy.
