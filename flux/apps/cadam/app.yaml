@@ -38,7 +38,7 @@ spec:
         - name: cadam
           # Pinned by digest (2026-08-18, SPA build). After each rebuild via
           # build-job.yaml, bump this to the new image digest and let Flux roll.
-          image: ghcr.io/yappingboy/cadam@sha256:e8c2bbc15ce461c7906a1549f18f02f6bd521ba9a284164b391b215e6899c653
+          image: ghcr.io/yappingboy/cadam@sha256:3b871da622b4039996de56a3f1b11d46225e0702d01fceae319ee038d25ab74c
           imagePullPolicy: IfNotPresent
           ports:
             - name: http
