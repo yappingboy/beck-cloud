@@ -2,7 +2,7 @@
 
 **Purpose:** Dashboard landing page for BeckCloud administrators.
 
-**What it does:** A static HTML/JS dashboard providing quick links to core services (Keycloak, Traefik, Wazuh) and cluster health widgets. It runs as an ephemeral container with no persistent storage. All content is baked into the image. It is accessible via the internal network and proxied by Traefik, with no dedicated IngressRoute. This makes it reachable only from within the cluster or via direct service IP.
+**What it does:** Homepage (`ghcr.io/gethomepage/homepage:latest`, HelmRelease in `webapps`) provides quick links to cluster services and health widgets. It runs with cluster RBAC enabled so the Kubernetes widget can query the API. It has no persistent storage. External access is at `home.becklab.cloud` via Traefik with TLS.
 
 **Resources:**
 | Type | Details |
@@ -12,11 +12,13 @@
 | PVCs | None (ephemeral) |
 
 **Ports:**
-- `3000` — HTTP (internal only).
+- `3000` — HTTP (served at `home.becklab.cloud` via Traefik with TLS).
 
 **Middleware / Ingress:**
-- Exposed by Traefik as an internal service. No external hostname.
+- Route: `home.becklab.cloud` → Homepage service (port 3000)
+- SSO chain: `identity-sso-media-chain` (via ingress annotation `identity-sso-media-chain@kubernetescrd`)
+- Certificate: `homepage-tls` (cert-manager, letsencrypt-prod)
 
-**Environment variables:** None beyond defaults.
+**Environment variables:** `HOMEPAGE_ALLOWED_HOSTS` set to `home.becklab.cloud`.
 
-**Notes:** The homepage is primarily for local admin use. If external access is ever needed, an IngressRoute can be added pointing to port 3000.
+**Notes:** The homepage links to most cluster services. Service status widgets probe the internal cluster service URLs so they bypass SSO. Click targets use the public URLs.
