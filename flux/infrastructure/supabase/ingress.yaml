@@ -1,5 +1,8 @@
-# Expose Supabase Kong gateway at supabase.becklab.cloud behind SSO.
-# Browser supabase-js talks to /auth (gotrue), /rest (postgrest), /storage directly.
+# Expose Supabase Kong gateway at supabase.becklab.cloud.
+# No SSO here: Supabase auth (GoTrue) endpoints must be reachable without a
+# Keycloak session so CADAM's anon-key signInWithPassword / signUp / token
+# refresh work. Auth is enforced by the anon/service keys + Postgres RLS.
+# CADAM is the only client routed through this host today.
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -15,9 +18,6 @@ spec:
         - name: supabase-supabase-kong
           port: 8000
           scheme: http
-      middlewares:
-        - name: sso-admin-chain
-          namespace: identity
   tls:
     secretName: supabase-tls
 ---
