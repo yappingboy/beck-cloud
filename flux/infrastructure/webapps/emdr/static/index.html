@@ -1,0 +1,357 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<title>EMDR VR — Bilateral Stimulation</title>
+<style>
+  :root { --bg:#0b0f16; --card:#111826; --line:#22304a; --text:#dfe7f5; --dim:#8fa0bd; --acc:#4da3ff; }
+  html,body { margin:0; height:100%; background:var(--bg); color:var(--text);
+    font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif; overflow:hidden; }
+  canvas { display:block; }
+  #overlay { position:fixed; inset:0; pointer-events:none; display:flex; align-items:center; justify-content:center; }
+  .card { pointer-events:auto; background:rgba(17,24,38,.92); border:1px solid var(--line);
+    border-radius:16px; padding:28px 32px; width:min(560px,92vw); box-shadow:0 20px 60px rgba(0,0,0,.5); }
+  h1 { font-size:1.35rem; margin:0 0 4px; letter-spacing:.02em; }
+  .sub { color:var(--dim); font-size:.9rem; margin:0 0 18px; }
+  label.field { display:block; margin:16px 0 4px; font-size:.9rem; color:var(--text); }
+  label.field .val { color:var(--acc); font-variant-numeric:tabular-nums; }
+  input[type=range] { width:100%; accent-color:var(--acc); }
+  .hint { color:var(--dim); font-size:.8rem; line-height:1.45; margin-top:14px; }
+  .row { display:flex; gap:12px; margin-top:20px; flex-wrap:wrap; }
+  button { pointer-events:auto; font:inherit; font-size:.95rem; padding:10px 18px; border-radius:10px;
+    border:1px solid var(--line); background:#1a2436; color:var(--text); cursor:pointer; }
+  button.primary { background:var(--acc); border-color:var(--acc); color:#04121f; font-weight:600; }
+  button:hover { filter:brightness(1.15); }
+  #hud { position:fixed; top:18px; left:50%; transform:translateX(-50%); pointer-events:auto;
+    display:flex; align-items:center; gap:14px; background:rgba(17,24,38,.85); border:1px solid var(--line);
+    border-radius:999px; padding:8px 16px; font-size:.9rem; }
+  #hud .time { font-variant-numeric:tabular-nums; color:var(--acc); min-width:48px; text-align:center; }
+  #msg { color:#ffb454; font-size:.85rem; min-height:1.2em; margin-top:10px; }
+  .small { font-size:.75rem; color:var(--dim); margin-top:16px; line-height:1.4; }
+  kbd { background:#1a2436; border:1px solid var(--line); border-radius:4px; padding:0 5px; font-size:.75rem; }
+</style>
+</head>
+<body>
+<div id="overlay">
+  <!-- Setup dialog (shown before the balls move) -->
+  <div id="dialog" class="card">
+    <h1>EMDR &mdash; Bilateral Stimulation</h1>
+    <p class="sub">Two spheres will drift left and right in front of you. Track them with your eyes only,
+      keeping your head still. A soft tone plays in the ear on the side the balls reverse.</p>
+
+    <label class="field" for="dur">Set duration &mdash; <span class="val" id="durVal">30 s</span></label>
+    <input type="range" id="dur" min="15" max="120" step="5" value="30">
+
+    <label class="field" for="speed">Pace &mdash; <span class="val" id="speedVal">1.00 Hz (0.5 s per pass)</span></label>
+    <input type="range" id="speed" min="0.2" max="2" step="0.05" value="1">
+
+    <p class="hint">Research standard dose: <b>1&nbsp;Hz</b> (one full left&rarr;right&rarr;left cycle per second)
+      in <b>24&ndash;30&nbsp;s sets</b>. Slower (&asymp;0.4&nbsp;Hz) calms an overwhelmed client; faster
+      (1&ndash;2&nbsp;Hz) helps when processing stalls. Adjust below to taste.</p>
+
+    <div class="row">
+      <button id="btnVR" class="primary">Enter VR</button>
+      <button id="btnPrev">Desktop preview</button>
+    </div>
+    <p id="msg"></p>
+    <p class="small">Stop anytime: <kbd>Esc</kbd> (desktop) or your headset&rsquo;s menu/system button (VR).
+      Not a medical device &mdash; for research/practice use with a qualified professional.</p>
+  </div>
+
+  <!-- In-run HUD (visible in-VR only when dom-overlay is supported) -->
+  <div id="hud" hidden>
+    <span id="hudTime" class="time">&mdash;</span>
+    <button id="btnStop">Stop set</button>
+  </div>
+
+  <!-- Completion dialog -->
+  <div id="done" class="card" hidden>
+    <h1>Set complete</h1>
+    <p class="sub" id="doneInfo"></p>
+    <div class="row">
+      <button id="btnAgain" class="primary">Another set</button>
+      <button id="btnExit">Exit</button>
+    </div>
+  </div>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+</script>
+<script type="module">
+import * as THREE from 'three';
+
+// ---------- tunables ----------
+const DIST   = 2.2;   // meters: where the balls sit in front of you
+const AMP    = 0.9;   // meters: travel half-width (±~22° gaze at DIST)
+const RADIUS = 0.18;  // meters: ball radius
+const GAP    = 0.55;  // meters: center-to-center spacing of the two balls
+const COUNTDOWN_MS = 3000;
+
+// ---------- dom ----------
+const $ = (id) => document.getElementById(id);
+const overlay = $('overlay'), dialog = $('dialog'), hud = $('hud'), done = $('done');
+const durIn = $('dur'), speedIn = $('speed'), durVal = $('durVal'), speedVal = $('speedVal');
+const hudTime = $('hudTime'), msgEl = $('msg'), doneInfo = $('doneInfo');
+const msg = (t) => { msgEl.textContent = t || ''; };
+
+function syncLabels() {
+  durVal.textContent = durIn.value + ' s';
+  const hz = parseFloat(speedIn.value);
+  speedVal.textContent = hz.toFixed(2) + ' Hz (' + (1 / hz / 2).toFixed(1) + ' s per pass)';
+}
+durIn.oninput = speedIn.oninput = syncLabels; syncLabels();
+
+// ---------- three.js scene ----------
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x0a0e14);
+scene.fog = new THREE.Fog(0x0a0e14, 6, 14);
+
+const camera = new THREE.PerspectiveCamera(70, innerWidth / innerHeight, 0.05, 60);
+camera.position.set(0, 1.5, 0);
+camera.lookAt(0, 1.5, -DIST);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.setSize(innerWidth, innerHeight);
+renderer.xr.enabled = true;
+document.body.appendChild(renderer.domElement);
+addEventListener('resize', () => {
+  camera.aspect = innerWidth / innerHeight;
+  camera.updateProjectionMatrix();
+  renderer.setSize(innerWidth, innerHeight);
+});
+
+// floor grid (orientation cue only)
+const grid = new THREE.GridHelper(12, 24, 0x2a3340, 0x1a2029);
+grid.position.y = 0;
+scene.add(grid);
+
+// arena: anchored once per session, "in front of the user"
+const arena = new THREE.Group();
+scene.add(arena);
+
+// mover: slides left/right; holds both balls
+const mover = new THREE.Group();
+arena.add(mover);
+const ballMat = new THREE.MeshBasicMaterial({ color: 0xf2f4ff });
+const geo = new THREE.SphereGeometry(RADIUS, 48, 32);
+const ballL = new THREE.Mesh(geo, ballMat);
+const ballR = new THREE.Mesh(geo, ballMat);
+ballL.position.x = -GAP / 2;
+ballR.position.x =  GAP / 2;
+mover.add(ballL, ballR);
+
+// static progress bar (left-anchored so it drains right-to-left)
+const barGeo = new THREE.BoxGeometry(1.6, 0.03, 0.03);
+barGeo.translate(0.8, 0, 0);
+const bar = new THREE.Mesh(barGeo, new THREE.MeshBasicMaterial({ color: 0x4da3ff }));
+bar.position.set(-0.8, -0.55, 0.1);
+arena.add(bar);
+
+// time label on a canvas texture
+const labelCanvas = document.createElement('canvas');
+labelCanvas.width = 512; labelCanvas.height = 128;
+const lctx = labelCanvas.getContext('2d');
+const labelTex = new THREE.CanvasTexture(labelCanvas);
+const label = new THREE.Mesh(
+  new THREE.PlaneGeometry(0.9, 0.225),
+  new THREE.MeshBasicMaterial({ map: labelTex, transparent: true, depthWrite: false })
+);
+label.position.set(0, 0.6, 0.1);
+arena.add(label);
+
+function setLabel(text) {
+  lctx.clearRect(0, 0, 512, 128);
+  lctx.font = '800 84px system-ui, sans-serif';
+  lctx.textAlign = 'center'; lctx.textBaseline = 'middle';
+  lctx.fillStyle = '#dfe7f5';
+  lctx.fillText(text, 256, 68);
+  labelTex.needsUpdate = true;
+}
+
+// ---------- audio (edge beeps via stereo pan) ----------
+let actx = null;
+function audio() {
+  if (!actx) actx = new (window.AudioContext || window.webkitAudioContext)();
+  if (actx.state === 'suspended') actx.resume();
+  return actx;
+}
+function beep(pan, opts = {}) {
+  const ctx = audio();
+  const { freq = 550, dur = 0.1, gain = 0.4, at = ctx.currentTime } = opts;
+  const osc = ctx.createOscillator();
+  const g = ctx.createGain();
+  const p = ctx.createStereoPanner();
+  p.pan.value = THREE.MathUtils.clamp(pan, -1, 1);
+  osc.type = 'sine'; osc.frequency.value = freq;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.exponentialRampToValueAtTime(gain, at + 0.008);
+  g.gain.exponentialRampToValueAtTime(0.0001, at + dur);
+  osc.connect(g); g.connect(p); p.connect(ctx.destination);
+  osc.start(at); osc.stop(at + dur + 0.05);
+}
+const beepLeft  = () => beep(-1);          // balls reversed at LEFT edge
+const beepRight = () => beep(1);           // balls reversed at RIGHT edge
+const beepCenter = (f = 550) => beep(0, { freq: f, gain: 0.25 });
+
+// ---------- state machine: dialog → countdown → running → complete ----------
+let phase = 'dialog';
+let phaseT0 = 0, lastT = 0;
+let durationS = 30, hz = 1.0;
+let phaseAcc = 0, prevPh = null, countdownSec = -1;
+let anchored = false, domOverlay = null, flashUntil = 0;
+
+function anchorArena() {
+  const c = renderer.xr.isPresenting ? renderer.xr.getCamera() : camera;
+  c.updateMatrixWorld();
+  const p = new THREE.Vector3().setFromMatrixPosition(c.matrixWorld);
+  const q = new THREE.Quaternion().setFromRotationMatrix(c.matrixWorld);
+  const fwd = new THREE.Vector3(0, 0, -1).applyQuaternion(q);
+  fwd.y = 0; fwd.normalize();
+  const pos = p.clone().addScaledVector(fwd, DIST);
+  pos.y = p.y + 0.02;
+  arena.position.copy(pos);
+  // face the user: arena +z toward the head
+  const m = new THREE.Matrix4().lookAt(pos, p, new THREE.Vector3(0, 1, 0));
+  arena.quaternion.setFromRotationMatrix(m);
+  anchored = true;
+}
+
+function startSet(session) {
+  durationS = parseInt(durIn.value, 10);
+  hz = parseFloat(speedIn.value);
+  dialog.hidden = true; done.hidden = true; hud.hidden = false;
+  hudTime.textContent = durationS + ' s';
+  phase = 'countdown';
+  phaseT0 = lastT = performance.now();
+  phaseAcc = 0; prevPh = null; countdownSec = -1;
+  anchored = false;
+  domOverlay = session ? (session.domOverlayState || null) : null;
+  mover.position.x = 0; bar.scale.x = 1;
+  setLabel('3'); audio(); beepCenter(440);
+  if (session) session.addEventListener('end', onSessionEnd);
+}
+
+function finishSet(natural) {
+  if (phase === 'complete') return;
+  const elapsed = natural ? durationS : Math.min(durationS, (performance.now() - phaseT0 - COUNTDOWN_MS) / 1000);
+  phase = 'complete';
+  hud.hidden = true;
+  const s = renderer.xr.getSession ? renderer.xr.getSession() : null;
+  beepCenter(440); beepCenter(660, { at: actx.currentTime + 0.18 });
+  if (renderer.xr.isPresenting) {
+    if (domOverlay) {
+      doneInfo.textContent = 'Elapsed: ' + Math.max(0, elapsed).toFixed(1) + ' s of ' +
+        durationS + ' s at ' + hz.toFixed(2) + ' Hz.';
+      done.hidden = false;
+      $('btnExit').onclick = () => s && s.end();
+    } else {
+      setTimeout(() => s && s.end(), 2000);
+    }
+  } else {
+    doneInfo.textContent = 'Elapsed: ' + Math.max(0, elapsed).toFixed(1) + ' s of ' +
+      durationS + ' s at ' + hz.toFixed(2) + ' Hz.';
+    done.hidden = false;
+  }
+}
+
+function onSessionEnd() {
+  phase = 'dialog';
+  anchored = false;
+  hud.hidden = true; done.hidden = true; dialog.hidden = false;
+  setLabel(''); bar.scale.x = 0;
+  mover.position.x = 0;
+}
+
+function tick() {
+  const now = performance.now();
+  const dt = Math.min(0.1, (now - lastT) / 1000 || 0.016);
+  lastT = now;
+
+  if (renderer.xr.isPresenting && !anchored) anchorArena();
+
+  if (phase === 'countdown') {
+    const remain = COUNTDOWN_MS - (now - phaseT0);
+    const sec = Math.ceil(remain / 1000);
+    if (sec !== countdownSec) {
+      countdownSec = sec;
+      if (sec >= 1 && sec <= 3) { setLabel(String(sec)); beepCenter(440 + (3 - sec) * 110); }
+    }
+    if (remain <= 0) {
+      phase = 'running';
+      phaseT0 = now; phaseAcc = 0; prevPh = null;
+      setLabel(durationS + ' s');
+      beepRight(); // balls start at the right edge and reverse into the set
+    }
+  } else if (phase === 'running') {
+    // accumulated phase → live speed changes stay smooth
+    phaseAcc = (phaseAcc + dt * hz) % 1;
+    const ph = phaseAcc;
+    const tri = ph < 0.5 ? (1 - 4 * ph) : (4 * ph - 3); // +A → -A → +A
+    mover.position.x = AMP * tri;
+    if (prevPh !== null) {
+      if (prevPh < 0.5 && ph >= 0.5) { beepLeft();  flashUntil = now + 120; }
+      if (ph < prevPh)                { beepRight(); flashUntil = now + 120; }
+    }
+    prevPh = ph;
+    const left = Math.max(0, durationS - (now - phaseT0) / 1000);
+    const mm = Math.floor(left / 60), ss = Math.floor(left % 60);
+    hudTime.textContent = mm + ':' + String(ss).padStart(2, '0');
+    setLabel(mm + ':' + String(ss).padStart(2, '0'));
+    bar.scale.x = Math.max(0.0001, left / durationS);
+    if (left <= 0) finishSet(true);
+  } else if (phase === 'dialog') {
+    const s = 1 + 0.04 * Math.sin(now / 400);
+    ballL.scale.setScalar(s); ballR.scale.setScalar(s);
+  }
+
+  // reversal flash
+  const f = now < flashUntil ? 1 + 0.18 * (flashUntil - now) / 120 : 1;
+  if (phase === 'running') { ballL.scale.setScalar(f); ballR.scale.setScalar(f); }
+
+  renderer.render(scene, camera);
+}
+renderer.setAnimationLoop(tick);
+
+// ---------- start buttons ----------
+$('btnPrev').onclick = () => { if (phase === 'dialog') startSet(null); };
+$('btnAgain').onclick = () => { done.hidden = true; dialog.hidden = false; phase = 'dialog'; };
+$('btnStop').onclick = () => finishSet(false);
+addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !renderer.xr.isPresenting) finishSet(false);
+  if (!renderer.xr.isPresenting) {
+    if (e.key === 'ArrowUp' || e.key === ']')  { speedIn.value = Math.min(2, parseFloat(speedIn.value) + 0.05); }
+    if (e.key === 'ArrowDown' || e.key === '[') { speedIn.value = Math.max(0.2, parseFloat(speedIn.value) - 0.05); }
+    speedIn.oninput && speedIn.oninput();
+  }
+});
+
+$('btnVR').onclick = async () => {
+  if (!navigator.xr) { msg('WebXR not available in this browser.'); return; }
+  msg('Checking for immersive-vr support…');
+  let supported = false;
+  try { supported = await navigator.xr.isSessionSupported('immersive-vr'); } catch {}
+  if (!supported) { msg('immersive-vr not supported here. Use desktop preview.'); return; }
+  msg('Waiting for headset "Enter" / browser prompt…');
+  const base = { optionalFeatures: ['dom-overlay', 'bounded-floor'], domOverlay: { root: overlay } };
+  let session, ref = 'local-floor';
+  try {
+    session = await navigator.xr.requestSession('immersive-vr', { ...base, requiredFeatures: ['local-floor'] });
+  } catch (e) {
+    ref = 'local';
+    session = await navigator.xr.requestSession('immersive-vr', base)
+      .catch((err) => { msg('Failed to start XR session: ' + err.message); return; });
+  }
+  renderer.xr.setReferenceSpaceType(ref);
+  try {
+    await renderer.xr.setSession(session);
+    startSet(session);
+  } catch (e) {
+    msg('Could not attach session (' + e.message + ').'); try { session.end(); } catch {}
+  }
+};
+</script>
+</body>
+</html>
