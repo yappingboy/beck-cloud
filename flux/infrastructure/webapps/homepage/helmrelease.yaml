@@ -47,7 +47,7 @@ spec:
                 widget:
                   type: jellyfin
                   url: http://jellyfin.media:8096
-                  key: ""
+                  key: d2b37b7199d34091b5221f717f7a7e16
             - Sonarr:
                 icon: si-sonarr
                 href: https://sonarr.becklab.cloud
@@ -71,7 +71,7 @@ spec:
                 widget:
                   type: bazarr
                   url: http://bazarr.media:6767
-                  key: ""
+                  key: d2e12738d7c4b46ebb4f6978cf1c428b
             - Prowlarr:
                 icon: mdi-rss
                 href: https://prowlarr.becklab.cloud
@@ -107,7 +107,7 @@ spec:
                   type: qbittorrent
                   url: http://qbit-gluetun.media:8080
                   username: admin
-                  password: ""
+                  password: admin
             - Tdarr:
                 icon: mdi-filmstrip-box
                 href: https://tdarr.becklab.cloud
@@ -120,6 +120,7 @@ spec:
                 icon: mdi-television-box
                 href: https://requests.becklab.cloud
                 description: Media requests
+                excludeStatusCheck: true
                 widget:
                   type: seerr
                   url: http://jellyseerr.media:5055
@@ -131,7 +132,7 @@ spec:
                 widget:
                   type: homebox
                   url: http://homebox.media:7745
-                  token: ""
+                  token: WesFL+mZSTT9ySmaLHWSEfO4LXqVYKffBTNReG75e4DpkbDXFTk+xxT+VmMhzY3W
         - Monitoring:
             - Grafana:
                 icon: si-grafana
