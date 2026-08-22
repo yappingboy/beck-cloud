@@ -1,0 +1,11 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: build-dashboard
+  namespace: toolbox
+spec:
+  selector:
+    app: build-dashboard
+  ports:
+    - port: 8080
+      targetPort: 8080

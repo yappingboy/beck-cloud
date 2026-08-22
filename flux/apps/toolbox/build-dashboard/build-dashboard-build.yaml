@@ -1,0 +1,74 @@
+# Kaniko build job for the build dashboard itself.
+# Source: tools/build-dashboard/ in the beck-cloud repo.
+# Re-run: delete this job, then kubectl apply (or use the dashboard UI).
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: build-build-dashboard
+  namespace: toolbox
+spec:
+  backoffLimit: 2
+  template:
+    metadata:
+      labels:
+        app: build-dashboard
+        build-phase: "1"
+    spec:
+      serviceAccountName: kaniko-builder
+      restartPolicy: Never
+      initContainers:
+        - name: copy-source
+          image: alpine/git:latest
+          resources:
+            limits:
+              cpu: "500m"
+              memory: 512Mi
+            requests:
+              cpu: 100m
+              memory: 128Mi
+          command:
+            - sh
+            - -c
+            - |
+              set -e
+              cd /workspace
+              git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src
+              mkdir -p /workspace/app
+              cp /workspace/src/tools/build-dashboard/index.html \
+                 /workspace/src/tools/build-dashboard/server.js \
+                 /workspace/src/tools/build-dashboard/Dockerfile /workspace/app/
+              echo "Source copied: $(ls /workspace/app | tr '\n' ' ')"
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+      containers:
+        - name: kaniko
+          image: gcr.io/kaniko-project/executor:v1.24.0
+          args:
+            - --dockerfile=Dockerfile
+            - --context=dir:///workspace/app
+            - --destination=ghcr.io/yappingboy/build-dashboard:latest
+            - --cache=true
+            - --cache-repo=ghcr.io/yappingboy/kaniko-cache
+            - --skip-tls-verify
+            - --push-retry=3
+          resources:
+            limits:
+              cpu: "1"
+              memory: 3Gi
+            requests:
+              cpu: 250m
+              memory: 1Gi
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+            - name: docker-config
+              mountPath: /kaniko/.docker/config.json
+              subPath: .dockerconfigjson
+              readOnly: true
+      volumes:
+        - name: workspace
+          emptyDir: {}
+        - name: docker-config
+          secret:
+            secretName: ghcr-config

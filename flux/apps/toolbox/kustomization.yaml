@@ -11,3 +11,4 @@ resources:
   - gridspace-tina2s-configmap.yaml
   - admin-panel-build/
   - emdr-build/
+  - build-dashboard/
