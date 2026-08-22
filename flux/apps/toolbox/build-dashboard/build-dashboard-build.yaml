@@ -1,5 +1,5 @@
 # Kaniko build job for the build dashboard itself.
-# Source: tools/build-dashboard/ in the beck-cloud repo.
+# Source: apps/tools/build-dashboard/ in the beck-cloud repo.
 # Re-run: delete this job, then kubectl apply (or use the dashboard UI).
 apiVersion: batch/v1
 kind: Job
@@ -32,11 +32,12 @@ spec:
             - |
               set -e
               cd /workspace
+              rm -rf src
               git clone --branch main --depth 1 https://github.com/yappingboy/beck-cloud.git src
               mkdir -p /workspace/app
-              cp /workspace/src/tools/build-dashboard/index.html \
-                 /workspace/src/tools/build-dashboard/server.js \
-                 /workspace/src/tools/build-dashboard/Dockerfile /workspace/app/
+              cp /workspace/src/apps/tools/build-dashboard/index.html \
+                 /workspace/src/apps/tools/build-dashboard/server.js \
+                 /workspace/src/apps/tools/build-dashboard/Dockerfile /workspace/app/
               echo "Source copied: $(ls /workspace/app | tr '\n' ' ')"
           volumeMounts:
             - name: workspace
