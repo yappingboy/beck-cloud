@@ -189,8 +189,8 @@ spec:
                 description: Minecraft server
                 widget:
                   type: minecraft
-                  url: crafty-minecraft.gaming
-                  port: 25565
+                  url: crafty.gaming
+                  port: 8443
       settings:
         title: Becklab
         theme: dark
