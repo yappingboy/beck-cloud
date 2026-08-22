@@ -16,7 +16,7 @@
 
 **Middleware / Ingress:**
 - Route: `affine.becklab.cloud` → Service `affine-server`
-- SSO chain: `sso-admin-chain` (oauth2-redirect → keycloak-forward-auth)
+- SSO chain: `sso-admin-chain` (oauth2-redirect-admin → keycloak-forwardauth-admin → admin-role-check)
 
 **Key environment variables:**
 - `DATABASE_URL`: connection string for the internal PostgreSQL (`affine-postgres`, same namespace).

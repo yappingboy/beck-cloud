@@ -2,20 +2,22 @@
 
 **Purpose:** Alertmanager — routes, groups, and sends notifications for Prometheus alerts.
 
-**What it does:** Alertmanager receives alerting rules from Prometheus, deduplicates them, and delivers them via configured channels (webhook, email.). In this cluster it runs as a single replica statefulset with no persistent storage (data is in-memory. On restart it reinitializes from the config). It works in tandem with Grafana for alert dashboards.
+**What it does:** Alertmanager receives alerting rules from Prometheus, deduplicates them, and delivers them via configured channels (webhook, email.). In this cluster it runs as a single replica statefulset with persistent storage (5 GiB, local-path) and a 240h retention. It works in tandem with Grafana for alert dashboards.
 
 **Resources:**
 | Type | Details |
 |------|---------|
 | CPU/RAM | Not set (uses Helm defaults, typically very low) |
-| PVCs | None (ephemeral) |
+| PVCs | `kps-alertmanager-db` (5 GiB, local-path) |
 
 **Ports:**
 - `9093` — HTTP API and gRPC. Internal only. Prometheus pushes alerts here.
 - `8080` — Web UI for alert management (if enabled).
 
 **Middleware / Ingress:**
-- No external exposure. All alert routing is internal.
+- Route: `alertmanager.becklab.cloud` → Alertmanager. Ingress enabled in Helm values with TLS secret `alertmanager-tls` (letsencrypt-prod).
+- SSO chain: `identity-sso-admin-chain@kubernetescrd` via ingress annotation.
+- All alert routing from Prometheus stays internal.
 
 **Environment variables (Helm defaults):**
 - `ALERTMANAGER_CONFIG` — path to the Alertmanager configuration YAML (contains receivers, route tree.).

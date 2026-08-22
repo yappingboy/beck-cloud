@@ -9,7 +9,7 @@
 |------|---------|
 | CPU | 10m request / 1 limit |
 | RAM | 32Mi request / 256Mi limit |
-| PVCs | `bumpmesh-html` (200 MiB, local-path, node `ip-192-168-100-11`) |
+| PVCs | `bumpmesh-html` (200 MiB) |
 
 **Ports:**
 - `80` — HTTP (ClusterIP, internal only).

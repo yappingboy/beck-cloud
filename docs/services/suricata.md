@@ -2,7 +2,7 @@
 
 **Purpose:** Intrusion Detection/Prevention System (IDS/IPS) for network traffic analysis.
 
-**What it does:** Suricata (v8.0.6) inspects live network traffic on each cluster node for known threats, anomalies, and policy violations. It runs as a DaemonSet so every node has a local instance capturing traffic on the `cilium_host` interface. Rules are loaded from a ConfigMap and can be updated without redeploying. Detection events are written to `eve.json` and forwarded to Wazuh for alerting and log aggregation.
+**What it does:** Suricata (v8.0.6) inspects live network traffic on each cluster node for known threats, anomalies, and policy violations. It runs as a DaemonSet so every node has a local instance capturing traffic on the `cilium_host` interface. The engine config is loaded from a ConfigMap and can be updated without redeploying. Detection events are written to `eve.json` and forwarded to Wazuh for alerting and log aggregation.
 
 **Resources:**
 | Type | Details |
@@ -27,13 +27,12 @@
 - **copy-config** (init, `busybox:latest`) — Copies `suricata.yaml` from the `suricata-config` ConfigMap into an `emptyDir` volume so the main container can mount it.
 
 **Configuration:**
-- **suricata-config ConfigMap** — Contains `suricata.yaml` (main engine config) and rule files. Mounted read-only as `config-src`, then copied by the init container.
-- **suricata-rules ConfigMap** — Contains Suricata detection rules (signature definitions).
-- Config and rules are decoupled so rules can be updated independently of the engine configuration.
+- **suricata-config ConfigMap** — Contains `suricata.yaml` (main engine config, af-packet on `cilium_host`, EVE JSON output). Mounted read-only as `config-src`, then copied by the init container into the `suricata-config` emptyDir.
+- Rules: The ETOpen ruleset is bundled inside the `jasonish/suricata` image. No separate rules ConfigMap exists.
 
 **Log flow:**
 ```
 cilium_host traffic → Suricata engine → eve.json (emptyDir) → log-forwarder sidecar → nc → wazuh-manager-worker:514 (syslog)
 ```
 
-**Notes:** Suricata runs on every node to ensure no traffic is missed. The DaemonSet with `tolerations: op=Exists` guarantees pods schedule even on tainted nodes. Rule updates only require updating the ConfigMap and restarting the DaemonSet.
+**Notes:** Suricata runs on every node to ensure no traffic is missed. The DaemonSet with `tolerations: op=Exists` guarantees pods schedule even on tainted nodes. Rule updates ship inside the `jasonish/suricata` image, so a new engine image version is required.

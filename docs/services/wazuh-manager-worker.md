@@ -2,7 +2,7 @@
 
 **Purpose:** Wazuh worker nodes — process events and run local analysis.
 
-**What it does:** Worker managers handle incoming logs from agents, apply rules/decoders locally, and forward alerts to the master manager and indexers. This namespace runs two identical StatefulSet replicas for high availability. Each replica has its own PVC.
+**What it does:** Worker managers handle incoming logs from agents, apply rules/decoders locally, and forward alerts to the master manager and indexers. This namespace runs two identical StatefulSet replicas for high availability. Each replica has its own PVC. Uses image `wazuh/wazuh-manager:4.14.3`.
 
 **Resources:**
 | Type | Details |

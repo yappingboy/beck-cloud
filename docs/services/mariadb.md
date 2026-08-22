@@ -1,24 +1,26 @@
 # mariadb
 
-**Purpose:** MariaDB/PostgreSQL database for the media stack.
+**Purpose:** MariaDB database for Spotweb (media namespace).
 
-**What it does:** This is the relational database backend for Homebox (and potentially other metadata services). It runs as a StatefulSet with persistent storage, providing stable network identity and data durability. All media inventory data is stored here.
+**What it does:** This is the relational database backend for the Spotweb app. It runs as a StatefulSet (`mariadb`, namespace `media`) with image `mariadb:11` and a 5 GiB local-path PVC from a volume claim template. Spotweb's own IngressRoute lives in `infrastructure/media/spotweb/`.
 
 **Resources:**
 | Type | Details |
 |------|---------|
 | CPU | 100m request / 1 limit |
 | RAM | 128Mi request / 512Mi limit |
-| PVCs | `mariadb-data` (not listed in the previous scan, but implied by StatefulSet) — typically ~5–10 GiB depending on chart defaults |
+| PVCs | `data` (5 GiB, local-path) via `volumeClaimTemplates` |
 
 **Ports:**
-- `3306` — MySQL/MariaDB protocol. Exposed as a ClusterIP service. Accessed only internally by Homebox and other services.
+- `3306` — MySQL/MariaDB protocol. Exposed as a ClusterIP service. Accessed only internally by Spotweb.
 
 **Middleware / Ingress:**
 - No external exposure. Purely internal database.
 
-**Environment variables (Helm defaults):**
-- `POSTGRES_USER`, `POSTGRES_PASSWORD`, `POSTGRES_DB` — credentials injected via Kubernetes secret.
-- `PGDATA` — mounted from PVC.
+**Environment variables:**
+- `MYSQL_ROOT_PASSWORD` — from secret `spotweb-secrets` (key: `db_password`).
+- `MYSQL_DATABASE` — `spotweb`.
+- `MYSQL_USER` — `spotweb`.
+- `MYSQL_PASSWORD` — from secret `spotweb-secrets` (key: `db_password`).
 
-**Notes:** While named "mariadb", the container image is actually PostgreSQL. The service name follows the chart conventions. It's a critical backend for media metadata and should be kept healthy.
+**Notes:** Despite the PostgreSQL-flavored claims in older docs, the container image is MariaDB 11. It is a critical backend for Spotweb metadata and should be kept healthy.

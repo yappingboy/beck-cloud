@@ -15,7 +15,8 @@
 
 **Middleware / Ingress:**
 - Route: `grafana.becklab.cloud` → Service `kube-prometheus-stack-grafana`.
-- SSO chain: Likely uses the `sso-admin-chain` (oauth2-redirect → keycloak-forward-auth) so only authenticated admins can access dashboards.
+- SSO chain: `sso-admin-chain` (oauth2-redirect-admin → keycloak-forwardauth-admin → admin-role-check) so only authenticated admins can access dashboards.
+- Grafana itself runs in auth-proxy mode (`X-Auth-Request-Email`, auto sign-up, Admin role).
 
 **Environment variables (Helm defaults):**
 - `GRAANA_ADMIN_USER` / `ADMIN_PASSWORD` — admin credentials (from Helm secrets).

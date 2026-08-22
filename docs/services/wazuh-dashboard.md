@@ -2,7 +2,7 @@
 
 **Purpose:** Wazuh web UI — security monitoring console.
 
-**What it does:** The dashboard provides a Kibana-based interface for viewing alerts, logs, and system health in real time. It connects to the Wazuh indexer (Elasticsearch-compatible) for data retrieval. Runs as a single Deployment with modest resource needs.
+**What it does:** The dashboard provides a Kibana-based interface for viewing alerts, logs, and system health in real time. It connects to the Wazuh indexer (Elasticsearch-compatible) for data retrieval. Runs as a single Deployment with modest resource needs. Uses image `wazuh/wazuh-dashboard:4.14.3`.
 
 **Resources:**
 | Type | Details |

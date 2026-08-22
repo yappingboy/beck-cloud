@@ -2,14 +2,14 @@
 
 **Purpose:** Wazuh manager node — central coordination, rule/decoder updates, and cluster management.
 
-**What it does:** The master manager orchestrates the Wazuh cluster. It distributes configuration (rules, decoders, active responses), coordinates indexers for log storage, and acts as the primary admin interface. It runs as a StatefulSet with persistent storage for its database and configuration files.
+**What it does:** The master manager orchestrates the Wazuh cluster. It distributes configuration (rules, decoders, active responses), coordinates indexers for log storage, and acts as the primary admin interface. It runs as a StatefulSet with persistent storage for its database and configuration files. Uses image `wazuh/wazuh-manager:4.14.3`.
 
 **Resources:**
 | Type | Details |
 |------|---------|
-| CPU | 500m request / 1 limit |
-| RAM | 512Mi request / 1Gi limit |
-| PVCs | `wazuh-manager-master-0` (50 GiB, local-path) for database and configs |
+| CPU | 250m request / 1 limit |
+| RAM | 1Gi request / 2Gi limit |
+| PVCs | `wazuh-manager-master-0` (10 GiB, local-path) for database and configs |
 
 **Ports:**
 - `1514` — Wazuh agent communication protocol (UDP/TCP)

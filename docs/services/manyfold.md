@@ -20,7 +20,7 @@
 
 **Environment variables:**
 - `RAILS_ENV` — `production`
-- `DATABASE_URL` — from secret `manyfold-db-secret-79d6tmgb42` (key: `database-url`)
+- `DATABASE_URL` — from secret `manyfold-db-secret` (key: `database-url`)
 - `REDIS_URL` — `redis://manyfold-redis.3dprinting.svc.cluster.local:6379`
 - `SECRET_KEY_BASE` — `3dprint-manyfold-secret-key-change-me`
 - `HOSTNAME` — `manyfold.becklab.cloud`

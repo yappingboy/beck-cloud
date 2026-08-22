@@ -8,16 +8,17 @@
 | Type | Details |
 |------|---------|
 | CPU/RAM | Not explicitly set in the Helm chart. Relies on Kubernetes defaults (usually 1 CPU / 2 GiB) |
-| PVCs | `prometheus-kps-prometheus-db` (50 GiB, local-path) for time-series data |
+| PVCs | `kps-prometheus-db` (50 GiB, local-path) for time-series data |
 
 **Ports:**
 - `9090` — Prometheus HTTP API and metrics endpoint. Exposed internally. Typically accessed via Grafana or direct queries.
 
 **Middleware / Ingress:**
-- No external IngressRoute. Metrics are consumed internally by Grafana (port 80) and Alertmanager.
+- Route: `prometheus.becklab.cloud` → Prometheus (port 9090). Ingress enabled in Helm values with TLS secret `prometheus-tls` (letsencrypt-prod).
+- SSO chain: `identity-sso-admin-chain@kubernetescrd` via ingress annotation.
 
 **Environment variables (Helm defaults):**
-- `PROMETHEUS_RETENTION_TIME` — how long to keep data (default ~15 days).
+- `PROMETHEUS_RETENTION_TIME` — 15 days, plus a 45 GB size cap (`retentionSize`).
 - `PROMETHEUS_EXTERNAL_LABELS` — cluster labeling for multi-cluster setups.
 - Service discovery settings for scraping pods and nodes.
 
