@@ -10,3 +10,4 @@ resources:
   - gridspace-dockerfile-cm.yaml
   - gridspace-tina2s-configmap.yaml
   - admin-panel-build/
+  - emdr-build/
