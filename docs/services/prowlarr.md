@@ -7,18 +7,18 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `lscr.io/linuxserver/prowlarr:latest`, 1 replica |
 | CPU | 100m request / 1 limit |
 | RAM | 256Mi request / 1Gi limit |
 | PVCs | `prowlarr-config` (5 GiB, local-path) for indexer data |
 
 **Ports:**
-- Default Prowlarr port is 9696 (HTTP API). Exposed internally.
+- Container `9696` (TCP) — Prowlarr HTTP API
+- Service `9696` — ClusterIP
+- IngressRoute: `prowlarr.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- Internal only. No public hostname.
-
-**Environment variables (Helm defaults):**
-- `PROWLARR_CONFIG_DIR` — points to PVC.
-- `MONITORING_ENABLED=true` — metrics exposed to Prometheus.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
 
 **Notes:** All download services (Sonarr, Radarr, nzbget, SABnzbd) depend on Prowlarr for tracker discovery and search.

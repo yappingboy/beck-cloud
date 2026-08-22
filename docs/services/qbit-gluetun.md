@@ -14,19 +14,23 @@
 | PVCs | `qbit-config` (5 GiB, local-path, RWO), `media-downloads` (5 TiB, LVM, RWX — shared with other media services) |
 
 **Ports:**
-- `8080` — qBittorrent WebUI (ClusterIP `10.43.119.44`, internal only).
+- Container `8080` (TCP) — qBittorrent WebUI
+- Service `8080` — ClusterIP
+- Init container `8000` (TCP) — Gluetun control port
+- IngressRoute: `qbittorrent.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
 **Middleware / Ingress:**
-- No external IngressRoute. The WebUI is internal-only. Access is via cluster-internal service or port-forwarding.
+- Public host is `qbittorrent.becklab.cloud`. Cluster-internal access via the service also works.
 
 **Init container (Gluetun):**
 - **Image:** `qmcgaw/gluetun:latest`
 - **VPN provider:** Private Internet Access (PIA), OpenVPN
 - **Server region:** SE Stockholm
 - **Credentials:** `OPENVPN_USER` and `OPENVPN_PASSWORD` from `gluetun-vpn-secret` Kubernetes secret
-- **DNS over TLS:** enabled (`DOT=on`)
-- **Firewall:** disabled (`FIREWALL=off`, `FIREWALL_WORKING=off`) — relies on VPN tunnel isolation
+- **Firewall:** disabled (`FIREWALL=off`, `FIREWALL_WORKING=off`) — relies on VPN tunnel isolation. `FIREWALL_INPUT_PORTS=8080,8000`
+- **DNS:** `DOT=on` (DNS over TLS), `DISABLE_UPDNGX=on`
 - **Config storage:** `EmptyDir` (ephemeral, `/etc/gluetun`)
+- **Security:** privileged, runs as root, adds `NET_ADMIN`
 
 **Main container (qBittorrent):**
 - **Image:** `lscr.io/linuxserver/qbittorrent:latest`

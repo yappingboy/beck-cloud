@@ -2,24 +2,23 @@
 
 **Purpose:** Jellyfin media server — streaming, transcoding, and library management for all BeckCloud media.
 
-**What it does:** Jellyfin (self-hosted) serves movies, shows, anime, and other media to clients via its web UI and API. It handles on-the-fly transcoding, subtitle rendering, and remote access. All media files live in LVM-backed storage (not in Kubernetes PVCs), but Jellyfin's configuration and database are persisted here.
+**What it does:** Jellyfin serves movies, shows, anime, and other media to clients via its web UI and API. It handles on-the-fly transcoding, subtitle rendering, and remote access. Media files live on LVM-backed volumes, mounted through Kubernetes PVCs. The configuration and database persist on a local-path PVC.
 
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `lscr.io/linuxserver/jellyfin:latest`, 1 replica |
 | CPU | 1 request / 8 limit |
 | RAM | 2Gi request / 8Gi limit |
-| PVCs | `jellyfin-config` (20 GiB, local-path) for app config and database |
+| PVCs | `jellyfin-config` (20 GiB, local-path) for app config and database. `media-movies`, `media-shows`, `media-anime` (45 TiB each, LVM-backed) for media files |
 
 **Ports:**
-- `8096` — Jellyfin HTTP (web UI + API). Exposed by Traefik with TLS.
+- Container `8096` (TCP) — Jellyfin HTTP (web UI + API)
+- Service `8096` — ClusterIP
+- IngressRoute: `jellyfin.becklab.cloud` over TLS (Let's Encrypt). No SSO middleware.
 
-**Middleware / Ingress:**
-- Route(s): Defined in the Helm chart. Typically serves under `media.jellyfin.becklab.cloud` or similar. No SSO required for media consumption.
-
-**Environment variables (Helm defaults):**
-- `JELLYFIN_PUBLICURL` — external URL for remote clients.
-- `JELLYFIN_CONFIG_ROOT` — points to the PVC mount.
-- Transcoding and network settings as per the chart.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
 
 **Notes:** Jellyfin is the core media player. All other media services (Sonarr, Radarr.) feed it with metadata.

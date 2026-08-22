@@ -7,19 +7,18 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `lscr.io/linuxserver/sonarr:latest`, 1 replica |
 | CPU | 200m request / 4 limit |
 | RAM | 512Mi request / 4Gi limit |
-| PVCs | `sonarr-config` (10 GiB, local-path) for database and settings |
+| PVCs | `sonarr-config` (10 GiB, local-path) for database and settings. `media-shows` and `media-anime` (45 TiB each, LVM-backed). `media-downloads` (5 TiB, LVM-backed) |
 
 **Ports:**
-- `8989` — Sonarr HTTP API. Exposed by Traefik (internal use only).
+- Container `8989` (TCP) — Sonarr HTTP API
+- Service `8989` — ClusterIP
+- IngressRoute: `sonarr.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- No public hostname. Accessed internally via the service name.
-
-**Environment variables (Helm defaults):**
-- `SONARR_CONFIG_DIR` — points to the PVC.
-- `RSS_ADDRESSES` — list of feed URLs.
-- Other defaults for language, quality profiles.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
 
 **Notes:** Sonarr is tightly coupled with Jellyfin and qBittorrent. It does not serve media directly.

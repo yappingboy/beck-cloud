@@ -7,19 +7,17 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `seerr/seerr:latest`, 1 replica |
 | CPU | 200m request / 1 limit |
 | RAM | 512Mi request / 2Gi limit |
-| PVCs | `jellyseerr-config` (10 GiB, local-path) for PostgreSQL and uploads |
+| PVCs | `jellyseerr-config` (10 GiB, local-path) for config, database, and uploads, mounted at `/app/config` |
 
 **Ports:**
-- Default Jellyseerr port is 5055 (HTTP). Exposed internally.
+- Container `5055` (TCP) — Jellyseerr HTTP
+- Service `5055` — ClusterIP
+- IngressRoute: `requests.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-media-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- Internal only. No public hostname in current config.
-
-**Environment variables (Helm defaults):**
-- `JELLYSEERR_DATABASE_URL` — internal PostgreSQL.
-- `JELLYFIN_BASE_URL` — points to Jellyfin service for media serving.
-- Other defaults for theme, auth.
+**Environment variables:**
+- `LOG_LEVEL=debug`
 
 **Notes:** Jellyseerr depends on Homebox for metadata and on Radarr/Sonarr for fulfillment.

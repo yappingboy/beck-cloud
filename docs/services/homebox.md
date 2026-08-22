@@ -7,19 +7,19 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `ghcr.io/sysadminsmedia/homebox:latest`, 1 replica |
 | CPU | 50m request / 500m limit |
 | RAM | 128Mi request / 512Mi limit |
-| PVCs | `homebox-config` (10 GiB, local-path) for PostgreSQL data and uploads |
+| PVCs | `homebox-config` (10 GiB, local-path) for data and uploads, mounted at `/app/data` |
 
 **Ports:**
-- Default Homebox port is 7745 (HTTP). Exposed internally.
+- Container `7745` (TCP) — Homebox HTTP
+- Service `7745` — ClusterIP
+- IngressRoute: `homebox.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- Internal only. No public hostname configured.
-
-**Environment variables (Helm defaults):**
-- `HOMEBOX_DATABASE_URL` — points to the internal PostgreSQL instance (also in this namespace).
-- `HOMEBOX_UPLOAD_PATH` — mounted from PVC.
-- Other defaults for UI theme.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
+- `HBOX_AUTH_API_KEY_PEPPER` — auth key pepper
 
 **Notes:** Homebox is tightly coupled with Jellyseerr. Together they form the "request" workflow for movies and shows.

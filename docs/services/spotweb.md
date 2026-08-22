@@ -7,18 +7,19 @@
 **Resources:**
 | Type | Details |
 |------|---------|
-| CPU | 100m request / 1 limit |
-| RAM | 128Mi request / 512Mi limit |
-| PVCs | `spotweb-config` (1 GiB, local-path) for database and user data |
+| DB image | `mariadb:11` (StatefulSet `mariadb`, 1 replica) |
+| CPU (mariadb) | 100m request / 1 limit |
+| RAM (mariadb) | 128Mi request / 512Mi limit |
+| PVC | `data` (5 GiB, local-path, from volumeClaimTemplate) for MariaDB data |
 
 **Ports:**
-- Default Spotweb port is 80 (HTTP). Exposed internally. Likely proxied via Traefik with a custom hostname if needed.
+- Container `3306` (TCP) — MariaDB
+- IngressRoute: `spotweb.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`), routes to service `spotweb` port `80`
 
-**Middleware / Ingress:**
-- Internal only in current config.
+**Environment variables (mariadb):**
+- `MYSQL_DATABASE=spotweb`, `MYSQL_USER=spotweb`
+- `MYSQL_ROOT_PASSWORD` and `MYSQL_PASSWORD` from `spotweb-secrets` (Sops-encrypted)
 
-**Environment variables (Helm defaults):**
-- `SPOTWEB_CONFIG_DIR` — points to PVC.
-- Tracker URLs and API keys stored as secrets.
+**Notes:** The Flux dir defines only the MariaDB StatefulSet, the secret, and the IngressRoute. No spotweb Deployment or Service exists in this dir yet, so the IngressRoute has no live backend.
 
 **Notes:** Spotweb is the backbone of the BeckCloud's private torrent network. All download clients post completed torrents back to Spotweb for indexing.

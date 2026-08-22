@@ -221,7 +221,7 @@ KNOWN_ABBREVS = {
     # Web and data formats
     "CSS", "HTML", "YAML", "JSON", "XML", "SVG", "PNG", "JPG", "JPEG", "GIF", "WEBP", "PDF", "TXT", "CSV", "XLSX", "DOC", "DOCX", "PPTX", "ZIP", "TAR", "GZ", "BZ2",
     # Networking and protocols
-    "VPN", "SMTP", "IMAP", "POP", "FTP", "SFTP", "NFS", "CIFS", "SMB", "SAML", "WAF",
+    "VPN", "SMTP", "IMAP", "POP", "FTP", "SFTP", "NFS", "CIFS", "SMB", "SAML", "WAF", "MQTT",
     # Security
     "IDS", "IPS", "SIEM", "FIM", "RBAC", "ABAC", "MFA", "2FA", "TOTP", "HMAC", "SHA", "MD5", "AES", "RSA", "DSA", "ECDSA", "PKI", "CA", "CSR", "CRL", "OCSP", "HSM", "TPM", "SGX", "SBOM", "CPE", "CVE", "CVSS", "NVD", "SCAP", "STIG", "DISA", "FIPS",
     # Storage and disk

@@ -7,19 +7,18 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `lscr.io/linuxserver/sabnzbd:latest`, 1 replica |
 | CPU | 800m request / 4 limit |
 | RAM | 512Mi request / 4Gi limit |
-| PVCs | `sabnzbd-config` (5 GiB, local-path) for settings and queue |
+| PVCs | `sabnzbd-config` (5 GiB, local-path) for settings and queue. `media-downloads` (5 TiB, LVM-backed) |
 
 **Ports:**
-- Default SABnzbd port is 8080 (HTTP API). Exposed internally.
+- Container `8080` (TCP) — SABnzbd HTTP API
+- Service `8080` — ClusterIP
+- IngressRoute: `sabnzbd.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- Internal only. No public hostname.
-
-**Environment variables (Helm defaults):**
-- `SABNZBD_CONFIG_DIR` — points to PVC.
-- `CATALOG` — shared media directory.
-- Other defaults for sorting, post-processing.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
 
 **Notes:** Both NZBGet and SABnzbd write to the same storage pool. Jellyfin's library scanning picks up files from either source.

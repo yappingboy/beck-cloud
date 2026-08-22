@@ -2,7 +2,7 @@
 
 **Purpose:** Lightweight LDAP directory that bridges Keycloak with OpenNebula's LDAP authentication.
 
-**What it does:** LLDAP (v3.14.1) serves as the central identity source for both the SSO system and OpenNebula FireEdge. It stores user accounts, groups, and attributes, then publishes them over LDAP on port 389. Keycloak federates to LLDAP via its built-in LDAP provider. OpenNebula binds using `uid=admin,ou=people,dc=becklab,dc=cloud` to authenticate admins. All users are auto-created in LLDAP on first login (via symlink `/var/lib/one/remotes/auth/default → ldap`).
+**What it does:** LLDAP (`lldap/lldap:stable`) serves as the central identity source for both the SSO system and OpenNebula FireEdge. It stores user accounts, groups, and attributes, then publishes them over LDAP on port 389. Keycloak federates to LLDAP via its built-in LDAP provider. OpenNebula binds using `uid=admin,ou=people,dc=becklab,dc=cloud` to authenticate admins. All users are auto-created in LLDAP on first login (via symlink `/var/lib/one/remotes/auth/default → ldap`).
 
 **Resources:**
 | Type | Details |

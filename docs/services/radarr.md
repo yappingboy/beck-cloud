@@ -7,19 +7,18 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `lscr.io/linuxserver/radarr:latest`, 1 replica |
 | CPU | 200m request / 4 limit |
 | RAM | 512Mi request / 4Gi limit |
-| PVCs | `radarr-config` (10 GiB, local-path) |
+| PVCs | `radarr-config` (10 GiB, local-path). `media-movies` (45 TiB, LVM-backed). `media-downloads` (5 TiB, LVM-backed) |
 
 **Ports:**
-- Default Radarr port is 7878 (HTTP API). Exposed by Traefik internally.
+- Container `7878` (TCP) — Radarr HTTP API
+- Service `7878` — ClusterIP
+- IngressRoute: `radarr.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-admin-chain` (namespace `identity`)
 
-**Middleware / Ingress:**
-- Internal-only. No public hostname configured.
-
-**Environment variables (Helm defaults):**
-- `RADARR_CONFIG_DIR` — points to the PVC.
-- `MONITORING_ENABLED=true` — sends stats to Prometheus.
-- Other defaults for language, quality.
+**Environment variables:**
+- `PUID` / `PGID` = `1000`
+- `TZ` = `America/New_York`
 
 **Notes:** Radarr and Sonarr share the same qBittorrent service for downloads. They are both essential for keeping Jellyfin up-to-date.

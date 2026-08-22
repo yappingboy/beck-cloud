@@ -7,19 +7,26 @@
 **Resources:**
 | Type | Details |
 |------|---------|
+| Image | `ghcr.io/haveagitgat/tdarr:latest`, 1 replica |
 | CPU | Unconstrained (only memory limits set) |
 | RAM | 1Gi request / 2Gi limit |
-| PVCs | `tdarr-config` (5 GiB, local-path) for database, queue, and processed files |
+| PVCs | `tdarr-config` (5 GiB, local-path) for config and queue. `media-shows`, `media-anime`, `media-movies` (45 TiB each, LVM-backed) for source media |
 
 **Ports:**
-- Default Tdarr port is 8265 (HTTP API). Exposed internally.
+- Container `8265` (TCP) — Tdarr web UI/API
+- Service `8265` — ClusterIP
+- IngressRoute: `tdarr.becklab.cloud` over TLS (Let's Encrypt), middleware `sso-media-chain` (namespace `identity`)
+- Internal server port is `8266` (set via `serverPort`)
 
-**Middleware / Ingress:**
-- Internal only. No public hostname.
-
-**Environment variables (Helm defaults):**
-- `TDARR_CONFIG_ROOT` — PVC mount point.
-- `MAX_WORKERS` — number of concurrent transcoding processes.
-- Other defaults for quality profiles.
+**Environment variables:**
+- `TZ` = `America/New_York`
+- `PGID` = `1000` (user id is set via the `PUIG` var in the deployment)
+- `serverIP` = `0.0.0.0`, `serverPort` = `8266`, `webUIPort` = `8265`
+- `internalNode` = `true`, `inContainer` = `true`
+- `ffmpegVersion` = `7`
+- `nodeName` = `MyInternalNode`
+- `auth` = `false`
+- `openBrowser` = `true`
+- `maxLogSizeMB` = `10`
 
 **Notes:** Tdarr is optional but recommended for users with mixed-device playback needs. It automatically queues transcoding jobs from Radarr/Sonarr.
