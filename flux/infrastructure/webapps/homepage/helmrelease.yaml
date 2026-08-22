@@ -187,6 +187,7 @@ spec:
                 icon: crafty-controller
                 href: https://crafty.becklab.cloud
                 description: Minecraft server
+                excludeStatusCheck: true
                 widget:
                   type: minecraft
                   url: crafty.gaming
