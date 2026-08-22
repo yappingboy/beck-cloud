@@ -77,10 +77,21 @@
 </div>
 
 <script type="importmap">
-{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js" } }
+{ "imports": { "three": "./three.module.js" } }
+</script>
+<script>
+  // visible load-failure indicator: if the module below never runs, this banner shows
+  setTimeout(function () {
+    if (!window.__emdr_ready) {
+      var m = document.getElementById('msg');
+      if (m) m.textContent = 'Failed to load the 3D engine (three.module.js). Check the browser console (F12) and that the page was served over HTTPS.';
+      m = m || document.createElement('div');
+    }
+  }, 6000);
 </script>
 <script type="module">
 import * as THREE from 'three';
+window.__emdr_ready = true;
 
 // ---------- tunables ----------
 const DIST   = 2.2;   // meters: where the balls sit in front of you

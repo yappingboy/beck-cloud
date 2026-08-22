@@ -13,5 +13,6 @@ configMapGenerator:
   - name: emdr
     files:
       - index.html=static/index.html
+      - three.module.js=static/three.module.js
     options:
       disableNameSuffixHash: true
