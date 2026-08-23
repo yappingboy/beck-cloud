@@ -1,0 +1,131 @@
+# Build the CADAM self-host image and push to GHCR.
+#
+# Replaces the in-cluster Kaniko job (flux/apps/cadam/build-job.yaml).
+# CADAM is built from the UPSTREAM Adam-CAD/CADAM repo with the local
+# patch overlay (Ollama provider + default model + Supabase OIDC SSO)
+# applied on top. The build args live in repo secrets (SOPS in the cluster,
+# GitHub Actions in CI) — hence a dedicated workflow rather than the
+# apps-source matrix in build.yml.
+#
+# Trigger: manual dispatch only (CADAM upstream rarely changes and the
+# patch set is version-sensitive). A digest-pinned deployment means a
+# rebuild does NOT auto-roll; bump the digest in flux/apps/cadam/app.yaml
+# after a successful build.
+name: CADAM Build
+
+on:
+  workflow_dispatch:
+
+env:
+  REGISTRY: ghcr.io
+  OWNER: yappingboy
+
+jobs:
+  build-cadam:
+    name: Build cadam
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Clone CADAM upstream
+        run: |
+          git clone --depth 1 https://github.com/Adam-CAD/CADAM.git /tmp/cadam
+          git -C /tmp/cadam rev-parse HEAD > /tmp/cadam/.commit
+          echo "Build source commit: $(cat /tmp/cadam/.commit)"
+
+      - name: Apply patch overlay
+        run: |
+          P=flux/apps/cadam/patches
+          D=/tmp/cadam
+          cp "$P/src-server-aiChat.ts"                    "$D/src/server/aiChat.ts"
+          cp "$P/src-lib-utils.ts"                        "$D/src/lib/utils.ts"
+          cp "$P/src-views-PromptView.tsx"               "$D/src/views/PromptView.tsx"
+          cp "$P/src-views-EditorView.tsx"               "$D/src/views/EditorView.tsx"
+          cp "$P/src-utils-meshPrintProcessUtils.ts"     "$D/src/utils/meshPrintProcessUtils.ts"
+          cp "$P/package.json"                           "$D/package.json"
+          cp "$P/vite.config.ts"                         "$D/vite.config.ts"
+          echo "Patch overlay applied"
+
+      - name: Write Dockerfile (self-host SPA)
+        run: |
+          cat > /tmp/cadam/Dockerfile <<'DOCKERFILE'
+          FROM node:22-slim AS build
+          WORKDIR /app
+          ENV HUSKY=0
+          COPY . .
+          RUN rm -f package-lock.json && npm install --ignore-scripts
+          ARG VITE_SUPABASE_URL=https://supabase.becklab.cloud
+          ARG VITE_SUPABASE_ANON_KEY=placeholder
+          ARG ENVIRONMENT=local
+          ARG OLLAMA_BASE_URL=http://172.16.0.7:11434
+          ARG WEBHOOK_BASE_URL=https://cadam.becklab.cloud
+          ARG VITE_SSO_PROVIDER=custom:keycloak
+          ENV CADAM_SELF_HOST=1 \
+              VITE_SUPABASE_URL=$VITE_SUPABASE_URL \
+              VITE_SUPABASE_ANON_KEY=$VITE_SUPABASE_ANON_KEY \
+              VITE_SSO_PROVIDER=$VITE_SSO_PROVIDER \
+              ENVIRONMENT=$ENVIRONMENT \
+              OLLAMA_BASE_URL=$OLLAMA_BASE_URL \
+              WEBHOOK_BASE_URL=$WEBHOOK_BASE_URL \
+              SENTRY_DISABLE=true
+          RUN npm run build
+          RUN test -f .output/server/index.mjs \
+              && test -f .output/public/_shell.html \
+              && ls .output/public/assets | head -3 \
+              && echo "SSR build sanity check passed"
+          FROM node:22-slim AS runtime
+          WORKDIR /app
+          ENV NODE_ENV=production \
+              OLLAMA_BASE_URL=http://172.16.0.7:11434 \
+              ENVIRONMENT=local \
+              VITE_SUPABASE_URL=https://supabase.becklab.cloud \
+              WEBHOOK_BASE_URL=https://cadam.becklab.cloud
+          USER node:node
+          COPY --from=build --chown=node:node /app/.output/ /app/.output/
+          RUN test -f /app/.output/server/index.mjs \
+              && test -f /app/.output/public/_shell.html \
+              && echo "=== COPY verified OK ==="
+          EXPOSE 3000
+          HEALTHCHECK --interval=30s --timeout=5s --start-period=40s \
+            CMD node -e "fetch('http://127.0.0.1:3000/cadam/').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+          CMD ["node", ".output/server/index.mjs"]
+          DOCKERFILE
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GHCR_TOKEN }}
+
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.OWNER }}/cadam
+          tags: |
+            type=raw,value=latest
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: /tmp/cadam
+          file: /tmp/cadam/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          build-args: |
+            VITE_SUPABASE_ANON_KEY=${{ secrets.SUPABASE_ANON_KEY }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max

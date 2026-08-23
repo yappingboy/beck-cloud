@@ -8,8 +8,9 @@ on:
   push:
     branches: [main]
     paths:
-      - 'apps/**'
+      - 'apps-source/**'
       - 'tools/**'
+      - 'flux/infrastructure/webapps/emdr/static/**'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -86,6 +87,11 @@ jobs:
             image: auth-micro
             context: apps-source/tools/auth-service
 
+          - name: role-enforcer
+            path: apps-source/role-enforcer
+            image: role-enforcer
+            context: apps-source/role-enforcer
+
           # ---- tools (multi-stage / frontend) ----
           - name: image-editor-api
             path: apps-source/tools/image-editor
@@ -103,6 +109,12 @@ jobs:
             path: apps-source/tools/beckflow
             image: beckflow-frontend
             context: apps-source/tools/beckflow/frontend
+
+          # ---- static web apps ----
+          - name: emdr
+            path: flux/infrastructure/webapps/emdr/static
+            image: emdr
+            context: flux/infrastructure/webapps/emdr/static
 
     steps:
       - name: Checkout
