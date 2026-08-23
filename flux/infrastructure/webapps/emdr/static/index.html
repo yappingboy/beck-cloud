@@ -77,10 +77,11 @@
 </div>
 
 <script type="importmap">
-{ "imports": { "three": "./three.module.js" } }
+{ "imports": { "three": "./three.module.js?v=2" } }
 </script>
 <script>
   // visible load-failure indicator: if the module below never runs, this banner shows
+  // ?v= busts the cache so browser updates land without a hard reload
   setTimeout(function () {
     if (!window.__emdr_ready) {
       var m = document.getElementById('msg');
