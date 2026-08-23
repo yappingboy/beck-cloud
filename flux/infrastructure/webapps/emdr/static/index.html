@@ -96,7 +96,7 @@ window.__emdr_ready = true;
 
 // ---------- tunables ----------
 const DIST   = 2.2;   // meters: where the balls sit in front of you
-const AMP    = 0.9;   // meters: travel half-width (±~22° gaze at DIST)
+const AMP    = 1.2;   // meters: travel half-width (±~29° gaze at DIST)
 const RADIUS = 0.05; // meters: ball radius (diameter 10cm)
 const GAP    = 0.275; // meters: center-to-center spacing of the two balls
 const COUNTDOWN_MS = 3000;
@@ -204,15 +204,16 @@ function beep(pan, opts = {}) {
   osc.connect(g); g.connect(p); p.connect(ctx.destination);
   osc.start(at); osc.stop(at + dur + 0.05);
 }
-const beepLeft  = () => beep(-1);          // balls reversed at LEFT edge
-const beepRight = () => beep(1);           // balls reversed at RIGHT edge
+const beepLeft  = () => beep(+1);          // balls reversed at LEFT edge → pan RIGHT (corrected 2026-08-23)
+const beepRight = () => beep(-1);          // balls reversed at RIGHT edge → pan LEFT (corrected 2026-08-23)
 const beepCenter = (f = 550) => beep(0, { freq: f, gain: 0.25 });
 
-// ---------- state machine: dialog → countdown → running → complete ----------
+// ---------- state machine: dialog → countdown → intro → running → outro → complete ----------
 let phase = 'dialog';
 let phaseT0 = 0, lastT = 0;
 let durationS = 30, hz = 1.0;
 let phaseAcc = 0, prevPh = null, countdownSec = -1;
+let halfPeriod = 0.5, outroX0 = 0;
 let anchored = false, domOverlay = null, flashUntil = 0;
 
 function anchorArena() {
@@ -234,6 +235,7 @@ function anchorArena() {
 function startSet(session) {
   durationS = parseInt(durIn.value, 10);
   hz = parseFloat(speedIn.value);
+  halfPeriod = 1 / (2 * hz); // half a cycle — used for the intro/outro ramps
   dialog.hidden = true; done.hidden = true; hud.hidden = false;
   hudTime.textContent = durationS + ' s';
   phase = 'countdown';
@@ -292,10 +294,18 @@ function tick() {
       if (sec >= 1 && sec <= 3) { setLabel(String(sec)); beepCenter(440 + (3 - sec) * 110); }
     }
     if (remain <= 0) {
-      phase = 'running';
-      phaseT0 = now; phaseAcc = 0; prevPh = null;
+      phase = 'intro';
+      phaseT0 = now;
       setLabel(durationS + ' s');
-      beepRight(); // balls start at the right edge and reverse into the set
+    }
+  } else if (phase === 'intro') {
+    // ease-in: accelerate from center to the right edge over half a cycle
+    const t = Math.min(1, (now - phaseT0) / (halfPeriod * 1000));
+    mover.position.x = AMP * t * t;
+    if (t >= 1) {
+      phase = 'running';
+      phaseT0 = now; phaseAcc = 0; prevPh = 1; // treat start position as the right-edge reversal
+      beepRight(); // balls hit the right edge as the timer starts
     }
   } else if (phase === 'running') {
     // accumulated phase → live speed changes stay smooth
@@ -313,15 +323,24 @@ function tick() {
     hudTime.textContent = mm + ':' + String(ss).padStart(2, '0');
     setLabel(mm + ':' + String(ss).padStart(2, '0'));
     bar.scale.x = Math.max(0.0001, left / durationS);
-    if (left <= 0) finishSet(true);
+    if (left <= 0) {
+      outroX0 = mover.position.x;
+      phase = 'outro';
+      phaseT0 = now;
+    }
+  } else if (phase === 'outro') {
+    // ease-out: decelerate from the edge back to center over half a cycle
+    const t = Math.min(1, (now - phaseT0) / (halfPeriod * 1000));
+    mover.position.x = outroX0 * (1 - t * t);
+    if (t >= 1) { mover.position.x = 0; finishSet(true); }
   } else if (phase === 'dialog') {
     const s = 1 + 0.04 * Math.sin(now / 400);
     ballL.scale.setScalar(s); ballR.scale.setScalar(s);
   }
 
-  // reversal flash
+  // reversal flash (also during the decelerating outro)
   const f = now < flashUntil ? 1 + 0.18 * (flashUntil - now) / 120 : 1;
-  if (phase === 'running') { ballL.scale.setScalar(f); ballR.scale.setScalar(f); }
+  if (phase === 'running' || phase === 'outro') { ballL.scale.setScalar(f); ballR.scale.setScalar(f); }
 
   renderer.render(scene, camera);
 }
