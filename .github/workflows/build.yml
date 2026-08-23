@@ -116,6 +116,11 @@ jobs:
             image: emdr
             context: flux/infrastructure/webapps/emdr/static
 
+          - name: build-dashboard
+            path: apps/tools/build-dashboard
+            image: build-dashboard
+            context: apps/tools/build-dashboard
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
