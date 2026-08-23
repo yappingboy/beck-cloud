@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Build Dashboard</title>
+<style>
+  :root {
+    --bg: #0b0e14;
+    --panel: #11151f;
+    --panel2: #161b28;
+    --border: #232a3a;
+    --text: #d7dce5;
+    --dim: #6b7484;
+    --accent: #4f8cff;
+    --ok: #2ecc71;
+    --err: #e74c3c;
+    --run: #f39c12;
+    --idle: #6b7484;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 14px; }
+  header { display: flex; align-items: center; gap: 16px; padding: 14px 20px; background: var(--panel); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 5; }
+  header h1 { font-size: 16px; margin: 0; letter-spacing: 1px; }
+  .spacer { flex: 1; }
+  button { background: var(--panel2); color: var(--text); border: 1px solid var(--border); padding: 8px 16px; border-radius: 6px; cursor: pointer; font-family: inherit; font-size: 13px; }
+  button:hover { border-color: var(--accent); }
+  button.rebuild-all { background: #1a2436; border-color: var(--accent); }
+  button.rebuild-all:disabled { opacity: .5; cursor: default; }
+  main { padding: 20px; max-width: 1200px; margin: 0 auto; }
+  .job { background: var(--panel); border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; overflow: hidden; }
+  .job-row { display: grid; grid-template-columns: 90px 1fr 110px 130px 110px; gap: 12px; align-items: center; padding: 12px 16px; cursor: pointer; }
+  .job-row:hover { background: var(--panel2); }
+  .name { font-weight: bold; }
+  .image { color: var(--dim); font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .badge { display: inline-block; padding: 3px 10px; border-radius: 10px; font-size: 11px; text-transform: uppercase; letter-spacing: 1px; }
+  .badge.success { background: rgba(46, 204, 113, .15); color: var(--ok); }
+  .badge.failed { background: rgba(231, 76, 60, .15); color: var(--err); }
+  .badge.running { background: rgba(243, 156, 18, .15); color: var(--run); }
+  .badge.idle, .badge.error { background: rgba(107, 116, 132, .15); color: var(--idle); }
+  .age { color: var(--dim); font-size: 12px; }
+  .rebuild-btn { justify-self: end; padding: 6px 14px; font-size: 12px; }
+  .log-panel { display: none; border-top: 1px solid var(--border); background: #080b10; }
+  .log-panel.open { display: block; }
+  .log-head { display: flex; gap: 10px; padding: 10px 16px; color: var(--dim); font-size: 12px; border-bottom: 1px solid var(--border); }
+  .log-head button { padding: 4px 10px; font-size: 11px; }
+  pre.logs { margin: 0; padding: 12px 16px; white-space: pre-wrap; word-break: break-word; font-size: 12px; max-height: 320px; overflow-y: auto; line-height: 1.5; }
+  pre.logs .init { color: var(--dim); }
+  .status-line { color: var(--dim); font-size: 12px; }
+  .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: var(--panel); border: 1px solid var(--accent); padding: 10px 20px; border-radius: 8px; display: none; z-index: 10; }
+  .toast.show { display: block; }
+  .toast.err { border-color: var(--err); }
+</style>
+</head>
+<body>
+<header>
+  <h1>⚡ BUILD DASHBOARD</h1>
+  <span class="status-line" id="status-line"></span>
+  <div class="spacer"></div>
+  <button class="rebuild-all" id="rebuild-all">Rebuild All</button>
+</header>
+<main id="jobs"></main>
+<div class="toast" id="toast"></div>
+
+<script>
+let autoRefresh = setInterval(refresh, 5000);
+const openLogs = new Set();
+const els = {};
+
+function badge(state) {
+  return `<span class="badge ${state}">${state === "success" ? "Built" : state === "failed" ? "Failed" : state === "running" ? "Building…" : state}</span>`;
+}
+
+function relTime(iso) {
+  if (!iso) return "—";
+  const s = Math.max(0, (Date.now() - new Date(iso).getTime()) / 1000);
+  if (s < 60) return Math.floor(s) + "s ago";
+  if (s < 3600) return Math.floor(s / 60) + "m ago";
+  if (s < 86400) return (s / 3600).toFixed(1) + "h ago";
+  return Math.floor(s / 86400) + "d ago";
+}
+
+async function refresh() {
+  try {
+    const r = await fetch("/api/status");
+    const data = await r.json();
+    const main = document.getElementById("jobs");
+    const ids = new Set(data.jobs.map(j => j.id));
+    for (const id of Object.keys(els)) if (!ids.has(id)) delete els[id];
+    for (const j of data.jobs) {
+      let el = els[j.id];
+      if (!el) {
+        el = document.createElement("div");
+        el.className = "job";
+        el.innerHTML = `
+          <div class="job-row">
+            <span class="name"></span>
+            <span class="image"></span>
+            <span class="state"></span>
+            <span class="age"></span>
+            <button class="rebuild-btn">Rebuild</button>
+          </div>
+          <div class="log-panel">
+            <div class="log-head"><span>logs</span><div class="spacer"></div><button class="close-logs">close</button></div>
+            <pre class="logs"></pre>
+          </div>`;
+        main.appendChild(el);
+        els[j.id] = el;
+        el.querySelector(".rebuild-btn").onclick = (e) => { e.stopPropagation(); rebuild(j.id); };
+        el.querySelector(".close-logs").onclick = (e) => { e.stopPropagation(); toggleLogs(j.id, false); };
+        el.querySelector(".job-row").onclick = () => toggleLogs(j.id);
+      }
+      el.querySelector(".name").textContent = j.name;
+      el.querySelector(".image").textContent = j.image;
+      el.querySelector(".state").innerHTML = badge(j.state);
+      el.querySelector(".age").textContent = j.startTime ? relTime(j.startTime) : (j.age ? relTime(j.age) + " (last build)" : "—");
+      if (openLogs.has(j.id)) el.querySelector(".log-panel").classList.add("open");
+    }
+    const running = data.jobs.filter(j => j.state === "running").length;
+    const failed = data.jobs.filter(j => j.state === "failed").length;
+    document.getElementById("status-line").textContent =
+      `${data.jobs.length} services · ${running} building · ${failed} failed · updated ${new Date().toLocaleTimeString()}`;
+  } catch (e) {
+    document.getElementById("status-line").textContent = "api unreachable: " + e.message;
+  }
+}
+
+async function toggleLogs(id, forceOpen) {
+  const el = els[id];
+  const panel = el.querySelector(".log-panel");
+  const opening = forceOpen === true ? true : !panel.classList.contains("open");
+  if (opening) {
+    openLogs.add(id);
+    panel.classList.add("open");
+    const pre = panel.querySelector("pre.logs");
+    pre.textContent = "loading…";
+    try {
+      const r = await fetch("/api/logs/" + id);
+      const d = await r.json();
+      if (!d.pod) pre.textContent = "(no pod found — build never started or pods were cleaned up)";
+      else pre.innerHTML = (d.init ? `<span class="init">${d.init}</span>` : "") + d.logs || "(empty logs)";
+    } catch (e) { pre.textContent = "log fetch failed: " + e.message; }
+  } else {
+    openLogs.delete(id);
+    panel.classList.remove("open");
+  }
+}
+
+function toast(msg, isErr) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "toast show" + (isErr ? " err" : "");
+  setTimeout(() => t.className = "toast", 4000);
+}
+
+async function rebuild(id) {
+  const label = id === "all" ? "all services" : id;
+  toast("rebuilding " + label + "…");
+  const btn = document.getElementById("rebuild-all");
+  btn.disabled = true;
+  try {
+    const r = await fetch("/api/build/" + id, { method: "POST" });
+    const d = await r.json();
+    const bad = (d.results || []).filter(x => !x.ok);
+    if (bad.length) toast("failed: " + bad.map(b => b.id + " (" + b.error + ")").join("; "), true);
+    else toast("rebuild triggered: " + label);
+  } catch (e) { toast("rebuild failed: " + e.message, true); }
+  btn.disabled = false;
+  refresh();
+}
+
+document.getElementById("rebuild-all").onclick = () => {
+  if (confirm("Rebuild all 18 services? This deletes and recreates every build job.")) rebuild("all");
+};
+
+refresh();
+</script>
+</body>
+</html>
