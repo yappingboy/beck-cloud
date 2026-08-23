@@ -24,6 +24,7 @@ spec:
       containers:
         - name: nginx
           image: ghcr.io/yappingboy/emdr:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 80
               name: http
