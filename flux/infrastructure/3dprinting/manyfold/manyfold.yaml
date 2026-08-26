@@ -224,6 +224,56 @@ spec:
   entryPoints:
     - websecure
   routes:
+    - match: Host(`manyfold.becklab.cloud`) && Path(`/oauth/token`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/oauth/`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/models`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/collections`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/creators`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/upload`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/nodeinfo`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/oembed`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
+    - match: Host(`manyfold.becklab.cloud`) && PathPrefix(`/.well-known`)
+      kind: Rule
+      services:
+        - name: manyfold
+          port: 3214
     - match: Host(`manyfold.becklab.cloud`)
       kind: Rule
       services:
