@@ -13,15 +13,37 @@ spec:
       storage: 5Gi
 ---
 apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: manyfold-libraries-lvm
+spec:
+  capacity:
+    storage: 5Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/3d-models
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+---
+apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
   name: manyfold-libraries
   namespace: 3dprinting
 spec:
   accessModes: ["ReadWriteOnce"]
+  volumeName: manyfold-libraries-lvm
   resources:
     requests:
-      storage: 50Gi
+      storage: 500Gi
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
