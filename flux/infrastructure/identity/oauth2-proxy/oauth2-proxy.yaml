@@ -44,6 +44,7 @@ spec:
     redis:
       host: "redis.identity.svc.cluster.local"
       password: "n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI="
+      sessionStoreType: "redis"
     extraArgs:
       - --set-xauthrequest=true
     ingress:
