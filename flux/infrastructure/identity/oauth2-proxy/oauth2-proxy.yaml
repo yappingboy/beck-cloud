@@ -45,12 +45,6 @@ spec:
       connectionURL: "redis://:n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI=@redis.identity.svc.cluster.local:6379"
     extraArgs:
       - --set-xauthrequest=true
-    extraEnv:
-      - name: OAUTH2_PROXY_REDIS_CONNECTION_URL
-        valueFrom:
-          secretKeyRef:
-            name: redis-secrets
-            key: redis-url
     ingress:
       enabled: true
       className: traefik
