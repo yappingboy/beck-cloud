@@ -6,9 +6,9 @@ metadata:
 spec:
   interval: 1m
   install:
-    timeout: 60s
+    timeout: 5m
   upgrade:
-    timeout: 60s
+    timeout: 5m
   chart:
     spec:
       chart: oauth2-proxy
