@@ -41,11 +41,13 @@ metadata:
   name: manyfold-libraries
   namespace: 3dprinting
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-movies-lvm PV
   volumeName: manyfold-libraries-lvm
   resources:
     requests:
-      storage: 500Gi
+      storage: 5Ti
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
