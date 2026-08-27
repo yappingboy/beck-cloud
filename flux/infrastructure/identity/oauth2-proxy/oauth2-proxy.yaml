@@ -21,7 +21,6 @@ spec:
     # Workaround: existingSecret collides with chart-generated env vars in v7.6.0.
     # Use extraEnv with secretKeyRef to inject secrets instead.
     config:
-      existingSecret: ""
       configFile: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
