@@ -42,7 +42,8 @@ spec:
         upstreams = ["static://202"]
         session_store_type = "redis"
     redis:
-      connectionURL: "redis://:n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI=@redis.identity.svc.cluster.local:6379"
+      host: "redis.identity.svc.cluster.local"
+      password: "n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI="
     extraArgs:
       - --set-xauthrequest=true
     ingress:
