@@ -21,9 +21,7 @@ spec:
     # Workaround: existingSecret collides with chart-generated env vars in v7.6.0.
     # Use extraEnv with secretKeyRef to inject secrets instead.
     config:
-      clientID: "oauth2-proxy"
-      clientSecret: "NwhgADI6Hays5Jge5CrrCwxngJHfljCL"
-      cookieSecret: "df820c0d5ee712c2fd19b5aa806b36d4"
+      existingSecret: oauth2-proxy-secrets
       configFile: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
