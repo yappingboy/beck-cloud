@@ -42,7 +42,7 @@ spec:
         upstreams = ["static://202"]
         session_store_type = "redis"
     redis:
-      host: "redis.identity.svc.cluster.local"
+      connectionURL: "redis://:n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI=@redis.identity.svc.cluster.local:6379"
     extraArgs:
       - --set-xauthrequest=true
     extraEnv:
