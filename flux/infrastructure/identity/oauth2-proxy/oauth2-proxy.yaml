@@ -41,6 +41,8 @@ spec:
         reverse_proxy = true
         upstreams = ["static://202"]
         session_store_type = "redis"
+    redis:
+      host: "redis.identity.svc.cluster.local"
     extraArgs:
       - --set-xauthrequest=true
     extraEnv:
