@@ -21,6 +21,9 @@ spec:
     # Workaround: existingSecret collides with chart-generated env vars in v7.6.0.
     # Use extraEnv with secretKeyRef to inject secrets instead.
     config:
+      clientID: "oauth2-proxy"
+      clientSecret: "NwhgADI6Hays5Jge5CrrCwxngJHfljCL"
+      cookieSecret: "df820c0d5ee712c2fd19b5aa806b36d4"
       configFile: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
@@ -45,22 +48,6 @@ spec:
       password: "n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI="
     extraArgs:
       - --set-xauthrequest=true
-    extraEnv:
-      - name: OAUTH2_PROXY_CLIENT_ID
-        valueFrom:
-          secretKeyRef:
-            name: oauth2-proxy-secrets
-            key: client-id
-      - name: OAUTH2_PROXY_CLIENT_SECRET
-        valueFrom:
-          secretKeyRef:
-            name: oauth2-proxy-secrets
-            key: client-secret
-      - name: OAUTH2_PROXY_COOKIE_SECRET
-        valueFrom:
-          secretKeyRef:
-            name: oauth2-proxy-secrets
-            key: cookie-secret
     ingress:
       enabled: true
       className: traefik
