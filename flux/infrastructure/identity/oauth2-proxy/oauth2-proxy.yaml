@@ -18,10 +18,10 @@ spec:
         name: oauth2-proxy
         namespace: flux-system
   values:
-    # Secrets are read from Kubernetes secrets via config.existingSecret.
-    # The secret must contain keys: client-id, client-secret, cookie-secret
+    # Workaround: existingSecret collides with chart-generated env vars in v7.6.0.
+    # Use extraEnv with secretKeyRef to inject secrets instead.
     config:
-      existingSecret: oauth2-proxy-secrets
+      existingSecret: ""
       configFile: |
         provider = "keycloak-oidc"
         provider_display_name = "Keycloak"
@@ -46,6 +46,22 @@ spec:
       password: "n2GhqVLqsP44FbrZRtKIY8JOYyiHuZkVrLI37dJR0TI="
     extraArgs:
       - --set-xauthrequest=true
+    extraEnv:
+      - name: OAUTH2_PROXY_CLIENT_ID
+        valueFrom:
+          secretKeyRef:
+            name: oauth2-proxy-secrets
+            key: client-id
+      - name: OAUTH2_PROXY_CLIENT_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: oauth2-proxy-secrets
+            key: client-secret
+      - name: OAUTH2_PROXY_COOKIE_SECRET
+        valueFrom:
+          secretKeyRef:
+            name: oauth2-proxy-secrets
+            key: cookie-secret
     ingress:
       enabled: true
       className: traefik
