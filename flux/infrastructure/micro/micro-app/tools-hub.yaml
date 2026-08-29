@@ -1,0 +1,89 @@
+# Tools Hub — Unified microservice dashboard
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: tools-hub
+  namespace: micro
+  labels:
+    app: tools-hub
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: tools-hub
+  template:
+    metadata:
+      labels:
+        app: tools-hub
+        service: micro
+    spec:
+      containers:
+        - name: tools-hub
+          image: ghcr.io/yappingboy/tools-hub:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 80
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 30
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 10Mi
+            limits:
+              cpu: 100m
+              memory: 30Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: tools-hub-service
+  namespace: micro
+  labels:
+    app: tools-hub
+    service: micro
+spec:
+  selector:
+    app: tools-hub
+  ports:
+    - port: 80
+      targetPort: 80
+      protocol: TCP
+      name: http
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: tools-hub
+  namespace: micro
+  labels:
+    app: tools-hub
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-tools-hub
+          namespace: micro
+      services:
+        - name: tools-hub-service
+          port: 80
+  tls:
+    secretName: tools-tls

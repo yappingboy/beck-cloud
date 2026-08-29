@@ -1,0 +1,590 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BeckCloud Tools</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=Space+Serif:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+<style>
+  /* === TOKENS === */
+  :root {
+    --bg: #0b0e14;
+    --surface: #11141c;
+    --card: #161a24;
+    --card-hover: #1c212e;
+    --border: #232736;
+    --border-bright: #2f3548;
+    --accent: #e8a838;
+    --accent-dim: #b0802a;
+    --text: #d4d6dc;
+    --text-muted: #717580;
+    --success: #34d399;
+    --error: #f87171;
+    --radius: 6px;
+    --mono: 'IBM Plex Mono', monospace;
+    --serif: 'Space Serif', Georgia, serif;
+  }
+
+  /* === RESET === */
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--mono);
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    line-height: 1.6;
+  }
+
+  /* === NOISE OVERLAY === */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.03;
+    pointer-events: none;
+    z-index: 9999;
+    background-image: url("data:image/svg+xml,%3Csvg width='64' height='64' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='64' height='64' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* === HEADER === */
+  .header {
+    border-bottom: 1px solid var(--border);
+    padding: 1.25rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    position: sticky;
+    top: 0;
+    background: var(--bg);
+    z-index: 100;
+  }
+  .header svg {
+    width: 28px;
+    height: 28px;
+    fill: var(--accent);
+  }
+  .header h1 {
+    font-family: var(--serif);
+    font-size: 1.3rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+  }
+  .header span.tag {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    padding: 0.15rem 0.5rem;
+    border-radius: 3px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+  }
+
+  /* === GRID === */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(340px, 1fr));
+    gap: 1rem;
+    padding: 1.5rem 2rem 3rem;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+  @media (max-width: 600px) {
+    .grid { grid-template-columns: 1fr; padding: 1rem; }
+    .header { padding: 1rem; }
+  }
+
+  /* === CARD === */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    transition: border-color 0.2s, background 0.2s;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+  }
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px;
+    height: 100%;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.2s;
+  }
+  .card:hover {
+    border-color: var(--border-bright);
+    background: var(--card-hover);
+  }
+  .card:hover::before { opacity: 1; }
+
+  .card-icon {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .card h2 {
+    font-family: var(--serif);
+    font-size: 1.05rem;
+    font-weight: 700;
+    margin-bottom: 0.35rem;
+  }
+  .card p {
+    font-size: 0.78rem;
+    color: var(--text-muted);
+    margin-bottom: 1rem;
+    font-family: var(--mono);
+  }
+  .card .endpoint {
+    font-size: 0.65rem;
+    color: var(--text-muted);
+    background: var(--bg);
+    padding: 0.25rem 0.5rem;
+    border-radius: 3px;
+    display: inline-block;
+    font-family: var(--mono);
+  }
+
+  /* === PANEL (expand on click) === */
+  .panel {
+    margin-top: 1rem;
+    border-top: 1px solid var(--border);
+    padding-top: 1rem;
+    display: none;
+  }
+  .card.open .panel { display: block; }
+  .card.open {
+    grid-column: 1 / -1;
+  }
+
+  .panel label {
+    display: block;
+    font-size: 0.72rem;
+    color: var(--text-muted);
+    margin-bottom: 0.25rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .panel input, .panel select, .panel textarea {
+    width: 100%;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.5rem 0.75rem;
+    outline: none;
+    margin-bottom: 0.75rem;
+  }
+  .panel input:focus, .panel select:focus, .panel textarea:focus {
+    border-color: var(--accent);
+  }
+  .panel textarea { resize: vertical; min-height: 100px; }
+  .panel select { appearance: none; cursor: pointer; }
+
+  .panel .row {
+    display: flex;
+    gap: 0.75rem;
+  }
+  .panel .row > * { flex: 1; }
+
+  .panel button {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 0.6rem 1.2rem;
+    background: var(--accent);
+    color: var(--bg);
+    border: none;
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-weight: 500;
+    margin-top: 0.25rem;
+    transition: background 0.15s;
+  }
+  .panel button:hover { background: var(--accent-dim); }
+  .panel button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+  .panel .result {
+    margin-top: 0.75rem;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.75rem;
+    font-size: 0.8rem;
+    word-break: break-all;
+    white-space: pre-wrap;
+    max-height: 300px;
+    overflow-y: auto;
+    display: none;
+  }
+  .panel .result.visible { display: block; }
+  .panel .result.error { border-color: var(--error); color: var(--error); }
+  .panel .result.success { border-color: var(--success); color: var(--success); }
+
+  /* === COPY BUTTON === */
+  .copy-btn {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 0.2rem 0.5rem;
+    background: var(--card);
+    color: var(--text-muted);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    cursor: pointer;
+    float: right;
+    margin-top: -1px;
+  }
+  .copy-btn:hover { color: var(--text); border-color: var(--border-bright); }
+
+  /* === IMAGE RESULT === */
+  .result img {
+    max-width: 250px;
+    border-radius: var(--radius);
+    margin-top: 0.5rem;
+  }
+
+  /* === SEARCH === */
+  .search {
+    max-width: 1400px;
+    margin: 1rem auto 0;
+    padding: 0 2rem;
+  }
+  .search input {
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    padding: 0.5rem 1rem;
+    width: 260px;
+    outline: none;
+  }
+  .search input:focus { border-color: var(--accent); }
+  .search input::placeholder { color: var(--text-muted); }
+  @media (max-width: 600px) {
+    .search { padding: 0 1rem; }
+    .search input { width: 100%; }
+  }
+</style>
+</head>
+<body>
+
+<header class="header">
+  <svg viewBox="0 0 24 24"><path d="M13 3L4 14h6l-2 7 9-11h-6l2-7z"/></svg>
+  <h1>BeckCloud Tools</h1>
+  <span class="tag">Microservices</span>
+</header>
+
+<div class="search">
+  <input id="search" type="text" placeholder="Filter tools…" oninput="filterCards()">
+</div>
+
+<div class="grid" id="grid">
+
+  <!-- HASH -->
+  <div class="card" data-tool="hash" onclick="togglePanel(this)">
+    <div class="card-icon">#</div>
+    <h2>Hash Generator</h2>
+    <p>SHA-256, SHA-512, MD5, HMAC — hash anything</p>
+    <span class="endpoint">hash.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Algorithm</label>
+      <select data-field="algo">
+        <option value="sha256">SHA-256</option>
+        <option value="sha512">SHA-512</option>
+        <option value="md5">MD5</option>
+        <option value="sha256-hmac">SHA-256 HMAC</option>
+        <option value="base64_encode">Base64 Encode</option>
+        <option value="base64_decode">Base64 Decode</option>
+        <option value="hex_encode">Hex Encode</option>
+        <option value="hex_decode">Hex Decode</option>
+      </select>
+      <label>HMAC Key <span style="text-transform:none;font-size:0.65rem;color:var(--text-muted)">(optional)</span></label>
+      <input data-field="key" placeholder="secret key">
+      <label>Input</label>
+      <textarea data-field="input" placeholder="text to hash"></textarea>
+      <button onclick="event.stopPropagation(); apiCall(this)">Hash</button>
+      <div class="result" id="result-hash"></div>
+    </div>
+  </div>
+
+  <!-- CONVERTER -->
+  <div class="card" data-tool="converter" onclick="togglePanel(this)">
+    <div class="card-icon">⇄</div>
+    <h2>Converter</h2>
+    <p>Base64, URL, HTML, Hex, ROT13, UUID, Random string</p>
+    <span class="endpoint">base64.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Operation</label>
+      <select data-field="operation">
+        <option value="base64_encode">Base64 Encode</option>
+        <option value="base64_decode">Base64 Decode</option>
+        <option value="url_encode">URL Encode</option>
+        <option value="url_decode">URL Decode</option>
+        <option value="html_encode">HTML Encode</option>
+        <option value="html_decode">HTML Decode</option>
+        <option value="hex_encode">Hex Encode</option>
+        <option value="hex_decode">Hex Decode</option>
+        <option value="rot13">ROT13</option>
+        <option value="uuid_v4">Generate UUID v4</option>
+        <option value="random_string">Random String</option>
+      </select>
+      <label>Input <span style="text-transform:none;font-size:0.65rem;color:var(--text-muted)">(optional for UUID)</span></label>
+      <textarea data-field="input" placeholder="input text"></textarea>
+      <button onclick="event.stopPropagation(); apiCall(this)">Convert</button>
+      <div class="result" id="result-converter"></div>
+    </div>
+  </div>
+
+  <!-- URL SHORTENER -->
+  <div class="card" data-tool="short" onclick="togglePanel(this)">
+    <div class="card-icon">✂</div>
+    <h2>URL Shortener</h2>
+    <p>Shorten long URLs, custom codes, expiry</p>
+    <span class="endpoint">short.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Original URL</label>
+      <input data-field="originalUrl" type="url" placeholder="https://example.com/very/long/url">
+      <div class="row">
+        <div>
+          <label>Custom Code <span style="text-transform:none;font-size:0.65rem;color:var(--text-muted)">(optional)</span></label>
+          <input data-field="customCode" placeholder="mycode">
+        </div>
+        <div>
+          <label>Expire After <span style="text-transform:none;font-size:0.65rem;color:var(--text-muted)">(minutes)</span></label>
+          <input data-field="expireAfter" type="number" placeholder="1440">
+        </div>
+      </div>
+      <button onclick="event.stopPropagation(); apiCall(this)">Shorten</button>
+      <div class="result" id="result-short"></div>
+    </div>
+  </div>
+
+  <!-- QR CODE -->
+  <div class="card" data-tool="qr" onclick="togglePanel(this)">
+    <div class="card-icon">⊞</div>
+    <h2>QR Code</h2>
+    <p>Generate QR codes — text, URL, WiFi, vCard</p>
+    <span class="endpoint">qr.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Template</label>
+      <select data-field="template">
+        <option value="none">Plain text</option>
+        <option value="wifi">WiFi</option>
+        <option value="vcard">vCard</option>
+        <option value="email">Email</option>
+        <option value="sms">SMS</option>
+      </select>
+      <label>Data</label>
+      <textarea data-field="data" placeholder="text or URL for QR"></textarea>
+      <div class="row">
+        <div>
+          <label>Size</label>
+          <input data-field="size" type="number" value="200" placeholder="200">
+        </div>
+        <div>
+          <label>Error Correction</label>
+          <select data-field="errorCorrection">
+            <option value="L">L (7%)</option>
+            <option value="M">M (15%)</option>
+            <option value="Q">Q (25%)</option>
+            <option value="H">H (30%)</option>
+          </select>
+        </div>
+      </div>
+      <button onclick="event.stopPropagation(); apiCall(this)">Generate</button>
+      <div class="result" id="result-qr"></div>
+    </div>
+  </div>
+
+  <!-- FORMAT / YAML-JSON TOOL -->
+  <div class="card" data-tool="format" onclick="togglePanel(this)">
+    <div class="card-icon">{ }</div>
+    <h2>Format Converter</h2>
+    <p>JSON ↔ YAML, format, validate, compare</p>
+    <span class="endpoint">fmt.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Operation</label>
+      <select data-field="operation">
+        <option value="format_json">Format JSON</option>
+        <option value="format_yaml">Format YAML</option>
+        <option value="json_to_yaml">JSON → YAML</option>
+        <option value="yaml_to_json">YAML → JSON</option>
+      </select>
+      <label>Input</label>
+      <textarea data-field="input" placeholder='{"key": "value"}' style="font-family:var(--mono);font-size:0.75rem"></textarea>
+      <button onclick="event.stopPropagation(); apiCall(this)">Convert</button>
+      <div class="result" id="result-format"></div>
+    </div>
+  </div>
+
+  <!-- DNS LOOKUP -->
+  <div class="card" data-tool="dns" onclick="togglePanel(this)">
+    <div class="card-icon">🌐</div>
+    <h2>DNS Lookup</h2>
+    <p>Resolve domains — A, AAAA, MX, TXT, CNAME, NS, SOA</p>
+    <span class="endpoint">dns.tools.becklab.cloud</span>
+    <div class="panel">
+      <label>Domain</label>
+      <input data-field="domain" placeholder="example.com">
+      <label>Record Type</label>
+      <select data-field="recordType">
+        <option value="A">A</option>
+        <option value="AAAA">AAAA</option>
+        <option value="MX">MX</option>
+        <option value="TXT">TXT</option>
+        <option value="CNAME">CNAME</option>
+        <option value="NS">NS</option>
+        <option value="SOA">SOA</option>
+      </select>
+      <button onclick="event.stopPropagation(); apiCall(this)">Lookup</button>
+      <div class="result" id="result-dns"></div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BASE = 'https';
+
+const TOOLS = {
+  hash: {
+    host: 'hash.tools.becklab.cloud',
+    path: '/api/v1/hash',
+    method: 'POST',
+    fields: ['algo', 'input', 'key'],
+  },
+  converter: {
+    host: 'base64.tools.becklab.cloud',
+    path: '/api/v1/convert',
+    method: 'POST',
+    fields: ['operation', 'input'],
+  },
+  short: {
+    host: 'short.tools.becklab.cloud',
+    path: '/api/v1/shorten',
+    method: 'POST',
+    fields: ['originalUrl', 'customCode', 'expireAfter'],
+  },
+  qr: {
+    host: 'qr.tools.becklab.cloud',
+    path: '/api/v1/qr',
+    method: 'POST',
+    fields: ['data', 'template', 'size', 'errorCorrection', 'format'],
+  },
+  format: {
+    host: 'fmt.tools.becklab.cloud',
+    path: '/api/v1/format',
+    method: 'POST',
+    fields: ['operation', 'input'],
+  },
+  dns: {
+    host: 'dns.tools.becklab.cloud',
+    path: '/api/v1/lookup',
+    method: 'POST',
+    fields: ['domain', 'recordType'],
+  },
+};
+
+function togglePanel(card) {
+  const wasOpen = card.classList.contains('open');
+  document.querySelectorAll('.card.open').forEach(c => c.classList.remove('open'));
+  if (!wasOpen) card.classList.add('open');
+}
+
+function buildPayload(card, cfg) {
+  const body = {};
+  cfg.fields.forEach(f => {
+    const el = card.querySelector('[data-field="' + f + '"]');
+    const v = el.value.trim();
+    if (v) body[f] = v;
+  });
+  return body;
+}
+
+async function apiCall(btn) {
+  const card = btn.closest('.card');
+  const tool = card.dataset.tool;
+  const cfg = TOOLS[tool];
+  const body = buildPayload(card, cfg);
+
+  btn.disabled = true;
+  btn.textContent = '…';
+
+  const res = await fetch(BASE + '://' + cfg.host + cfg.path, {
+    method: cfg.method,
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json();
+
+  const el = document.getElementById('result-' + tool);
+  let text;
+  if (data.result && typeof data.result === 'object' && 'result' in data.result) {
+    text = data.result.result;
+  } else if (data.result && typeof data.result === 'string') {
+    text = data.result;
+  } else {
+    text = JSON.stringify(data, null, 2);
+  }
+
+  // QR special: base64 PNG
+  if (tool === 'qr' && data.status === 'success' && text) {
+    el.innerHTML = '<button class="copy-btn" onclick="event.stopPropagation();copyText(this.parentElement.textContent)">copy</button><br><img src="data:image/png;base64,' + text + '" alt="QR code">';
+    el.className = 'result visible success';
+  } else if (data.status === 'success' || res.ok) {
+    el.innerHTML = '<button class="copy-btn" onclick="event.stopPropagation();copyText(\'' + text.replace(/'/g, "\\'") + '\')">copy</button>\n' + text;
+    el.className = 'result visible success';
+  } else {
+    el.innerHTML = data.error || data.result?.error || JSON.stringify(data, null, 2);
+    el.className = 'result visible error';
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Run';
+}
+
+function copyText(str) {
+  navigator.clipboard.writeText(str).then(() => {
+    const btn = event.target.closest('button');
+    const orig = btn.textContent;
+    btn.textContent = '✓';
+    setTimeout(() => btn.textContent = 'copy', 1200);
+  });
+}
+
+function filterCards() {
+  const q = document.getElementById('search').value.toLowerCase();
+  document.querySelectorAll('.card').forEach(c => {
+    const t = (c.querySelector('h2').textContent + ' ' + c.querySelector('p').textContent).toLowerCase();
+    c.style.display = t.includes(q) ? '' : 'none';
+  });
+}
+
+// Close panel on outside click
+document.addEventListener('click', e => {
+  const openCard = document.querySelector('.card.open');
+  if (openCard && !openCard.contains(e.target)) {
+    openCard.classList.remove('open');
+  }
+});
+
+// Enter key triggers button
+document.querySelectorAll('.card textarea, .card input').forEach(el => {
+  el.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      const btn = el.closest('.panel').querySelector('button');
+      btn.click();
+    }
+  });
+});
+</script>
+
+</body>
+</html>

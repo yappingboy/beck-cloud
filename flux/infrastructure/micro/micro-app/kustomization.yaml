@@ -7,6 +7,10 @@ resources:
   - services/deployments.yaml
   - services/svc-defs.yaml
   - services/rate-limits.yaml
+  - kaniko-sa.yaml
+  - build-jobs.yaml
+  - frontend-builds.yaml
+  - tools-hub.yaml
 
 images:
   # Hash / Base64 / URL Shortener / QR / YAML-JSON / Webhook / Cron / DNS
@@ -51,4 +55,8 @@ images:
     newTag: latest
   - name: ghcr.io/yappingboy/beckflow-frontend
     newName: ghcr.io/yappingboy/beckflow-frontend
+    newTag: latest
+  # Tools Hub
+  - name: ghcr.io/yappingboy/tools-hub
+    newName: ghcr.io/yappingboy/tools-hub
     newTag: latest

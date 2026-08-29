@@ -109,6 +109,10 @@ jobs:
             path: apps-source/tools/beckflow
             image: beckflow-frontend
             context: apps-source/tools/beckflow/frontend
+          - name: tools-hub
+            path: apps-source/tools/tools-hub
+            image: tools-hub
+            context: apps-source/tools/tools-hub
 
           # ---- static web apps ----
           - name: emdr

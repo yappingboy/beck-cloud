@@ -147,3 +147,15 @@ spec:
     average: 50
     burst: 10
     period: 60s
+---
+# Tools Hub: 500 req/day → 50/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-tools-hub
+  namespace: micro
+spec:
+  rateLimit:
+    average: 500
+    burst: 50
+    period: 60s
