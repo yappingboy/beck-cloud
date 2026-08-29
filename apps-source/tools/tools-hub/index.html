@@ -287,7 +287,7 @@
 <div class="grid" id="grid">
 
   <!-- HASH -->
-  <div class="card" data-tool="hash" onclick="togglePanel(this)">
+  <div class="card" data-tool="hash" onclick="toggleOnCard(event)">
     <div class="card-icon">#</div>
     <h2>Hash Generator</h2>
     <p>SHA-256, SHA-512, MD5, HMAC — hash anything</p>
@@ -314,7 +314,7 @@
   </div>
 
   <!-- CONVERTER -->
-  <div class="card" data-tool="converter" onclick="togglePanel(this)">
+  <div class="card" data-tool="converter" onclick="toggleOnCard(event)">
     <div class="card-icon">⇄</div>
     <h2>Converter</h2>
     <p>Base64, URL, HTML, Hex, ROT13, UUID, Random string</p>
@@ -342,7 +342,7 @@
   </div>
 
   <!-- URL SHORTENER -->
-  <div class="card" data-tool="short" onclick="togglePanel(this)">
+  <div class="card" data-tool="short" onclick="toggleOnCard(event)">
     <div class="card-icon">✂</div>
     <h2>URL Shortener</h2>
     <p>Shorten long URLs, custom codes, expiry</p>
@@ -366,7 +366,7 @@
   </div>
 
   <!-- QR CODE -->
-  <div class="card" data-tool="qr" onclick="togglePanel(this)">
+  <div class="card" data-tool="qr" onclick="toggleOnCard(event)">
     <div class="card-icon">⊞</div>
     <h2>QR Code</h2>
     <p>Generate QR codes — text, URL, WiFi, vCard</p>
@@ -403,7 +403,7 @@
   </div>
 
   <!-- FORMAT / YAML-JSON TOOL -->
-  <div class="card" data-tool="format" onclick="togglePanel(this)">
+  <div class="card" data-tool="format" onclick="toggleOnCard(event)">
     <div class="card-icon">{ }</div>
     <h2>Format Converter</h2>
     <p>JSON ↔ YAML, format, validate, compare</p>
@@ -423,8 +423,9 @@
     </div>
   </div>
 
-  <!-- DNS LOOKUP -->
-  <div class="card" data-tool="dns" onclick="togglePanel(this)">
+  <!-- BECKFLOW -->
+  <div class=
+  <div class="card" data-tool="dns" onclick="toggleOnCard(event)">
     <div class="card-icon">🌐</div>
     <h2>DNS Lookup</h2>
     <p>Resolve domains — A, AAAA, MX, TXT, CNAME, NS, SOA</p>
@@ -497,6 +498,13 @@ function togglePanel(card) {
   if (!wasOpen) card.classList.add('open');
 }
 
+// Click on card toggles panel — but clicks inside panel stay inside
+function toggleOnCard(e) {
+  const card = e.currentTarget;
+  if (e.target.closest('.panel') && card.classList.contains('open')) return;
+  togglePanel(card);
+}
+
 function buildPayload(card, cfg) {
   const body = {};
   cfg.fields.forEach(f => {
@@ -535,7 +543,7 @@ async function apiCall(btn) {
 
   // QR special: base64 PNG
   if (tool === 'qr' && data.status === 'success' && text) {
-    el.innerHTML = '<button class="copy-btn" onclick="event.stopPropagation();copyText(this.parentElement.textContent)">copy</button><br><img src="data:image/png;base64,' + text + '" alt="QR code">';
+    el.innerHTML = '<img src="data:image/png;base64,' + text + '" alt="QR code">';
     el.className = 'result visible success';
   } else if (data.status === 'success' || res.ok) {
     el.innerHTML = '<button class="copy-btn" onclick="event.stopPropagation();copyText(\'' + text.replace(/'/g, "\\'") + '\')">copy</button>\n' + text;
@@ -572,6 +580,11 @@ document.addEventListener('click', e => {
   if (openCard && !openCard.contains(e.target)) {
     openCard.classList.remove('open');
   }
+});
+
+// Prevent input clicks from bubbling to card toggle
+document.querySelectorAll('.panel input, .panel textarea, .panel select, .panel button').forEach(el => {
+  el.addEventListener('click', e => e.stopPropagation());
 });
 
 // Enter key triggers button
