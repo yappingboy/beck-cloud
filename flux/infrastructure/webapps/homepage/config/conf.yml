@@ -1,0 +1,441 @@
+# Dashy configuration — Becklab Cloud
+# Migrated from gethomepage/homepage HelmRelease (2026-08-29)
+title: Becklab
+favicon: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80
+theme: darkly
+layout: responsive
+
+# Background
+background:
+  backgroundImage: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80
+  blur: 6
+  brightness: 50
+  opacity: 40
+
+# Status checking
+statusUpdateInterval: 300000
+statusCheck: true
+
+# Navigation
+navItems:
+  - title: Dashboard
+    link: /
+    icon: mdi-home
+
+# Widget bar
+widgets:
+  - widgetType: currentTime
+    widgetProperties:
+      name: Current Time
+      timezone: America/Los_Angeles
+      use24Hour: true
+  - widgetType: cpuInfo
+    widgetProperties:
+      name: Cluster CPU
+  - widgetType: diskInfo
+    widgetProperties:
+      name: Disk
+  - widgetType: ramInfo
+    widgetProperties:
+      name: Memory
+  - widgetType: searchBar
+    widgetProperties:
+      searchBar: true
+      searchEngine: https://duckduckgo.com/?q=
+
+# Main sections
+sections:
+  - title: Media
+    icon: mdi-television
+    items:
+      - title: Jellyfin
+        link: https://jellyfin.becklab.cloud
+        icon: si-jellyfin
+        group: Media
+        description: Media streaming
+        status:
+          url: http://jellyfin.media:8096
+          headerName: X-Api-Key
+          headerData: d2b37b7199d34091b5221f717f7a7e16
+      - title: Sonarr
+        link: https://sonarr.becklab.cloud
+        icon: si-sonarr
+        group: Media
+        description: TV show manager
+        status:
+          url: http://sonarr.media:8989
+          headerName: X-Api-Key
+          headerData: 50844aeb0dfe4cc68c214694c3648181
+      - title: Radarr
+        link: https://radarr.becklab.cloud
+        icon: si-radarr
+        group: Media
+        description: Movie manager
+        status:
+          url: http://radarr.media:7878
+          headerName: X-Api-Key
+          headerData: 657480f8c1044e359c6bffebaa372868
+      - title: Bazarr
+        link: https://bazarr.becklab.cloud
+        icon: bazarr
+        group: Media
+        description: Subtitle manager
+        status:
+          url: http://bazarr.media:6767
+          headerName: X-Api-Key
+          headerData: d2e12738d7c4b46ebb4f6978cf1c428b
+      - title: Prowlarr
+        link: https://prowlarr.becklab.cloud
+        icon: mdi-rss
+        group: Media
+        description: Indexer manager
+        status:
+          url: http://prowlarr.media:9696
+          headerName: X-Api-Key
+          headerData: f4d2705198f646a08849bc68176fa880
+      - title: SABnzbd
+        link: https://sabnzbd.becklab.cloud
+        icon: mdi-download
+        group: Media
+        description: NZB downloader
+        status:
+          url: http://sabnzbd.media:8080
+          headerName: X-Api-Key
+          headerData: a3239af3bd954b2d8f4fe1c35d0b2c4c
+      - title: NZBGet
+        link: https://nzbget.becklab.cloud
+        icon: mdi-download-circle
+        group: Media
+        description: NZB downloader
+        status:
+          url: http://nzbget.media:6789
+      - title: qBittorrent
+        link: https://qbit.becklab.cloud
+        icon: si-qbittorrent
+        group: Media
+        description: Torrent downloads
+        status:
+          url: http://qbit-gluetun.media:8080
+      - title: Tdarr
+        link: https://tdarr.becklab.cloud
+        icon: mdi-filmstrip-box
+        group: Media
+        description: Media transcoding
+        status:
+          url: http://tdarr.media:8265
+          headerName: X-Api-Key
+          headerData: tsec_14df70c59a4363143361b86d267d0d136b63c622ef67abcbe278802e9147a767
+      - title: Jellyseerr
+        link: https://requests.becklab.cloud
+        icon: mdi-television-box
+        group: Media
+        description: Media requests
+        status:
+          url: http://jellyseerr.media:5055
+      - title: Homebox
+        link: https://homebox.becklab.cloud
+        icon: mdi-box
+        group: Media
+        description: Home inventory
+        status:
+          url: http://homebox.media:7745
+          headerName: X-Api-Key
+          headerData: WesFL+mZSTT9ySmaLHWSEfO4LXqVYKffBTNReG75e4DpkbDXFTk+xxT+VmMhzY3W
+      - title: Swiparr
+        link: https://swiparr.becklab.cloud
+        icon: mdi-sweep
+        group: Media
+        description: Media management
+      - title: Spotweb
+        link: https://spotweb.becklab.cloud
+        icon: mdi-search-web
+        group: Media
+        description: Newznab spotter
+
+  - title: Monitoring
+    icon: mdi-chart-line
+    items:
+      - title: Grafana
+        link: https://grafana.becklab.cloud
+        icon: si-grafana
+        group: Monitoring
+        description: Dashboards
+        status:
+          url: http://kube-prometheus-stack-grafana.monitoring:80
+      - title: Hubble
+        link: https://hubble.becklab.cloud
+        icon: mdi-network
+        group: Monitoring
+        description: CNI observability
+
+  - title: 3D Printing
+    icon: mdi-printer-3d
+    items:
+      - title: Spoolman
+        link: https://spoolman.becklab.cloud
+        icon: mdi-spool
+        group: 3D Printing
+        description: Filament tracker
+        status:
+          url: http://spoolman.3dprinting:7912
+      - title: Orcaslicer
+        link: https://orcaslicer.becklab.cloud
+        icon: mdi-printer
+        group: 3D Printing
+        description: Slicer
+      - title: Bumpmesh
+        link: https://bumpmesh.becklab.cloud
+        icon: mdi-cube
+        group: 3D Printing
+        description: Mesh analysis
+      - title: FDMMonster
+        link: https://fdmmonster.becklab.cloud
+        icon: mdi-printer-3d
+        group: 3D Printing
+        description: Print monitor
+      - title: Manyfold
+        link: https://manyfold.becklab.cloud
+        icon: mdi-cubes
+        group: 3D Printing
+        description: 3D model library
+
+  - title: Identity
+    icon: mdi-shield-account
+    items:
+      - title: Keycloak
+        link: https://keycloak.becklab.cloud
+        icon: keycloak
+        group: Identity
+        description: SSO / Identity
+        status:
+          url: http://keycloak.identity:8080
+      - title: LLDAP
+        link: https://lldap.becklab.cloud
+        icon: mdi-domain
+        group: Identity
+        description: LDAP directory
+      - title: OAuth2 Admin
+        link: https://oauth2.becklab.cloud
+        icon: mdi-lock-open
+        group: Identity
+        description: OAuth2 proxy admin
+
+  - title: Web Apps
+    icon: mdi-web
+    items:
+      - title: Home Assistant
+        link: https://ha.becklab.cloud
+        icon: si-homeassistant
+        group: Web Apps
+        description: Smart home
+        status:
+          url: http://home-assistant.webapps:8123
+          headerName: X-Api-Key
+          headerData: welcome
+      - title: Bitwarden
+        link: https://bw.becklab.cloud
+        icon: si-bitwarden
+        group: Web Apps
+        description: Password manager
+      - title: Directus
+        link: https://cms.becklab.cloud
+        icon: si-directus
+        group: Web Apps
+        description: Headless CMS
+      - title: ToolJet
+        link: https://tooljet.becklab.cloud
+        icon: mdi-apps
+        group: Web Apps
+        description: Low-code app builder
+      - title: Affine
+        link: https://affine.becklab.cloud
+        icon: mdi-notebook
+        group: Web Apps
+        description: Collaborative wiki
+      - title: Silex
+        link: https://silex.becklab.cloud
+        icon: mdi-pen
+        group: Web Apps
+        description: Design tool
+      - title: OpenClaw
+        link: https://nova.becklab.cloud
+        icon: mdi-paw
+        group: Web Apps
+        description: AI assistant
+      - title: Admin Panel
+        link: https://admin-panel.becklab.cloud
+        icon: mdi-cog
+        group: Web Apps
+        description: Admin dashboard
+      - title: SudoMeals
+        link: https://sudoku-meals.becklab.cloud
+        icon: mdi-silverware-fork-knife
+        group: Web Apps
+        description: Meal planning
+      - title: SeARXNG
+        link: https://searxng.becklab.cloud
+        icon: si-duckduckgo
+        group: Web Apps
+        description: Metasearch
+      - title: EMdr
+        link: https://emdr.becklab.cloud
+        icon: mdi-brain
+        group: Web Apps
+        description: Therapy tools
+      - title: OpenNebula
+        link: https://one.becklab.cloud
+        icon: mdi-server
+        group: Web Apps
+        description: Virtualization
+
+  - title: Infrastructure
+    icon: mdi-server-network
+    items:
+      - title: Traefik Dashboard
+        link: https://traefik.becklab.cloud
+        icon: si-traefik
+        group: Infrastructure
+        description: Ingress router
+      - title: Kiri-moto
+        link: https://kiri-moto.becklab.cloud
+        icon: mdi-grid
+        group: Infrastructure
+        description: Grid space
+      - title: Mesh Tool
+        link: https://mesh-tool.becklab.cloud
+        icon: mdi-vector-point
+        group: Infrastructure
+        description: Mesh editor
+      - title: Void Form
+        link: https://void-form.becklab.cloud
+        icon: mdi-textbox
+        group: Infrastructure
+        description: Form handler
+      - title: CADAM
+        link: https://cadam.becklab.cloud
+        icon: mdi-cad
+        group: Infrastructure
+        description: CAD web app
+      - title: Dopamine Shop
+        link: https://dopamine-shop.becklab.cloud
+        icon: mdi-store
+        group: Infrastructure
+        description: Shop
+      - title: Supabase
+        link: https://supabase.becklab.cloud
+        icon: si-supabase
+        group: Infrastructure
+        description: Backend platform
+
+  - title: Micro Services
+    icon: mdi-microchip
+    items:
+      - title: Auth Admin
+        link: https://auth-admin.becklab.cloud
+        icon: mdi-lock
+        group: Micro Services
+        description: Auth admin
+      - title: Base64 Tool
+        link: https://base64.becklab.cloud
+        icon: mdi-text
+        group: Micro Services
+        description: Base64 encode/decode
+      - title: Markdown Tool
+        link: https://markdown.becklab.cloud
+        icon: si-markdown
+        group: Micro Services
+        description: Markdown editor
+      - title: QR Generator
+        link: https://qr.becklab.cloud
+        icon: mdi-qrcode
+        group: Micro Services
+        description: QR code generator
+      - title: Hash Tool
+        link: https://hash.becklab.cloud
+        icon: mdi-hash
+        group: Micro Services
+        description: Hash generator
+      - title: URL Shortener
+        link: https://short.becklab.cloud
+        icon: mdi-link
+        group: Micro Services
+        description: URL shortener
+      - title: Image Editor
+        link: https://editor.becklab.cloud
+        icon: mdi-image
+        group: Micro Services
+        description: Image editor
+      - title: Resize Tool
+        link: https://resize.becklab.cloud
+        icon: mdi-resize
+        group: Micro Services
+        description: Image resize
+      - title: FMT Tool
+        link: https://fmt.becklab.cloud
+        icon: mdi-format-align-center
+        group: Micro Services
+        description: Format converter
+      - title: DNS Monitor
+        link: https://dns.becklab.cloud
+        icon: mdi-dns
+        group: Micro Services
+        description: DNS monitoring
+      - title: Cron Jobs
+        link: https://cron.becklab.cloud
+        icon: mdi-clock
+        group: Micro Services
+        description: Cron management
+      - title: Webhook Relay
+        link: https://webhook.becklab.cloud
+        icon: mdi-webhook
+        group: Micro Services
+        description: Webhook relay
+      - title: Beckflow
+        link: https://beckflow.becklab.cloud
+        icon: mdi-flow
+        group: Micro Services
+        description: Workflow engine
+
+  - title: Gaming
+    icon: mdi-gamepad
+    items:
+      - title: Crafty Controller
+        link: https://crafty.becklab.cloud
+        icon: si-minecraft
+        group: Gaming
+        description: Minecraft server
+      - title: User Invite
+        link: https://user-invite.becklab.cloud
+        icon: mdi-account-plus
+        group: Gaming
+        description: Player invites
+
+  - title: Pages
+    icon: mdi-file-document
+    items:
+      - title: Landing Page
+        link: https://landing-page.becklab.cloud
+        icon: mdi-web-box
+        group: Pages
+        description: Landing page
+      - title: Landing Page Gateway
+        link: https://landing-page-gateway.becklab.cloud
+        icon: mdi-gate
+        group: Pages
+        description: Gateway page
+      - title: Logout Page
+        link: https://logout-page.becklab.cloud
+        icon: mdi-logout
+        group: Pages
+        description: Logout redirect
+      - title: Cadam Build
+        link: https://cadam-build.becklab.cloud
+        icon: mdi-wrench
+        group: Pages
+        description: Build dashboard
+
+# Theme settings
+themeColors:
+  background: '#0f172a'
+  text: '#e2e8f0'
+  primary: '#3b82f6'

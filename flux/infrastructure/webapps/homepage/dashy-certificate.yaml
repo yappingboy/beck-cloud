@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: homepage-tls
+  namespace: webapps
+spec:
+  dnsNames:
+    - home.becklab.cloud
+  issuerRef:
+    group: cert-manager.io
+    kind: ClusterIssuer
+    name: letsencrypt-prod
+  secretName: homepage-tls

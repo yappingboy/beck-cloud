@@ -69,15 +69,6 @@ spec:
 apiVersion: source.toolkit.fluxcd.io/v1
 kind: HelmRepository
 metadata:
-  name: homepage
-  namespace: flux-system
-spec:
-  interval: 12h
-  url: https://jameswynn.github.io/helm-charts
----
-apiVersion: source.toolkit.fluxcd.io/v1
-kind: HelmRepository
-metadata:
   name: wazuh-helm
   namespace: flux-system
 spec:

@@ -1,6 +1,13 @@
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 resources:
-- helmrelease.yaml
-- secret-homepage-widgets.yaml
-
+- dashy-certificate.yaml
+- dashy-deployment.yaml
+- dashy-service.yaml
+- dashy-ingressroute.yaml
+configMapGenerator:
+- name: dashy-conf
+  files:
+  - config/conf.yml
+  options:
+    immutable: true
