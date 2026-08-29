@@ -25,8 +25,7 @@ appConfig:
   statusCheckAccessibility: true
   backgroundImg: https://images.unsplash.com/photo-1451187580459-43490279c0fa?auto=format&fit=crop&w=2000&q=80
   webSearch:
-    provider: duckduckgo
-    searchKey: ''
+    searchEngine: duckduckgo
     newTab: true
   hideComponents:
     - headerWidgets
@@ -99,7 +98,7 @@ sections:
         statusCheckAllowInsecure: true
       - title: qBittorrent
         description: Torrent downloads
-        url: https://qbit.becklab.cloud
+        url: https://qbittorrent.becklab.cloud
         icon: si-qbittorrent
         statusCheck: true
         statusCheckUrl: http://qbit-gluetun.media:8080
@@ -165,15 +164,15 @@ sections:
         statusCheckAllowInsecure: true
       - title: Orcaslicer
         description: Slicer
-        url: https://orcaslicer.becklab.cloud
+        url: https://slicer.becklab.cloud
         icon: mdi-printer
       - title: Bumpmesh
         description: Mesh analysis
-        url: https://bumpmesh.becklab.cloud
+        url: https://bump.becklab.cloud
         icon: mdi-cube
       - title: FDMMonster
         description: Print monitor
-        url: https://fdmmonster.becklab.cloud
+        url: https://fdm.becklab.cloud
         icon: mdi-printer-3d
       - title: Manyfold
         description: 3D model library
@@ -237,15 +236,15 @@ sections:
         icon: mdi-paw
       - title: Admin Panel
         description: Admin dashboard
-        url: https://admin-panel.becklab.cloud
+        url: https://admin.becklab.cloud
         icon: mdi-cog
       - title: SudoMeals
         description: Meal planning
-        url: https://sudoku-meals.becklab.cloud
+        url: https://meals.becklab.cloud
         icon: mdi-silverware-fork-knife
       - title: SeARXNG
         description: Metasearch
-        url: https://searxng.becklab.cloud
+        url: https://searx.becklab.cloud
         icon: si-duckduckgo
       - title: EMdr
         description: Therapy tools
@@ -265,15 +264,15 @@ sections:
         icon: si-traefik
       - title: Kiri-moto
         description: Grid space
-        url: https://kiri-moto.becklab.cloud
+        url: https://kiri.becklab.cloud
         icon: mdi-grid
       - title: Mesh Tool
         description: Mesh editor
-        url: https://mesh-tool.becklab.cloud
+        url: https://mesh.becklab.cloud
         icon: mdi-vector-point
       - title: Void Form
         description: Form handler
-        url: https://void-form.becklab.cloud
+        url: https://void.becklab.cloud
         icon: mdi-textbox
       - title: CADAM
         description: CAD web app
@@ -281,7 +280,7 @@ sections:
         icon: mdi-cad
       - title: Dopamine Shop
         description: Shop
-        url: https://dopamine-shop.becklab.cloud
+        url: https://shop.becklab.cloud
         icon: mdi-store
       - title: Supabase
         description: Backend platform
@@ -293,55 +292,55 @@ sections:
     items:
       - title: Auth Admin
         description: Auth admin
-        url: https://auth-admin.becklab.cloud
+        url: https://auth.tools.becklab.cloud
         icon: mdi-lock
       - title: Base64 Tool
         description: Base64 encode/decode
-        url: https://base64.becklab.cloud
+        url: https://base64.tools.becklab.cloud
         icon: mdi-text
       - title: Markdown Tool
         description: Markdown editor
-        url: https://markdown.becklab.cloud
+        url: https://markdown.tools.becklab.cloud
         icon: si-markdown
       - title: QR Generator
         description: QR code generator
-        url: https://qr.becklab.cloud
+        url: https://qr.tools.becklab.cloud
         icon: mdi-qrcode
       - title: Hash Tool
         description: Hash generator
-        url: https://hash.becklab.cloud
+        url: https://hash.tools.becklab.cloud
         icon: mdi-hash
       - title: URL Shortener
         description: URL shortener
-        url: https://short.becklab.cloud
+        url: https://short.tools.becklab.cloud
         icon: mdi-link
       - title: Image Editor
         description: Image editor
-        url: https://editor.becklab.cloud
+        url: https://editor.tools.becklab.cloud
         icon: mdi-image
       - title: Resize Tool
         description: Image resize
-        url: https://resize.becklab.cloud
+        url: https://resize.tools.becklab.cloud
         icon: mdi-resize
       - title: FMT Tool
         description: Format converter
-        url: https://fmt.becklab.cloud
+        url: https://fmt.tools.becklab.cloud
         icon: mdi-format-align-center
       - title: DNS Monitor
         description: DNS monitoring
-        url: https://dns.becklab.cloud
+        url: https://dns.tools.becklab.cloud
         icon: mdi-dns
       - title: Cron Jobs
         description: Cron management
-        url: https://cron.becklab.cloud
+        url: https://cron.tools.becklab.cloud
         icon: mdi-clock
       - title: Webhook Relay
         description: Webhook relay
-        url: https://webhook.becklab.cloud
+        url: https://webhook.tools.becklab.cloud
         icon: mdi-webhook
       - title: Beckflow
         description: Workflow engine
-        url: https://beckflow.becklab.cloud
+        url: https://beckflow.tools.becklab.cloud
         icon: mdi-flow
 
   - name: Gaming
@@ -361,13 +360,13 @@ sections:
     items:
       - title: Landing Page
         description: Landing page
-        url: https://landing-page.becklab.cloud
+        url: https://becklab.cloud
         icon: mdi-web-box
       - title: Landing Page Gateway
         description: Gateway page
-        url: https://landing-page-gateway.becklab.cloud
+        url: https://www.becklab.cloud
         icon: mdi-gate
       - title: Logout Page
         description: Logout redirect
-        url: https://logout-page.becklab.cloud
+        url: https://logout.becklab.cloud
         icon: mdi-logout
