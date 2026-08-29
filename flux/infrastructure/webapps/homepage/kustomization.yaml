@@ -7,6 +7,7 @@ resources:
 - dashy-ingressroute.yaml
 configMapGenerator:
 - name: dashy-conf
+  namespace: webapps
   files:
   - config/conf.yml
   options:
