@@ -8,7 +8,7 @@ metadata:
   namespace: llama-cpp
 spec:
   accessModes: ["ReadWriteOnce"]
-  volumeName: media-movies-lvm
+  volumeName: llama-models-lvm
   resources:
     requests:
       storage: 5Ti
