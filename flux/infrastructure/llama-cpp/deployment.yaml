@@ -22,7 +22,7 @@ spec:
         args:
           - "--server"
           - "-m"
-          - "/models/Qwen3.8-27B-Q4_0.gguf"
+          - "/models/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf"
           - "--host"
           - "0.0.0.0"
           - "--port"
