@@ -23,5 +23,6 @@ resources:
   - 3dprinting
   - gridspace
   - micro
+  - llama-cpp
 
 #  - csi-snapshotter # Can likely be deleted
