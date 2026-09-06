@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: llama-server
-        image: llama-server-cuda:turing
+        image: ghcr.io/ggml-org/llama.cpp:full-cuda
         imagePullPolicy: IfNotPresent
         command: ["/bin/llama-server"]
         args:
