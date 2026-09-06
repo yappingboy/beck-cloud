@@ -7,8 +7,10 @@ metadata:
   name: llama-models
   namespace: llama-cpp
 spec:
-  accessModes: ["ReadWriteOnce"]
+  accessModes:
+    - ReadWriteMany
   volumeName: llama-models-lvm
+  storageClassName: "" 
   resources:
     requests:
       storage: 5Ti
