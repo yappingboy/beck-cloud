@@ -1,0 +1,36 @@
+## Copied to root volumeclaims.yaml
+# PVCs for 3D printing services
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: llama-models
+  namespace: llama-cpp
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 50Gi
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: llama-models-lvm
+spec:
+  capacity:
+    storage: 5Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/models
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-192-168-100-11
+
