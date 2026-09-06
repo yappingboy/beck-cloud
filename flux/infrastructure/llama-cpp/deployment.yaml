@@ -20,6 +20,7 @@ spec:
         image: ghcr.io/ggml-org/llama.cpp:full-cuda
         imagePullPolicy: IfNotPresent
         args:
+          - "--server"
           - "-m"
           - "/models/Qwen3.8-27B-Q4_0.gguf"
           - "--host"
