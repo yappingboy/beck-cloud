@@ -28,9 +28,9 @@ spec:
           - "--port"
           - "8080"
           - "--threads"
-          - "7"
+          - "14"
           - "--threads-batch"
-          - "7"
+          - "14"
           - "--flash-attn"
           - "on"
           - "--cache-type-k"
@@ -45,12 +45,12 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1
-            cpu: "7"
-            memory: "16Gi"
+            cpu: "14"
+            memory: "32Gi"
           requests:
             nvidia.com/gpu: 1
-            cpu: "4"
-            memory: "8Gi"
+            cpu: "7"
+            memory: "16Gi"
         volumeMounts:
           - name: models
             mountPath: /models
