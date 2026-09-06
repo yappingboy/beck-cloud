@@ -60,10 +60,7 @@ spec:
             mountPath: /dev/shm
       volumes:
         # Replaces -v ~/ollama:/models
-        - name: model-storage
-          hostPath:
-            path: /home/stephen/ollama  # Set to the absolute path of your models directory
-            type: Directory
+        - name: llama-models
         # Replaces --ipc=host by providing full POSIX shared memory
         - name: dshm
           emptyDir:
