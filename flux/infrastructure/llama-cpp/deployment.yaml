@@ -1,0 +1,86 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: llama-server
+  namespace: default
+  labels:
+    app: llama-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: llama-server
+  template:
+    metadata:
+      labels:
+        app: llama-server
+    spec:
+      containers:
+      - name: llama-server
+        image: llama-server-cuda:turing
+        imagePullPolicy: IfNotPresent
+        command: ["/bin/llama-server"]
+        args:
+          - "-m"
+          - "/models/Qwen3.8-27B-Q4_0.gguf"
+          - "--host"
+          - "0.0.0.0"
+          - "--port"
+          - "8080"
+          - "--threads"
+          - "14"
+          - "--threads-batch"
+          - "14"
+          - "-fa"
+          - "--cache-type-k"
+          - "q4_0"
+          - "--cache-type-v"
+          - "q4_0"
+          - "-c"
+          - "32768"
+          - "-ngl"
+          - "99"
+        ports:
+          - containerPort: 8080
+            name: http
+        resources:
+          limits:
+            nvidia.com/gpu: 1
+            cpu: "14"
+            memory: "32Gi"
+          requests:
+            nvidia.com/gpu: 1
+            cpu: "14"
+            memory: "16Gi"
+        volumeMounts:
+          - name: model-storage
+            mountPath: /models
+            readOnly: true
+          - name: dshm
+            mountPath: /dev/shm
+      volumes:
+        # Replaces -v ~/ollama:/models
+        - name: model-storage
+          hostPath:
+            path: /home/stephen/ollama  # Set to the absolute path of your models directory
+            type: Directory
+        # Replaces --ipc=host by providing full POSIX shared memory
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 8Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: llama-server-service
+  namespace: default
+spec:
+  type: NodePort
+  selector:
+    app: llama-server
+  ports:
+    - protocol: TCP
+      port: 8080
+      targetPort: 8080
+      nodePort: 30888  # Maps external port 30888 on your host to 8080 inside the pod
