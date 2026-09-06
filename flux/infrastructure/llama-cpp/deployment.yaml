@@ -19,7 +19,6 @@ spec:
       - name: llama-server
         image: ghcr.io/ggml-org/llama.cpp:full-cuda
         imagePullPolicy: IfNotPresent
-        command: ["/bin/llama-server"]
         args:
           - "-m"
           - "/models/Qwen3.8-27B-Q4_0.gguf"
