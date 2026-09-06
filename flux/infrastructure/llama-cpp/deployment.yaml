@@ -38,9 +38,7 @@ spec:
           - "--cache-type-v"
           - "q4_0"
           - "-c"
-          - "32768"
-          - "-ngl"
-          - "99"
+          - "262144"
         ports:
           - containerPort: 8080
             name: http
