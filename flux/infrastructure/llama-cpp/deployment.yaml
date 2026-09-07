@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: llama-server
-        image: ghcr.io/ggml-org/llama.cpp:full-cuda
+        image: ghcr.io/ggml-org/llama.cpp:full-vulkan
         env:
           - name: OMP_NUM_THREADS
             value: "14"
@@ -51,11 +51,11 @@ spec:
           limits:
             nvidia.com/gpu: 1
             cpu: "14"
-            memory: "48Gi"
+            memory: "24Gi"
           requests:
             nvidia.com/gpu: 1
             cpu: "14"
-            memory: "48Gi"
+            memory: "24Gi"
         volumeMounts:
           - name: models
             mountPath: /models
