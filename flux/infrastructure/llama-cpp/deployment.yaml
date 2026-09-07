@@ -57,11 +57,11 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1
-            cpu: "18"
+            cpu: "14"
             memory: "80Gi"
           requests:
             nvidia.com/gpu: 1
-            cpu: "18"
+            cpu: "14"
             memory: "48Gi"
         volumeMounts:
           - name: models
