@@ -48,6 +48,8 @@ spec:
           - "draft-mtp" 
           - "--spec-draft-n-max" 
           - "2"
+          - "--include" 
+          - "/models/mtp-Qwen3.8-Flash-Next-Q8_0.gguf"
         ports:
           - containerPort: 8080
             name: http
