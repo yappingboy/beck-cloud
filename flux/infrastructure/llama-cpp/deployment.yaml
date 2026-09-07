@@ -20,9 +20,9 @@ spec:
         image: ghcr.io/ggml-org/llama.cpp:full-cuda
         env:
           - name: OMP_NUM_THREADS
-            value: "14"
+            value: "20"
           - name: GOMP_CPU_AFFINITY
-            value: "0-13"
+            value: "0-20"
         imagePullPolicy: IfNotPresent
         args:
           - "--server"
