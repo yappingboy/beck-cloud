@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: llama-server
-        image: unsloth:unsloth
+        image: ghcr.io/unslothai/unsloth
 #        image: ghcr.io/ggml-org/llama.cpp:full-cuda
 #        env:
 #          - name: OMP_NUM_THREADS
