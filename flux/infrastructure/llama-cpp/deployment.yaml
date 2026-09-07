@@ -17,33 +17,34 @@ spec:
     spec:
       containers:
       - name: llama-server
-        image: ghcr.io/ggml-org/llama.cpp:full-cuda
-        env:
-          - name: OMP_NUM_THREADS
-            value: "14"
-          - name: GOMP_CPU_AFFINITY
-            value: "0-14"
+        image: unsloth:unsloth
+#        image: ghcr.io/ggml-org/llama.cpp:full-cuda
+#        env:
+#          - name: OMP_NUM_THREADS
+#            value: "14"
+#          - name: GOMP_CPU_AFFINITY
+#            value: "0-14"
         imagePullPolicy: IfNotPresent
         args:
-          - "--server"
-          - "-m"
-          - "/models/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf"
-          - "--host"
-          - "0.0.0.0"
-          - "--port"
-          - "8080"
-          - "--threads"
-          - "20"
-          - "--threads-batch"
-          - "20"
-          - "--flash-attn"
-          - "on"
-          - "--cache-type-k"
-          - "q4_0"
-          - "--cache-type-v"
-          - "q4_0"
-          - "-c"
-          - "262144"
+#          - "--server"
+#          - "-m"
+#          - "/models/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf"
+#          - "--host"
+#          - "0.0.0.0"
+#          - "--port"
+#          - "8080"
+#          - "--threads"
+#          - "20"
+#          - "--threads-batch"
+#          - "20"
+#          - "--flash-attn"
+#          - "on"
+#          - "--cache-type-k"
+#          - "q4_0"
+#          - "--cache-type-v"
+#          - "q4_0"
+#          - "-c"
+#          - "262144"
 #          - "--spec-type" 
 #          - "draft-mtp" 
 #          - "--spec-draft-n-max" 
@@ -51,7 +52,7 @@ spec:
 #          - "-md" 
 #          - "/models/MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf"
         ports:
-          - containerPort: 8080
+          - containerPort: 8000
             name: http
         resources:
           limits:
@@ -64,8 +65,8 @@ spec:
             memory: "48Gi"
         volumeMounts:
           - name: models
-            mountPath: /models
-            readOnly: true
+            mountPath: /workspace
+#            readOnly: true
           - name: dshm
             mountPath: /dev/shm
       volumes:
@@ -90,6 +91,6 @@ spec:
     app: llama-server
   ports:
     - protocol: TCP
-      port: 8080
-      targetPort: 8080
+      port: 8000
+      targetPort: 8000
       nodePort: 31888  # Maps external port 30888 on your host to 8080 inside the pod
