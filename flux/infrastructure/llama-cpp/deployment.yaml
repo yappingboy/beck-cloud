@@ -51,7 +51,7 @@ spec:
           limits:
             nvidia.com/gpu: 1
             cpu: "14"
-            memory: "64Gi"
+            memory: "80Gi"
           requests:
             nvidia.com/gpu: 1
             cpu: "14"
