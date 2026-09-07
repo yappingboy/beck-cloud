@@ -20,9 +20,9 @@ spec:
         image: ghcr.io/ggml-org/llama.cpp:full-cuda
         env:
           - name: OMP_NUM_THREADS
-            value: "20"
+            value: "14"
           - name: GOMP_CPU_AFFINITY
-            value: "0-20"
+            value: "0-14"
         imagePullPolicy: IfNotPresent
         args:
           - "--server"
@@ -56,11 +56,11 @@ spec:
         resources:
           limits:
             nvidia.com/gpu: 1
-            cpu: "20"
+            cpu: "18"
             memory: "80Gi"
           requests:
             nvidia.com/gpu: 1
-            cpu: "20"
+            cpu: "18"
             memory: "48Gi"
         volumeMounts:
           - name: models
