@@ -52,7 +52,7 @@ spec:
 #          - "-md" 
 #          - "/models/MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf"
         ports:
-          - containerPort: 8000
+          - containerPort: 8888
             name: http
         resources:
           limits:
@@ -91,6 +91,6 @@ spec:
     app: llama-server
   ports:
     - protocol: TCP
-      port: 8000
-      targetPort: 8000
+      port: 8888
+      targetPort: 8888
       nodePort: 31888  # Maps external port 30888 on your host to 8080 inside the pod
