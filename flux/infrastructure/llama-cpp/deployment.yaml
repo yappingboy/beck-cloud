@@ -95,7 +95,7 @@ spec:
     - protocol: TCP
       port: 8888
       targetPort: 8888
-      nodePort: 31888  # Maps external port 30888 on your host to 8080 inside the pod
+      nodePort: 31880  # Maps external port 30888 on your host to 8080 inside the pod
 ---
 apiVersion: v1
 kind: Service
