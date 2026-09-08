@@ -53,7 +53,9 @@ spec:
 #          - "/models/MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf"
         ports:
           - containerPort: 8888
-            name: http
+            name: jupyter
+          - containerPort: 8000
+            name: unsloth
         resources:
           limits:
             nvidia.com/gpu: 1
@@ -83,7 +85,7 @@ spec:
 apiVersion: v1
 kind: Service
 metadata:
-  name: llama-server-service
+  name: jupyter-service
   namespace: llama-cpp
 spec:
   type: NodePort
@@ -94,3 +96,18 @@ spec:
       port: 8888
       targetPort: 8888
       nodePort: 31888  # Maps external port 30888 on your host to 8080 inside the pod
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: unsloth-service
+  namespace: llama-cpp
+spec:
+  type: NodePort
+  selector:
+    app: llama-server
+  ports:
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
+      nodePort: 31000  # Maps external port 30888 on your host to 8080 inside the pod
