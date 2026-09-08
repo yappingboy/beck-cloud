@@ -66,11 +66,11 @@ spec:
           limits:
             nvidia.com/gpu: 1
             cpu: "14"
-            memory: "80Gi"
+            memory: "110Gi"
           requests:
             nvidia.com/gpu: 1
             cpu: "14"
-            memory: "48Gi"
+            memory: "110Gi"
         volumeMounts:
           - name: models
             mountPath: /workspace
