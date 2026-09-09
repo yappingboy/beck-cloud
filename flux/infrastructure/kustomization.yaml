@@ -24,5 +24,6 @@ resources:
   - gridspace
   - micro
   - llama-cpp
+  - registry-creds   # cross-namespace ghcr pull credentials
 
 #  - csi-snapshotter # Can likely be deleted
