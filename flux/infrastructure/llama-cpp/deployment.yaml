@@ -77,11 +77,16 @@ spec:
 #            readOnly: true
           - name: dshm
             mountPath: /dev/shm
+          - name: home
+            mountPath: /home/unsloth/
       volumes:
         # Replaces -v ~/ollama:/models
         - name: models
           persistentVolumeClaim:
             claimName: llama-models
+        - name: home
+          persistentVolumeClaim:
+            claimName: unsloth-home
         # Replaces --ipc=host by providing full POSIX shared memory
         - name: dshm
           emptyDir:
