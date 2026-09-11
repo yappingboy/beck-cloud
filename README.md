@@ -66,7 +66,7 @@ SOPS with age encryption. Key at `secrets/homelab.agekey`. See [SOPS Rotation](d
 
 ## Design Decisions
 
-- **OpenNebula 7.2** — AIO KVM hypervisor; K3s on VMs for isolation
+- **OpenNebula 7.2** — AIO KVM hypervisor. K3s runs on VMs for isolation.
 - **RAID6 + LVM** — ~78TB usable, tolerates 2 disk failures
 - **Cilium** — eBPF networking with VPN kill-switch for torrent pods
 - **Flux (pull)** — No external CI with cluster credentials

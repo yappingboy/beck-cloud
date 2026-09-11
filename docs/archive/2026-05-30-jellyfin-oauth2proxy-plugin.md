@@ -2,7 +2,7 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Build a Jellyfin plugin that authenticates users via the existing oauth2-proxy/Keycloak stack by redirecting through oauth2-proxy and then calling its `/oauth2/userinfo` endpoint to verify identity — no OIDC client secrets in the plugin, no client-side token exchange with Keycloak directly.
+**Goal:** Build a Jellyfin plugin that authenticates users through the existing oauth2-proxy/Keycloak stack. The plugin redirects through oauth2-proxy and calls its `/oauth2/userinfo` endpoint to verify identity. The plugin holds no OIDC client secrets, and no token exchange happens with Keycloak directly.
 
 **Architecture:**
 ```

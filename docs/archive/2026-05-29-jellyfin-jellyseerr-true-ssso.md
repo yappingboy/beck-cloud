@@ -2,7 +2,7 @@
 
 > **For Hermes:** Use subagent-driven-development skill to implement this plan task-by-task.
 
-**Goal:** Replace the oauth2-proxy gate pattern with true SSO integration for Jellyfin (SAML via JellyfinSSO plugin) and Jellyseerr (native OIDC), so users log into Keycloak once and are automatically logged into both apps.
+**Goal:** Replace the oauth2-proxy gate pattern with true SSO. Jellyfin uses SAML through the JellyfinSSO plugin. Jellyseerr uses native OIDC. Users log into Keycloak once, then enter both apps automatically.
 
 **Architecture:** Keycloak acts as the IdP for both apps. Jellyfin uses SAML 2.0 via the JellyfinSSO community plugin. Jellyseerr uses its built-in OAuth2/OIDC support. Group-based access control enforced via Keycloak client scopes (/admins, /media). Removes oauth2-proxy middleware from both Ingresses.
 
@@ -167,7 +167,7 @@ git commit -m "feat: add jellyseerr OIDC secret for Keycloak SSO"
 
 **Step 1: Update the Deployment**
 
-Add a `plugins` volume (emptyDir is fine — the init container populates it, and it persists as long as the pod runs). Add an `initContainers` section that downloads the JellyfinSSO plugin. Add a `plugins` volumeMount to the main container.
+Add a `plugins` volume. emptyDir is fine: the init container fills it, and it persists while the pod runs. Add an `initContainers` section that downloads the JellyfinSSO plugin. Add a `plugins` volumeMount to the main container.
 
 The updated `flux/infrastructure/media/jellyfin.yaml` should look like this:
 
@@ -758,7 +758,7 @@ After deployment, configure JellyfinSSO through the Jellyfin dashboard:
 | Default policy | `User` (or `Administrator` for first admin) |
 
 4. Save settings
-5. Test: Click the SSO login button on the Jellyfin home page → should redirect to Keycloak → log in → redirect back to Jellyfin logged in
+5. Test: Click the SSO login button on the Jellyfin home page. It redirects to Keycloak. Log in. Keycloak redirects back to Jellyfin, logged in.
 
 ---
 

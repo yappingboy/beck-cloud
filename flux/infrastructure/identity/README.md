@@ -2,7 +2,7 @@
 
 **Purpose:** SSO, authentication, and identity federation
 
-**What it does:** Core identity services — Keycloak (IdP), LLDAP (LDAP user directory), oauth2-proxy (admin + media tiers), Redis (session store), SSO middlewares, and redirect/logout pages. Also hosts the email subsystem (postfix-relay + MariaDB).
+**What it does:** Core identity services: Keycloak (IdP), LLDAP (LDAP user directory), oauth2-proxy (admin + media tiers), Redis (session store), SSO middlewares, and redirect/logout pages. The namespace also hosts the email subsystem (postfix-relay + MariaDB).
 
 **Special resources:** Redis for session data, PostgreSQL via email sub-namespace, LDAP port 389 for Keycloak federation.
 

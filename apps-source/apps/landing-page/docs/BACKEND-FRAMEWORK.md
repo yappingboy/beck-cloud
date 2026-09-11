@@ -112,7 +112,7 @@ mutation AddUserToGroup($userId: String!, $groupId: Int!) {
 
 `http://directus.cms.svc.cluster.local:8055`
 
-- Fetches landing page content (hero text, service descriptions, etc.)
+- Fetches landing page content such as hero text and service descriptions
 - Admin-managed content via Directus admin UI
 - Token-based auth for read operations
 

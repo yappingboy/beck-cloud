@@ -24,6 +24,22 @@ from pathlib import Path
 PROCEDURAL_MAX = 20   # imperative sentences
 DESCRIPTIVE_MAX = 25  # descriptive sentences
 
+# Path components that are never in STE scope (Writing-Standard.md "Scope").
+# Vendored dependencies, third-party upstream source, and workspace meta files
+# are excluded. Matched as case-insensitive substrings against the path.
+EXCLUDE_DIRS = {
+    "node_modules",
+    ".venv", "venv", "__pycache__",
+    "cadam-src",          # vendored upstream CADAM source, not our prose
+    "vendor",
+    "memory",             # daily notes: raw logs, not user-facing docs
+}
+# Workspace meta files excluded per Writing-Standard.md scope table.
+EXCLUDE_FILES = {
+    "AGENTS.md", "SOUL.md", "IDENTITY.md", "MEMORY.md", "HEARTBEAT.md",
+    "USER.md", "TOOLS.md", "BOOTSTRAP.md",
+}
+
 # Phrasal verbs that are NOT STE-approved.
 # Match verb + particle when they form a phrasal verb meaning.
 PHRASAL_VERBS = [
@@ -249,7 +265,11 @@ KNOWN_ABBREVS = {
     # Networking hardware
     "Router", "Switch", "Firewall", "LoadBalancer", "LB", "VIP", "VXLAN", "BGP", "OSPF", "RIP", "EIGRP", "MPLS", "QinQ", "WiFi", "WiFi6", "WiFi6E", "WiFi7", "WiGig", "5G", "4G", "LTE", "HSPA", "3G", "2G",
     # Certificates and identity
-    "IdP", "SP", "RP", "JWS", "JWE", "JWK", "JWKS", "PKCE", "PEM", "DER", "PKCS7", "PKCS12", "PKCS11",
+    "IdP", "IDP", "SP", "RP", "JWS", "JWE", "JWK", "JWKS", "PKCE", "PEM", "DER", "PKCS7", "PKCS12", "PKCS11",
+    # Web, search, and misc (added 2026-09-11 STE backlog pass)
+    "CSRF", "CIDR", "WSGI", "TOML", "OPAQUE", "CADAM", "FILING", "SYSTEM",
+    # All-caps words that appear in prose/quotes, not abbreviations
+    "BEFORE",
     # Code and dev
     "SDK", "DLL", "GUID", "UUID", "AD", "LDAPS", "Kerberos", "NTLM",
     # Business and finance
@@ -577,10 +597,22 @@ def check_file(filepath: str) -> list[Violation]:
     return violations
 
 
+def is_excluded(path: Path) -> bool:
+    """True if the file is out of STE scope (vendored, third-party, or meta)."""
+    parts_lower = {p.lower() for p in path.parts}
+    if parts_lower & EXCLUDE_DIRS:
+        return True
+    if path.name in EXCLUDE_FILES:
+        return True
+    return False
+
+
 def check_dir(dirpath: str) -> dict[str, list[Violation]]:
     results = {}
     dir_path = Path(dirpath)
     for md_file in sorted(dir_path.rglob("*.md")):
+        if is_excluded(md_file):
+            continue
         violations = check_file(str(md_file))
         if violations:
             results[str(md_file)] = violations

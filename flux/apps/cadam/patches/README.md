@@ -68,11 +68,11 @@ clone of upstream with the four files above replaced, plus the
 
 - **Supabase** — the app uses Supabase Auth + Postgres for user
   accounts and conversation/message persistence. First build runs
-  with placeholder VITE_SUPABASE_URL/ANON_KEY so the SPA compiles;
-  sign-in will not work until a Supabase instance is deployed (or
-  the auth layer is replaced with something else — e.g. an
-  oauth2-proxy-backed single-user mode).
-- **Ollama network policy** — cadam ns has no NetworkPolicy; the
+  with placeholder VITE_SUPABASE_URL/ANON_KEY so the SPA compiles.
+  Sign-in will not work until a Supabase instance is deployed, or
+  the auth layer is replaced with something else, for example an
+  oauth2-proxy-backed single-user mode.
+- **Ollama network policy** — cadam ns has no NetworkPolicy.
   pod needs egress to 172.16.0.7:11434 (Ollama VM). Cluster-wide
   egress is currently open, so this works, but a per-ns policy
   should be added if the cluster tightens egress later.
