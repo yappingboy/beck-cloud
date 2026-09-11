@@ -353,6 +353,45 @@ kubectl describe clusterissuer letsencrypt-prod
 2. `kubectl top node ip-192-168-100-11` — resource utilization
 3. If worker is unreachable: try SSH via ProxyJump from Ansible host
 
+### Supabase REST Crash-Loop: `password authentication failed for user "authenticator"`
+
+**Symptom:** `supabase-supabase-rest` CrashLoopBackOff (hundreds of restarts), logs show:
+
+```
+FATAL: password authentication failed for user "authenticator" connecting to supabase-supabase-db:5432 (PGRST000)
+```
+
+**Root cause:** the `authenticator` role's stored password in Postgres drifted from `supabase-secrets.dbPassword`. The chart sets the role password only at DB init; changing the secret later does not rewrite the existing role. Note the SOPS secret may match the `postgres` login and still be wrong for `authenticator` — check them separately.
+
+**Fix (2026-09-11, card `5b768db8`):**
+
+```bash
+# 1. Confirm the drift: postgres is NOT the superuser in this chart; supabase_admin is
+kubectl -n supabase exec supabase-supabase-db-0 -c supabase-db -- \
+  psql -U postgres -tAc "SELECT usename FROM pg_user WHERE usesuper"
+# -> supabase_admin
+
+# 2. Re-sync the authenticator password from the secret, as supabase_admin
+SECPW=$(kubectl -n supabase get secret supabase-secrets -o jsonpath='{.data.dbPassword}' | base64 -d)
+PGPASSWORD="***" kubectl -n supabase exec supabase-supabase-db-0 -c supabase-db -- \
+  psql -h localhost -U supabase_admin -d postgres \
+  -tAc "ALTER USER authenticator PASSWORD '$SECPW'"
+
+# 3. The crash-looping pod may not recover on its own; restart it
+kubectl -n supabase rollout restart deploy/supabase-supabase-rest
+
+# 4. Verify (in-cluster probe; sandbox can't reach ClusterIP directly)
+kubectl -n supabase run nettest --rm -i --restart=Never \
+  --image=curlimages/curl:8.10.1 --timeout=60s -- \
+  curl -s -o /dev/null -w "rest_direct=%{http_code}\n" http://supabase-supabase-rest:3000/
+# -> rest_direct=200
+```
+
+**Gotchas:**
+- `ALTER USER authenticator` as the `postgres` role fails with `"authenticator" is a reserved role, only superusers can modify it`. Must run as `supabase_admin`.
+- This live ALTER violates Lesson #1 (fix via repo/SOPS), but is unavoidable: no manifest rewrites an existing role's password. The SOPS secret is already correct; the DB state was stale. A fresh DB init picks up the right password automatically.
+- In v1.7.0 crowdsec `cscli agents` does not exist — it is `cscli machines list` (unrelated, but noted during the same session).
+
 ### Trivy Operator Failing to Schedule
 
 The security namespace has a ResourceQuota (`security-quota`) limiting CPU to 7000m.
