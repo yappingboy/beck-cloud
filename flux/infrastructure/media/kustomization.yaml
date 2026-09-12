@@ -6,7 +6,7 @@ resources:
   - pvs-lvm
   - pvcs
   - qbit-gluetun
-  - recyclarr
+ # - recyclarr
   - jellyfin
   - jellyseerr
   - sonarr
