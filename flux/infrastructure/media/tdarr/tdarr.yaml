@@ -51,6 +51,10 @@ spec:
               value: "true"
             - name: maxLogSizeMB
               value: "10"
+            # Persist Tdarr DB2/config onto the tdarr-config PVC; without this
+            # the DB lives on the container layer and is wiped on every restart.
+            - name: rootDataPath
+              value: "/config/serverdata"
           ports:
             - containerPort: 8265
               name: http
