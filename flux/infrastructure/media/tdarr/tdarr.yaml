@@ -21,9 +21,9 @@ spec:
           image: ghcr.io/haveagitgat/tdarr:latest
           resources:
             limits:
-              memory: 2Gi
+              memory: 4Gi
             requests:
-              memory: 1Gi
+              memory: 2Gi
           env:
             - name: TZ
               value: America/New_York
@@ -51,6 +51,10 @@ spec:
               value: "true"
             - name: maxLogSizeMB
               value: "10"
+            # Cap Node heap below the 4Gi cgroup limit so V8 GCs before the
+            # kernel OOM-kills us while indexing ~21k files.
+            - name: NODE_OPTIONS
+              value: "--max-old-space-size=3072"
             # Persist Tdarr DB2/config onto the tdarr-config PVC; without this
             # the DB lives on the container layer and is wiped on every restart.
             - name: rootDataPath
