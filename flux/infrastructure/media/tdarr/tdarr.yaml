@@ -16,13 +16,18 @@ spec:
       labels:
         app: tdarr
     spec:
+      # Pin to the GPU worker node; TITAN RTX + NVENC verified there.
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
       containers:
         - name: tdarr
           image: ghcr.io/haveagitgat/tdarr:latest
           resources:
             limits:
+              cpu: "4"
               memory: 8Gi
             requests:
+              cpu: "1"
               memory: 2Gi
           env:
             - name: TZ
