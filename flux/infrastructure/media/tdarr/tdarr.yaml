@@ -24,7 +24,7 @@ spec:
           image: ghcr.io/haveagitgat/tdarr:latest
           resources:
             limits:
-              cpu: "4"
+              cpu: "8"
               memory: 8Gi
             requests:
               cpu: "1"
