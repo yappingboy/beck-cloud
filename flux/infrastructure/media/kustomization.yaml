@@ -3,6 +3,7 @@ kind: Kustomization
 
 resources:
   - namespace.yaml
+  - limits.yaml   # was missing — quota/LimitRange orphaned from git until Sep 15
   - pvs-lvm
   - pvcs
   - qbit-gluetun
