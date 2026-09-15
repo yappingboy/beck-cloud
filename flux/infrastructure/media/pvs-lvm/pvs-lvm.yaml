@@ -13,7 +13,28 @@
 #
 # The 'capacity' field on local PVs is informational only — both library PVs
 # back to the same 45Ti disk; consumed space is shared.
-
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: media-cache-lvm
+spec:
+  capacity:
+    storage: 45Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/cache
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-192-168-100-11
+---
 apiVersion: v1
 kind: PersistentVolume
 metadata:
