@@ -144,3 +144,4 @@ spec:
               operator: In
               values:
                 - ip-192-168-100-11
+# Cache input/output for Tdarr transcode staging (media-cache PVC).
