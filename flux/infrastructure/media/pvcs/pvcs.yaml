@@ -7,7 +7,20 @@
 # Config volumes (jellyfin-config, sonarr-config, etc.) remain on local-path
 # (small, on the VM root disk) — no change needed there.
 
-
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-cache
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-movies-lvm PV
+  volumeName: media-cache-lvm
+  resources:
+    requests:
+      storage: 45Ti
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
