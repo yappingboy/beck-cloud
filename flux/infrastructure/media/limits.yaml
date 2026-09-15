@@ -24,4 +24,7 @@ spec:
     requests.cpu: "6"
     requests.memory: 14Gi
     limits.cpu: "40"
-    limits.memory: 42Gi
+    # 50Gi: tdarr needs an 8Gi pod limit; old pod holds its share during
+    # rollout, so 42Gi could never admit it (FailedCreate, Sep 15).
+    # Overcommit is fine — worker allocatable is ~153Gi and ns requests stay at 14Gi.
+    limits.memory: 50Gi
