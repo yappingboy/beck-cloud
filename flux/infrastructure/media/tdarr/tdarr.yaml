@@ -77,6 +77,8 @@ spec:
               mountPath: /data/anime
             - name: media-movies
               mountPath: /data/movies
+            - name: media-cache
+              mountPath: /data/cache
       volumes:
         - name: config
           persistentVolumeClaim:
@@ -90,6 +92,9 @@ spec:
         - name: media-movies
           persistentVolumeClaim:
             claimName: media-movies
+        - name: media-cache
+          persistentVolumeClaim:
+            claimName: media-cache
 
 ---
 apiVersion: v1
