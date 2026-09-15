@@ -26,10 +26,8 @@ spec:
           # Quota must exceed old-pod-held + new-pod during rollout.
           resources:
             limits:
-              cpu: "4"
               memory: 8Gi
             requests:
-              cpu: "1"
               memory: 2Gi
           env:
             - name: TZ
