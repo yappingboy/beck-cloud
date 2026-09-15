@@ -22,10 +22,13 @@ spec:
       containers:
         - name: tdarr
           image: ghcr.io/haveagitgat/tdarr:latest
+          # Keep memory limit at 4Gi: media-quota is 42Gi total and the old
+          # pod holds its share during rollout, so an 8Gi request can never
+          # schedule (FailedCreate). Raise quota first if more is needed.
           resources:
             limits:
-              cpu: "8"
-              memory: 8Gi
+              cpu: "4"
+              memory: 4Gi
             requests:
               cpu: "1"
               memory: 2Gi
