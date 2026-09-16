@@ -22,6 +22,6 @@ spec:
   hard:
     pods: "8"
     requests.cpu: 500m
-    requests.memory: 1Gi
-    limits.cpu: "2"
-    limits.memory: 4Gi
+    requests.memory: 1536Mi
+    limits.cpu: "3"
+    limits.memory: 5Gi

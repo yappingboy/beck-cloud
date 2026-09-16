@@ -45,6 +45,16 @@ spec:
     deployNodeAgent: true
     nodeAgent:
       podVolumePath: /var/lib/kubelet/pods
+      # 2026-09-15: restic OOMKilled at LimitRange default 512Mi while backing
+      # up large LVM volumes (media-downloads/movies/shows). Explicit limits
+      # override the LimitRange default; velero-quota raised to match.
+      resources:
+        requests:
+          cpu: 100m
+          memory: 512Mi
+        limits:
+          cpu: "1"
+          memory: 2Gi
 
     configuration:
       defaultVolumesToFsBackup: true
