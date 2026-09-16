@@ -101,27 +101,22 @@ spec:
           snapshotVolumes: false
           defaultVolumesToFsBackup: true
 
+      # 2026-09-15: qbit/gluetun moved from `torrent` into `media`; namespace
+      # deleted. The old `torrent` entry made every run PartiallyFailed.
+      # PVC exclusion removed — Velero needs PVCs in the backup to select FS
+      # volumes; media/torrent had ZERO volume backups for 3+ months.
       - name: media-daily
         schedule: "0 1 * * *"
         template:
           ttl: "336h0m0s"
           includedNamespaces:
             - media
-            - torrent
-          excludedResources:
-            - persistentvolumeclaims
-          storageLocation: default
-          snapshotVolumes: false
-
-      - name: rancher-daily
-        schedule: "0 4 * * *"
-        template:
-          ttl: "720h0m0s"
-          includedNamespaces:
-            - cattle-system
           storageLocation: default
           snapshotVolumes: false
           defaultVolumesToFsBackup: true
+
+      # 2026-09-15: removed — `cattle-system` never existed (Rancher was never
+      # deployed). Every 04:00 run failed on the missing namespace.
 
       - name: full-cluster-weekly
         schedule: "0 2 * * 0"
