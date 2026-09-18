@@ -20,10 +20,10 @@ spec:
         image: unsloth/unsloth:latest
 #        image: ghcr.io/ggml-org/llama.cpp:full-cuda
         env:
-          - name: NVIDIA_VISIBLE_DEVICES
-            value: "all"
-          - name: NVIDIA_DRIVER_CAPABILITIES
-            value: "compute,utility"
+#          - name: NVIDIA_VISIBLE_DEVICES
+#            value: "all"
+#          - name: NVIDIA_DRIVER_CAPABILITIES
+#            value: "compute,utility"
 #          - name: OMP_NUM_THREADS
 #            value: "14"
 #          - name: GOMP_CPU_AFFINITY
@@ -64,13 +64,13 @@ spec:
             name: ssh
         resources:
           limits:
-            nvidia.com/gpu: 1
-            cpu: "14"
-            memory: "110Gi"
+#            nvidia.com/gpu: 1
+#            cpu: "14"
+#            memory: "110Gi"
           requests:
-            nvidia.com/gpu: 1
-            cpu: "14"
-            memory: "110Gi"
+#            nvidia.com/gpu: 1
+#            cpu: "14"
+#            memory: "110Gi"
         volumeMounts:
           - name: models
             mountPath: /workspace
