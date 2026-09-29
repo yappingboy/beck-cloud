@@ -65,20 +65,22 @@ spec:
         resources:
           limits:
 #            nvidia.com/gpu: 1
-#            cpu: "14"
-#            memory: "110Gi"
+            cpu: "14"
+            memory: "110Gi"
           requests:
 #            nvidia.com/gpu: 1
-#            cpu: "14"
-#            memory: "110Gi"
+            cpu: "14"
+            memory: "110Gi"
         volumeMounts:
           - name: models
-            mountPath: /workspace
+            mountPath: /root/.cache/huggingface
 #            readOnly: true
           - name: dshm
             mountPath: /dev/shm
           - name: home
-            mountPath: /home/unsloth/
+            mountPath: /workspace/exports
+          - name: storage
+            mountPath: /opt/unsloth-studio
       volumes:
         # Replaces -v ~/ollama:/models
         - name: models
@@ -87,6 +89,9 @@ spec:
         - name: home
           persistentVolumeClaim:
             claimName: unsloth-home
+        - name: storage
+          persistentVolumeClaim:
+            claimName: unsloth-storage
         # Replaces --ipc=host by providing full POSIX shared memory
         - name: dshm
           emptyDir:
