@@ -60,6 +60,28 @@ spec:
 apiVersion: v1
 kind: PersistentVolume
 metadata:
+  name: media-youtube-lvm
+spec:
+  capacity:
+    storage: 45Ti
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: ""
+  local:
+    path: /mnt/media/youtube
+  nodeAffinity:
+    required:
+      nodeSelectorTerms:
+        - matchExpressions:
+            - key: kubernetes.io/hostname
+              operator: In
+              values:
+                - ip-192-168-100-11
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
   name: media-shows-lvm
 spec:
   capacity:
