@@ -25,6 +25,20 @@ spec:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
+  name: media-youtube
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-movies-lvm PV
+  volumeName: media-youtube-lvm
+  resources:
+    requests:
+      storage: 45Ti
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
   name: media-movies
   namespace: media
 spec:
