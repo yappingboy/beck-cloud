@@ -15,6 +15,16 @@ spec:
       labels:
         app: llama-server
     spec:
+      initContainers:
+        - name: init-unsloth-storage
+          image: unsloth/unsloth:latest
+          command: 
+            - "sh"
+            - "-c"
+            - "if [ ! -f /mnt/storage/bin/unsloth ]; then cp -a /opt/unsloth-studio/. /mnt/storage/; fi"
+          volumeMounts:
+            - name: storage
+              mountPath: /mnt/storage
       containers:
       - name: llama-server
         image: unsloth/unsloth:latest
