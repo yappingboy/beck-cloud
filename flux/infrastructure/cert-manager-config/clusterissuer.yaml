@@ -12,3 +12,11 @@ spec:
       - http01:
           ingress:
             class: traefik
+            ingressTemplate:
+              metadata:
+                annotations:
+                  # Bind solver strictly to Traefik's :80 entryPoint; otherwise
+                  # the web->websecure redirect breaks HTTP-01 challenges.
+                  traefik.ingress.kubernetes.io/router.entrypoints: web
+                  # Never terminate TLS on the solver router (challenges are plain HTTP).
+                  traefik.ingress.kubernetes.io/router.tls: "false"

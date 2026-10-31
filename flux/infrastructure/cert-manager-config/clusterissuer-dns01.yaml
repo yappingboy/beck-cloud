@@ -1,0 +1,29 @@
+# STAGED — NOT wired into kustomization.yaml yet.
+#
+# DNS-01 issuer for becklab.cloud via Cloudflare API. Removes the dependency on
+# the edge layer (104.174.8.176) that currently answers ACME HTTP-01 probes with
+# a maintenance page / 404, which has blocked all renewals since 2026-09-29.
+#
+# To activate:
+#   1. Get a Cloudflare API token with Zone.DNS:Edit for becklab.cloud.
+#   2. Create SOPS-encrypted secret `cloudflare-dns-token` (key: token) in this
+#      dir, encrypted with the repo age key.
+#   3. Add both files to kustomization.yaml resources.
+#   4. Flip every Certificate's issuerRef from letsencrypt-prod to letsencrypt-dns
+#      (or rename this one and keep a single issuer).
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-dns
+spec:
+  acme:
+    email: yappingboy@gmail.com
+    privateKeySecretRef:
+      name: letsencrypt-dns-key
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+      - dns01:
+          cloudflare:
+            apiTokenSecretRef:
+              name: cloudflare-dns-token
+              key: token
