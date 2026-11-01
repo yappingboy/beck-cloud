@@ -99,7 +99,7 @@ spec:
       protocol: TCP
       port: 8096
       targetPort: 8096
-      nodePort: 38096
+      nodePort: 31096
   type: NodePort
 ---
 apiVersion: traefik.io/v1alpha1
