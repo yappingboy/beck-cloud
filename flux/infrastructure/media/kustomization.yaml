@@ -15,7 +15,7 @@ resources:
   - prowlarr
   - bazarr
   - nzbget
- # - tdarr
+  - tdarr
   - homebox
   - spotweb
   - swiparr
