@@ -240,3 +240,21 @@ spec:
       targetPort: 80
       protocol: TCP
       name: http
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: knitting-slicer-service
+  namespace: micro
+  labels:
+    app: knit
+    service: micro
+spec:
+  selector:
+    app: knit
+  ports:
+    - port: 8080
+      targetPort: 8080
+      protocol: TCP
+      name: http

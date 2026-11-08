@@ -113,6 +113,10 @@ jobs:
             path: apps-source/tools/tools-hub
             image: tools-hub
             context: apps-source/tools/tools-hub
+          - name: knitting-slicer
+            path: apps-source/tools/knitting-slicer
+            image: knitting-slicer
+            context: apps-source/tools/knitting-slicer
 
           # ---- static web apps ----
           - name: emdr

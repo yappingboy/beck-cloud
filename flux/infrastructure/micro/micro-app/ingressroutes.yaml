@@ -462,3 +462,34 @@ spec:
           port: 8080
   tls:
     secretName: tools-tls
+
+# -----------------------------------------------------------
+# Knitting Slicer (SVG → knitting pattern)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: knit
+  namespace: micro
+  labels:
+    app: knit
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`knit.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-knit
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: knitting-slicer-service
+          port: 8080
+  tls:
+    secretName: tools-tls

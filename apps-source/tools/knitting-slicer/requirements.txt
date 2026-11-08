@@ -1,0 +1,6 @@
+fastapi>=0.115
+uvicorn>=0.30
+python-multipart>=0.0.9
+svgpathtools>=1.6.6
+shapely>=2.0
+numpy>=1.26,<2.3

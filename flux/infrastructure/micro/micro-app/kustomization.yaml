@@ -57,3 +57,7 @@ images:
   - name: ghcr.io/yappingboy/tools-hub
     newName: ghcr.io/yappingboy/tools-hub
     newTag: latest
+  # Knitting Slicer
+  - name: ghcr.io/yappingboy/knitting-slicer
+    newName: ghcr.io/yappingboy/knitting-slicer
+    newTag: latest

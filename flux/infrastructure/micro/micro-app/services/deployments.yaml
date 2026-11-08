@@ -650,3 +650,64 @@ spec:
             items:
               - key: redis-password
                 path: redis-password
+
+# -----------------------------------------------------------
+# Knitting Slicer (SVG → knitting pattern, FastAPI)
+# -----------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knitting-slicer
+  namespace: micro
+  labels:
+    app: knit
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: knit
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: knit
+        service: micro
+    spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+      containers:
+        - name: knitting-slicer
+          image: ghcr.io/yappingboy/knitting-slicer:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 50m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 384Mi

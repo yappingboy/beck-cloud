@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Knitting Slicer Web</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; height: 100vh; margin: 0; background: #1e1e1e; color: #e0e0e0; overflow: hidden; }
+
+        #sidebar {
+            width: 340px;
+            min-width: 250px;
+            max-width: 600px;
+            padding: 20px;
+            background: #2b2b2b;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.5);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* NEW: Resizer Handle */
+        .resizer { width: 6px; background: #333; cursor: ew-resize; z-index: 15; transition: background 0.2s; }
+        .resizer:hover, .resizer.active { background: #007acc; }
+
+        #canvas-container { flex-grow: 1; position: relative; overflow: hidden; background: #121212; }
+        canvas { display: block; width: 100%; height: 100%; cursor: crosshair; }
+
+        .control-group { margin-bottom: 20px; border-bottom: 1px solid #444; padding-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: bold; font-size: 0.9em; color: #aaa; }
+        input, select, button { width: 100%; padding: 8px; margin-bottom: 10px; background: #3c3c3c; color: white; border: 1px solid #555; border-radius: 4px; box-sizing: border-box; }
+        button { background: #007acc; border: none; cursor: pointer; font-weight: bold; transition: background 0.2s; }
+        button:hover { background: #0098ff; }
+        .btn-secondary { background: #444; }
+        .btn-secondary:hover { background: #555; }
+
+        #karaoke-box { flex-grow: 1; min-height: 150px; background: #1e1e1e; border: 1px solid #555; padding: 10px; overflow-y: auto; font-family: monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+        .active-instruction { background-color: #ff4d4d; color: white; font-weight: bold; padding: 2px; border-radius: 3px; }
+
+        /* NEW: Row Counter Layout */
+        .tracker-controls { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-top: 10px; }
+        .tracker-controls button { width: auto; flex-grow: 1; margin-bottom: 0; }
+        #rowCounterDisplay { font-family: monospace; font-weight: bold; font-size: 1.1em; white-space: nowrap; padding: 0 10px; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h2 style="margin-top: 0;">S2S Knitting CAM</h2>
+
+        <div class="control-group">
+            <label>1. Upload SVG</label>
+            <input type="file" id="svgFile" accept=".svg" onchange="analyzeSvg()">
+            <label>Select Shape:</label>
+            <select id="shapeSelect"><option value="0">Shape 1</option></select>
+        </div>
+
+        <div class="control-group">
+            <label>2. Machine Settings</label>
+            <div style="display: flex; gap: 10px;">
+                <input type="number" id="sts" value="22" placeholder="Stitches">
+                <input type="number" id="rows" value="30" placeholder="Rows">
+            </div>
+            <select id="unit">
+                <option value="100mm">per 100mm</option>
+                <option value="inch">per inch</option>
+            </select>
+            <button onclick="processSlice()">Slice Geometry</button>
+            <button class="btn-secondary" onclick="exportTextInstructions()">Export Instructions (.txt)</button>
+        </div>
+
+<!-- NEW: Added min-height: 0; and margin-bottom: 0; to the inline style -->
+        <div class="control-group" style="flex-grow: 1; display: flex; flex-direction: column; min-height: 0; border-bottom: none; padding-bottom: 0; margin-bottom: 0;">
+            <label>3. Instruction Tracker</label>
+            <select id="panelSelect" onchange="switchPanel()"></select>
+            <div id="karaoke-box">Upload and slice an SVG to begin.</div>
+            <div class="tracker-controls">
+                <button onclick="prevRow()">&lt;&lt; Prev</button>
+                <span id="rowCounterDisplay">Row: - / -</span>
+                <button onclick="nextRow()">Next &gt;&gt;</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- NEW: Draggable Resizer Element -->
+    <div class="resizer" id="dragMe"></div>
+
+    <div id="canvas-container">
+        <canvas id="knittingCanvas"></canvas>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('knittingCanvas');
+        const ctx = canvas.getContext('2d');
+
+        let projectData = null;
+        let currentPanelIdx = -1;
+        let activeRows = [];
+        let rowPointer = 0;
+        let instructionMaps = {};
+
+        // Camera State
+        let scale = 25;
+        let offsetX = 0;
+        let offsetY = 0;
+
+        const colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
+
+        // ==========================================
+        // UI RESIZER LOGIC
+        // ==========================================
+        const resizer = document.getElementById('dragMe');
+        const sidebar = document.getElementById('sidebar');
+        let isResizingUI = false;
+
+        resizer.addEventListener('mousedown', (e) => {
+            isResizingUI = true;
+            resizer.classList.add('active');
+            document.body.style.cursor = 'ew-resize';
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isResizingUI) return;
+            // Constrain sidebar width between 250px and 600px
+            const newWidth = Math.max(250, Math.min(600, e.clientX));
+            sidebar.style.width = `${newWidth}px`;
+            resizeCanvas();
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (isResizingUI) {
+                isResizingUI = false;
+                resizer.classList.remove('active');
+                document.body.style.cursor = 'default';
+                resizeCanvas();
+            }
+        });
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+            drawGrid();
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        // ==========================================
+        // BACKEND COMMUNICATION
+        // ==========================================
+        async function analyzeSvg() {
+            const fileInput = document.getElementById('svgFile');
+            if (!fileInput.files[0]) return;
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            try {
+                const response = await fetch('/api/analyze', { method: 'POST', body: formData });
+                const data = await response.json();
+                const select = document.getElementById('shapeSelect');
+                select.innerHTML = '';
+                for(let i=0; i < data.shape_count; i++) {
+                    select.add(new Option(`Shape ${i+1}`, i));
+                }
+            } catch (e) { console.error(e); }
+        }
+
+        async function processSlice() {
+            const fileInput = document.getElementById('svgFile');
+            if (!fileInput.files[0]) return alert("Please select an SVG file.");
+
+            const formData = new FormData();
+            formData.append("file", fileInput.files[0]);
+            formData.append("sts_per_unit", document.getElementById('sts').value);
+            formData.append("rows_per_unit", document.getElementById('rows').value);
+            formData.append("gauge_unit", document.getElementById('unit').value);
+            formData.append("shape_index", document.getElementById('shapeSelect').value);
+
+            try {
+                const response = await fetch('/api/slice', { method: 'POST', body: formData });
+                projectData = await response.json();
+
+                if (projectData.bounds) {
+                    offsetX = (canvas.width / 2) - ((projectData.bounds[0] + projectData.bounds[2]) / 2 * scale);
+                    offsetY = (canvas.height / 2) - ((projectData.bounds[1] + projectData.bounds[3]) / 2 * scale);
+                }
+
+                populatePanelDropdown();
+                resizeCanvas();
+            } catch (error) {
+                console.error("Slicing failed", error);
+            }
+        }
+
+        // ==========================================
+        // TEXT INSTRUCTION GENERATION
+        // ==========================================
+        function generateInstructionMap(panel) {
+            let instMap = {};
+            let rows = Object.keys(panel.segments).map(Number).sort((a,b) => a-b);
+            if (rows.length === 0) return instMap;
+
+            let prevStart = null, prevEnd = null;
+
+            rows.forEach(r => {
+                let [start, end] = panel.segments[r];
+                let totalSts = end - start;
+
+                if (prevStart === null) {
+                    instMap[r] = `Cast on ${totalSts} sts.`;
+                } else {
+                    let startDelta = prevStart - start;
+                    let endDelta = end - prevEnd;
+                    let actions = [];
+
+                    if (startDelta > 0) actions.push(`Inc ${startDelta} at start`);
+                    else if (startDelta < 0) actions.push(`Dec ${Math.abs(startDelta)} at start`);
+
+                    if (endDelta > 0) actions.push(`Inc ${endDelta} at end`);
+                    else if (endDelta < 0) actions.push(`Dec ${Math.abs(endDelta)} at end`);
+
+                    if (actions.length === 0) actions.push("Work even");
+                    instMap[r] = `${actions.join(', ')}. (Total: ${totalSts} sts)`;
+                }
+                prevStart = start; prevEnd = end;
+            });
+
+            if (rows.length > 0) {
+                let lastRow = rows[rows.length - 1];
+                instMap[lastRow] += ` -- Then Bind off remaining ${prevEnd - prevStart} sts.`;
+            }
+            return instMap;
+        }
+
+        function getCondensedGroups(panelIdx) {
+            let map = instructionMaps[panelIdx];
+            let rows = Object.keys(projectData.panels[panelIdx].segments).map(Number).sort((a,b)=>a-b);
+            let groups = [];
+            let currentGroup = null;
+
+            rows.forEach((r, idx) => {
+                let action = map[r];
+                let rowNum = idx + 1; // 1-based indexing for UI
+
+                if (!currentGroup) {
+                    currentGroup = { startNum: rowNum, endNum: rowNum, action: action, rowIndices: [idx] };
+                } else if (currentGroup.action === action) {
+                    currentGroup.endNum = rowNum;
+                    currentGroup.rowIndices.push(idx); // Track which actual rows belong to this group
+                } else {
+                    groups.push(currentGroup);
+                    currentGroup = { startNum: rowNum, endNum: rowNum, action: action, rowIndices: [idx] };
+                }
+            });
+            if (currentGroup) groups.push(currentGroup);
+            return groups;
+        }
+
+        function regenerateAllInstructions() {
+            instructionMaps = {};
+            projectData.panels.forEach((p, idx) => {
+                instructionMaps[idx] = generateInstructionMap(p);
+            });
+        }
+
+        // ==========================================
+        // UI AND KARAOKE STATE
+        // ==========================================
+        function populatePanelDropdown() {
+            const select = document.getElementById('panelSelect');
+            select.innerHTML = '<option value="-1">All Panels View</option>';
+            projectData.panels.forEach((p, i) => {
+                select.add(new Option(`Panel ${String.fromCharCode(65 + i)}`, i));
+            });
+            regenerateAllInstructions();
+            switchPanel();
+        }
+
+        function switchPanel() {
+            currentPanelIdx = parseInt(document.getElementById('panelSelect').value);
+            if (currentPanelIdx !== -1) {
+                activeRows = Object.keys(projectData.panels[currentPanelIdx].segments).map(Number).sort((a,b)=>a-b);
+                rowPointer = 0;
+            } else {
+                activeRows = [];
+            }
+            updateKaraokeUI();
+            drawGrid();
+        }
+
+        function nextRow() {
+            if (currentPanelIdx === -1 || activeRows.length === 0) return;
+            if (rowPointer < activeRows.length - 1) rowPointer++;
+            updateKaraokeUI();
+            drawGrid();
+        }
+
+        function prevRow() {
+            if (currentPanelIdx === -1 || activeRows.length === 0) return;
+            if (rowPointer > 0) rowPointer--;
+            updateKaraokeUI();
+            drawGrid();
+        }
+
+        function updateKaraokeUI() {
+            const box = document.getElementById('karaoke-box');
+            const counter = document.getElementById('rowCounterDisplay');
+
+            if (currentPanelIdx === -1) {
+                box.innerHTML = "--- All Panels View ---\nSelect an individual panel above to enable interactive editing and instruction tracking.";
+                counter.innerText = "Row: - / -";
+                return;
+            }
+
+            counter.innerText = `Row: ${rowPointer + 1} / ${activeRows.length}`;
+            const groups = getCondensedGroups(currentPanelIdx);
+
+            const needsRebuild = box.children.length !== groups.length ||
+                                 box.innerHTML.includes("--- All Panels View ---");
+
+            if (needsRebuild) {
+                box.innerHTML = '';
+                groups.forEach(() => {
+                    box.appendChild(document.createElement('div'));
+                });
+            }
+
+            groups.forEach((g, index) => {
+                let div = box.children[index];
+                let prefix = g.startNum === g.endNum ? `Row ${g.startNum}: ` : `Rows ${g.startNum}-${g.endNum}: `;
+                div.textContent = prefix + g.action;
+
+                if (g.rowIndices.includes(rowPointer)) {
+                    // Only trigger the scroll jump if moving into a NEW group block
+                    if (div.className !== 'active-instruction') {
+                        div.className = 'active-instruction';
+                        div.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    }
+                } else {
+                    div.className = '';
+                }
+            });
+        }
+        // ==========================================
+        // CANVAS RENDERING
+        // ==========================================
+        function drawGrid() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            if (!projectData) return;
+
+            const currentRowY = currentPanelIdx !== -1 ? activeRows[rowPointer] : null;
+
+            projectData.panels.forEach((panel, pIdx) => {
+                const baseColor = colors[pIdx % colors.length];
+                const rows = Object.keys(panel.segments).map(Number).sort((a,b)=>a-b);
+                let prevStart = null, prevEnd = null;
+
+                rows.forEach(y => {
+                    const [startX, endX] = panel.segments[y];
+                    const width = endX - startX;
+                    const px = (startX * scale) + offsetX;
+                    const py = canvas.height - ((y * scale) + offsetY);
+
+                    const isEvenRow = Math.abs(y) % 2 === 0;
+
+                    if (currentPanelIdx === -1) {
+                        ctx.fillStyle = baseColor;
+                        ctx.globalAlpha = isEvenRow ? 0.6 : 0.3;
+                        ctx.strokeStyle = '#444'; ctx.lineWidth = 1;
+                    } else if (pIdx < currentPanelIdx) {
+                        ctx.fillStyle = '#333';
+                        ctx.globalAlpha = isEvenRow ? 0.6 : 0.3;
+                    } else if (pIdx === currentPanelIdx) {
+                        if (y < currentRowY) {
+                            ctx.fillStyle = '#555';
+                            ctx.globalAlpha = isEvenRow ? 0.8 : 0.5;
+                        }
+                        else if (y === currentRowY) {
+                            ctx.fillStyle = '#ff4d4d';
+                            ctx.globalAlpha = 0.9;
+                        }
+                        else {
+                            ctx.fillStyle = baseColor;
+                            ctx.globalAlpha = isEvenRow ? 0.4 : 0.15;
+                        }
+                    } else {
+                        ctx.fillStyle = baseColor;
+                        ctx.globalAlpha = isEvenRow ? 0.15 : 0.05;
+                    }
+
+                    ctx.fillRect(px, py - scale, width * scale, scale);
+                    if (currentPanelIdx === -1 || pIdx === currentPanelIdx) {
+                        ctx.strokeRect(px, py - scale, width * scale, scale);
+                    }
+
+                    if (scale > 10 && (currentPanelIdx === -1 || pIdx === currentPanelIdx)) {
+                        ctx.globalAlpha = (pIdx === currentPanelIdx && y === currentRowY) ? 1.0 : (isEvenRow ? 0.6 : 0.3);
+                        ctx.fillStyle = '#fff';
+                        ctx.font = `${Math.max(8, scale * 0.4)}px monospace`;
+                        ctx.textAlign = 'center';
+                        ctx.textBaseline = 'middle';
+
+                        for (let x = startX; x < endX; x++) {
+                            let char = 'X';
+                            if (prevStart === null) char = 'C';
+                            else {
+                                let leftI = Math.max(0, prevStart - startX);
+                                let leftD = Math.max(0, startX - prevStart);
+                                let rightI = Math.max(0, endX - prevEnd);
+                                let rightD = Math.max(0, prevEnd - endX);
+
+                                let idx = x - startX;
+                                if (idx < leftI) char = 'I';
+                                else if (idx < leftD) char = 'D';
+                                else if (idx >= width - rightI) char = 'I';
+                                else if (idx >= width - rightD) char = 'D';
+                            }
+
+                            let textPx = (x * scale) + offsetX + (scale / 2);
+                            let textPy = canvas.height - ((y * scale) + offsetY) - (scale / 2);
+                            ctx.fillText(char, textPx, textPy);
+                        }
+                    }
+                    prevStart = startX; prevEnd = endX;
+                });
+            });
+            ctx.globalAlpha = 1.0;
+        }
+
+        // ==========================================
+        // CANVAS INTERACTIVITY
+        // ==========================================
+        let isDraggingCanvas = false, isPanning = false;
+        let lastMouseX, lastMouseY;
+
+        canvas.addEventListener('mousedown', (e) => {
+            if (!projectData) return;
+            if (e.shiftKey || e.button === 1) {
+                isPanning = true;
+                lastMouseX = e.clientX; lastMouseY = e.clientY;
+                return;
+            }
+
+            if (currentPanelIdx === -1) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            const mathX = Math.floor((clickX - offsetX) / scale);
+            const mathY = Math.floor((canvas.height - clickY - offsetY) / scale);
+
+            let panel = projectData.panels[currentPanelIdx];
+            let modified = false;
+
+            if (panel.segments[mathY] !== undefined) {
+                let [startX, endX] = panel.segments[mathY];
+                if (mathX === startX) { startX++; modified = true; }
+                else if (mathX === endX - 1) { endX--; modified = true; }
+                else if (mathX === startX - 1) { startX--; modified = true; }
+                else if (mathX === endX) { endX++; modified = true; }
+
+                if (modified) {
+                    if (startX >= endX) delete panel.segments[mathY];
+                    else panel.segments[mathY] = [startX, endX];
+                }
+            } else {
+                if (panel.segments[mathY - 1] !== undefined || panel.segments[mathY + 1] !== undefined) {
+                    panel.segments[mathY] = [mathX, mathX + 1];
+                    modified = true;
+                }
+            }
+
+            if (modified) {
+                regenerateAllInstructions();
+                activeRows = Object.keys(panel.segments).map(Number).sort((a,b)=>a-b);
+                if (rowPointer >= activeRows.length) rowPointer = Math.max(0, activeRows.length - 1);
+                updateKaraokeUI();
+                drawGrid();
+            }
+        });
+
+        canvas.addEventListener('mousemove', (e) => {
+            if (isPanning) {
+                offsetX += (e.clientX - lastMouseX);
+                offsetY += (e.clientY - lastMouseY);
+                lastMouseX = e.clientX; lastMouseY = e.clientY;
+                drawGrid();
+            }
+        });
+
+        canvas.addEventListener('mouseup', () => isPanning = false);
+        canvas.addEventListener('mouseleave', () => isPanning = false);
+
+        canvas.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const zoomAmount = e.deltaY * -0.05;
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = e.clientY - rect.top;
+
+            const oldScale = scale;
+            scale = Math.max(5, Math.min(150, scale + zoomAmount));
+
+            offsetX = mouseX - (mouseX - offsetX) * (scale / oldScale);
+            offsetY = (canvas.height - mouseY) - ((canvas.height - mouseY) - offsetY) * (scale / oldScale);
+
+            drawGrid();
+        });
+
+        // ==========================================
+        // TEXT EXPORT
+        // ==========================================
+        function exportTextInstructions() {
+            if (!projectData || projectData.panels.length === 0) return alert("No active panels to export.");
+
+            let textOutput = "KNITTING SLICER INSTRUCTIONS\n" + "=".repeat(28) + "\n\n";
+            projectData.panels.forEach((p, i) => {
+                textOutput += `--- Panel ${String.fromCharCode(65 + i)} ---\n`;
+                const groups = getCondensedGroups(i);
+
+                groups.forEach(g => {
+                    let prefix = g.startNum === g.endNum ? `Row ${g.startNum}: ` : `Rows ${g.startNum}-${g.endNum}: `;
+                    textOutput += prefix + g.action + "\n";
+                });
+                textOutput += "\n";
+            });
+
+            const blob = new Blob([textOutput], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = "Knitting_Instructions.txt";
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+
+        resizeCanvas();
+    </script>
+</body>
+</html>

@@ -159,3 +159,16 @@ spec:
     average: 500
     burst: 50
     period: 60s
+
+---
+# Knitting Slicer: personal tool → 10/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-knit
+  namespace: micro
+spec:
+  rateLimit:
+    average: 20
+    burst: 10
+    period: 60s
