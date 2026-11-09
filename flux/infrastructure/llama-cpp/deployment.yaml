@@ -25,6 +25,8 @@ spec:
             value: "256k"
           - name: VISION
             value: "on"
+          - name: TUNE
+            value: "thorough"
         imagePullPolicy: IfNotPresent
         ports:
           - containerPort: 8080
