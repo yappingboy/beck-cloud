@@ -23,8 +23,6 @@ spec:
             value: "UD-IQ4_XS"
           - name: CONTEXT
             value: "256k"
-          - name: PARALLEL
-            value: "-"
           - name: VISION
             value: "on"
           - name: TUNE
