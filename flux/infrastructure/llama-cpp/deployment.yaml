@@ -15,93 +15,46 @@ spec:
       labels:
         app: llama-server
     spec:
-      initContainers:
-        - name: init-unsloth-storage
-          image: unsloth/unsloth:latest
-          command: 
-            - "sh"
-            - "-c"
-            - "if [ ! -f /mnt/storage/bin/unsloth ]; then cp -a /opt/unsloth-studio/. /mnt/storage/; fi"
-          volumeMounts:
-            - name: storage
-              mountPath: /mnt/storage
       containers:
       - name: llama-server
-        image: unsloth/unsloth:latest
-#        image: ghcr.io/ggml-org/llama.cpp:full-cuda
+        image: ghcr.io/niko1221/strata:0.2.7-cuda13
         env:
-#          - name: NVIDIA_VISIBLE_DEVICES
-#            value: "all"
-#          - name: NVIDIA_DRIVER_CAPABILITIES
-#            value: "compute,utility"
-#          - name: OMP_NUM_THREADS
-#            value: "14"
-#          - name: GOMP_CPU_AFFINITY
-#            value: "0-14"
+          - name: MODEL
+            value: "UD-IQ4_XS"
+          - name: CONTEXT
+            value: "256k"
+          - name: PARALLEL
+            value: "-"
+          - name: VISION
+            value: "on"
+          - name: TUNE
+            value: "-skip"
         imagePullPolicy: IfNotPresent
-        args:
-#          - "--server"
-#          - "-m"
-#          - "/models/Qwen3.8-Flash-Next-UD-IQ4_XS-00001-of-00003.gguf"
-#          - "--host"
-#          - "0.0.0.0"
-#          - "--port"
-#          - "8080"
-#          - "--threads"
-#          - "20"
-#          - "--threads-batch"
-#          - "20"
-#          - "--flash-attn"
-#          - "on"
-#          - "--cache-type-k"
-#          - "q4_0"
-#          - "--cache-type-v"
-#          - "q4_0"
-#          - "-c"
-#          - "262144"
-#          - "--spec-type" 
-#          - "draft-mtp" 
-#          - "--spec-draft-n-max" 
-#          - "2"
-#          - "-md" 
-#          - "/models/MTP/mtp-Qwen3.8-Flash-Next-Q8_0.gguf"
         ports:
-          - containerPort: 8888
-            name: jupyter
-          - containerPort: 8000
+          - containerPort: 8080
             name: unsloth
           - containerPort: 22
             name: ssh
         resources:
           limits:
 #            nvidia.com/gpu: 1
-            cpu: "14"
-            memory: "110Gi"
+#            cpu: "14"
+#            memory: "110Gi"
           requests:
 #            nvidia.com/gpu: 1
-            cpu: "14"
-            memory: "110Gi"
+#            cpu: "14"
+#            memory: "110Gi"
         volumeMounts:
           - name: models
-            mountPath: /root/.cache/huggingface
+            mountPath: /data
 #            readOnly: true
           - name: dshm
             mountPath: /dev/shm
-          - name: home
-            mountPath: /workspace/exports
-          - name: storage
-            mountPath: /opt/unsloth-studio
       volumes:
         # Replaces -v ~/ollama:/models
         - name: models
           persistentVolumeClaim:
             claimName: llama-models
-        - name: home
-          persistentVolumeClaim:
-            claimName: unsloth-home
-        - name: storage
-          persistentVolumeClaim:
-            claimName: unsloth-storage
         # Replaces --ipc=host by providing full POSIX shared memory
         - name: dshm
           emptyDir:
