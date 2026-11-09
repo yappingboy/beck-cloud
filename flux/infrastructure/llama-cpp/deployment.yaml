@@ -18,6 +18,9 @@ spec:
       containers:
       - name: llama-server
         image: ghcr.io/niko1221/strata:0.2.7-cuda13
+        securityContext:
+          capabilities:
+            add: ["IPC_LOCK"]
         env:
           - name: MODEL
             value: "UD-IQ4_XS"
@@ -35,11 +38,11 @@ spec:
             name: ssh
         resources:
           limits:
-#            nvidia.com/gpu: 1
+            nvidia.com/gpu: 1
 #            cpu: "14"
 #            memory: "110Gi"
           requests:
-#            nvidia.com/gpu: 1
+            nvidia.com/gpu: 1
 #            cpu: "14"
 #            memory: "110Gi"
         volumeMounts:
