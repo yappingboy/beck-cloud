@@ -25,3 +25,4 @@ spec:
     - qr.tools.becklab.cloud
     - editor.tools.becklab.cloud
     - beckflow.tools.becklab.cloud
+    - knit.tools.becklab.cloud
