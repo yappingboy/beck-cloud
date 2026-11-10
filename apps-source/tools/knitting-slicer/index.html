@@ -156,8 +156,11 @@
                 const data = await response.json();
                 const select = document.getElementById('shapeSelect');
                 select.innerHTML = '';
+                const list = data.shapes || [];
                 for(let i=0; i < data.shape_count; i++) {
-                    select.add(new Option(`Shape ${i+1}`, i));
+                    const meta = list[i] || {};
+                    const label = meta.id ? `Shape ${i+1}: ${meta.id}` : `Shape ${i+1}`;
+                    select.add(new Option(label, i));
                 }
             } catch (e) { console.error(e); }
         }

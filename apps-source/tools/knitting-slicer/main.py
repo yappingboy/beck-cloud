@@ -1,6 +1,7 @@
 import math
 import os
 import tempfile
+import xml.etree.ElementTree as ET
 import numpy as np
 from fastapi import FastAPI, UploadFile, File, Form
 from fastapi.responses import JSONResponse, HTMLResponse
@@ -24,8 +25,40 @@ class Panel:
         self.id = panel_id
         self.segments = {}
 
-def parse_all_svg_paths(filepath, dpi=96, points_resolution=200, svg_units="mm"):
-    paths, attributes = svg2paths(filepath)
+# Containers that hold template art (symbol definitions, arrow markers,
+# grid patterns) instead of drawable fabric. svgpathtools walks the whole
+# document and turns every path/circle it finds into a shape, so these
+# subtrees are pruned before parsing or they appear as junk shapes in the UI.
+_NON_DRAWING_TAGS = {"defs", "symbol", "marker", "pattern", "clipPath", "mask"}
+
+def _strip_non_drawing(elem):
+    for child in list(elem):
+        if child.tag.rsplit("}", 1)[-1] in _NON_DRAWING_TAGS:
+            elem.remove(child)
+        else:
+            _strip_non_drawing(child)
+
+def _pruned_svg_path(filepath):
+    """Write a copy of the SVG without defs/symbol/marker/pattern subtrees.
+    Falls back to the original file if it cannot be parsed."""
+    try:
+        ET.register_namespace("", "http://www.w3.org/2000/svg")
+        tree = ET.parse(filepath)
+        _strip_non_drawing(tree.getroot())
+        fd, pruned = tempfile.mkstemp(suffix=".svg", dir="/tmp")
+        with os.fdopen(fd, "wb") as f:
+            tree.write(f, xml_declaration=True, encoding="utf-8")
+        return pruned
+    except ET.ParseError:
+        return filepath
+
+def parse_all_svg_paths(filepath, dpi=96, points_resolution=200, svg_units="mm", with_attrs=False):
+    pruned = _pruned_svg_path(filepath)
+    try:
+        paths, attributes = svg2paths(pruned)
+    finally:
+        if pruned != filepath and os.path.exists(pruned):
+            os.unlink(pruned)
     if not paths:
         raise ValueError("No paths found in SVG.")
 
@@ -46,6 +79,8 @@ def parse_all_svg_paths(filepath, dpi=96, points_resolution=200, svg_units="mm")
         min_x = min([p[0] for p in points_in_inches])
         normalized = [(x - min_x, y - min_y) for x, y in points_in_inches]
         all_shapes_points.append(normalized)
+    if with_attrs:
+        return all_shapes_points, attributes
     return all_shapes_points
 
 def slice_to_panels(stitch_poly, max_stitches=None):
@@ -150,8 +185,14 @@ async def analyze_svg(file: UploadFile = File(...)):
     try:
         content = await file.read()
         with os.fdopen(fd, "wb") as f: f.write(content)
-        all_shapes = parse_all_svg_paths(tmppath)
-        return JSONResponse(content={"shape_count": len(all_shapes)})
+        all_shapes, attributes = parse_all_svg_paths(tmppath, with_attrs=True)
+        return JSONResponse(content={
+            "shape_count": len(all_shapes),
+            "shapes": [
+                {"index": i, "id": a.get("id") or "", "class": a.get("class") or ""}
+                for i, a in enumerate(attributes)
+            ],
+        })
     except Exception as e:
         return JSONResponse(content={"error": str(e)}, status_code=500)
     finally:
