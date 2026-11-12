@@ -13,7 +13,7 @@ spec:
   storageClassName: ""
   nfs:
     server: 172.16.0.7
-    path: /var/lib/one/datastores/minio-data
+    path: /var/lib/one/datastores/101/k8s/minio-data
   nodeAffinity:
     required:
       nodeSelectorTerms:

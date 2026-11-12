@@ -27,7 +27,8 @@ spec:
                       - ip-172-16-0-20
       containers:
         - name: minio
-          image: quay.io/minio/minio:latest
+          image: quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
+          imagePullPolicy: IfNotPresent
           args:
             - server
             - /data
