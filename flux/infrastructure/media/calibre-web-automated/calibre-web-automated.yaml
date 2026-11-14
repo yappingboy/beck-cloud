@@ -47,12 +47,14 @@ spec:
           volumeMounts:
             - name: config
               mountPath: /config
-            - name: calibre-library
+            - name: media-books
               mountPath: /calibre-library
-            - name: cwa-ingest
+            - name: media-books
               mountPath: /cwa-book-ingest
-            - name: deleted
+              subPath: .cwa-ingest
+            - name: media-books
               mountPath: /deleted
+              subPath: .deleted
           startupProbe:
             httpGet:
               path: /login
@@ -66,20 +68,17 @@ spec:
               port: 8083
             periodSeconds: 10
       volumes:
+        # ONE volume for the media-books claim. Three separate volume entries
+        # on the same PVC made kubelet's local-volume publisher time out
+        # ('unmounted volumes=[calibre-library cwa-ingest]: context deadline
+        # exceeded', k3s journal 2026-11-14). subPath mounts on a single
+        # volume are resolved by the runtime instead — no contention.
+        - name: media-books
+          persistentVolumeClaim:
+            claimName: media-books
         - name: config
           persistentVolumeClaim:
             claimName: calibre-web-automated-config
-        - name: calibre-library
-          persistentVolumeClaim:
-            claimName: media-books
-        - name: cwa-ingest
-          persistentVolumeClaim:
-            claimName: media-books
-            subPath: .cwa-ingest
-        - name: deleted
-          persistentVolumeClaim:
-            claimName: media-books
-            subPath: .deleted
 ---
 apiVersion: v1
 kind: Service
