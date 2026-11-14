@@ -39,7 +39,7 @@ spec:
             - name: APP_URL
               value: https://audio.becklab.cloud
           ports:
-            - containerPort: 13378
+            - containerPort: 80
               name: http
               protocol: TCP
           volumeMounts:
@@ -50,14 +50,14 @@ spec:
           startupProbe:
             httpGet:
               path: /healthcheck
-              port: 13378
+              port: http
             initialDelaySeconds: 5
             periodSeconds: 5
             failureThreshold: 60
           readinessProbe:
             httpGet:
               path: /healthcheck
-              port: 13378
+              port: http
             periodSeconds: 10
       volumes:
         - name: config
@@ -77,14 +77,16 @@ spec:
     app: audiobookshelf
   ports:
     - name: http
-      port: 13378
-      targetPort: 13378
+      port: 80
+      targetPort: http
       protocol: TCP
   type: ClusterIP
 ---
-# Mobile apps and browsers talk to ABS's own token auth on /api — forwardAuth
+# Mobile apps and browsers talk to ABS's own token auth on its API — forwardAuth
 # would 401 the login flow, so app/authed-client prefixes bypass SSO. Web root
-# stays behind sso-media-chain for humans.
+# stays behind sso-media-chain for humans. NOTE: the current image serves the
+# whole app under the /audiobookshelf base path and listens on port 80, so the
+# bypass prefixes carry the base path (verified: /healthcheck answers on / too).
 apiVersion: traefik.io/v1alpha1
 kind: IngressRoute
 metadata:
@@ -96,16 +98,16 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: Host(`audio.becklab.cloud`) && (PathPrefix(`/api`) || PathPrefix(`/hls`) || PathPrefix(`/socket.io`) || PathPrefix(`/share`) || PathPrefix(`/public`))
+    - match: Host(`audio.becklab.cloud`) && (PathPrefix(`/audiobookshelf/api`) || PathPrefix(`/audiobookshelf/hls`) || PathPrefix(`/audiobookshelf/socket.io`) || PathPrefix(`/audiobookshelf/share`) || PathPrefix(`/audiobookshelf/public`) || PathPrefix(`/audiobookshelf/healthcheck`) || PathPrefix(`/healthcheck`))
       kind: Rule
       services:
         - name: audiobookshelf
-          port: 13378
+          port: 80
     - match: Host(`audio.becklab.cloud`)
       kind: Rule
       services:
         - name: audiobookshelf
-          port: 13378
+          port: 80
       middlewares:
         - name: sso-media-chain
           namespace: identity
