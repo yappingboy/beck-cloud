@@ -1,0 +1,128 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calibre-web-automated
+  namespace: media
+  labels:
+    app: calibre-web-automated
+spec:
+  replicas: 1
+  # Calibre library is a file-based sqlite setup; concurrent writers risk
+  # corruption. Upstream k8s example: single replica + Recreate.
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: calibre-web-automated
+  template:
+    metadata:
+      labels:
+        app: calibre-web-automated
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: calibre-web-automated
+          image: crocodilestick/calibre-web-automated:latest
+          resources:
+            limits:
+              cpu: 2000m
+              memory: 2Gi
+            requests:
+              cpu: 250m
+              memory: 512Mi
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: America/Los_Angeles
+          ports:
+            - containerPort: 8083
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: calibre-library
+              mountPath: /calibre-library
+            - name: cwa-ingest
+              mountPath: /cwa-book-ingest
+            - name: deleted
+              mountPath: /deleted
+          startupProbe:
+            httpGet:
+              path: /login
+              port: 8083
+            initialDelaySeconds: 10
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8083
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: calibre-web-automated-config
+        - name: calibre-library
+          persistentVolumeClaim:
+            claimName: media-books
+        - name: cwa-ingest
+          persistentVolumeClaim:
+            claimName: media-books
+            subPath: .cwa-ingest
+        - name: deleted
+          persistentVolumeClaim:
+            claimName: media-books
+            subPath: .deleted
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: calibre-web-automated
+  namespace: media
+spec:
+  selector:
+    app: calibre-web-automated
+  ports:
+    - name: http
+      port: 8083
+      targetPort: 8083
+      protocol: TCP
+  type: ClusterIP
+---
+# Browser UI stays behind SSO (sso-media-chain). Device clients — OPDS readers,
+# the built-in web reader, Kobo sync, book downloads — cannot do a Keycloak
+# redirect dance, so those path prefixes bypass forwardAuth and fall back to
+# CWA's own user auth (low risk: these endpoints already require a CWA login).
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: calibre-web-automated
+  namespace: media
+  labels:
+    app: calibre-web-automated
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`books.becklab.cloud`) && (PathPrefix(`/opds`) || PathPrefix(`/read`) || PathPrefix(`/serve`) || PathPrefix(`/download`) || PathPrefix(`/display`) || PathPrefix(`/images`) || PathPrefix(`/sync`))
+      kind: Rule
+      services:
+        - name: calibre-web-automated
+          port: 8083
+    - match: Host(`books.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: calibre-web-automated
+          port: 8083
+      middlewares:
+        - name: sso-media-chain
+          namespace: identity
+  tls:
+    secretName: books-tls
