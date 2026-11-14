@@ -1,0 +1,57 @@
+# Book-stack claims. Data PVCs bind statically to the LVM local PVs in
+# pvs-lvm/pvs-lvm-books.yaml; config PVCs follow the jellyfin/sonarr pattern
+# (local-path RWO — single-replica apps).
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-books
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-books-lvm PV
+  volumeName: media-books-lvm
+  resources:
+    requests:
+      storage: 5Ti
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: media-audiobooks
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteMany
+  storageClassName: ""       # static binding — matches media-audiobooks-lvm PV
+  volumeName: media-audiobooks-lvm
+  resources:
+    requests:
+      storage: 5Ti
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: calibre-web-automated-config
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: audiobookshelf-config
+  namespace: media
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 5Gi

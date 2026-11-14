@@ -1,0 +1,113 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: audiobookshelf
+  namespace: media
+  labels:
+    app: audiobookshelf
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: audiobookshelf
+  template:
+    metadata:
+      labels:
+        app: audiobookshelf
+    spec:
+      nodeSelector:
+        kubernetes.io/hostname: ip-192-168-100-11
+      securityContext:
+        fsGroup: 1000
+      containers:
+        - name: audiobookshelf
+          image: advplyr/audiobookshelf:latest
+          resources:
+            limits:
+              cpu: 1000m
+              memory: 1Gi
+            requests:
+              cpu: 100m
+              memory: 256Mi
+          env:
+            - name: TZ
+              value: America/Los_Angeles
+            - name: POD_URL
+              value: https://audio.becklab.cloud
+            - name: APP_URL
+              value: https://audio.becklab.cloud
+          ports:
+            - containerPort: 13378
+              name: http
+              protocol: TCP
+          volumeMounts:
+            - name: config
+              mountPath: /config
+            - name: audiobooks
+              mountPath: /audiobooks
+          startupProbe:
+            httpGet:
+              path: /healthcheck
+              port: 13378
+            initialDelaySeconds: 5
+            periodSeconds: 5
+            failureThreshold: 60
+          readinessProbe:
+            httpGet:
+              path: /healthcheck
+              port: 13378
+            periodSeconds: 10
+      volumes:
+        - name: config
+          persistentVolumeClaim:
+            claimName: audiobookshelf-config
+        - name: audiobooks
+          persistentVolumeClaim:
+            claimName: media-audiobooks
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: audiobookshelf
+  namespace: media
+spec:
+  selector:
+    app: audiobookshelf
+  ports:
+    - name: http
+      port: 13378
+      targetPort: 13378
+      protocol: TCP
+  type: ClusterIP
+---
+# Mobile apps and browsers talk to ABS's own token auth on /api — forwardAuth
+# would 401 the login flow, so app/authed-client prefixes bypass SSO. Web root
+# stays behind sso-media-chain for humans.
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: audiobookshelf
+  namespace: media
+  labels:
+    app: audiobookshelf
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`audio.becklab.cloud`) && (PathPrefix(`/api`) || PathPrefix(`/hls`) || PathPrefix(`/socket.io`) || PathPrefix(`/share`) || PathPrefix(`/public`))
+      kind: Rule
+      services:
+        - name: audiobookshelf
+          port: 13378
+    - match: Host(`audio.becklab.cloud`)
+      kind: Rule
+      services:
+        - name: audiobookshelf
+          port: 13378
+      middlewares:
+        - name: sso-media-chain
+          namespace: identity
+  tls:
+    secretName: audio-tls
