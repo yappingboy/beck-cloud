@@ -172,3 +172,16 @@ spec:
     average: 20
     burst: 10
     period: 60s
+
+---
+# Knit Studio: personal tool → 20/min burst
+apiVersion: traefik.io/v1alpha1
+kind: Middleware
+metadata:
+  name: rate-limit-knit-studio
+  namespace: micro
+spec:
+  rateLimit:
+    average: 20
+    burst: 10
+    period: 60s

@@ -117,6 +117,10 @@ jobs:
             path: apps-source/tools/knitting-slicer
             image: knitting-slicer
             context: apps-source/tools/knitting-slicer
+          - name: knit-studio
+            path: apps-source/tools/knit-studio
+            image: knit-studio
+            context: apps-source/tools/knit-studio
 
           # ---- static web apps ----
           - name: emdr

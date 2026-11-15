@@ -61,3 +61,6 @@ images:
   - name: ghcr.io/yappingboy/knitting-slicer
     newName: ghcr.io/yappingboy/knitting-slicer
     newTag: latest
+  - name: ghcr.io/yappingboy/knit-studio
+    newName: ghcr.io/yappingboy/knit-studio
+    newTag: latest

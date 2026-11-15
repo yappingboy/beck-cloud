@@ -493,3 +493,34 @@ spec:
           port: 8080
   tls:
     secretName: tools-tls
+
+# -----------------------------------------------------------
+# Knit Studio (chart viewer/editor/library)
+# -----------------------------------------------------------
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: knit-studio
+  namespace: micro
+  labels:
+    app: knit-studio
+    service: micro
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`knit-studio.tools.becklab.cloud`)
+      kind: Rule
+      middlewares:
+        - name: security-headers
+          namespace: traefik
+        - name: rate-limit-knit-studio
+          namespace: micro
+        - name: micro-maxbody-default
+          namespace: micro
+      services:
+        - name: knit-studio-service
+          port: 8080
+  tls:
+    secretName: tools-tls
