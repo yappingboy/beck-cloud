@@ -1,7 +1,7 @@
 # knit-studio
 
-Knitting diagram/pattern suite: viewer, editor, library, image→chart
-conversion (SVG/PNG/JPEG), and pattern resize. Japanese machine-chart
+Knitting diagram/pattern suite: viewer, editor, shaping designer, library,
+image→chart conversion (SVG/PNG/JPEG), and pattern resize. Japanese machine-chart
 notation. Zero dependencies: Node built-ins only, vanilla JS frontend, no
 build step.
 
@@ -23,14 +23,16 @@ PORT=9000 node server.js  # custom port
 tools/knit-studio/
 ├── server.js        # zero-dep http server: static files + library API
 ├── public/
-│   ├── index.html   # single-page UI shell (tabs: Library/Editor/Viewer/Convert)
+│   ├── index.html   # single-page UI shell (tabs: Library/Editor/Shaping/Viewer/Convert)
 │   ├── style.css
 │   ├── core.js      # pattern model + transforms + chart renderer (UMD: window.KS / require)
+│   ├── shaping.js   # shaping engine: parametric garment edges (UMD: KS.shaping)
 │   └── app.js       # UI wiring
 ├── library/         # pattern storage: one JSON file per pattern, <id>.json
 │   └── index.json is NOT used — listing scans the dir
 └── scripts/
-    └── selftest.mjs # node-based logic tests (no browser needed)
+    ├── selftest.mjs         # node logic tests for core.js
+    └── selftest-shaping.mjs # node logic tests for shaping.js
 ```
 
 Conventions:
@@ -71,6 +73,32 @@ bottom. Each character is one cell:
 | `i`  | ▲ | increase (shaping) |
 | `d`  | ▼ | decrease (shaping) |
 
+## Shaping format `knit-studio-shape/1`
+
+Parametric garment-panel shaping. Embedded in generated chart patterns at
+`meta.shape` so library round-trips reopen in the Shaping tab.
+
+```json
+{
+  "format": "knit-studio-shape/1",
+  "name": "panel-1",
+  "width": 80,
+  "edges": {
+    "left":  [{ "kind": "straight", "rows": 6 },
+              { "kind": "dec", "every": 4, "each": 1, "times": 6, "transfer": false },
+              { "kind": "straight", "rows": 14 }],
+    "right": []
+  }
+}
+```
+
+Edge segments stack bottom-up; a shaped segment works its event on rows
+every, 2*every, … times*every — the Japanese `every-each-times` triplet
+(`6-1-4` = every 6th row, 1 st, 4 times). `kind: dec` narrows, `inc` widens,
+`transfer` marks fully-fashioned decreases with transfer glyphs. Dragging
+outline handles in the UI edits the triplets (and vice versa); generation
+to a chart pattern is one click (`KS.shaping.toPattern`).
+
 ## API
 
 - `GET  /api/health`
@@ -82,5 +110,6 @@ bottom. Each character is one cell:
 ## Tests
 
 ```sh
-node scripts/selftest.mjs
+node scripts/selftest.mjs scripts/selftest-shaping.mjs
+node scripts/selftest-shaping.mjs
 ```

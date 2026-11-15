@@ -12,6 +12,7 @@
   <nav id="tabs">
     <button class="tab active" data-tab="lib">Library</button>
     <button class="tab" data-tab="edit">Editor</button>
+    <button class="tab" data-tab="shape">Shaping</button>
     <button class="tab" data-tab="view">Viewer</button>
     <button class="tab" data-tab="conv">Convert</button>
   </nav>
@@ -62,6 +63,41 @@
     </div>
     <div id="cards" class="cards"></div>
     <div id="libEmpty" class="hint big hidden">Library is empty. Create a new pattern or convert an image.</div>
+  </section>
+
+  <section id="shape" class="panel-wide hidden">
+    <div class="shape-grid">
+      <div class="shape-form">
+        <h3>Panel shaping</h3>
+        <p class="hint">Parametric edges in Japanese notation: &ldquo;every N rows, work M sts, R times&rdquo;. Drag the diamond handles on the outline &mdash; the table recounts itself.</p>
+        <label>Name <input id="shName" maxlength="80"></label>
+        <div class="row2">
+          <label>Base width (st) <input type="number" id="shWidth" min="2" max="999"></label>
+          <label class="checkrow" style="margin-top:14px"><input type="checkbox" id="shMirror"> Mirror edges</label>
+        </div>
+        <div class="row2">
+          <label>sts / 10cm <input type="number" id="shGSts" min="1" max="200"></label>
+          <label>rows / 10cm <input type="number" id="shGRows" min="1" max="200"></label>
+        </div>
+        <div id="shEdges"></div>
+        <div class="btn-row">
+          <button id="shLoad" class="secondary">Load open pattern</button>
+          <button id="shClear" class="secondary">New blank</button>
+        </div>
+        <div class="group-label" style="margin-top:10px">Output</div>
+        <div class="btn-col">
+          <button id="shToChart" class="primary">Generate chart &rarr; editor</button>
+          <button id="shSave" class="secondary">Save chart to library</button>
+          <button id="shExportTxt" class="secondary">Instructions .txt</button>
+          <button id="shExportSvg" class="secondary">Chart .svg</button>
+        </div>
+      </div>
+      <div class="shape-view">
+        <canvas id="shapeCv"></canvas>
+        <div id="shapeInfo" class="hint"></div>
+        <div class="hint">Handles: segment ends. Drag sideways = stitches per repeat &middot; drag up/down = rows between shaping rows. Knit = light, decrease = red &#9660;, increase = teal &#9650;, transfer = arrows.</div>
+      </div>
+    </div>
   </section>
 
   <section id="conv" class="panel-wide hidden">
@@ -133,6 +169,7 @@
 </main>
 
 <script src="core.js"></script>
+<script src="shaping.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

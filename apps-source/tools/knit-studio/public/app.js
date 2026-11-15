@@ -47,10 +47,12 @@ function setTab(t) {
   });
   $('lib').classList.toggle('hidden', t !== 'lib');
   $('conv').classList.toggle('hidden', t !== 'conv');
+  $('shape').classList.toggle('hidden', t !== 'shape');
   $('stage').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   $('toolbar').classList.toggle('hidden', t !== 'edit');
   $('side').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   if (t === 'lib') loadLib();
+  if (t === 'shape') { renderShapeForm(); renderShapeView(); }
   if (t === 'view' && !S.viewPat) status('Viewer: pick a pattern in the library and press View.');
   syncForm();
   if (activePat()) { S.zoom = -1; fit(); } // force refit on tab switch
@@ -576,6 +578,375 @@ function convMake() {
   status('Converted ' + p.width + '\u00d7' + p.height + ' \u2014 edit or save.');
 }
 
+/* ---------- shaping designer ---------- */
+var SShape = null;
+var sView = { cell: 8, ox: 35, oy: 20, H: 0, gridW: 0, minX: 0, handles: [] };
+var sDrag = null;
+
+function shapeDefault() {
+  return KS.shaping.normalize({
+    name: 'panel-1', width: 80, gauge: null, mirror: true,
+    edges: {
+      left:  [{ kind: 'straight', rows: 6 }, { kind: 'dec', every: 4, each: 1, times: 6 }, { kind: 'straight', rows: 14 }],
+      right: [{ kind: 'straight', rows: 6 }, { kind: 'dec', every: 4, each: 1, times: 6 }, { kind: 'straight', rows: 14 }]
+    }
+  });
+}
+function shapeState() { if (!SShape) SShape = shapeDefault(); return SShape; }
+
+function shapeApply(msg) {
+  SShape = KS.shaping.normalize(SShape);
+  renderShapeForm();
+  renderShapeView();
+  if (msg) status(msg);
+}
+
+function shapeMirrorSync(srcSide) {
+  if (!SShape.mirror) return;
+  var other = srcSide === 'left' ? 'right' : 'left';
+  SShape.edges[other] = JSON.parse(JSON.stringify(SShape.edges[srcSide]));
+}
+
+function setVal(id, v) { var el = $(id); if (document.activeElement !== el) el.value = v; }
+
+function segRow(side, seg, i) {
+  var row = document.createElement('div');
+  row.className = 'seg-row';
+  var sel = document.createElement('select');
+  [['straight', 'rows'], ['dec', 'decrease'], ['inc', 'increase']].forEach(function (o) {
+    var op = document.createElement('option');
+    op.value = o[0]; op.textContent = o[1];
+    sel.appendChild(op);
+  });
+  sel.value = seg.kind;
+  sel.onchange = function () {
+    var edges = SShape.edges[side], old = edges[i];
+    var repl;
+    if (sel.value === 'straight') repl = { kind: 'straight', rows: Math.max(1, old.kind === 'straight' ? old.rows : old.every * old.times) };
+    else if (old.kind === 'straight') repl = { kind: sel.value, every: Math.max(1, old.rows), each: 1, times: 1, transfer: false };
+    else { repl = Object.assign({}, old); repl.kind = sel.value; }
+    edges[i] = repl;
+    shapeMirrorSync(side); shapeApply();
+  };
+  row.appendChild(sel);
+  function num(field, val, min, max, label) {
+    if (label) { var s = document.createElement('span'); s.textContent = label; row.appendChild(s); }
+    var n = document.createElement('input');
+    n.type = 'number'; n.min = min; n.max = max; n.value = val;
+    n.title = field;
+    n.onchange = function () {
+      var v = Math.max(min, Math.min(max, Number(n.value) | 0));
+      SShape.edges[side][i][field] = v;
+      shapeMirrorSync(side); shapeApply();
+    };
+    row.appendChild(n);
+  }
+  if (seg.kind === 'straight') num('rows', seg.rows, 1, 999, 'rows');
+  else {
+    num('every', seg.every, 1, 99, 'every');
+    num('each', seg.each, 1, 99, '\u00d7 st');
+    num('times', seg.times, 1, 999, '\u00d7 n');
+    if (seg.kind === 'dec') {
+      var t = document.createElement('label');
+      t.className = 'checkrow';
+      var tc = document.createElement('input');
+      tc.type = 'checkbox'; tc.checked = !!seg.transfer;
+      tc.onchange = function () { SShape.edges[side][i].transfer = tc.checked; shapeMirrorSync(side); shapeApply(); };
+      t.appendChild(tc); t.appendChild(document.createTextNode('transfer'));
+      row.appendChild(t);
+    }
+  }
+  var spacer = document.createElement('span'); spacer.className = 'grow'; row.appendChild(spacer);
+  function btn(txt, title, fn) {
+    var b = document.createElement('button');
+    b.textContent = txt; b.title = title; b.onclick = fn;
+    row.appendChild(b);
+  }
+  btn('\u2191', 'move up', function () {
+    var e = SShape.edges[side];
+    if (i === 0) return;
+    var tmp = e[i]; e[i] = e[i - 1]; e[i - 1] = tmp;
+    shapeMirrorSync(side); shapeApply();
+  });
+  btn('\u2193', 'move down', function () {
+    var e = SShape.edges[side];
+    if (i === e.length - 1) return;
+    var tmp = e[i]; e[i] = e[i + 1]; e[i + 1] = tmp;
+    shapeMirrorSync(side); shapeApply();
+  });
+  btn('\u2715', 'remove segment', function () {
+    var e = SShape.edges[side];
+    if (e.length > 1) e.splice(i, 1);
+    else e[0] = { kind: 'straight', rows: KS.shaping.edgeRows(e) };
+    shapeMirrorSync(side); shapeApply();
+  });
+  return row;
+}
+
+function addSeg(side, kind) {
+  var seg = kind === 'straight'
+    ? { kind: 'straight', rows: 10 }
+    : { kind: kind, every: 6, each: 1, times: 2, transfer: false };
+  SShape.edges[side].push(seg);
+  shapeMirrorSync(side); shapeApply();
+}
+
+function renderShapeForm() {
+  var sh = shapeState();
+  setVal('shName', sh.name);
+  setVal('shWidth', sh.width);
+  setVal('shGSts', sh.gauge ? sh.gauge.stsPer10cm : '');
+  setVal('shGRows', sh.gauge ? sh.gauge.rowsPer10cm : '');
+  $('shMirror').checked = !!sh.mirror;
+  var host = $('shEdges');
+  host.innerHTML = '';
+  ['left', 'right'].forEach(function (side) {
+    var blk = document.createElement('div');
+    blk.className = 'edge-block';
+    var head = document.createElement('div');
+    head.className = 'edge-head';
+    var b = document.createElement('b');
+    b.textContent = side + ' edge';
+    head.appendChild(b);
+    [['straight', '+ rows'], ['dec', '\u2212 st'], ['inc', '+ st']].forEach(function (spec) {
+      var btn = document.createElement('button');
+      btn.textContent = spec[1];
+      btn.onclick = function () { addSeg(side, spec[0]); };
+      head.appendChild(btn);
+    });
+    blk.appendChild(head);
+    sh.edges[side].forEach(function (seg, i) { blk.appendChild(segRow(side, seg, i)); });
+    host.appendChild(blk);
+  });
+}
+
+function shapePat() { return KS.shaping.toPattern(shapeState()); }
+
+function renderShapeView() {
+  var cv = $('shapeCv');
+  if (!cv || $('shape').classList.contains('hidden')) return;
+  var sh = shapeState();
+  var e = KS.shaping.extents(sh), p = e.prof;
+  var boxW = Math.max(280, (cv.parentElement.clientWidth || 600) - 26);
+  var boxH = Math.max(340, Math.min(760, window.innerHeight - 180));
+  var cell = Math.max(3, Math.min(18, Math.floor(Math.min((boxW - 80) / e.gridW, (boxH - 60) / p.H))));
+  var W = e.gridW * cell, Hh = p.H * cell;
+  cv.width = W + 80; cv.height = Hh + 40;
+  cv.style.width = cv.width + 'px'; cv.style.height = cv.height + 'px';
+  var ctx = cv.getContext('2d');
+  ctx.fillStyle = '#1e1e1e';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+  var ox = sView.ox, oy = 20;
+  sView.cell = cell; sView.H = p.H; sView.gridW = e.gridW; sView.minX = e.minX;
+  // fabric rows
+  ctx.fillStyle = 'rgba(232,228,220,0.92)';
+  for (var r = 0; r < p.H; r++) {
+    var x0 = ox + (p.lo[r] - e.minX) * cell;
+    var w = (p.hi[r] - p.lo[r]) * cell;
+    ctx.fillRect(x0, oy + (p.H - 1 - r) * cell, w, cell);
+  }
+  // 10-grid
+  if (cell >= 5) {
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    for (var gx = 0; gx <= e.gridW; gx += 10) { ctx.moveTo(ox + gx * cell + 0.5, oy); ctx.lineTo(ox + gx * cell + 0.5, oy + Hh); }
+    for (var gr = 0; gr <= p.H; gr += 10) { ctx.moveTo(ox, oy + gr * cell + 0.5); ctx.lineTo(ox + W, oy + gr * cell + 0.5); }
+    ctx.stroke();
+    ctx.fillStyle = '#8a8a8a';
+    ctx.font = '10px monospace';
+    ctx.textAlign = 'left';
+    for (var nr = 10; nr <= p.H; nr += 10) {
+      ctx.fillText(String(nr), ox + W + 6, oy + (p.H - nr) * cell + 3);
+    }
+  }
+  // shaping event glyphs
+  function tri(x, y, dir, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    if (dir === 'down') { ctx.moveTo(x - cell * 0.3, y - cell * 0.28); ctx.lineTo(x + cell * 0.3, y - cell * 0.28); ctx.lineTo(x, y + cell * 0.34); }
+    else { ctx.moveTo(x - cell * 0.3, y + cell * 0.28); ctx.lineTo(x + cell * 0.3, y + cell * 0.28); ctx.lineTo(x, y - cell * 0.34); }
+    ctx.closePath(); ctx.fill();
+  }
+  function glyph(x, y, ch) {
+    ctx.strokeStyle = ch === '>' ? '#b58900' : '#cb4b16';
+    ctx.lineWidth = Math.max(1, cell * 0.14);
+    ctx.beginPath();
+    if (ch === '>') { ctx.moveTo(x - cell * 0.3, y + cell * 0.3); ctx.lineTo(x + cell * 0.3, y - cell * 0.3); }
+    else { ctx.moveTo(x + cell * 0.3, y + cell * 0.3); ctx.lineTo(x - cell * 0.3, y - cell * 0.3); }
+    ctx.stroke();
+  }
+  function drawEvents(evs, side) {
+    (evs || []).forEach(function (ev) {
+      var r = ev.row - 1;
+      var y = oy + (p.H - 1 - r) * cell + cell / 2;
+      var lo = p.lo[r], hi = p.hi[r];
+      if (ev.dir === 1) {
+        var x = side === 'left' ? ox + (lo - e.minX) * cell - cell * 0.5 : ox + (hi - e.minX) * cell + cell * 0.5;
+        if (ev.transfer) glyph(x, y, side === 'left' ? '>' : '<');
+        else tri(x, y, 'down', '#dc322f');
+      } else {
+        var x2 = side === 'left' ? ox + (lo - e.minX) * cell + cell * 0.5 : ox + (hi - e.minX) * cell - cell * 0.5;
+        tri(x2, y, 'up', '#2aa198');
+      }
+    });
+  }
+  drawEvents(KS.shaping.events(p.edges.left), 'left');
+  drawEvents(KS.shaping.events(p.edges.right), 'right');
+  // outline
+  ctx.strokeStyle = '#58a6ff';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  var first = true;
+  for (var lr = 0; lr < p.H; lr++) {
+    var lx = ox + (p.lo[lr] - e.minX) * cell, ly = oy + (p.H - lr) * cell;
+    if (first) { ctx.moveTo(lx, oy + p.H * cell); first = false; }
+    ctx.lineTo(lx, ly); ctx.lineTo(lx + (p.hi[lr] - p.lo[lr]) * cell, ly);
+  }
+  var topY = oy;
+  ctx.lineTo(ox + (p.hi[p.H - 1] - e.minX) * cell, oy + p.H * cell);
+  ctx.lineTo(ox + (p.lo[0] - e.minX) * cell, oy + p.H * cell);
+  ctx.stroke();
+  void topY;
+  // handles at segment boundaries (shaped segments get diamonds)
+  sView.handles = [];
+  ['left', 'right'].forEach(function (side) {
+    var cum = 0;
+    sh.edges[side].forEach(function (seg, i) {
+      cum += KS.shaping.edgeRows([seg]);
+      if (seg.kind === 'straight') return;
+      var rowIdx = Math.min(p.H - 1, cum - 1);
+      var x = side === 'left'
+        ? ox + (p.lo[rowIdx] - e.minX) * cell
+        : ox + (p.hi[rowIdx] - e.minX) * cell;
+      var y = oy + (p.H - cum) * cell;
+      sView.handles.push({ side: side, i: i, x: x, y: y });
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(Math.PI / 4);
+      ctx.fillStyle = '#f0a030';
+      ctx.strokeStyle = '#000';
+      ctx.lineWidth = 1;
+      ctx.fillRect(-4.5, -4.5, 9, 9);
+      ctx.strokeRect(-4.5, -4.5, 9, 9);
+      ctx.restore();
+    });
+  });
+  var errs = KS.shaping.check(sh);
+  var topW = p.hi[p.H - 1] - p.lo[p.H - 1];
+  $('shapeInfo').innerHTML = p.H + ' rows \u00b7 base ' + sh.width + ' st \u00b7 top ' + topW + ' st'
+    + (errs.length ? ' <span class="shape-err">' + errs.join(' ') + '</span>' : '');
+}
+
+function shapePt(ev) {
+  var cv = $('shapeCv');
+  var r = cv.getBoundingClientRect();
+  return { mx: ev.clientX - r.left, my: ev.clientY - r.top };
+}
+
+function bindShapeCanvas() {
+  var cv = $('shapeCv');
+  cv.addEventListener('pointerdown', function (ev) {
+    var m = shapePt(ev);
+    var best = null, bd = 1e9;
+    sView.handles.forEach(function (h) {
+      var d = Math.abs(h.x - m.mx) + Math.abs(h.y - m.my);
+      if (d < bd) { bd = d; best = h; }
+    });
+    if (!best || bd > 14) return;
+    sDrag = best;
+    cv.setPointerCapture(ev.pointerId);
+    ev.preventDefault();
+  });
+  cv.addEventListener('pointermove', function (ev) {
+    if (!sDrag) return;
+    var m = shapePt(ev);
+    var sh = shapeState();
+    var seg = sh.edges[sDrag.side][sDrag.i];
+    var p = KS.shaping.profile(sh);
+    var prevRows = 0;
+    for (var k = 0; k < sDrag.i; k++) prevRows += KS.shaping.edgeRows([sh.edges[sDrag.side][k]]);
+    var prevOff = prevRows > 0
+      ? (sDrag.side === 'left' ? p.leftOff[prevRows - 1] : p.rightOff[prevRows - 1])
+      : 0;
+    var col = (m.mx - sView.ox) / sView.cell;
+    var targetOff = sDrag.side === 'left'
+      ? Math.round(col + sView.minX)
+      : sh.width - Math.round(col + sView.minX);
+    var targetRow = Math.max(1, Math.min(sView.H, Math.round(sView.H - (m.my - 20) / sView.cell)));
+    if (seg.kind === 'straight') {
+      seg.rows = Math.max(1, targetRow - prevRows);
+    } else {
+      var total = targetOff - prevOff;
+      if (seg.kind === 'dec' && total < 0) total = seg.each * seg.times;
+      if (seg.kind === 'inc' && total > 0) total = -seg.each * seg.times;
+      seg.each = Math.max(1, Math.min(99, Math.round(Math.abs(total) / seg.times)));
+      seg.every = Math.max(1, Math.min(99, Math.ceil((targetRow - prevRows) / seg.times)));
+    }
+    shapeMirrorSync(sDrag.side);
+    renderShapeForm();
+    renderShapeView();
+  });
+  var end = function () { sDrag = null; };
+  cv.addEventListener('pointerup', end);
+  cv.addEventListener('pointercancel', end);
+}
+
+function bindShapeUI() {
+  bind('shName', 'input', function () { SShape.name = $('shName').value.trim() || 'panel'; });
+  bind('shWidth', 'change', function () { SShape.width = Number($('shWidth').value) || 80; shapeApply(); });
+  bind('shGSts', 'change', function () { shapeGaugeFromForm(); });
+  bind('shGRows', 'change', function () { shapeGaugeFromForm(); });
+  bind('shMirror', 'change', function () {
+    SShape.mirror = $('shMirror').checked;
+    if (SShape.mirror) shapeMirrorSync('left');
+    shapeApply();
+  });
+  bind('shLoad', 'click', function () {
+    if (S.pat && S.pat.meta && S.pat.meta.shape) {
+      SShape = KS.shaping.normalize(S.pat.meta.shape);
+      renderShapeForm(); renderShapeView();
+      status('Loaded shaping from "' + (S.pat.name || 'pattern') + '".');
+    } else status('Open pattern has no shaping data.', true);
+  });
+  bind('shClear', 'click', function () { SShape = shapeDefault(); shapeApply('New blank panel.'); });
+  bind('shToChart', 'click', function () {
+    var pat = KS.shaping.toPattern(shapeState());
+    S.pat = pat; S.id = null;
+    resetHist(); clean(); setTab('edit');
+    status('Shaping chart generated \u2014 freehand edits welcome now.');
+  });
+  bind('shSave', 'click', function () {
+    var pat = shapePat();
+    var id = prompt('Save chart to library as:', KS.slug(pat.name));
+    if (!id) return;
+    id = KS.slug(id);
+    var body = KS.clone(pat);
+    body.thumb = makeThumb(pat);
+    api('PUT', '/api/patterns/' + encodeURIComponent(id), body).then(function (sum) {
+      status('Saved "' + sum.id + '" to library.');
+    }).catch(function (e) { status('Save failed: ' + e.message, true); });
+  });
+  bind('shExportTxt', 'click', function () {
+    var pat = shapePat();
+    download(KS.slug(shapeState().name) + '-shaping.txt',
+      KS.shaping.toText(shapeState()) + '\n\n' + KS.toText(pat), 'text/plain');
+  });
+  bind('shExportSvg', 'click', function () {
+    var pat = shapePat();
+    download(KS.slug(shapeState().name) + '-chart.svg', KS.toSvg(pat, 14), 'image/svg+xml');
+  });
+  bindShapeCanvas();
+  new ResizeObserver(function () { renderShapeView(); }).observe($('shape'));
+  window.addEventListener('resize', function () { if (S.tab === 'shape') renderShapeView(); });
+}
+
+function shapeGaugeFromForm() {
+  var st = Number($('shGSts').value), rw = Number($('shGRows').value);
+  SShape.gauge = st > 0 && rw > 0 ? { stsPer10cm: st, rowsPer10cm: rw } : null;
+  renderShapeView();
+}
+
 /* ---------- keyboard ---------- */
 window.addEventListener('keydown', function (e) {
   if (e.target.matches('input, textarea')) return;
@@ -654,6 +1025,7 @@ window.addEventListener('beforeunload', function (e) {
   if (S.dirty) { e.preventDefault(); e.returnValue = ''; }
 });
 new ResizeObserver(function () { draw(); }).observe($('stage'));
+bindShapeUI();
 
 setTab('lib');
 draw();
