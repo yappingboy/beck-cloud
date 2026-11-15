@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>knit-studio</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <div class="brand">&#129526; knit-studio</div>
+  <nav id="tabs">
+    <button class="tab active" data-tab="lib">Library</button>
+    <button class="tab" data-tab="edit">Editor</button>
+    <button class="tab" data-tab="view">Viewer</button>
+    <button class="tab" data-tab="conv">Convert</button>
+  </nav>
+  <div class="spacer"></div>
+  <span id="status" class="status"></span>
+</header>
+
+<main>
+  <aside id="toolbar" class="panel hidden">
+    <div class="group">
+      <div class="group-label">Tool</div>
+      <div id="tools" class="btn-grid"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Symbol</div>
+      <div id="palette" class="palette"></div>
+      <div id="symHint" class="hint"></div>
+    </div>
+    <div class="group">
+      <div class="group-label">Display</div>
+      <label class="checkrow"><input type="checkbox" id="tGrid" checked> Grid</label>
+      <label class="checkrow"><input type="checkbox" id="tNums" checked> Row numbers</label>
+    </div>
+    <div class="group btn-col">
+      <button id="btnUndo">&#8630; Undo <kbd>Ctrl-Z</kbd></button>
+      <button id="btnRedo">&#8631; Redo <kbd>Ctrl-Y</kbd></button>
+    </div>
+    <div class="group">
+      <div class="group-label">Mouse</div>
+      <div class="hint">Left: tool &middot; Right/middle: pan<br>Wheel: zoom</div>
+    </div>
+  </aside>
+
+  <section id="stage" class="stage hidden">
+    <canvas id="cv"></canvas>
+    <div class="zoombar">
+      <button id="zOut">&minus;</button><span id="zLbl">&times;1</span><button id="zIn">+</button>
+      <button id="zFit">Fit</button>
+    </div>
+  </section>
+
+  <section id="lib" class="panel-wide">
+    <div class="libbar">
+      <input id="libSearch" placeholder="Search name or tag&hellip;">
+      <button id="btnNew" class="primary">New pattern</button>
+      <button id="btnOpenFile" class="secondary">Open file&hellip;</button>
+      <input type="file" id="fileOpen" accept=".json,.svg,.png,.jpg,.jpeg" hidden>
+    </div>
+    <div id="cards" class="cards"></div>
+    <div id="libEmpty" class="hint big hidden">Library is empty. Create a new pattern or convert an image.</div>
+  </section>
+
+  <section id="conv" class="panel-wide hidden">
+    <div class="conv-grid">
+      <div class="conv-form">
+        <h3>Image &rarr; Chart</h3>
+        <p class="hint">SVG, PNG or JPEG. Dark fills become needle-off cells, light becomes knit &mdash; like a two-colour punchcard.</p>
+        <label>Source image <input type="file" id="convFile" accept=".svg,.png,.jpg,.jpeg,image/svg+xml,image/png,image/jpeg"></label>
+        <div id="convSrc" class="hint">No image loaded.</div>
+        <div class="row2">
+          <label>Width (stitches) <input type="number" id="convW" value="60" min="1" max="4000"></label>
+          <label>Height (rows) <input type="number" id="convH" value="80" min="1" max="4000"></label>
+        </div>
+        <label class="checkrow"><input type="checkbox" id="convLock" checked> Lock aspect ratio</label>
+        <label>Threshold <span id="convThrLbl">0.50</span>
+          <input type="range" id="convThr" min="0" max="1" step="0.02" value="0.5"></label>
+        <label class="checkrow"><input type="checkbox" id="convInv"> Invert (light = off)</label>
+        <label class="checkrow"><input type="checkbox" id="convDither"> Dither (photo gradients)</label>
+        <div class="btn-row">
+          <button id="convPrev" class="primary">Preview</button>
+          <button id="convMake" class="primary">Open in editor</button>
+        </div>
+      </div>
+      <div class="conv-preview">
+        <canvas id="convCv"></canvas>
+        <div id="convInfo" class="hint"></div>
+      </div>
+    </div>
+  </section>
+
+  <aside id="side" class="panel hidden">
+    <div class="group">
+      <div class="group-label">Pattern</div>
+      <label>Name <input id="pName" maxlength="80"></label>
+      <div class="row2">
+        <label>W <input type="number" id="pW" min="1" max="4000"></label>
+        <label>H <input type="number" id="pH" min="1" max="4000"></label>
+      </div>
+      <label>Tags <input id="pTags" placeholder="comma,separated"></label>
+      <div class="row2">
+        <label>sts / 10cm <input type="number" id="pGSts" min="1" max="200"></label>
+        <label>rows / 10cm <input type="number" id="pGRows" min="1" max="200"></label>
+      </div>
+      <label>Notes <textarea id="pNotes" rows="3"></textarea></label>
+    </div>
+    <div class="group">
+      <div class="group-label">Resize (resample)</div>
+      <div class="row2">
+        <label>&rarr; W <input type="number" id="rzW" min="1" max="4000"></label>
+        <label>&rarr; H <input type="number" id="rzH" min="1" max="4000"></label>
+      </div>
+      <label class="checkrow"><input type="checkbox" id="rzLock" checked> Lock aspect</label>
+      <button id="btnResize" class="secondary">Resample</button>
+      <div class="hint">Nearest-neighbour on cells. Gauge scales with it to keep physical size.</div>
+    </div>
+    <div class="group btn-col">
+      <button id="btnSave" class="primary">Save <kbd>Ctrl-S</kbd></button>
+      <button id="btnSaveAs" class="secondary">Save as&hellip;</button>
+      <button id="btnDup" class="secondary">Duplicate</button>
+    </div>
+    <div class="group btn-col">
+      <div class="group-label">Export</div>
+      <button id="btnExJson" class="secondary">JSON</button>
+      <button id="btnExPng" class="secondary">PNG</button>
+      <button id="btnExSvg" class="secondary">SVG chart</button>
+      <button id="btnExTxt" class="secondary">Instructions .txt</button>
+    </div>
+  </aside>
+</main>
+
+<script src="core.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

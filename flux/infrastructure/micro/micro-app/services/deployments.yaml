@@ -711,3 +711,81 @@ spec:
             limits:
               cpu: 500m
               memory: 384Mi
+
+# -----------------------------------------------------------
+# Knit Studio (chart viewer / editor / library, zero-dep Node)
+# Shares micro-storage via subPath; library lives at /data/library
+# -----------------------------------------------------------
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: knit-studio
+  namespace: micro
+  labels:
+    app: knit-studio
+    service: micro
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: knit-studio
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxSurge: 1
+      maxUnavailable: 0
+  template:
+    metadata:
+      labels:
+        app: knit-studio
+        service: micro
+    spec:
+      imagePullSecrets:
+        - name: ghcr-credentials
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+      containers:
+        - name: knit-studio
+          image: ghcr.io/yappingboy/knit-studio:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8080
+              name: http
+          env:
+            - name: PORT
+              value: "8080"
+            - name: LIBRARY_DIR
+              value: /data/library
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: 8080
+            initialDelaySeconds: 3
+            periodSeconds: 5
+          resources:
+            requests:
+              cpu: 25m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+          volumeMounts:
+            - name: library
+              mountPath: /data
+              subPath: knit-studio
+      volumes:
+        - name: library
+          persistentVolumeClaim:
+            claimName: micro-storage

@@ -1,0 +1,493 @@
+/* knit-studio core: pattern model, transforms, exports, chart rendering.
+ * UMD: window.KS in browsers, module.exports in node. DOM-free except the
+ * canvas helpers (renderChart/drawCell), which only run when called. */
+(function (root, factory) {
+  var api = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = api;
+  else root.KS = api;
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+
+  // Japanese machine-chart palette. One char per cell.
+  var CODES = {
+    '.': { label: 'Empty', hint: 'no instruction' },
+    'k': { label: 'Knit', hint: 'needle in working position, forms a stitch' },
+    'x': { label: 'Off', hint: 'needle out of action, float / no loop' },
+    'h': { label: 'Hold', hint: 'holding position, short rows' },
+    '<': { label: 'Transfer L', hint: 'loop moves one needle left' },
+    '>': { label: 'Transfer R', hint: 'loop moves one needle right' },
+    'a': { label: 'Color A', hint: 'color A feed' },
+    'b': { label: 'Color B', hint: 'color B feed' },
+    'i': { label: 'Increase', hint: 'shaping increase' },
+    'd': { label: 'Decrease', hint: 'shaping decrease' }
+  };
+  var PALETTE = ['.', 'k', 'x', 'h', '<', '>', 'a', 'b', 'i', 'd'];
+
+  var INK = '#e8e8e8';
+  var CELL_FG = '#101010';
+
+  /* ---------- model ---------- */
+
+  function blank(name, width, height) {
+    width = Math.max(1, width | 0);
+    height = Math.max(1, height | 0);
+    var row = repeat('.', width);
+    var rows = [];
+    for (var y = 0; y < height; y++) rows.push(row);
+    return {
+      format: 'knit-studio/1',
+      name: name || 'untitled',
+      width: width, height: height,
+      gauge: null,
+      rows: rows,
+      meta: { tags: [], notes: '' }
+    };
+  }
+
+  function repeat(ch, n) {
+    var s = '';
+    for (var i = 0; i < n; i++) s += ch;
+    return s;
+  }
+
+  function validate(p) {
+    if (!p || typeof p !== 'object') throw new Error('not a pattern object');
+    if (p.format !== 'knit-studio/1') throw new Error('unsupported format: ' + p.format);
+    var w = p.width | 0, h = p.height | 0;
+    if (!(w > 0 && h > 0) || w > 4000 || h > 4000) throw new Error('bad dimensions');
+    if (!Array.isArray(p.rows) || p.rows.length !== h) throw new Error('row count != height');
+    for (var y = 0; y < h; y++) {
+      var r = p.rows[y];
+      if (typeof r !== 'string' || r.length !== w) throw new Error('row ' + y + ' width != ' + w);
+      for (var i = 0; i < r.length; i++) {
+        if (!(r[i] in CODES)) throw new Error('unknown cell code "' + r[i] + '" in row ' + y);
+      }
+    }
+    if (!p.meta || typeof p.meta !== 'object') p.meta = { tags: [], notes: '' };
+    if (!Array.isArray(p.meta.tags)) p.meta.tags = [];
+    return p;
+  }
+
+  function clone(p) { return JSON.parse(JSON.stringify(p)); }
+
+  function getCell(p, y, x) {
+    if (y < 0 || y >= p.height || x < 0 || x >= p.width) return null;
+    return p.rows[y][x];
+  }
+
+  // Mutates rows immutably-by-copy (rows is array of strings).
+  function setCell(p, y, x, code) {
+    if (y < 0 || y >= p.height || x < 0 || x >= p.width) return p;
+    if (!(code in CODES)) return p;
+    var r = p.rows[y];
+    if (r[x] === code) return p;
+    p.rows[y] = r.substring(0, x) + code + r.substring(x + 1);
+    return p;
+  }
+
+  /* ---------- transforms ---------- */
+
+  // Nearest-neighbour resample. Used for pattern resize.
+  function resample(p, nw, nh) {
+    nw = Math.max(1, Math.round(nw));
+    nh = Math.max(1, Math.round(nh));
+    var rows = [];
+    for (var y = 0; y < nh; y++) {
+      var sy = Math.min(p.height - 1, Math.floor((y + 0.5) * p.height / nh));
+      var src = p.rows[sy];
+      var out = '';
+      for (var x = 0; x < nw; x++) {
+        var sx = Math.min(p.width - 1, Math.floor((x + 0.5) * p.width / nw));
+        out += src[sx];
+      }
+      rows.push(out);
+    }
+    var q = clone(p);
+    q.width = nw; q.height = nh; q.rows = rows;
+    return q;
+  }
+
+  function resizedGauge(p, factor) {
+    if (!p.gauge) return p;
+    var q = clone(p);
+    q.gauge = {
+      stsPer10cm: Math.max(1, Math.round(p.gauge.stsPer10cm * factor)),
+      rowsPer10cm: Math.max(1, Math.round(p.gauge.rowsPer10cm * factor))
+    };
+    return q;
+  }
+
+  function crop(p, x0, y0, w, h) {
+    x0 = Math.max(0, x0 | 0); y0 = Math.max(0, y0 | 0);
+    w = Math.min(p.width - x0, Math.max(1, w | 0));
+    h = Math.min(p.height - y0, Math.max(1, h | 0));
+    var rows = [];
+    for (var y = 0; y < h; y++) rows.push(p.rows[y0 + y].substring(x0, x0 + w));
+    var q = clone(p);
+    q.width = w; q.height = h; q.rows = rows;
+    return q;
+  }
+
+  function floodFill(p, y, x, code) {
+    var target = getCell(p, y, x);
+    if (target === null || target === code) return p;
+    var rows = p.rows.slice();
+    var stack = [[y, x]];
+    while (stack.length) {
+      var top = stack.pop(), yy = top[0], xx = top[1];
+      if (yy < 0 || yy >= p.height || xx < 0 || xx >= p.width) continue;
+      if (rows[yy][xx] !== target) continue;
+      rows[yy] = rows[yy].substring(0, xx) + code + rows[yy].substring(xx + 1);
+      stack.push([yy + 1, xx], [yy - 1, xx], [yy, xx + 1], [yy, xx - 1]);
+    }
+    p.rows = rows;
+    return p;
+  }
+
+  /* ---------- raster import ----------
+   * Input: luminance grid, length w*h, values 0 (black)..1 (white),
+   * or null/NaN for transparent. Output: chart rows (two-color mode).
+   * opts: { threshold=0.5, invert=false, dither=false }
+   * Dark cells -> 'x' (needle off), light cells -> 'k' (knit): classic
+   * two-color punchcard mapping. Invert swaps. */
+  function imageToChart(lum, w, h, opts) {
+    opts = opts || {};
+    var thr = opts.threshold == null ? 0.5 : opts.threshold;
+    var invert = !!opts.invert;
+    var n = w * h;
+    var g = new Float64Array(n);
+    var empty = new Uint8Array(n);
+    for (var i = 0; i < n; i++) {
+      var v = lum[i];
+      if (v === null || v === undefined || v !== v) { empty[i] = 1; g[i] = thr; }
+      else g[i] = invert ? 1 - v : v;
+    }
+    if (opts.dither) {
+      var wts = [[1, 0, 7 / 16], [-1, 1, 3 / 16], [0, 1, 5 / 16], [1, 1, 1 / 16]];
+      for (var y = 0; y < h; y++) {
+        for (var x = 0; x < w; x++) {
+          var idx = y * w + x;
+          if (empty[idx]) continue;
+          var old = g[idx];
+          var nv = old < thr ? 0 : 1;
+          var err = old - nv;
+          g[idx] = nv;
+          for (var k = 0; k < wts.length; k++) {
+            var dx = wts[k][0], dy = wts[k][1], f = wts[k][2];
+            var nx = x + dx, ny = y + dy;
+            if (nx < 0 || nx >= w || ny >= h) continue;
+            var ni = ny * w + nx;
+            if (empty[ni]) continue;
+            g[ni] += err * f;
+          }
+        }
+      }
+    }
+    var rows = [];
+    for (var ry = 0; ry < h; ry++) {
+      var row = '';
+      for (var rx = 0; rx < w; rx++) {
+        var ri = ry * w + rx;
+        if (empty[ri]) row += '.';
+        else row += g[ri] < 0.5 ? 'x' : 'k';
+      }
+      rows.push(row);
+    }
+    return { width: w, height: h, rows: rows };
+  }
+
+  // Rasterize an <img> (already loaded) into a luminance grid of wCells x hCells.
+  // DOM-only. Returns { lum, w, h }.
+  function sampleImage(img, wCells, hCells) {
+    var cv = document.createElement('canvas');
+    cv.width = wCells; cv.height = hCells;
+    var ctx = cv.getContext('2d', { willReadFrequently: true });
+    ctx.imageSmoothingEnabled = true;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(img, 0, 0, wCells, hCells);
+    var d = ctx.getImageData(0, 0, wCells, hCells).data;
+    var lum = new Array(wCells * hCells);
+    for (var i = 0; i < lum.length; i++) {
+      var a = d[i * 4 + 3];
+      if (a < 16) { lum[i] = null; continue; }
+      var r = d[i * 4], gg = d[i * 4 + 1], b = d[i * 4 + 2];
+      // composite over white for partial alpha
+      var aa = a / 255;
+      r = r * aa + 255 * (1 - aa); gg = gg * aa + 255 * (1 - aa); b = b * aa + 255 * (1 - aa);
+      lum[i] = (0.2126 * r + 0.7152 * gg + 0.0722 * b) / 255;
+    }
+    return { lum: lum, w: wCells, h: hCells };
+  }
+
+  // Load an image file (svg/png/jpeg/...) into an <img>. SVGs get
+  // width/height patched from viewBox when absent so canvas scaling works.
+  function loadImageFile(file) {
+    return new Promise(function (resolve, reject) {
+      var done = function (url) {
+        var img = new Image();
+        img.onload = function () { resolve(img); };
+        img.onerror = function () { reject(new Error('could not decode image: ' + file.name)); };
+        img.src = url;
+      };
+      if (/\.svg$/i.test(file.name) || file.type === 'image/svg+xml') {
+        var fr = new FileReader();
+        fr.onload = function () {
+          var txt = String(fr.result);
+          if (!/\swidth\s*=/.test(txt.match(/<svg[^>]*>/i) ? txt.match(/<svg[^>]*>/i)[0] : '')) {
+            var vb = txt.match(/viewBox\s*=\s*["']\s*([\d.+-]+)[,\s]+([\d.+-]+)[,\s]+([\d.+-]+)[,\s]+([\d.+-]+)/i);
+            if (vb) txt = txt.replace(/<svg/i, '<svg width="' + vb[3] + '" height="' + vb[4] + '"');
+          }
+          done(URL.createObjectURL(new Blob([txt], { type: 'image/svg+xml' })));
+        };
+        fr.onerror = function () { reject(new Error('could not read ' + file.name)); };
+        fr.readAsText(file);
+      } else {
+        done(URL.createObjectURL(file));
+      }
+    });
+  }
+
+  /* ---------- legacy import: knitting-slicer output ----------
+   * { bounds:[..], panels:[{ id, segments:{ "rowIdx": [start,end] } }] }
+   * rows counted bottom-up, segments are stitch ranges [start,end).
+   * Returns one pattern per panel. */
+  function fromSlicer(data, baseName) {
+    if (!data || !Array.isArray(data.panels) || !data.panels.length) {
+      throw new Error('not a knitting-slicer project (no panels)');
+    }
+    var base = (baseName || 'sliced').replace(/\.svg$/i, '');
+    return data.panels.map(function (panel, i) {
+      var rowsIdx = Object.keys(panel.segments).map(Number).sort(function (a, b) { return a - b; });
+      var maxRow = rowsIdx.length ? rowsIdx[rowsIdx.length - 1] : 0;
+      var maxSt = 0;
+      rowsIdx.forEach(function (r) {
+        var seg = panel.segments[String(r)];
+        if (seg[1] > maxSt) maxSt = seg[1];
+      });
+      var w = Math.max(1, maxSt), h = Math.max(1, maxRow + 1);
+      var p = blank(base + '-p' + (i + 1), w, h);
+      rowsIdx.forEach(function (r) {
+        var seg = panel.segments[String(r)];
+        var y = h - 1 - r; // slicer row 0 = bottom; rows[0] = top
+        if (y < 0) return;
+        var row = p.rows[y];
+        for (var s = seg[0]; s < seg[1] && s < w; s++) {
+          row = row.substring(0, s) + 'k' + row.substring(s + 1);
+        }
+        p.rows[y] = row;
+      });
+      p.meta.notes = 'imported from knitting-slicer panel ' + (panel.id != null ? panel.id : i + 1);
+      return p;
+    });
+  }
+
+  /* ---------- exports ---------- */
+
+  // Run-length encoding of one row: "k10 x4 k6".
+  function rle(row) {
+    var out = [], prev = null, n = 0;
+    for (var i = 0; i <= row.length; i++) {
+      var c = i < row.length ? row[i] : null;
+      if (c === prev) { n++; continue; }
+      if (prev !== null) out.push((prev === '.' ? 'no-work ' : prev) + n);
+      prev = c; n = 1;
+    }
+    return out.join(' ');
+  }
+
+  // Per-row knitting instructions, bottom row = 1. Face rows odd.
+  function toText(p) {
+    var lines = [p.name + ' — ' + p.width + ' st x ' + p.height + ' rows'];
+    if (p.gauge) lines.push('gauge: ' + p.gauge.stsPer10cm + ' sts x ' + p.gauge.rowsPer10cm + ' rows / 10cm');
+    lines.push('');
+    for (var r = 0; r < p.height; r++) {
+      var y = p.height - 1 - r; // bottom-up
+      var side = (r % 2 === 0) ? 'RS' : 'WS';
+      lines.push('Row ' + (r + 1) + ' (' + side + '): ' + rle(p.rows[y]));
+    }
+    return lines.join('\n');
+  }
+
+  // Printable SVG chart, rows top-down with edge row numbers.
+  function toSvg(p, cell) {
+    cell = cell || 20;
+    var W = p.width * cell, H = p.height * cell, pad = 24;
+    var s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (W + pad * 2) +
+      '" height="' + (H + pad * 2) + '" viewBox="0 0 ' + (W + pad * 2) + ' ' + (H + pad * 2) + '">\n';
+    s += '<rect width="100%" height="100%" fill="white"/>\n';
+    var g = ' transform="translate(' + pad + ',' + pad + ')"';
+    s += '<g' + g + '>\n';
+    for (var y = 0; y < p.height; y++) {
+      for (var x = 0; x < p.width; x++) {
+        s += cellSvg(p.rows[y][x], x * cell, y * cell, cell);
+      }
+    }
+    for (var x2 = 0; x2 <= p.width; x2++) s += '<line x1="' + x2 * cell + '" y1="0" x2="' + x2 * cell + '" y2="' + H + '" stroke="#999" stroke-width="0.5"/>';
+    for (var y2 = 0; y2 <= p.height; y2++) s += '<line x1="0" y1="' + y2 * cell + '" x2="' + W + '" y2="' + y2 * cell + '" stroke="#999" stroke-width="0.5"/>';
+    for (var r = 1; r <= p.height; r++) {
+      if (r % 5 && p.height > 10) continue; // small charts label every row
+      var ty = (p.height - r) * cell + cell / 2;
+      s += '<text x="-4" y="' + (ty + 4) + '" font-size="10" text-anchor="end" font-family="sans-serif">' + r + '</text>';
+    }
+    s += '</g>\n</svg>\n';
+    return s;
+  }
+
+  function cellSvg(code, px, py, c) {
+    var m = c * 0.15, s = '';
+    switch (code) {
+      case 'x': s += '<rect x="' + px + '" y="' + py + '" width="' + c + '" height="' + c + '" fill="#111"/>'; break;
+      case 'h': s += '<rect x="' + (px + c * 0.3) + '" y="' + (py + c * 0.3) + '" width="' + (c * 0.4) + '" height="' + (c * 0.4) + '" fill="#111"/>'; break;
+      case '<': s += '<line x1="' + (px + c) + '" y1="' + (py + c) + '" x2="' + (px + c * 0.15) + '" y2="' + (py + c * 0.15) + '" stroke="#111" stroke-width="2"/>'; break;
+      case '>': s += '<line x1="' + px + '" y1="' + (py + c) + '" x2="' + (px + c * 0.85) + '" y2="' + (py + c * 0.15) + '" stroke="#111" stroke-width="2"/>'; break;
+      case 'a': s += '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) + '" fill="#d33682"/>'; break;
+      case 'b': s += '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) + '" fill="#268bd2" opacity="0.45" stroke="#268bd2"/>'; break;
+      case 'i': s += '<polygon points="' + (px + c / 2) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + c - m) + ' ' + (px + m) + ',' + (py + c - m) + '" fill="#2aa198"/>'; break;
+      case 'd': s += '<polygon points="' + (px + m) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + m) + ' ' + (px + c / 2) + ',' + (py + c - m) + '" fill="#dc322f"/>'; break;
+    }
+    return s;
+  }
+
+  function slug(name) {
+    var s = String(name || 'pattern').toLowerCase()
+      .replace(/[^a-z0-9_-]+/g, '-').replace(/^-+|-+$/g, '').substring(0, 48);
+    return s || 'pattern';
+  }
+
+  /* ---------- canvas rendering (browsers only) ---------- */
+
+  function drawCell(ctx, code, px, py, size) {
+    if (code === '.') return;
+    var c = size, m = c * 0.15;
+    ctx.save();
+    if (code === 'x') {
+      ctx.fillStyle = '#101010';
+      ctx.fillRect(px + 0.5, py + 0.5, c - 1, c - 1);
+    } else if (code === 'h') {
+      ctx.fillStyle = '#101010';
+      ctx.fillRect(px + c * 0.3, py + c * 0.3, c * 0.4, c * 0.4);
+    } else if (code === '<' || code === '>') {
+      ctx.strokeStyle = code === '<' ? '#b58900' : '#cb4b16';
+      ctx.lineWidth = Math.max(1, c * 0.12);
+      ctx.beginPath();
+      if (code === '<') { ctx.moveTo(px + c, py + c); ctx.lineTo(px + c * 0.1, py + c * 0.1); }
+      else { ctx.moveTo(px, py + c); ctx.lineTo(px + c * 0.9, py + c * 0.1); }
+      ctx.stroke();
+    } else if (code === 'a') {
+      ctx.fillStyle = '#d33682';
+      ctx.fillRect(px + m, py + m, c - 2 * m, c - 2 * m);
+    } else if (code === 'b') {
+      ctx.fillStyle = 'rgba(38,139,210,0.45)';
+      ctx.fillRect(px + m, py + m, c - 2 * m, c - 2 * m);
+      ctx.strokeStyle = '#268bd2';
+      ctx.strokeRect(px + m, py + m, c - 2 * m, c - 2 * m);
+    } else if (code === 'i') {
+      ctx.fillStyle = '#2aa198';
+      ctx.beginPath();
+      ctx.moveTo(px + c / 2, py + m); ctx.lineTo(px + c - m, py + c - m); ctx.lineTo(px + m, py + c - m);
+      ctx.closePath(); ctx.fill();
+    } else if (code === 'd') {
+      ctx.fillStyle = '#dc322f';
+      ctx.beginPath();
+      ctx.moveTo(px + m, py + m); ctx.lineTo(px + c - m, py + m); ctx.lineTo(px + c / 2, py + c - m);
+      ctx.closePath(); ctx.fill();
+    } else { // 'k' knit: white cell, needle in working position
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(px + 0.5, py + 0.5, c - 1, c - 1);
+    }
+    ctx.restore();
+  }
+
+  // view: { zoom, ox, oy, showGrid, showNumbers, w, h } -> draws pattern
+  function renderChart(ctx, p, view) {
+    var z = view.zoom, ox = view.ox, oy = view.oy;
+    ctx.fillStyle = '#262626';
+    ctx.fillRect(0, 0, view.w, view.h);
+    var x0 = Math.max(0, Math.floor(-ox / z));
+    var y0 = Math.max(0, Math.floor(-oy / z));
+    var x1 = Math.min(p.width, Math.ceil((view.w - ox) / z));
+    var y1 = Math.min(p.height, Math.ceil((view.h - oy) / z));
+    if (x1 <= x0 || y1 <= y0) return;
+    // background: empty area slightly lighter
+    ctx.fillStyle = '#2e2e2e';
+    ctx.fillRect(ox + x0 * z, oy + y0 * z, (x1 - x0) * z, (y1 - y0) * z);
+    for (var y = y0; y < y1; y++) {
+      var row = p.rows[y];
+      for (var x = x0; x < x1; x++) {
+        drawCell(ctx, row[x], Math.round(ox + x * z), Math.round(oy + y * z), Math.ceil(z));
+      }
+    }
+    if (view.showGrid && z >= 6) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.22)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (var gx = x0; gx <= x1; gx++) {
+        if (gx % 10 === 0) continue;
+        ctx.moveTo(ox + gx * z + 0.5, oy + y0 * z); ctx.lineTo(ox + gx * z + 0.5, oy + y1 * z);
+      }
+      for (var gy = y0; gy <= y1; gy++) {
+        if (gy % 10 === 0) continue;
+        ctx.moveTo(ox + x0 * z, oy + gy * z + 0.5); ctx.lineTo(ox + x1 * z, oy + gy * z + 0.5);
+      }
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(255,255,255,0.55)';
+      ctx.beginPath();
+      for (var gx2 = x0; gx2 <= x1; gx2++) {
+        if (gx2 % 10) continue;
+        ctx.moveTo(ox + gx2 * z + 0.5, oy + y0 * z); ctx.lineTo(ox + gx2 * z + 0.5, oy + y1 * z);
+      }
+      for (var gy2 = y0; gy2 <= y1; gy2++) {
+        if (gy2 % 10) continue;
+        ctx.moveTo(ox + x0 * z, oy + gy2 * z + 0.5); ctx.lineTo(ox + x1 * z, oy + gy2 * z + 0.5);
+      }
+      ctx.stroke();
+    }
+    if (view.showNumbers && z >= 6) {
+      ctx.font = '11px monospace';
+      ctx.fillStyle = '#ccc';
+      ctx.textBaseline = 'middle';
+      for (var r = 1; r <= p.height; r++) {
+        var py = oy + (p.height - r) * z;
+        if (py + z / 2 < oy || py > oy + p.height * z) continue;
+        if (py > view.h || py + z < 0) continue;
+        if (r % 5 === 0) {
+          ctx.fillStyle = r % 10 === 0 ? '#e0a040' : '#aaa';
+          ctx.fillText(String(r), Math.min(view.w - 24, ox + p.width * z + 4), py + z / 2);
+          if (ox > 14) { ctx.textAlign = 'right'; ctx.fillText(String(r), ox - 4, py + z / 2); ctx.textAlign = 'left'; }
+        }
+      }
+      ctx.fillStyle = '#aaa';
+      for (var c = 0; c < p.width; c += 10) {
+        var px = ox + c * z + z * 5;
+        if (px < 0 || px > view.w) continue;
+        ctx.textAlign = 'center';
+        ctx.fillText(String(c), px, Math.max(8, oy - 6));
+        ctx.textAlign = 'left';
+      }
+    }
+    // border
+    ctx.strokeStyle = 'rgba(255,255,255,0.35)';
+    ctx.strokeRect(ox + 0.5, oy + 0.5, p.width * z, p.height * z);
+  }
+
+  function fitView(p, vw, vh, pad) {
+    pad = pad == null ? 40 : pad;
+    var z = Math.max(1, Math.floor(Math.min((vw - pad * 2) / p.width, (vh - pad * 2) / p.height)));
+    return {
+      zoom: z,
+      ox: Math.round((vw - p.width * z) / 2),
+      oy: Math.round((vh - p.height * z) / 2)
+    };
+  }
+
+  return {
+    CODES: CODES, PALETTE: PALETTE, FORMAT: 'knit-studio/1',
+    blank: blank, validate: validate, clone: clone,
+    getCell: getCell, setCell: setCell,
+    resample: resample, resizedGauge: resizedGauge, crop: crop, floodFill: floodFill,
+    imageToChart: imageToChart, sampleImage: sampleImage, loadImageFile: loadImageFile,
+    fromSlicer: fromSlicer,
+    rle: rle, toText: toText, toSvg: toSvg, slug: slug,
+    drawCell: drawCell, renderChart: renderChart, fitView: fitView
+  };
+});
