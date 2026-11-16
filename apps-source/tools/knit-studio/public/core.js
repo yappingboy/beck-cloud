@@ -354,6 +354,133 @@
     return s || 'pattern';
   }
 
+  /* ---------- multi-panel projects ----------
+   * knit-studio-project/1: a garment = named panels, each holding a full
+   * knit-studio/1 chart (+ optional shaping model). Panel ids stay unique
+   * and stable (p1, p2, ...) until removed. */
+  var PANEL_ROLES = ['front', 'back', 'sleeve-left', 'sleeve-right', 'collar',
+    'cuff', 'band', 'hood', 'pocket', 'placket', 'other'];
+
+  function blankProject(name) {
+    return {
+      format: 'knit-studio-project/1',
+      name: name || 'untitled project',
+      gauge: null,
+      panels: [],
+      meta: { tags: [], notes: '' }
+    };
+  }
+
+  function validatePanel(pn, where) {
+    if (!pn || typeof pn !== 'object') throw new Error(where + ': not a panel');
+    if (!pn.id || typeof pn.id !== 'string') throw new Error(where + ': missing id');
+    pn.name = String(pn.name || pn.id);
+    pn.role = PANEL_ROLES.indexOf(pn.role) >= 0 ? pn.role : 'other';
+    if (pn.chart) validate(pn.chart);
+    if (pn.shape != null && typeof pn.shape !== 'object') throw new Error(where + ': bad shape');
+    if (pn.notes == null) pn.notes = '';
+    return pn;
+  }
+
+  function validateProject(p) {
+    if (!p || typeof p !== 'object') throw new Error('not a project object');
+    if (p.format !== 'knit-studio-project/1') throw new Error('unsupported project format: ' + p.format);
+    if (!Array.isArray(p.panels) || p.panels.length > 64) throw new Error('panels must be an array (max 64)');
+    var seen = {};
+    p.panels.forEach(function (pn, i) {
+      validatePanel(pn, 'panel ' + i);
+      if (seen[pn.id]) throw new Error('duplicate panel id: ' + pn.id);
+      seen[pn.id] = 1;
+    });
+    if (!p.meta || typeof p.meta !== 'object') p.meta = { tags: [], notes: '' };
+    if (!Array.isArray(p.meta.tags)) p.meta.tags = [];
+    return p;
+  }
+
+  function nextPanelId(p) {
+    var n = 1;
+    while (p.panels.some(function (x) { return x.id === 'p' + n; })) n++;
+    return 'p' + n;
+  }
+
+  // Add a panel from a validated chart (+ optional shaping model). Returns it.
+  function addPanel(p, chart, name, role, shape) {
+    validate(chart);
+    var pn = {
+      id: nextPanelId(p),
+      name: name || (chart && chart.name) || ('Panel ' + (p.panels.length + 1)),
+      role: PANEL_ROLES.indexOf(role) >= 0 ? role : 'other',
+      chart: chart,
+      shape: shape || null,
+      notes: ''
+    };
+    p.panels.push(pn);
+    return pn;
+  }
+
+  function getPanel(p, id) {
+    for (var i = 0; i < p.panels.length; i++) if (p.panels[i].id === id) return p.panels[i];
+    return null;
+  }
+
+  function removePanel(p, id) {
+    var before = p.panels.length;
+    p.panels = p.panels.filter(function (x) { return x.id !== id; });
+    return p.panels.length < before;
+  }
+
+  // Write an edited chart back into its bound panel.
+  function setPanelChart(p, id, chart) {
+    var pn = getPanel(p, id);
+    if (!pn) return null;
+    validate(chart);
+    pn.chart = chart;
+    return pn;
+  }
+
+  // Stitch/row extents actually used, per panel and total width fit hint.
+  function panelDims(pn) {
+    if (!pn.chart) return { width: 0, height: 0 };
+    return { width: pn.chart.width, height: pn.chart.height };
+  }
+
+  // All-panel instruction text (chart rows + shaping notes).
+  // shapingText defaults to KS.shaping.toText when loaded (browser global or test global).
+  function projectToText(p, shapingText) {
+    var st = shapingText;
+    if (!st && typeof globalThis !== 'undefined' && globalThis.KS && globalThis.KS.shaping) st = globalThis.KS.shaping.toText;
+    var lines = [p.name + ' \u2014 ' + p.panels.length + ' panel' + (p.panels.length === 1 ? '' : 's')];
+    if (p.gauge) lines.push('gauge: ' + p.gauge.stsPer10cm + ' sts x ' + p.gauge.rowsPer10cm + ' rows / 10cm');
+    if (p.meta && p.meta.notes) lines.push(p.meta.notes);
+    p.panels.forEach(function (pn, i) {
+      lines.push('', '===== PANEL ' + String.fromCharCode(65 + i) + ': ' + pn.name +
+        (pn.role !== 'other' ? ' [' + pn.role + ']' : '') + ' =====');
+      if (pn.notes) lines.push(pn.notes);
+      if (pn.chart) {
+        lines.push(toText(pn.chart));
+        if (pn.shape && st) { lines.push(''); lines.push(st(pn.shape)); }
+      } else lines.push('(no chart yet)');
+    });
+    return lines.join('\n');
+  }
+
+  // Build a project straight from slicer output { bounds, panels:[{id,segments}] }.
+  function projectFromSlicer(data, name) {
+    var pats = fromSlicer(data, name || 'project');
+    var proj = blankProject(name || 'sliced project');
+    pats.forEach(function (pt, i) {
+      proj.panels.push({
+        id: nextPanelId(proj),
+        name: 'Panel ' + String.fromCharCode(65 + i),
+        role: 'other',
+        chart: pt,
+        shape: null,
+        notes: 'sliced from SVG'
+      });
+    });
+    return proj;
+  }
+
   /* ---------- canvas rendering (browsers only) ---------- */
 
   function drawCell(ctx, code, px, py, size) {
@@ -487,6 +614,11 @@
     resample: resample, resizedGauge: resizedGauge, crop: crop, floodFill: floodFill,
     imageToChart: imageToChart, sampleImage: sampleImage, loadImageFile: loadImageFile,
     fromSlicer: fromSlicer,
+    PANEL_ROLES: PANEL_ROLES,
+    blankProject: blankProject, validateProject: validateProject,
+    addPanel: addPanel, getPanel: getPanel, removePanel: removePanel,
+    setPanelChart: setPanelChart, panelDims: panelDims,
+    projectToText: projectToText, projectFromSlicer: projectFromSlicer,
     rle: rle, toText: toText, toSvg: toSvg, slug: slug,
     drawCell: drawCell, renderChart: renderChart, fitView: fitView
   };

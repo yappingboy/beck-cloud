@@ -48,10 +48,14 @@ function setTab(t) {
   $('lib').classList.toggle('hidden', t !== 'lib');
   $('conv').classList.toggle('hidden', t !== 'conv');
   $('shape').classList.toggle('hidden', t !== 'shape');
+  $('proj').classList.toggle('hidden', t !== 'proj');
+  $('cam').classList.toggle('hidden', t !== 'cam');
   $('stage').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   $('toolbar').classList.toggle('hidden', t !== 'edit');
   $('side').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   if (t === 'lib') loadLib();
+  if (t === 'proj') loadProjects();
+  if (t === 'cam') camDraw();
   if (t === 'shape') { renderShapeForm(); renderShapeView(); }
   if (t === 'view' && !S.viewPat) status('Viewer: pick a pattern in the library and press View.');
   syncForm();
@@ -297,6 +301,13 @@ function paintAt(c) {
 /* ---------- side panel / form ---------- */
 function syncForm() {
   var p = activePat(), editable = S.tab === 'edit' && !!p;
+  $('projBindBox').classList.toggle('hidden', !(S.tab === 'edit' && S.project && S.boundPanel));
+  if (S.tab === 'edit' && S.project && S.boundPanel) {
+    var pn = KS.getPanel(S.project, S.boundPanel);
+    $('projBindLbl').textContent = pn
+      ? 'Open chart belongs to project "' + S.project.name + '" \u00b7 panel "' + pn.name + '"'
+      : '';
+  }
   ['pName', 'pTags', 'pGSts', 'pGRows', 'pNotes', 'rzW', 'rzH', 'btnResize', 'btnDup']
     .forEach(function (id) { $(id).disabled = !editable; });
   ['btnSave', 'btnSaveAs'].forEach(function (id) { $(id).disabled = S.tab !== 'edit'; });
@@ -947,13 +958,584 @@ function shapeGaugeFromForm() {
   renderShapeView();
 }
 
+/* ---------- projects (multi-panel) ---------- */
+S.project = null;      // knit-studio-project/1 being edited
+S.projectId = null;    // server id once saved
+S.boundPanel = null;   // panel id whose chart is open in the editor
+S.projList = [];
+
+function projectDirty() { dirty(); }
+
+function loadProjects() {
+  api('GET', '/api/projects').then(function (j) {
+    S.projList = j.projects || [];
+    renderProjCards();
+  }).catch(function (e) { status('Projects: ' + e.message, true); });
+}
+
+function renderProjCards() {
+  var q = $('projSearch').value.trim().toLowerCase();
+  var host = $('projCards');
+  host.innerHTML = '';
+  var items = S.projList.filter(function (p) {
+    if (!q) return true;
+    return (p.name + ' ' + (p.tags || []).join(' ')).toLowerCase().indexOf(q) >= 0;
+  });
+  $('projEmpty').classList.toggle('hidden', items.length > 0 || !!S.project);
+  items.forEach(function (p) {
+    var card = document.createElement('div');
+    card.className = 'card';
+    var body = document.createElement('div');
+    body.className = 'body';
+    var when = p.updatedAt ? new Date(p.updatedAt).toLocaleString() : 'never';
+    body.innerHTML = '<div class="name"></div><div class="meta"></div><div class="tags"></div>';
+    body.querySelector('.name').textContent = p.name;
+    body.querySelector('.meta').textContent = p.panels + ' panel' + (p.panels === 1 ? '' : 's') + ' \u00b7 ' + when;
+    var tags = body.querySelector('.tags');
+    (p.tags || []).forEach(function (t) {
+      var c = document.createElement('span'); c.className = 'chip'; c.textContent = t; tags.appendChild(c);
+    });
+    var acts = document.createElement('div');
+    acts.className = 'acts';
+    [['open', 'Open'], ['json', '\u2913'], ['del', '\u2715']].forEach(function (a) {
+      var b = document.createElement('button');
+      b.textContent = a[1];
+      if (a[0] === 'del') b.className = 'danger';
+      b.onclick = function () { projCardAction(a[0], p.id); };
+      acts.appendChild(b);
+    });
+    card.appendChild(body); card.appendChild(acts);
+    host.appendChild(card);
+  });
+}
+
+function projCardAction(act, id) {
+  if (act === 'del') {
+    if (!confirm('Delete project "' + id + '"? Cannot be undone.')) return;
+    api('DELETE', '/api/projects/' + encodeURIComponent(id)).then(function () {
+      if (S.projectId === id) { S.project = null; S.projectId = null; S.boundPanel = null; renderProjectDetail(); }
+      loadProjects();
+    }).catch(function (e) { status(e.message, true); });
+    return;
+  }
+  api('GET', '/api/projects/' + encodeURIComponent(id)).then(function (json) {
+    var p = KS.validateProject(json);
+    if (act === 'json') { download(id + '.project.json', JSON.stringify(p, null, 1), 'application/json'); return; }
+    S.project = p; S.projectId = id; S.boundPanel = null;
+    renderProjectDetail();
+    status('Opened project "' + p.name + '".');
+  }).catch(function (e) { status(e.message, true); });
+}
+
+function newProjectFlow() {
+  var name = prompt('Project name?', 'my-sweater');
+  if (!name) return;
+  S.project = KS.blankProject(name.trim());
+  S.projectId = null; S.boundPanel = null;
+  renderProjectDetail();
+  status('New project \u2014 add panels, then save.');
+}
+
+function projectFromForm() {
+  var p = S.project;
+  if (!p) return p;
+  p.name = $('pjName').value.trim() || 'untitled project';
+  p.meta = p.meta || {};
+  p.meta.tags = $('pjTags').value.split(',').map(function (s) { return s.trim(); }).filter(Boolean);
+  p.meta.notes = $('pjNotes').value;
+  var st = Number($('pjGSts').value), rw = Number($('pjGRows').value);
+  p.gauge = st > 0 && rw > 0 ? { stsPer10cm: st, rowsPer10cm: rw } : null;
+  return p;
+}
+
+function renderProjectDetail() {
+  var p = S.project;
+  $('projEdit').classList.toggle('hidden', !p);
+  if (!p) return;
+  $('pjName').value = p.name || '';
+  $('pjTags').value = (p.meta && p.meta.tags ? p.meta.tags : []).join(', ');
+  $('pjNotes').value = (p.meta && p.meta.notes) || '';
+  $('pjGSts').value = p.gauge ? p.gauge.stsPer10cm : '';
+  $('pjGRows').value = p.gauge ? p.gauge.rowsPer10cm : '';
+  var host = $('pjPanelList');
+  host.innerHTML = '';
+  p.panels.forEach(function (pn, i) {
+    var row = document.createElement('div');
+    row.className = 'panel-row' + (S.boundPanel === pn.id ? ' bound' : '');
+    var letter = document.createElement('b');
+    letter.className = 'pl';
+    letter.textContent = String.fromCharCode(65 + i);
+    row.appendChild(letter);
+    var nm = document.createElement('input');
+    nm.className = 'pname'; nm.value = pn.name; nm.maxLength = 60;
+    nm.onchange = function () { pn.name = nm.value.trim() || pn.id; projectDirty(); };
+    row.appendChild(nm);
+    var role = document.createElement('select');
+    KS.PANEL_ROLES.forEach(function (r) {
+      var o = document.createElement('option'); o.value = r; o.textContent = r; role.appendChild(o);
+    });
+    role.value = pn.role || 'other';
+    role.onchange = function () { pn.role = role.value; projectDirty(); };
+    row.appendChild(role);
+    var d = KS.panelDims(pn);
+    var dims = document.createElement('span');
+    dims.className = 'dims';
+    dims.textContent = pn.chart ? d.width + ' st \u00d7 ' + d.height + ' rows' : 'no chart';
+    row.appendChild(dims);
+    var grow = document.createElement('span'); grow.className = 'grow'; row.appendChild(grow);
+    function btn(txt, title, fn, cls) {
+      var b = document.createElement('button');
+      b.textContent = txt; b.title = title; if (cls) b.className = cls;
+      b.onclick = fn; row.appendChild(b);
+    }
+    btn('\u270e', 'open chart in editor', function () { editPanel(pn.id); });
+    btn('\u2191', 'move up', function () {
+      if (i === 0) return;
+      p.panels.splice(i, 1); p.panels.splice(i - 1, 0, pn);
+      projectDirty(); renderProjectDetail();
+    });
+    btn('\u2193', 'move down', function () {
+      if (i === p.panels.length - 1) return;
+      p.panels.splice(i, 1); p.panels.splice(i + 1, 0, pn);
+      projectDirty(); renderProjectDetail();
+    });
+    btn('\u2715', 'remove panel', function () {
+      if (!confirm('Remove panel ' + String.fromCharCode(65 + i) + ' "' + pn.name + '"?')) return;
+      if (S.boundPanel === pn.id) S.boundPanel = null;
+      KS.removePanel(p, pn.id);
+      projectDirty(); renderProjectDetail();
+    }, 'danger');
+    host.appendChild(row);
+  });
+}
+
+function editPanel(id) {
+  var p = S.project, pn = KS.getPanel(p, id);
+  if (!pn) return;
+  if (!pn.chart) pn.chart = KS.blank(pn.name, 60, 80);
+  S.pat = KS.clone(pn.chart);
+  S.id = null; S.boundPanel = pn.id;
+  resetHist(); clean(); setTab('edit');
+  status('Editing panel "' + pn.name + '" \u2014 push it back into the project when done.');
+}
+
+function pushPanelToProject() {
+  var p = S.project;
+  if (!p || !S.boundPanel || !S.pat) return;
+  syncFromForm();
+  var pn = KS.setPanelChart(p, S.boundPanel, KS.clone(S.pat));
+  if (pn) {
+    projectDirty();
+    status('Panel "' + pn.name + '" updated \u2014 save the project.');
+    if (S.tab !== 'proj') renderProjectDetail();
+  }
+}
+
+function addPanelFrom(kind) {
+  var p = S.project;
+  if (!p) return;
+  projectFromForm();
+  var chart = null, shape = null, name = '';
+  if (kind === 'blank') {
+    var w = Number(prompt('Panel width (stitches)?', '80'));
+    if (!(w >= 1 && w <= 4000)) return;
+    var h = Number(prompt('Panel height (rows)?', '100'));
+    if (!(h >= 1 && h <= 4000)) return;
+    name = 'Panel ' + String.fromCharCode(65 + p.panels.length);
+    chart = KS.blank(name, w, h);
+  } else if (kind === 'shape') {
+    var sh = shapeState();
+    chart = KS.shaping.toPattern(sh);
+    shape = JSON.parse(JSON.stringify(sh));
+    name = sh.name || 'shaped panel';
+  } else if (kind === 'editor') {
+    if (!S.pat) return status('No chart open in the editor.', true);
+    chart = KS.clone(S.pat);
+    name = S.pat.name || 'chart panel';
+    if (S.pat.meta && S.pat.meta.shape) shape = JSON.parse(JSON.stringify(S.pat.meta.shape));
+  }
+  KS.addPanel(p, chart, name, 'other', shape);
+  projectDirty();
+  renderProjectDetail();
+  status('Panel added \u2014 save the project.');
+}
+
+function saveProject() {
+  var p = projectFromForm();
+  if (!p) return;
+  var id = S.projectId || prompt('Save project under which id?', KS.slug(p.name));
+  if (!id) return;
+  id = KS.slug(id);
+  api('PUT', '/api/projects/' + encodeURIComponent(id), KS.clone(p)).then(function (sum) {
+    S.projectId = sum.id;
+    clean();
+    status('Saved project "' + sum.id + '" (' + sum.panels + ' panels).');
+    loadProjects();
+  }).catch(function (e) { status('Save failed: ' + e.message, true); });
+}
+
+function bindProjUI() {
+  bind('btnNewProj', 'click', newProjectFlow);
+  bind('btnProjFile', 'click', function () { $('projFileOpen').click(); });
+  bind('projFileOpen', 'change', function (e) {
+    var f = e.target.files[0];
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        S.project = KS.validateProject(JSON.parse(fr.result));
+        S.projectId = null; S.boundPanel = null;
+        renderProjectDetail();
+        status('Imported ' + f.name + ' \u2014 save to add it to the list.');
+      } catch (err) { status('Bad project file: ' + err.message, true); }
+    };
+    fr.readAsText(f);
+    e.target.value = '';
+  });
+  bind('projSearch', 'input', renderProjCards);
+  ['pjName', 'pjTags', 'pjNotes', 'pjGSts', 'pjGRows'].forEach(function (id) {
+    bind(id, 'change', function () { projectFromForm(); projectDirty(); });
+  });
+  $('pjSave').onclick = saveProject;
+  $('pjClose').onclick = function () {
+    S.project = null; S.projectId = null; S.boundPanel = null;
+    renderProjectDetail(); loadProjects();
+  };
+  $('pjExportTxt').onclick = function () {
+    var p = projectFromForm();
+    if (!p) return;
+    download(KS.slug(p.name) + '-project.txt', KS.projectToText(p), 'text/plain');
+  };
+  $('pjExportJson').onclick = function () {
+    var p = projectFromForm();
+    if (!p) return;
+    download(KS.slug(p.name) + '.project.json', JSON.stringify(p, null, 1), 'application/json');
+  };
+  $('pjAddBlank').onclick = function () { addPanelFrom('blank'); };
+  $('pjAddFromShape').onclick = function () { addPanelFrom('shape'); };
+  $('pjAddFromEditor').onclick = function () { addPanelFrom('editor'); };
+  $('btnPushPanel').onclick = pushPanelToProject;
+}
+
+/* ---------- CAM slicer (S2S tracker port) ---------- */
+var C = {
+  text: null, shapes: null, data: null, name: 'sliced',
+  panelIdx: -1, rows: [], ptr: 0,
+  scale: 25, ox: 40, oy: 40, drag: null
+};
+var camCv = $('camCv'), camCtx = camCv.getContext('2d');
+
+function camPanelLetters() {
+  return (C.data ? C.data.panels : []).map(function (_, i) {
+    return String.fromCharCode(65 + i);
+  });
+}
+
+function camRowsOf(i) {
+  if (!C.data || i < 0 || !C.data.panels[i]) return [];
+  return Object.keys(C.data.panels[i].segments).map(Number).sort(function (a, b) { return a - b; });
+}
+
+function camSelectPanel(i) {
+  C.panelIdx = i;
+  C.rows = camRowsOf(i);
+  C.ptr = 0;
+  renderCamTrack();
+  camDraw();
+}
+
+function camFit() {
+  if (!C.data) return;
+  var w = camCv.clientWidth || 600, h = camCv.clientHeight || 400;
+  var b = C.data.bounds;
+  var zx = (w - 60) / Math.max(1, b[2] - b[0]);
+  var zy = (h - 60) / Math.max(1, b[3] - b[1]);
+  C.scale = Math.max(2, Math.min(40, Math.floor(Math.min(zx, zy))));
+  C.ox = (w - (b[0] + b[2]) * C.scale) / 2;
+  C.oy = (h - (b[1] + b[3]) * C.scale) / 2;
+}
+
+function camDraw() {
+  if (!camCv.clientWidth) return;
+  var w = camCv.clientWidth, h = camCv.clientHeight;
+  var W = Math.round(w * dpr()), H = Math.round(h * dpr());
+  if (camCv.width !== W) camCv.width = W;
+  if (camCv.height !== H) camCv.height = H;
+  camCtx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
+  camCtx.fillStyle = '#121212';
+  camCtx.fillRect(0, 0, w, h);
+  if (!C.data) {
+    camCtx.fillStyle = '#666';
+    camCtx.font = '13px sans-serif';
+    camCtx.fillText('Upload an SVG outline and slice it to see panels here.', 14, 26);
+    return;
+  }
+  var z = C.scale, curRowY = C.panelIdx !== -1 ? C.rows[C.ptr] : null;
+  var letters = camPanelLetters();
+  C.data.panels.forEach(function (panel, pi) {
+    var base = KS.slicer.COLORS[pi % KS.slicer.COLORS.length];
+    var rows = camRowsOf(pi);
+    var prevS = null, prevE = null;
+    rows.forEach(function (y) {
+      var seg = panel.segments[y], sX = seg[0], eX = seg[1];
+      var width = eX - sX;
+      var px = sX * z + C.ox;
+      var py = h - (y * z + C.oy);
+      var even = Math.abs(y) % 2 === 0;
+      var fill = base, alpha = even ? 0.6 : 0.3, outline = true;
+      if (C.panelIdx !== -1) {
+        if (pi < C.panelIdx) { fill = '#333'; }
+        else if (pi === C.panelIdx) {
+          if (y < curRowY) { fill = '#555'; alpha = even ? 0.8 : 0.5; }
+          else if (y === curRowY) { fill = '#ff4d4d'; alpha = 0.9; }
+          else { alpha = even ? 0.4 : 0.15; }
+        } else alpha = even ? 0.15 : 0.05;
+      }
+      camCtx.globalAlpha = alpha;
+      camCtx.fillStyle = fill;
+      camCtx.fillRect(px, py - z, width * z, z);
+      if (C.panelIdx === -1 || pi === C.panelIdx) {
+        camCtx.globalAlpha = 0.8;
+        camCtx.strokeStyle = '#444'; camCtx.lineWidth = 1;
+        camCtx.strokeRect(px, py - z, width * z, z);
+      }
+      void outline;
+      if (z > 10 && (C.panelIdx === -1 || pi === C.panelIdx)) {
+        camCtx.globalAlpha = (C.panelIdx === pi && y === curRowY) ? 1 : (even ? 0.6 : 0.3);
+        camCtx.fillStyle = '#fff';
+        camCtx.font = Math.max(8, z * 0.4) + 'px monospace';
+        camCtx.textAlign = 'center';
+        camCtx.textBaseline = 'middle';
+        for (var x = sX; x < eX; x++) {
+          var ch = 'X';
+          if (prevS === null) ch = 'C';
+          else {
+            var leftI = Math.max(0, prevS - sX), leftD = Math.max(0, sX - prevS);
+            var rightI = Math.max(0, eX - prevE), rightD = Math.max(0, prevE - eX);
+            var idx = x - sX;
+            if (idx < leftI) ch = 'I';
+            else if (idx < leftD) ch = 'D';
+            else if (idx >= width - rightI) ch = 'I';
+            else if (idx >= width - rightD) ch = 'D';
+          }
+          camCtx.fillText(ch, x * z + C.ox + z / 2, h - (y * z + C.oy) - z / 2);
+        }
+      }
+      prevS = sX; prevE = eX;
+    });
+    // panel letters at first row
+    if (rows.length && z > 10) {
+      var y0 = rows[0], seg0 = panel.segments[y0];
+      camCtx.globalAlpha = 0.9; camCtx.fillStyle = '#fff';
+      camCtx.font = 'bold ' + Math.max(10, z * 0.6) + 'px sans-serif';
+      camCtx.textAlign = 'left';
+      camCtx.fillText(letters[pi], seg0[0] * z + C.ox, h - (y0 * z + C.oy) + Math.max(10, z * 0.6));
+    }
+  });
+  camCtx.globalAlpha = 1;
+}
+
+function renderCamTrack() {
+  var box = $('camTrack');
+  if (C.panelIdx === -1 || !C.data) {
+    box.innerHTML = '';
+    var t = document.createElement('div');
+    t.textContent = C.data
+      ? '--- All Panels View --- pick a panel above to track rows and nudge edges.'
+      : 'Slice an SVG to begin.';
+    box.appendChild(t);
+    $('camRow').textContent = 'Row: - / -';
+    return;
+  }
+  var panel = C.data.panels[C.panelIdx];
+  var groups = KS.slicer.condensedGroups(panel);
+  $('camRow').textContent = 'Row: ' + (C.ptr + 1) + ' / ' + C.rows.length;
+  box.innerHTML = '';
+  groups.forEach(function (g) {
+    var d = document.createElement('div');
+    d.textContent = KS.slicer.groupLine(g);
+    if (g.rowIndices.indexOf(C.ptr) >= 0) {
+      d.className = 'active-instruction';
+      box.appendChild(d);
+      d.scrollIntoView({ block: 'nearest' });
+    } else box.appendChild(d);
+  });
+}
+
+function camAfterEdit() {
+  C.rows = camRowsOf(C.panelIdx);
+  if (!C.rows.length) { C.panelIdx = -1; }
+  if (C.ptr >= C.rows.length) C.ptr = Math.max(0, C.rows.length - 1);
+  renderCamTrack();
+  camDraw();
+}
+
+function camSlice() {
+  if (!C.shapes) return status('CAM: load an SVG first.', true);
+  var sel = Number($('camShape').value) || 0;
+  var shape = C.shapes[sel] || C.shapes[0];
+  var st = Number($('camSts').value), rw = Number($('camRows').value);
+  if (!(st > 0 && rw > 0)) return status('CAM: bad gauge.', true);
+  var g = KS.slicer.gaugePerInch(st, rw, $('camUnit').value);
+  try {
+    var data = KS.slicer.slicePolygon(shape.points, g.sts, g.rows);
+    if (!data.panels.length) return status('CAM: shape sliced into zero panels \u2014 too small for this gauge?', true);
+    C.data = data;
+    C.panelIdx = -1; C.rows = []; C.ptr = 0;
+    var sel2 = $('camPanel');
+    sel2.innerHTML = '';
+    var all = document.createElement('option');
+    all.value = '-1'; all.textContent = 'All panels';
+    sel2.appendChild(all);
+    camPanelLetters().forEach(function (L, i) {
+      var o = document.createElement('option');
+      o.value = String(i); o.textContent = 'Panel ' + L;
+      sel2.appendChild(o);
+    });
+    var sts = Object.keys(data.panels[0].segments).length;
+    camFit();
+    renderCamTrack();
+    camDraw();
+    status('Sliced into ' + data.panels.length + ' panel' + (data.panels.length === 1 ? '' : 's') +
+      ' (first panel ' + sts + ' rows).');
+  } catch (e) { status('CAM: ' + e.message, true); }
+}
+
+function bindCamUI() {
+  bind('camFile', 'change', function (e) {
+    var f = e.target.files[0];
+    e.target.value = '';
+    if (!f) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      try {
+        C.text = String(fr.result);
+        C.shapes = KS.slicer.svgToShapes(C.text);
+        C.name = f.name.replace(/\.svg$/i, '') || 'sliced';
+        $('camSrc').textContent = f.name + ' \u2014 ' + C.shapes.length + ' shape' + (C.shapes.length === 1 ? '' : 's');
+        var sel = $('camShape');
+        sel.innerHTML = '';
+        C.shapes.forEach(function (s, i) {
+          var o = document.createElement('option');
+          o.value = String(i);
+          o.textContent = s.id ? (i + 1) + ': ' + s.id : 'Shape ' + (i + 1) + ' (' + s.tag + ')';
+          sel.appendChild(o);
+        });
+        C.data = null; C.panelIdx = -1; C.rows = [];
+        renderCamTrack();
+        camDraw();
+        status('Loaded ' + C.shapes.length + ' shape' + (C.shapes.length === 1 ? '' : 's') + ' \u2014 set gauge and slice.');
+      } catch (err) { C.text = null; C.shapes = null; status('CAM: ' + err.message, true); }
+    };
+    fr.readAsText(f);
+  });
+  bind('camSlice', 'click', camSlice);
+  $('camPanel').onchange = function () { camSelectPanel(Number(this.value)); };
+  $('camPrev').onclick = function () { if (C.ptr > 0) { C.ptr--; renderCamTrack(); camDraw(); } };
+  $('camNext').onclick = function () { if (C.ptr < C.rows.length - 1) { C.ptr++; renderCamTrack(); camDraw(); } };
+  $('camExportTxt').onclick = function () {
+    if (!C.data) return status('CAM: nothing sliced yet.', true);
+    download(KS.slug(C.name) + '-panels.txt', KS.slicer.instructionsText(C.data, C.name), 'text/plain');
+  };
+  $('camToProject').onclick = function () {
+    if (!C.data) return status('CAM: nothing sliced yet.', true);
+    var name = prompt('Project name from these panels?', C.name);
+    if (!name) return;
+    var proj = KS.projectFromSlicer(C.data, name.trim());
+    var id = KS.slug(name);
+    api('PUT', '/api/projects/' + encodeURIComponent(id), proj).then(function (sum) {
+      S.project = proj; S.projectId = sum.id; S.boundPanel = null;
+      status('Project "' + sum.id + '" saved with ' + sum.panels + ' panels.');
+      setTab('proj');
+      renderProjectDetail();
+      loadProjects();
+    }).catch(function (e) { status('CAM save failed: ' + e.message, true); });
+  };
+  $('camOpenChart').onclick = function () {
+    if (!C.data) return status('CAM: nothing sliced yet.', true);
+    if (C.panelIdx === -1) return status('CAM: pick a panel to open as a chart.', true);
+    var pats = KS.fromSlicer(C.data, C.name);
+    S.pat = pats[C.panelIdx]; S.id = null; S.boundPanel = null;
+    resetHist(); clean(); setTab('edit');
+    status('Panel ' + String.fromCharCode(65 + C.panelIdx) + ' opened as a chart.');
+  };
+
+  camCv.addEventListener('pointerdown', function (e) {
+    if (!C.data) return;
+    if (e.shiftKey || e.button === 1 || e.button === 2) {
+      C.drag = { pan: true, sx: e.clientX, sy: e.clientY, ox: C.ox, oy: C.oy };
+      camCv.setPointerCapture(e.pointerId);
+      return;
+    }
+    if (C.panelIdx === -1) return;
+    var r = camCv.getBoundingClientRect();
+    var z = C.scale, h = camCv.clientHeight;
+    var mathX = Math.floor((e.clientX - r.left - C.ox) / z);
+    var mathY = Math.floor((h - (e.clientY - r.top) - C.oy) / z);
+    var panel = C.data.panels[C.panelIdx];
+    var mod = false;
+    var seg = panel.segments[mathY];
+    if (seg !== undefined) {
+      var sX = seg[0], eX = seg[1];
+      if (mathX === sX) sX++;
+      else if (mathX === eX - 1) eX--;
+      else if (mathX === sX - 1) sX--;
+      else if (mathX === eX) eX++;
+      else mod = false;
+      if (mod || true) {
+        if (sX !== seg[0] || eX !== seg[1]) {
+          mod = true;
+          if (sX >= eX) delete panel.segments[mathY];
+          else panel.segments[mathY] = [sX, eX];
+        }
+      }
+    } else if (panel.segments[mathY - 1] !== undefined || panel.segments[mathY + 1] !== undefined) {
+      panel.segments[mathY] = [mathX, mathX + 1];
+      mod = true;
+    }
+    if (mod) {
+      camCv.setPointerCapture(e.pointerId);
+      camAfterEdit();
+    }
+  });
+  camCv.addEventListener('pointermove', function (e) {
+    if (!C.drag || !C.drag.pan) return;
+    C.ox = C.drag.ox + (e.clientX - C.drag.sx);
+    C.oy = C.drag.oy + (e.clientY - C.drag.sy);
+    camDraw();
+  });
+  function camEnd() { C.drag = null; }
+  camCv.addEventListener('pointerup', camEnd);
+  camCv.addEventListener('pointercancel', camEnd);
+  camCv.addEventListener('contextmenu', function (e) { e.preventDefault(); });
+  camCv.addEventListener('wheel', function (e) {
+    if (!C.data) return;
+    e.preventDefault();
+    var r = camCv.getBoundingClientRect();
+    var mx = e.clientX - r.left, my = e.clientY - r.top;
+    var h = camCv.clientHeight;
+    var old = C.scale;
+    C.scale = Math.max(2, Math.min(150, C.scale + e.deltaY * -0.05));
+    C.ox = mx - (mx - C.ox) * (C.scale / old);
+    C.oy = (h - my) - ((h - my) - C.oy) * (C.scale / old);
+    camDraw();
+  }, { passive: false });
+  new ResizeObserver(function () { camDraw(); }).observe($('cam'));
+  renderCamTrack();
+}
+
 /* ---------- keyboard ---------- */
 window.addEventListener('keydown', function (e) {
   if (e.target.matches('input, textarea')) return;
   var k = e.key.toLowerCase();
   if ((e.ctrlKey || e.metaKey) && k === 'z') { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
   if ((e.ctrlKey || e.metaKey) && k === 'y') { e.preventDefault(); redo(); return; }
-  if ((e.ctrlKey || e.metaKey) && k === 's') { e.preventDefault(); if (S.tab === 'edit') savePat(); return; }
+  if ((e.ctrlKey || e.metaKey) && k === 's') {
+    e.preventDefault();
+    if (S.tab === 'edit') savePat();
+    else if (S.tab === 'proj') saveProject();
+    return;
+  }
   if (k === '+' || k === '=') { zoomBy(1.25); return; }
   if (k === '-' || k === '_') { zoomBy(1 / 1.25); return; }
   if (k === '0') { fit(); draw(); return; }
@@ -1026,6 +1608,8 @@ window.addEventListener('beforeunload', function (e) {
 });
 new ResizeObserver(function () { draw(); }).observe($('stage'));
 bindShapeUI();
+bindProjUI();
+bindCamUI();
 
 setTab('lib');
 draw();

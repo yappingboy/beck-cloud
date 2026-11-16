@@ -99,6 +99,43 @@ every, 2*every, … times*every — the Japanese `every-each-times` triplet
 outline handles in the UI edits the triplets (and vice versa); generation
 to a chart pattern is one click (`KS.shaping.toPattern`).
 
+## Project format `knit-studio-project/1`
+
+A garment is a **project**: one JSON document holding several named panels,
+each with its own chart (and the shaping model it came from, when generated).
+
+```json
+{
+  "format": "knit-studio-project/1",
+  "name": "weekend-cardigan",
+  "gauge": { "stsPer10cm": 22, "rowsPer10cm": 30 },
+  "panels": [
+    { "id": "p1", "name": "Back",  "role": "back",
+      "chart": { "format": "knit-studio/1", "...": "full chart" },
+      "shape": null, "notes": "" },
+    { "id": "p2", "name": "Sleeve", "role": "sleeve-left",
+      "chart": { "...": "..." }, "shape": { "format": "knit-studio-shape/1", "...": "..." } }
+  ],
+  "meta": { "tags": ["gift"], "notes": "size M" }
+}
+```
+
+Panel ids (`p1`, `p2`, …) stay unique while the panel lives and are reused
+after removal. Roles: `front, back, sleeve-left, sleeve-right, collar, cuff,
+band, hood, pocket, placket, other`. The Projects tab edits panels in place;
+**Edit** opens a panel chart in the editor, **Update panel chart** pushes the
+edit back. Export produces one instruction sheet covering every panel.
+
+## CAM slicer (S2S)
+
+The **CAM** tab is a dependency-free port of the knitting-slicer service:
+an SVG garment outline (mm) is sliced at your gauge into stitch-row panels
+by scanline, splitting wherever the outline pinches apart. It keeps the
+original tracker: row-by-row karaoke instructions, per-row segment editing
+on the canvas, condensed `Rows 4-15: Dec 1 at each end` groups, `.txt`
+export — plus one-click **Save as project**, so sliced panels land straight
+in a multi-panel project. Engine: `public/slicer.js` (`KS.slicer`).
+
 ## API
 
 - `GET  /api/health`
@@ -106,10 +143,19 @@ to a chart pattern is one click (`KS.shaping.toPattern`).
 - `GET  /api/patterns/:id`      → full pattern JSON
 - `PUT  /api/patterns/:id`      → create/update (body = full pattern, optional `thumb` data-URL)
 - `DELETE /api/patterns/:id`
+- `GET  /api/projects`          → list summaries `{id,name,panels,tags,updatedAt}`
+- `GET  /api/projects/:id`      → full project JSON
+- `PUT  /api/projects/:id`      → create/update (body = full project; panel charts validated)
+- `DELETE /api/projects/:id`
+
+Projects store under `PROJECTS_DIR` (default: `library/projects/` inside the
+library volume, so existing PVCs keep them without manifest changes).
 
 ## Tests
 
 ```sh
-node scripts/selftest.mjs scripts/selftest-shaping.mjs
-node scripts/selftest-shaping.mjs
+npm test                      # all three suites
+node scripts/selftest.mjs             # core model/transforms/exports
+node scripts/selftest-shaping.mjs     # shaping engine
+node scripts/selftest-projects.mjs    # projects + CAM slicer
 ```

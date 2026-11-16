@@ -13,6 +13,8 @@
     <button class="tab active" data-tab="lib">Library</button>
     <button class="tab" data-tab="edit">Editor</button>
     <button class="tab" data-tab="shape">Shaping</button>
+    <button class="tab" data-tab="proj">Projects</button>
+    <button class="tab" data-tab="cam">CAM</button>
     <button class="tab" data-tab="view">Viewer</button>
     <button class="tab" data-tab="conv">Convert</button>
   </nav>
@@ -100,6 +102,83 @@
     </div>
   </section>
 
+  <section id="proj" class="panel-wide hidden">
+    <div class="libbar">
+      <input id="projSearch" placeholder="Search projects\u2026">
+      <button id="btnNewProj" class="primary">New project</button>
+      <button id="btnProjFile" class="secondary">Import JSON\u2026</button>
+      <input type="file" id="projFileOpen" accept=".json" hidden>
+    </div>
+    <div id="projCards" class="cards"></div>
+    <div id="projEmpty" class="hint big hidden">No projects yet. Create one, or slice an SVG in the CAM tab.</div>
+
+    <div id="projEdit" class="proj-edit hidden">
+      <div class="proj-head">
+        <input id="pjName" maxlength="80">
+        <div class="row2">
+          <label>sts / 10cm <input type="number" id="pjGSts" min="1" max="200"></label>
+          <label>rows / 10cm <input type="number" id="pjGRows" min="1" max="200"></label>
+        </div>
+        <label>Tags <input id="pjTags" placeholder="comma,separated"></label>
+        <label>Notes <textarea id="pjNotes" rows="2"></textarea></label>
+        <div class="btn-row">
+          <button id="pjSave" class="primary">Save project <kbd>Ctrl-S</kbd></button>
+          <button id="pjExportTxt" class="secondary">Instructions .txt</button>
+          <button id="pjExportJson" class="secondary">JSON</button>
+          <button id="pjClose" class="secondary">Close</button>
+        </div>
+      </div>
+      <div class="group-label">Panels</div>
+      <div id="pjPanelList"></div>
+      <div class="group-label" style="margin-top:8px">Add panel</div>
+      <div class="btn-row">
+        <button id="pjAddBlank">Blank</button>
+        <button id="pjAddFromShape">From shaping designer</button>
+        <button id="pjAddFromEditor">From open chart</button>
+      </div>
+      <div class="hint">Each panel carries its own chart (+ shaping model when generated). Edit opens it in the editor; \u201cUpdate\u201d writes the chart back. Export gives all panels as one instruction sheet.</div>
+    </div>
+  </section>
+
+  <section id="cam" class="panel-wide hidden">
+    <div class="cam-grid">
+      <div class="cam-form">
+        <h3>S2S CAM slicer</h3>
+        <p class="hint">Upload a garment outline as SVG (mm). It is sliced at your gauge into stitch-row panels, split automatically where the outline separates.</p>
+        <label>Outline SVG <input type="file" id="camFile" accept=".svg,image/svg+xml"></label>
+        <div id="camSrc" class="hint">No file loaded.</div>
+        <label>Shape <select id="camShape"></select></label>
+        <div class="row2">
+          <label>sts <input type="number" id="camSts" value="22" min="1" max="400"></label>
+          <label>rows <input type="number" id="camRows" value="30" min="1" max="400"></label>
+        </div>
+        <label>per <select id="camUnit"><option value="100mm">100 mm</option><option value="inch">inch</option></select></label>
+        <div class="btn-row">
+          <button id="camSlice" class="primary">Slice</button>
+        </div>
+        <div class="group-label" style="margin-top:6px">Output</div>
+        <div class="btn-col">
+          <button id="camToProject" class="primary">Save as project\u2026</button>
+          <button id="camOpenChart" class="secondary">Open panel as chart</button>
+          <button id="camExportTxt" class="secondary">Instructions .txt</button>
+        </div>
+      </div>
+      <div class="cam-view">
+        <div class="cam-bar">
+          <label>Panel <select id="camPanel"><option value="-1">All panels</option></select></label>
+          <div class="tracker-controls">
+            <button id="camPrev">&laquo; Prev</button>
+            <span id="camRow">Row: - / -</span>
+            <button id="camNext">Next &raquo;</button>
+          </div>
+        </div>
+        <div id="camTrack" class="karaoke"></div>
+        <canvas id="camCv"></canvas>
+        <div class="hint">Click a row edge to nudge it (adds/removes a stitch; click inside the ends to split a row). Shift+drag pan \u00b7 wheel zoom \u00b7 tracker follows row-by-row like the CAM original.</div>
+      </div>
+    </div>
+  </section>
+
   <section id="conv" class="panel-wide hidden">
     <div class="conv-grid">
       <div class="conv-form">
@@ -143,6 +222,11 @@
       </div>
       <label>Notes <textarea id="pNotes" rows="3"></textarea></label>
     </div>
+    <div class="group btn-col hidden" id="projBindBox">
+      <div class="group-label">Project panel</div>
+      <div class="hint" id="projBindLbl"></div>
+      <button id="btnPushPanel" class="secondary">Update panel chart</button>
+    </div>
     <div class="group">
       <div class="group-label">Resize (resample)</div>
       <div class="row2">
@@ -170,6 +254,7 @@
 
 <script src="core.js"></script>
 <script src="shaping.js"></script>
+<script src="slicer.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

@@ -11,6 +11,9 @@ const PUB = path.join(ROOT, 'public');
 const LIB = process.env.LIBRARY_DIR
   ? path.resolve(process.env.LIBRARY_DIR)
   : path.join(ROOT, 'library');
+const PROJ = process.env.PROJECTS_DIR
+  ? path.resolve(process.env.PROJECTS_DIR)
+  : path.join(LIB, 'projects');
 const MAX_BODY = 8 * 1024 * 1024;
 const ID_RE = /^[a-zA-Z0-9][a-zA-Z0-9_-]{0,63}$/;
 
@@ -25,6 +28,7 @@ const MIME = {
 };
 
 fs.mkdirSync(LIB, { recursive: true });
+fs.mkdirSync(PROJ, { recursive: true });
 
 function send(res, code, body, type) {
   const buf = Buffer.isBuffer(body) ? body : Buffer.from(body);
@@ -55,6 +59,37 @@ function readBody(req) {
 function fileFor(id) {
   if (!ID_RE.test(id)) return null;
   return path.join(LIB, id + '.json');
+}
+
+function projFileFor(id) {
+  if (!ID_RE.test(id)) return null;
+  return path.join(PROJ, id + '.json');
+}
+
+function summarizeProject(id, p) {
+  return {
+    id,
+    name: p.name || id,
+    panels: Array.isArray(p.panels) ? p.panels.length : 0,
+    tags: (p.meta && p.meta.tags) || [],
+    updatedAt: p.updatedAt || null
+  };
+}
+
+function listProjects() {
+  const out = [];
+  try {
+    for (const f of fs.readdirSync(PROJ)) {
+      if (!f.endsWith('.json')) continue;
+      const id = f.slice(0, -5);
+      if (!ID_RE.test(id)) continue;
+      try {
+        out.push(summarizeProject(id, JSON.parse(fs.readFileSync(path.join(PROJ, f), 'utf8'))));
+      } catch (e) { /* skip corrupt */ }
+    }
+  } catch (e) { /* dir missing */ }
+  out.sort((a, b) => String(b.updatedAt || '').localeCompare(String(a.updatedAt || '')));
+  return out;
 }
 
 function summarize(id, p) {
@@ -121,6 +156,54 @@ async function api(req, res, url) {
       fs.writeFileSync(tmp, JSON.stringify(body, null, 1));
       fs.renameSync(tmp, fp); // atomic-ish: no half-written library files
       return json(res, 200, summarize(body.id, body));
+    }
+
+    if (req.method === 'DELETE') {
+      if (!fs.existsSync(fp)) return bad(res, 404, 'not found');
+      fs.unlinkSync(fp);
+      return json(res, 200, { deleted: decodeURIComponent(parts[2]) });
+    }
+    return bad(res, 405, 'method not allowed');
+  }
+
+  if (parts[1] === 'projects') {
+    if (parts.length === 2) {
+      if (req.method === 'GET') return json(res, 200, { projects: listProjects() });
+      return bad(res, 405, 'method not allowed');
+    }
+    const fp = projFileFor(decodeURIComponent(parts[2]));
+    if (!fp) return bad(res, 400, 'invalid project id');
+
+    if (req.method === 'GET') {
+      if (!fs.existsSync(fp)) return bad(res, 404, 'not found');
+      try { return send(res, 200, fs.readFileSync(fp), MIME['.json']); }
+      catch (e) { return bad(res, 500, 'unreadable project file'); }
+    }
+
+    if (req.method === 'PUT' || req.method === 'POST') {
+      let body;
+      try { body = JSON.parse((await readBody(req)).toString('utf8')); }
+      catch (e) { return bad(res, 400, 'invalid JSON: ' + e.message); }
+      if (!body || body.format !== 'knit-studio-project/1') return bad(res, 400, 'body must be a knit-studio-project/1 project');
+      if (!Array.isArray(body.panels) || body.panels.length > 64) return bad(res, 400, 'panels must be an array (max 64)');
+      for (const pn of body.panels) {
+        if (!pn || typeof pn.id !== 'string') return bad(res, 400, 'every panel needs an id');
+        if (pn.chart) {
+          if (pn.chart.format !== 'knit-studio/1') return bad(res, 400, 'panel chart must be knit-studio/1');
+          if (!(Number.isInteger(pn.chart.width) && Number.isInteger(pn.chart.height) &&
+                pn.chart.width > 0 && pn.chart.width <= 4000 && pn.chart.height <= 4000) ||
+              !Array.isArray(pn.chart.rows) || pn.chart.rows.length !== pn.chart.height ||
+              pn.chart.rows.some((r) => typeof r !== 'string' || r.length !== pn.chart.width)) {
+            return bad(res, 400, 'panel chart rows do not match width/height');
+          }
+        }
+      }
+      body.id = decodeURIComponent(parts[2]);
+      body.updatedAt = new Date().toISOString();
+      const tmp = fp + '.tmp';
+      fs.writeFileSync(tmp, JSON.stringify(body, null, 1));
+      fs.renameSync(tmp, fp);
+      return json(res, 200, summarizeProject(body.id, body));
     }
 
     if (req.method === 'DELETE') {
