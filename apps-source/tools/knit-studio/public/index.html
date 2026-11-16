@@ -148,6 +148,13 @@
         <label>Outline SVG <input type="file" id="camFile" accept=".svg,image/svg+xml"></label>
         <div id="camSrc" class="hint">No file loaded.</div>
         <label>Shape <select id="camShape"></select></label>
+        <label>SVG scale <select id="camUnits">
+          <option value="auto">Auto-detect from file (recommended)</option>
+          <option value="mm">Override: 1 unit = 1 mm</option>
+          <option value="px">Override: 1 unit = 1 px (96 dpi)</option>
+          <option value="cm">Override: 1 unit = 1 cm</option>
+          <option value="in">Override: 1 unit = 1 inch</option>
+        </select></label>
         <div class="row2">
           <label>sts <input type="number" id="camSts" value="22" min="1" max="400"></label>
           <label>rows <input type="number" id="camRows" value="30" min="1" max="400"></label>

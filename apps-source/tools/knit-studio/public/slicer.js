@@ -13,6 +13,63 @@
   var COLORS = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
     '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf'];
 
+  /* ---------- SVG scale detection ----------
+   * Pure text inspection of the root <svg> tag: width/height (with units)
+   * vs viewBox -> millimetres per user unit. Without this, px-based exports
+   * (browser/Figma/Illustrator "Web" presets) slice ~3.8x oversized and
+   * mm drafts read as px misplace scale by 25.4x — the "scale is incredibly
+   * wrong" bug.
+   */
+  var MM_PX = 25.4 / 96; // 1 CSS px = 0.264583 mm
+  var UNIT_TO_MM = { mm: 1, cm: 10, in: 25.4, px: MM_PX, pt: 25.4 / 72 };
+
+  function parseLen(s) {
+    var m = /^\s*(-?[\d.]+(?:e[-+]?\d+)?)\s*(mm|cm|in|px|pt)?\s*$/i.exec(String(s == null ? '' : s));
+    if (!m) return null;
+    var v = parseFloat(m[1]);
+    if (!isFinite(v) || v <= 0) return null;
+    var u = (m[2] || 'px').toLowerCase();
+    return { mm: v * UNIT_TO_MM[u], unit: u };
+  }
+
+  // -> { mmPerUnit, source } ; mmPerUnit = millimetres per SVG user unit
+  function detectSvgUnits(svgText) {
+    var tag = /<svg\b[^>]*>/i.exec(String(svgText || ''));
+    if (!tag) return { mmPerUnit: 1, source: 'no <svg> tag found - assuming mm' };
+    var attrs = tag[0];
+    function attr(n) {
+      var m = new RegExp('\\b' + n + '\\s*=\\s*["\']([^"\']*)["\']', 'i').exec(attrs);
+      return m ? m[1] : null;
+    }
+    var w = parseLen(attr('width'));
+    var h = parseLen(attr('height'));
+    var vbRaw = attr('viewBox');
+    var vbNums = vbRaw ? (vbRaw.match(/-?\d*\.?\d+(?:e[-+]?\d+)?/gi) || []).map(Number) : null;
+    if (vbNums && vbNums.length === 4 && vbNums[2] > 0 && vbNums[3] > 0) {
+      var vbw = vbNums[2], vbh = vbNums[3];
+      if (w && h) {
+        // preserveAspectRatio meet: uniform scale is the smaller ratio
+        var s2 = Math.min(w.mm / vbw, h.mm / vbh);
+        return { mmPerUnit: s2, source: 'viewBox ' + vbw + 'x' + vbh + ' fit to ' +
+          w.mm.toFixed(1) + 'x' + h.mm.toFixed(1) + ' mm viewport' };
+      }
+      if (w) return { mmPerUnit: w.mm / vbw, source: 'viewBox width ' + vbw + ' fit to ' + w.mm.toFixed(1) + ' mm' };
+      if (h) return { mmPerUnit: h.mm / vbh, source: 'viewBox height ' + vbh + ' fit to ' + h.mm.toFixed(1) + ' mm' };
+      return { mmPerUnit: 1, source: 'viewBox only, no size - assuming 1 unit = 1 mm (drafting convention)' };
+    }
+    if (w || h) {
+      return { mmPerUnit: MM_PX, source: 'width/height without viewBox - user units are CSS px per SVG spec (96 dpi)' };
+    }
+    return { mmPerUnit: 1, source: 'no width/height/viewBox - assuming 1 unit = 1 mm' };
+  }
+
+  // units: auto|mm|px|cm|in ; 'auto' uses detection. -> mmPerUnit number
+  function unitsToMmPerUnit(units, detected) {
+    if (!units || units === 'auto') return (detected && detected.mmPerUnit) || 1;
+    if (UNIT_TO_MM[units]) return UNIT_TO_MM[units];
+    return (detected && detected.mmPerUnit) || 1;
+  }
+
   /* ---------- gauge ---------- */
 
   // sts/rows given per 100mm or per inch -> per inch
@@ -178,9 +235,13 @@
    * units (mm for garment drafts), y flipped UP, origin normalized to the
    * shape's own min. defs/symbol/marker/pattern/clipPath/mask subtrees are
    * skipped so template art never becomes fabric. */
-  function svgToShapes(svgText, resolution) {
+  function svgToShapes(svgText, opts) {
     if (typeof document === 'undefined') throw new Error('svgToShapes needs a browser DOM');
-    resolution = resolution || 200;
+    opts = opts || {};
+    var resolution = opts.resolution || 200;
+    var detected = detectSvgUnits(svgText);
+    var mmPerUnit = unitsToMmPerUnit(opts.units, detected);
+    var perInch = mmPerUnit / 25.4; // user units -> inches
     var host = document.createElement('div');
     host.style.cssText = 'position:absolute;left:-10000px;top:0;width:1000px;height:1000px;opacity:0;pointer-events:none;z-index:-1';
     host.innerHTML = svgText;
@@ -216,7 +277,7 @@
         if (pts.length < 3) continue;
         var minX = Infinity, minY = Infinity;
         pts.forEach(function (p) { if (p[0] < minX) minX = p[0]; if (p[1] < minY) minY = p[1]; });
-        pts = pts.map(function (p) { return [p[0] - minX, p[1] - minY]; });
+        pts = pts.map(function (p) { return [(p[0] - minX) * perInch, (p[1] - minY) * perInch]; });
         shapes.push({
           index: shapes.length,
           id: el.id || '',
@@ -225,14 +286,16 @@
         });
       }
       if (!shapes.length) throw new Error('no drawable shapes found in SVG');
-      return shapes;
+      return { shapes: shapes, mmPerUnit: mmPerUnit, detected: detected };
     } finally {
       document.body.removeChild(host);
     }
   }
 
   return {
-    COLORS: COLORS,
+    COLORS: COLORS, MM_PX: MM_PX,
+    detectSvgUnits: detectSvgUnits,
+    unitsToMmPerUnit: unitsToMmPerUnit,
     gaugePerInch: gaugePerInch,
     slicePolygon: slicePolygon,
     instructionMap: instructionMap,

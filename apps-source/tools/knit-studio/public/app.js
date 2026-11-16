@@ -1219,7 +1219,7 @@ function bindProjUI() {
 
 /* ---------- CAM slicer (S2S tracker port) ---------- */
 var C = {
-  text: null, shapes: null, data: null, name: 'sliced',
+  text: null, shapes: null, data: null, name: 'sliced', mmPerUnit: 1, detected: null,
   panelIdx: -1, rows: [], ptr: 0,
   scale: 25, ox: 40, oy: 40, drag: null
 };
@@ -1392,13 +1392,30 @@ function camSlice() {
       o.value = String(i); o.textContent = 'Panel ' + L;
       sel2.appendChild(o);
     });
-    var sts = Object.keys(data.panels[0].segments).length;
     camFit();
     renderCamTrack();
     camDraw();
-    status('Sliced into ' + data.panels.length + ' panel' + (data.panels.length === 1 ? '' : 's') +
-      ' (first panel ' + sts + ' rows).');
+    var wCm = (data.bounds[2] - data.bounds[0]) / g.sts * 2.54;
+    var hCm = (data.bounds[3] - data.bounds[1]) / g.rows * 2.54;
+    status('Sliced ' + data.panels.length + ' panel' + (data.panels.length === 1 ? '' : 's') +
+      ' \u00b7 ' + Math.round(wCm) + ' x ' + Math.round(hCm) + ' cm at this gauge \u00b7 scale ' + C.mmPerUnit.toFixed(3) + ' mm/unit.');
   } catch (e) { status('CAM: ' + e.message, true); }
+}
+
+function camParse() {
+  var res = KS.slicer.svgToShapes(C.text, { units: $('camUnits').value });
+  C.shapes = res.shapes;
+  C.mmPerUnit = res.mmPerUnit;
+  C.detected = res.detected;
+  var sel = $('camShape');
+  sel.innerHTML = '';
+  C.shapes.forEach(function (sh, i) {
+    var o = document.createElement('option');
+    o.value = String(i);
+    o.textContent = sh.id ? (i + 1) + ': ' + sh.id : 'Shape ' + (i + 1) + ' (' + sh.tag + ')';
+    sel.appendChild(o);
+  });
+  return res;
 }
 
 function bindCamUI() {
@@ -1410,26 +1427,28 @@ function bindCamUI() {
     fr.onload = function () {
       try {
         C.text = String(fr.result);
-        C.shapes = KS.slicer.svgToShapes(C.text);
+        camParse();
         C.name = f.name.replace(/\.svg$/i, '') || 'sliced';
-        $('camSrc').textContent = f.name + ' \u2014 ' + C.shapes.length + ' shape' + (C.shapes.length === 1 ? '' : 's');
-        var sel = $('camShape');
-        sel.innerHTML = '';
-        C.shapes.forEach(function (s, i) {
-          var o = document.createElement('option');
-          o.value = String(i);
-          o.textContent = s.id ? (i + 1) + ': ' + s.id : 'Shape ' + (i + 1) + ' (' + s.tag + ')';
-          sel.appendChild(o);
-        });
+        $('camSrc').textContent = f.name + ' \u2014 ' + C.shapes.length + ' shape' + (C.shapes.length === 1 ? '' : 's') +
+          ' \u00b7 scale: ' + C.mmPerUnit.toFixed(3) + ' mm/unit';
         C.data = null; C.panelIdx = -1; C.rows = [];
         renderCamTrack();
         camDraw();
-        status('Loaded ' + C.shapes.length + ' shape' + (C.shapes.length === 1 ? '' : 's') + ' \u2014 set gauge and slice.');
+        status('Loaded \u00b7 scale ' + C.mmPerUnit.toFixed(3) + ' mm/unit \u2014 ' + C.detected.source + '. Set gauge and slice.');
       } catch (err) { C.text = null; C.shapes = null; status('CAM: ' + err.message, true); }
     };
     fr.readAsText(f);
   });
   bind('camSlice', 'click', camSlice);
+  bind('camUnits', 'change', function () {
+    if (!C.text) return;
+    try { camParse(); } catch (e) { return status('CAM: ' + e.message, true); }
+    C.data = null; C.panelIdx = -1; C.rows = [];
+    $('camSrc').textContent = $('camSrc').textContent.replace(/\u00b7 scale:.*$/,
+      '\u00b7 scale: ' + C.mmPerUnit.toFixed(3) + ' mm/unit');
+    renderCamTrack(); camDraw();
+    status('Scale ' + C.mmPerUnit.toFixed(3) + ' mm/unit \u2014 ' + C.detected.source + '.');
+  });
   $('camPanel').onchange = function () { camSelectPanel(Number(this.value)); };
   $('camPrev').onclick = function () { if (C.ptr > 0) { C.ptr--; renderCamTrack(); camDraw(); } };
   $('camNext').onclick = function () { if (C.ptr < C.rows.length - 1) { C.ptr++; renderCamTrack(); camDraw(); } };

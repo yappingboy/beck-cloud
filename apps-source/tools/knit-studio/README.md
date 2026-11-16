@@ -136,6 +136,15 @@ on the canvas, condensed `Rows 4-15: Dec 1 at each end` groups, `.txt`
 export — plus one-click **Save as project**, so sliced panels land straight
 in a multi-panel project. Engine: `public/slicer.js` (`KS.slicer`).
 
+**Scale detection:** on import the root `<svg>` tag is inspected and a
+millimetres-per-user-unit scale is derived (width/height units vs viewBox,
+`preserveAspectRatio=meet` math, CSS-px fallback at 96 dpi). Points are
+converted to inches before slicing, so px exports and mm drafts land at the
+same gauge. The status line reports the resolved scale and its reason; a
+**SVG scale** dropdown forces mm / px / cm / inch when the file lies about
+itself. After slicing, the status shows the physical size (`42 x 58 cm at
+this gauge`) so bad scales can't sneak by.
+
 ## API
 
 - `GET  /api/health`

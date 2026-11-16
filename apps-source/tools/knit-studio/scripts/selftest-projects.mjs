@@ -19,6 +19,78 @@ function eq(a, b, msg) {
 
 /* ---------- slicer: scanline slicing ---------- */
 
+/* ---------- SVG scale detection ---------- */
+
+t('detect: mm viewport == viewBox -> 1 mm/unit', () => {
+  const d = SL.detectSvgUnits('<svg width="210mm" height="297mm" viewBox="0 0 210 297"><rect/></svg>');
+  if (Math.abs(d.mmPerUnit - 1) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('detect: px width with mm viewBox scales down', () => {
+  // 794px wide showing 210 viewBox units -> px mm (0.2646) * 794/210
+  const d = SL.detectSvgUnits('<svg xmlns:x="y" width="794" height="1123" viewBox="0 0 210 297"/>');
+  if (Math.abs(d.mmPerUnit - (794 * SL.MM_PX / 210)) > 1e-6) throw new Error(d.mmPerUnit);
+});
+
+t('detect: inch units', () => {
+  const d = SL.detectSvgUnits('<svg width="8in" height="10in" viewBox="0 0 80 100">');
+  if (Math.abs(d.mmPerUnit - 25.4 / 10) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('detect: cm units', () => {
+  const d = SL.detectSvgUnits('<svg width="20cm" height="30cm" viewBox="0 0 200 300">');
+  if (Math.abs(d.mmPerUnit - 1) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('detect: viewBox-only assumes mm', () => {
+  const d = SL.detectSvgUnits('<svg viewBox="0 0 100 150"><path d="M0 0"/></svg>');
+  if (d.mmPerUnit !== 1) throw new Error(d.mmPerUnit);
+  if (!d.source.includes('1 mm')) throw new Error(d.source);
+});
+
+t('detect: width without viewBox is CSS px', () => {
+  const d = SL.detectSvgUnits('<svg width="800" height="600"><path/></svg>');
+  if (Math.abs(d.mmPerUnit - SL.MM_PX) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('detect: preserveAspectRatio meet uses smaller ratio', () => {
+  // viewBox 100x100 into 200x100mm viewport -> y binds: 1 mm/unit
+  const d = SL.detectSvgUnits('<svg width="200mm" height="100mm" viewBox="0 0 100 100">');
+  if (Math.abs(d.mmPerUnit - 1) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('detect: no svg tag -> mm fallback', () => {
+  const d = SL.detectSvgUnits('not an svg at all');
+  if (d.mmPerUnit !== 1) throw new Error('fallback should be 1');
+});
+
+t('units override map', () => {
+  if (SL.unitsToMmPerUnit('px', null) !== SL.MM_PX) throw new Error('px');
+  if (SL.unitsToMmPerUnit('in', null) !== 25.4) throw new Error('in');
+  if (SL.unitsToMmPerUnit('cm', null) !== 10) throw new Error('cm');
+  if (SL.unitsToMmPerUnit('auto', { mmPerUnit: 3.5 }) !== 3.5) throw new Error('auto uses detected');
+  if (SL.unitsToMmPerUnit('bogus', { mmPerUnit: 2.5 }) !== 2.5) throw new Error('bogus falls back to detected');
+});
+
+t('detect: quoted viewBox and decimal lengths', () => {
+  // 10.5in = 266.7 mm across 105 viewBox units -> 2.54 mm per unit
+  const d = SL.detectSvgUnits("<svg width='10.5in' height='10in' viewBox='0 0 105 100'>");
+  if (Math.abs(d.mmPerUnit - 2.54) > 1e-9) throw new Error(d.mmPerUnit);
+});
+
+t('mm-outline slice at gauge lands in sane stitch range', () => {
+  // 100mm x 100mm square, 1 mm/unit -> 3.937in -> ~8.7 sts at 22/100mm
+  // 100 mm square at 22 sts / 30 rows per 100 mm -> 22 sts x 30 rows
+  const d = SL.detectSvgUnits('<svg width="100mm" height="100mm" viewBox="0 0 100 100">');
+  const mm = d.mmPerUnit;
+  const inch = (u) => [u[0] * mm / 25.4, u[1] * mm / 25.4];
+  const g = SL.gaugePerInch(22, 30, '100mm');
+  const r = SL.slicePolygon([[0, 0], [100, 0], [100, 100], [0, 100]].map(inch), g.sts, g.rows);
+  const rows = Object.keys(r.panels[0].segments).length;
+  if (rows < 29 || rows > 31) throw new Error('rows ' + rows + ' want ~30');
+  const w = r.panels[0].segments['15'];
+  if (w[1] - w[0] < 21 || w[1] - w[0] > 22) throw new Error('width ' + (w[1] - w[0]) + ' want 22 sts');
+});
 t('slice rectangle -> one full-width panel', () => {
   // 10 x 4 units, y-up, origin 0
   const r = SL.slicePolygon([[0, 0], [10, 0], [10, 4], [0, 4]], 1, 1);
