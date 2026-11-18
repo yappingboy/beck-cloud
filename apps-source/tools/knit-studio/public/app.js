@@ -697,7 +697,7 @@ function segRow(side, seg, i) {
 function addSeg(side, kind) {
   var seg = kind === 'straight'
     ? { kind: 'straight', rows: 10 }
-    : { kind: kind, every: 6, each: 1, times: 2, transfer: false };
+    : { kind: kind, every: 1, each: 1, times: 1, transfer: false };
   SShape.edges[side].push(seg);
   shapeMirrorSync(side); shapeApply();
 }
