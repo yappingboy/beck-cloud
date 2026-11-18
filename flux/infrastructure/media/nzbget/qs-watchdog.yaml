@@ -1,0 +1,239 @@
+# nzbget queue-script dispatcher watchdog.
+#
+# nzbget 26.3 intermittently stops dispatching extension scripts:
+# QueueScriptCount freezes above zero with no script child processes and
+# post-processing stops while downloads keep running (observed 2026-11-16
+# and 2026-11-18, ~22h apart). The rarer variant is a full core deadlock
+# where XML-RPC status() never answers while the web server thread still
+# returns 200 (2026-11-15). Upstream has no fix release (26.3 is latest).
+#
+# The watchdog samples status() twice 90s apart over XML-RPC:
+#   - status() unresponsive in both samples  -> core deadlock
+#   - QueueScriptCount >= threshold and all three counts identical
+#     -> dispatcher stall
+# Both verdicts heal by deleting the pod (proven recovery; queue state
+# survives). Cooldown: refuses to act on pods younger than 30 min, skips
+# while >1 Running pod or just after a scheduler boundary (:00/:15/:30/:45
+# +3 min, when the Completion script legitimately freezes events for
+# seconds). Runs every 10 min; RBAC is pods get/list/delete in media only.
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: nzbget-qs-watchdog
+  namespace: media
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: nzbget-qs-watchdog
+  namespace: media
+rules:
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: nzbget-qs-watchdog
+  namespace: media
+subjects:
+  - kind: ServiceAccount
+    name: nzbget-qs-watchdog
+    namespace: media
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: Role
+  name: nzbget-qs-watchdog
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nzbget-qs-watchdog
+  namespace: media
+data:
+  qs_watchdog.py: |
+    #!/usr/bin/env python3
+    """nzbget queue-script dispatcher watchdog (stdlib only)."""
+    import json
+    import os
+    import re
+    import ssl
+    import time
+    import urllib.error
+    import urllib.request
+    from datetime import datetime
+
+    NS = "media"
+    NR_URL = "http://nzbget.media.svc.cluster.local:6789/xmlrpc"
+    API = "https://kubernetes.default.svc"
+    TOKEN_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/token"
+    CA_PATH = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
+    THRESHOLD = int(os.environ.get("QS_THRESHOLD", "50"))
+    DRY_RUN = os.environ.get("WATCHDOG_DRYRUN", "").lower() == "true"
+    FORCE_STALL = os.environ.get("WATCHDOG_FORCE_STALL", "").lower() == "true"
+    SAMPLE_GAP = 90
+    MIN_POD_AGE = 1800
+    BOUNDARY_GUARD = ("dispatcher-stall", 3)
+
+    def log(msg):
+        print(time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()), msg, flush=True)
+
+    def rpc_status(timeout=15):
+        body = (b'<?xml version="1.0"?><methodCall><methodName>status'
+                b'</methodName><params/></methodCall>')
+        req = urllib.request.Request(
+            NR_URL, data=body, headers={"Content-Type": "text/xml"})
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = resp.read().decode("utf-8", "replace")
+        out = {}
+        for field in ("QueueScriptCount", "ParJobCount", "PostJobCount"):
+            m = re.search("<name>%s</name><value><[a-z0-9]+>(-?\\d+)" % field, data)
+            if not m:
+                raise ValueError("field missing from status(): " + field)
+            out[field] = int(m.group(1))
+        return out
+
+    def once():
+        try:
+            return rpc_status()
+        except Exception as exc:
+            log("status() failed: %r, retrying in 5s" % (exc,))
+            time.sleep(5)
+            try:
+                return rpc_status()
+            except Exception as exc2:
+                log("status() failed again: %r" % (exc2,))
+                return None
+
+    def k8s(method, path):
+        req = urllib.request.Request(
+            API + path, method=method,
+            headers={"Authorization": "Bearer " + open(TOKEN_PATH).read()})
+        ctx = ssl.create_default_context(cafile=CA_PATH)
+        try:
+            with urllib.request.urlopen(req, timeout=15, context=ctx) as resp:
+                return resp.getcode(), json.loads(resp.read() or b"{}")
+        except urllib.error.HTTPError as exc:
+            return exc.code, json.loads(exc.read() or b"{}")
+
+    def running_pods():
+        code, body = k8s(
+            "GET", "/api/v1/namespaces/" + NS + "/pods?labelSelector=app%3Dnzbget")
+        if code != 200:
+            raise RuntimeError("pod list failed: %s %s" % (code, body))
+        pods = []
+        for p in body.get("items", []):
+            meta, st = p.get("metadata", {}), p.get("status", {})
+            if st.get("phase") == "Running" and not meta.get("deletionTimestamp"):
+                created = datetime.fromisoformat(
+                    meta["creationTimestamp"].replace("Z", "+00:00")).timestamp()
+                pods.append((meta["name"], created))
+        return pods
+
+    def main():
+        log("watchdog start threshold=%d dry_run=%s" % (THRESHOLD, DRY_RUN))
+        verdict = None
+        if FORCE_STALL:
+            log("FORCE_STALL test hook: fabricating frozen samples")
+            frozen = {"QueueScriptCount": 999, "ParJobCount": 999, "PostJobCount": 999}
+            ok, pair = True, (dict(frozen), dict(frozen))
+        else:
+            a = once()
+            time.sleep(SAMPLE_GAP)
+            b = once()
+            if a is not None and b is not None:
+                log("samples a=%s b=%s" % (a, b))
+                if b["QueueScriptCount"] < THRESHOLD:
+                    log("healthy: queue-script backlog below threshold")
+                    return
+                if a != b:
+                    log("healthy: backlog moving (draining)")
+                    return
+                ok, pair = True, (a, b)
+                verdict = "dispatcher-stall"
+            elif a is None and b is None:
+                ok, pair = False, None
+                verdict = "core-deadlock (status() unresponsive in both samples)"
+            else:
+                log("mixed samples, transient blip? skipping this round")
+                return
+        if verdict == BOUNDARY_GUARD[0] and int((time.time() // 60) % 15) < BOUNDARY_GUARD[1]:
+            log("guard: just after scheduler boundary, deferring to next run")
+            return
+        pods = running_pods()
+        if not pods:
+            log("no Running nzbget pod (transitioning?), skipping")
+            return
+        if len(pods) > 1:
+            log("more than one Running pod, skipping this round")
+            return
+        name, created = pods[0]
+        age = time.time() - created
+        if age < MIN_POD_AGE:
+            log("refusing to heal: pod %s age %ds < %ds (recent restart)"
+                % (name, age, MIN_POD_AGE))
+            return
+        log("VERDICT %s -> deleting pod %s (age %ds)" % (verdict, name, age))
+        if DRY_RUN:
+            log("dry run: not deleting")
+            return
+        code, body = k8s("DELETE", "/api/v1/namespaces/" + NS + "/pods/" + name)
+        log("delete pod -> HTTP %s" % code)
+        if code not in (200, 202, 404):
+            raise SystemExit("pod delete failed: %s" % body)
+
+    main()
+---
+apiVersion: batch/v1
+kind: CronJob
+metadata:
+  name: nzbget-qs-watchdog
+  namespace: media
+  labels:
+    app: nzbget-qs-watchdog
+spec:
+  schedule: "*/10 * * * *"
+  concurrencyPolicy: Forbid
+  startingDeadlineSeconds: 300
+  successfulJobsHistoryLimit: 2
+  failedJobsHistoryLimit: 1
+  jobTemplate:
+    spec:
+      activeDeadlineSeconds: 240
+      backoffLimit: 0
+      ttlSecondsAfterFinished: 172800
+      template:
+        metadata:
+          labels:
+            app: nzbget-qs-watchdog
+        spec:
+          restartPolicy: Never
+          serviceAccountName: nzbget-qs-watchdog
+          containers:
+            - name: watchdog
+              image: python:3.12-alpine
+              command: ["python", "/app/qs_watchdog.py"]
+              env:
+                - name: QS_THRESHOLD
+                  value: "50"
+              resources:
+                requests:
+                  cpu: 10m
+                  memory: 32Mi
+                limits:
+                  cpu: 100m
+                  memory: 96Mi
+              securityContext:
+                allowPrivilegeEscalation: false
+                readOnlyRootFilesystem: true
+                capabilities:
+                  drop: ["ALL"]
+              volumeMounts:
+                - name: script
+                  mountPath: /app
+                  readOnly: true
+          volumes:
+            - name: script
+              configMap:
+                name: nzbget-qs-watchdog

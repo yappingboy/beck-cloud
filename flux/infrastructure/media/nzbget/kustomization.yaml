@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - nzbget.yaml
   - certificate.yaml
+  - qs-watchdog.yaml
