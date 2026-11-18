@@ -197,3 +197,28 @@ button.primary:hover { background: var(--acc-hi); }
   width: 100%; height: 420px; display: block; background: #121212;
   border-radius: 6px; touch-action: none; cursor: crosshair;
 }
+
+/* ---------- amigurumi importer ---------- */
+.ami-grid { display: flex; gap: 20px; align-items: flex-start; }
+.ami-form { width: 340px; flex: 0 0 auto; }
+.ami-form h3 { margin: 0 0 4px; }
+.ami-form textarea { font-family: monospace; font-size: 12px; }
+.ami-view {
+  flex: 1; min-width: 0; background: #242424; border: 1px solid #3a3a3a;
+  border-radius: 8px; padding: 12px 14px;
+}
+.ami-rounds {
+  margin: 8px 0; max-height: 480px; overflow-y: auto;
+  border: 1px solid #3a3a3a; border-radius: 6px;
+}
+.ami-row {
+  display: flex; gap: 14px; align-items: baseline; padding: 3px 10px;
+  font-family: monospace; font-size: 12px; border-bottom: 1px solid #2e2e2e;
+}
+.ami-row:nth-child(odd) { background: #282828; }
+.ami-row .rn { width: 44px; color: #f0a030; font-weight: 700; }
+.ami-row .st { width: 76px; }
+.ami-row .dl { color: var(--fg-dim); }
+.ami-row .dl.inc { color: #5cc9ba; font-weight: 700; }
+.ami-row .dl.dec { color: #e07070; font-weight: 700; }
+#amiConv { color: #d0b060; white-space: pre-wrap; }

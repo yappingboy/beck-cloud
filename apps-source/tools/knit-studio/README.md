@@ -146,6 +146,27 @@ same gauge. The status line reports the resolved scale and its reason; a
 itself. After slicing, the status shows the physical size (`42 x 58 cm at
 this gauge`) so bad scales can't sneak by.
 
+## Amigurumi importer
+
+The **Ami** tab converts crochet amigurumi patterns into knitting. Paste
+round-notation text (`R2: inc x6 (12)`, `R4-6: sc (18)`, `MR 6sc`) and the
+parser resolves every round's stitch count (trailing `(N)` totals win;
+otherwise `inc`/`dec` deltas with `inc x6` / `6 inc` multipliers, `work
+even`, magic-ring seeds). Conversion to knitting:
+
+- each round becomes one knit row whose width is that round's stitch count
+- **Flat half** mode divides the tube by two and mirrors it, so distributed
+  increases/decreases land as every-N-rows shaping at each edge — knit the
+  piece flat, seam it; **Full circumference** keeps the tube width
+- optional gauge rescale from crochet sts/10 cm to knit sts/10 cm keeps the
+  physical size instead of the stitch count
+- handoff: shaping designer (editable), flat chart (editor), project panel,
+  or a round-list `.txt` with derived edge instructions
+
+Engine: `public/ami.js` (`KS.ami`: `parseRoundText`, `amiToShape`,
+`roundsToChart`, `amiToText`), DOM-free and fully selftested
+(`scripts/selftest-ami.mjs`).
+
 ## API
 
 - `GET  /api/health`
@@ -168,4 +189,5 @@ npm test                      # all three suites
 node scripts/selftest.mjs             # core model/transforms/exports
 node scripts/selftest-shaping.mjs     # shaping engine
 node scripts/selftest-projects.mjs    # projects + CAM slicer
+node scripts/selftest-ami.mjs           # amigurumi importer
 ```

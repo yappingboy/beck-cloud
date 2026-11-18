@@ -15,6 +15,7 @@
     <button class="tab" data-tab="shape">Shaping</button>
     <button class="tab" data-tab="proj">Projects</button>
     <button class="tab" data-tab="cam">CAM</button>
+    <button class="tab" data-tab="ami">Ami</button>
     <button class="tab" data-tab="view">Viewer</button>
     <button class="tab" data-tab="conv">Convert</button>
   </nav>
@@ -186,6 +187,40 @@
     </div>
   </section>
 
+  <section id="ami" class="panel-wide hidden">
+    <div class="ami-grid">
+      <div class="ami-form">
+        <h3>Amigurumi &rarr; knitting</h3>
+        <p class="hint">Paste a crochet round pattern (&ldquo;R2: inc x6 (12)&rdquo; style). Rounds become knit rows: each round&rsquo;s stitch count sets the panel width, and the shaping model is derived automatically.</p>
+        <label>Pattern text
+          <textarea id="amiText" rows="12" placeholder="R1: MR 6sc&#10;R2: inc x6 (12)&#10;R3: *sc, inc* x6 (18)&#10;R4-6: sc (18)&#10;R7: *sc 2, dec* x6 (12)&#10;R8: dec (6)"></textarea>
+        </label>
+        <div class="btn-row"><button id="amiParse" class="primary">Parse rounds</button></div>
+        <div class="group-label" style="margin-top:8px">Knit conversion</div>
+        <label>Piece <select id="amiSplit">
+          <option value="2">Flat half of the tube (round &divide; 2, mirrored edges)</option>
+          <option value="1">Full circumference width</option>
+        </select></label>
+        <div class="row2">
+          <label>crochet sts /10cm <input type="number" id="amiG1" value="20" min="1" max="200"></label>
+          <label>knit sts /10cm <input type="number" id="amiG2" value="22" min="1" max="200"></label>
+        </div>
+        <div class="btn-col">
+          <button id="amiToShape" class="primary">Open in shaping designer</button>
+          <button id="amiOpenChart" class="secondary">Open flat chart</button>
+          <button id="amiProject" class="secondary">Save as project&hellip;</button>
+          <button id="amiExport" class="secondary">Round list .txt</button>
+        </div>
+        <p class="hint">Gauge conversion keeps physical size: counts are rescaled from your crochet gauge to your knit gauge. Amigurumi shaping is distributed around the tube; split in two it becomes every-N-rows decreases at each edge &mdash; close enough to knit the piece flat and seam it.</p>
+      </div>
+      <div class="ami-view">
+        <div id="amiSummary" class="hint">Parse a pattern to see its rounds.</div>
+        <div id="amiRounds" class="ami-rounds"></div>
+        <div id="amiConv" class="hint"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="conv" class="panel-wide hidden">
     <div class="conv-grid">
       <div class="conv-form">
@@ -262,6 +297,7 @@
 <script src="core.js"></script>
 <script src="shaping.js"></script>
 <script src="slicer.js"></script>
+<script src="ami.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

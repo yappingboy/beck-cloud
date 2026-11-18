@@ -50,12 +50,14 @@ function setTab(t) {
   $('shape').classList.toggle('hidden', t !== 'shape');
   $('proj').classList.toggle('hidden', t !== 'proj');
   $('cam').classList.toggle('hidden', t !== 'cam');
+  $('ami').classList.toggle('hidden', t !== 'ami');
   $('stage').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   $('toolbar').classList.toggle('hidden', t !== 'edit');
   $('side').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   if (t === 'lib') loadLib();
   if (t === 'proj') loadProjects();
   if (t === 'cam') camDraw();
+  if (t === 'ami') renderAmi();
   if (t === 'shape') { renderShapeForm(); renderShapeView(); }
   if (t === 'view' && !S.viewPat) status('Viewer: pick a pattern in the library and press View.');
   syncForm();
@@ -1543,6 +1545,122 @@ function bindCamUI() {
   renderCamTrack();
 }
 
+/* ---------- amigurumi importer ---------- */
+S.ami = { parsed: null };
+
+function amiCounts() {
+  return S.ami.parsed ? S.ami.parsed.rounds.map(function (r) { return r.sts; }) : [];
+}
+
+function renderAmi() {
+  var p = S.ami.parsed, host = $('amiRounds'), box = $('amiSummary');
+  if (!p || !p.rounds.length) {
+    host.innerHTML = '';
+    box.textContent = 'Parse a pattern to see its rounds.';
+    return;
+  }
+  var counts = amiCounts();
+  var max = Math.max.apply(null, counts), min = Math.min.apply(null, counts);
+  box.textContent = p.rounds.length + ' rounds \u00b7 ' + min + '\u2013' + max + ' sts' +
+    (p.errors.length ? ' \u00b7 ' + p.errors.length + ' line(s) skipped' : '');
+  host.innerHTML = '';
+  p.rounds.forEach(function (r, i) {
+    var d = i > 0 ? r.sts - p.rounds[i - 1].sts : r.sts;
+    var row = document.createElement('div');
+    row.className = 'ami-row';
+    var n = document.createElement('span'); n.className = 'rn'; n.textContent = r.label;
+    var st = document.createElement('span'); st.className = 'st'; st.textContent = r.sts + ' sts';
+    var dl = document.createElement('span'); dl.className = 'dl';
+    if (i === 0) dl.textContent = 'cast on';
+    else if (d > 0) { dl.textContent = '+' + d; dl.className = 'dl inc'; }
+    else if (d < 0) { dl.textContent = String(d); dl.className = 'dl dec'; }
+    else dl.textContent = 'even';
+    row.appendChild(n); row.appendChild(st); row.appendChild(dl);
+    host.appendChild(row);
+  });
+}
+
+function amiConvert(quiet) {
+  if (!S.ami.parsed || !S.ami.parsed.rounds.length) {
+    if (!quiet) status('Ami: parse a pattern first.', true);
+    return null;
+  }
+  var g1 = Number($('amiG1').value) || 0, g2 = Number($('amiG2').value) || 0;
+  try {
+    var res = KS.ami.amiToShape(amiCounts(), {
+      split: Number($('amiSplit').value),
+      amiSts10: g1 > 0 ? g1 : undefined,
+      knitSts10: g2 > 0 ? g2 : undefined,
+      name: 'ami-piece'
+    });
+    if (res.warnings.length) $('amiConv').textContent = 'Notes: ' + res.warnings.join(' \u00b7 ');
+    else $('amiConv').textContent = '';
+    return res;
+  } catch (e) {
+    if (!quiet) status('Ami: ' + e.message, true);
+    return null;
+  }
+}
+
+function bindAmiUI() {
+  $('amiParse').onclick = function () {
+    var txt = $('amiText').value;
+    if (!txt.trim()) return status('Ami: paste a pattern first.', true);
+    var parsed = KS.ami.parseRoundText(txt);
+    if (!parsed.rounds.length) {
+      S.ami.parsed = null;
+      renderAmi();
+      return status('Ami: no rounds recognized. Expected lines like "R2: inc x6 (12)".', true);
+    }
+    S.ami.parsed = parsed;
+    renderAmi();
+    status('Parsed ' + parsed.rounds.length + ' rounds' +
+      (parsed.errors.length ? ' \u2014 ' + parsed.errors.length + ' line(s) skipped: ' + parsed.errors[0] : '.'));
+  };
+  $('amiToShape').onclick = function () {
+    var res = amiConvert();
+    if (!res) return;
+    SShape = KS.shaping.normalize(res.shape);
+    setTab('shape');
+    status('Amigurumi shaping loaded \u2014 adjust edges, then generate a chart.');
+  };
+  $('amiOpenChart').onclick = function () {
+    var res = amiConvert();
+    if (!res) return;
+    S.pat = KS.shaping.toPattern(res.shape);
+    S.id = null; S.boundPanel = null;
+    resetHist(); clean(); setTab('edit');
+    status('Flat chart generated from ' + amiCounts().length + ' rounds.');
+  };
+  $('amiProject').onclick = function () {
+    var res = amiConvert();
+    if (!res) return;
+    var name = prompt('Project name for this piece?', 'ami-piece');
+    if (!name) return;
+    var proj = KS.blankProject(name.trim());
+    var pat = KS.shaping.toPattern(res.shape);
+    KS.addPanel(proj, pat, 'Piece', 'other', JSON.parse(JSON.stringify(res.shape)));
+    var id = KS.slug(name);
+    api('PUT', '/api/projects/' + encodeURIComponent(id), proj).then(function (sum) {
+      S.project = proj; S.projectId = sum.id; S.boundPanel = null;
+      status('Project "' + sum.id + '" saved from amigurumi pattern.');
+      setTab('proj');
+      renderProjectDetail();
+      loadProjects();
+    }).catch(function (e) { status('Ami save failed: ' + e.message, true); });
+  };
+  $('amiExport').onclick = function () {
+    if (!S.ami.parsed || !S.ami.parsed.rounds.length) return status('Ami: parse a pattern first.', true);
+    var res = amiConvert(true);
+    var txt = KS.ami.amiToText(S.ami.parsed, res ? res.widths : null, res ? res.warnings : []);
+    if (res) {
+      txt += '\n\n' + KS.shaping.toText(res.shape);
+      txt += '\n\n' + KS.toText(KS.shaping.toPattern(res.shape));
+    }
+    download('amigurumi-knitting.txt', txt, 'text/plain');
+  };
+}
+
 /* ---------- keyboard ---------- */
 window.addEventListener('keydown', function (e) {
   if (e.target.matches('input, textarea')) return;
@@ -1629,6 +1747,7 @@ new ResizeObserver(function () { draw(); }).observe($('stage'));
 bindShapeUI();
 bindProjUI();
 bindCamUI();
+bindAmiUI();
 
 setTab('lib');
 draw();
