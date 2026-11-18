@@ -19,9 +19,10 @@
     'a': { label: 'Color A', hint: 'color A feed' },
     'b': { label: 'Color B', hint: 'color B feed' },
     'i': { label: 'Increase', hint: 'shaping increase' },
-    'd': { label: 'Decrease', hint: 'shaping decrease' }
+    'd': { label: 'Decrease', hint: 'shaping decrease' },
+    't': { label: 'K2tog', hint: 'knit 2 together, right-leaning decrease' }
   };
-  var PALETTE = ['.', 'k', 'x', 'h', '<', '>', 'a', 'b', 'i', 'd'];
+  var PALETTE = ['.', 'k', 'x', 'h', '<', '>', 'a', 'b', 'i', 'd', 't'];
 
   var INK = '#e8e8e8';
   var CELL_FG = '#101010';
@@ -344,6 +345,10 @@
       case 'b': s += '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) + '" fill="#268bd2" opacity="0.45" stroke="#268bd2"/>'; break;
       case 'i': s += '<polygon points="' + (px + c / 2) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + c - m) + ' ' + (px + m) + ',' + (py + c - m) + '" fill="#2aa198"/>'; break;
       case 'd': s += '<polygon points="' + (px + m) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + m) + ' ' + (px + c / 2) + ',' + (py + c - m) + '" fill="#dc322f"/>'; break;
+      case 't':
+        s += '<line x1="' + (px + c * 0.18) + '" y1="' + (py + c - m) + '" x2="' + (px + c * 0.78) + '" y2="' + (py + m) + '" stroke="#8959a8" stroke-width="' + Math.max(1, c * 0.13) + '"/>';
+        s += '<line x1="' + (px + c * 0.55) + '" y1="' + (py + c - m) + '" x2="' + (px + c * 0.72) + '" y2="' + (py + c * 0.55) + '" stroke="#8959a8" stroke-width="' + Math.max(1, c * 0.1) + '"/>';
+        break;
     }
     return s;
   }
@@ -518,6 +523,18 @@
       ctx.beginPath();
       ctx.moveTo(px + m, py + m); ctx.lineTo(px + c - m, py + m); ctx.lineTo(px + c / 2, py + c - m);
       ctx.closePath(); ctx.fill();
+    } else if (code === 't') {
+      // k2tog: right-leaning decrease, two legs merging into one
+      ctx.strokeStyle = '#8959a8';
+      ctx.lineWidth = Math.max(1.5, c * 0.13);
+      ctx.lineCap = 'round';
+      ctx.beginPath();
+      ctx.moveTo(px + c * 0.18, py + c - m); ctx.lineTo(px + c * 0.78, py + m);
+      ctx.stroke();
+      ctx.lineWidth = Math.max(1, c * 0.1);
+      ctx.beginPath();
+      ctx.moveTo(px + c * 0.55, py + c - m); ctx.lineTo(px + c * 0.72, py + c * 0.55);
+      ctx.stroke();
     } else { // 'k' knit: white cell, needle in working position
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(px + 0.5, py + 0.5, c - 1, c - 1);

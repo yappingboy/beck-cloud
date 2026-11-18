@@ -72,6 +72,7 @@ bottom. Each character is one cell:
 | `b`  | ▫ B | color B feed |
 | `i`  | ▲ | increase (shaping) |
 | `d`  | ▼ | decrease (shaping) |
+| `t`  | ⾆ | k2tog — knit 2 together, right-leaning decrease |
 
 ## Shaping format `knit-studio-shape/1`
 

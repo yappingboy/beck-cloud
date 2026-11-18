@@ -120,5 +120,16 @@ t('slug', () => {
   if (KS.slug('Fair Isle Band!') !== 'fair-isle-band') throw new Error('slug');
 });
 
+t('k2tog code t validates, palette, text export', () => {
+  if (!KS.PALETTE.includes('t')) throw new Error('palette missing t');
+  if (!KS.CODES.t || !/knit 2 together/i.test(KS.CODES.t.hint)) throw new Error('CODES.t');
+  const p = KS.blank('t2', 4, 2);
+  KS.setCell(p, 0, 2, 't');
+  KS.validate(p);
+  if (KS.getCell(p, 0, 2) !== 't') throw new Error('cell lost');
+  const txt = KS.toText(p);
+  if (!txt.includes('t1')) throw new Error('rle should emit t1: ' + txt.split('\n').pop());
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
