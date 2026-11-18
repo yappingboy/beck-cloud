@@ -138,6 +138,7 @@ data:
             log("FORCE_STALL test hook: fabricating frozen samples")
             frozen = {"QueueScriptCount": 999, "ParJobCount": 999, "PostJobCount": 999}
             ok, pair = True, (dict(frozen), dict(frozen))
+            verdict = "dispatcher-stall (forced test)"
         else:
             a = once()
             time.sleep(SAMPLE_GAP)
