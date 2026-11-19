@@ -187,5 +187,67 @@ t('heel preset: flap straight, wedge turns, live sts remain', () => {
   if (!txt.includes('w&t')) throw new Error('no short rows in heel text');
 });
 
+/* ---- angle prediction + spiral twist ---- */
+const G2020 = { stsPer10cm: 20, rowsPer10cm: 20 }; // 5mm x 5mm grid -> 45 deg at 1:1
+
+t('segAngle: 1 st per row on square gauge is 45 deg from vertical', () => {
+  const a = SH.segAngle({ kind: 'sr', every: 1, turn: 1, times: 3 }, G2020);
+  if (Math.abs(a.deg - 45) > 0.01) throw new Error('deg=' + a.deg);
+  if (Math.abs(a.runMm - 5) > 1e-9 || Math.abs(a.riseMm - 5) > 1e-9) throw new Error('mm');
+  if (Math.abs(a.hypMm - Math.SQRT2 * 5) > 1e-6) throw new Error('hyp');
+});
+
+t('segAngle: null without gauge; dec uses each', () => {
+  if (SH.segAngle({ kind: 'sr', every: 2, turn: 1, times: 3 }, null) !== null) throw new Error('null gauge');
+  const d = SH.segAngle({ kind: 'dec', every: 10, each: 4, times: 2 }, { stsPer10cm: 20, rowsPer10cm: 10 });
+  // 4 sts = 20mm over 10 rows = 100mm -> shallow
+  const a2 = Math.atan2(20, 100) * 180 / Math.PI;
+  if (Math.abs(d.deg - a2) > 1e-9) throw new Error('deg ' + d.deg);
+});
+
+t('segFromAngle: round-trips near target and returns usable turn', () => {
+  const mk = SH.segFromAngle(45, G2020, 2, 'sr'); // 10mm rise per event -> 10mm run -> 2 st
+  if (mk.turn !== 2) throw new Error('turn=' + mk.turn);
+  if (Math.abs(mk.achievedDeg - 45) > 0.01) throw new Error('achieved=' + mk.achievedDeg);
+  const m60 = SH.segFromAngle(60, G2020, 4, 'sr'); // 20mm rise -> tan60*20=34.6mm -> 6.9 st -> 7
+  if (m60.turn !== 7) throw new Error('turn=' + m60.turn);
+});
+
+t('twist: width constant, h count = floor(rows/every), events ignores it', () => {
+  const s = shape({ width: 20, edges: { left: [{ kind: 'twist', every: 2, at: 4, rows: 10 }], right: [{ kind: 'straight', rows: 10 }] } });
+  const p = SH.profile(s);
+  eq(p.leftOff, new Array(10).fill(0));
+  eq(SH.events(p.edges.left), []);
+  const pat = SH.toPattern(s);
+  const h = pat.rows.join('').split('').filter((c) => c === 'h').length;
+  if (h !== 5) throw new Error('wrap marks ' + h + ' want 5');
+  // wraps sit at fixed depth: 4th cell from the left edge
+  pat.rows.forEach((r) => { if (r.includes('h') && r.split('').findIndex((c) => c === 'h') !== 3) throw new Error('depth'); });
+});
+
+t('twist angle = spiral pitch angle from vertical', () => {
+  const a = SH.segAngle({ kind: 'twist', every: 2, at: 4, rows: 20 }, G2020);
+  // 20mm around per 10mm up -> 63.4 deg: steep spiral
+  if (Math.abs(a.deg - Math.atan2(20, 10) * 180 / Math.PI) > 1e-9) throw new Error('deg');
+});
+
+t('toText prints spiral twist line', () => {
+  const s = shape({ width: 24, edges: { left: [{ kind: 'twist', every: 2, at: 5, rows: 12 }], right: [] } });
+  const txt = SH.toText(s);
+  if (!txt.includes('w&t at 5 st from this edge') || !txt.includes('spiral twist')) throw new Error(txt);
+});
+
+t('tentacle preset: valid shape, spiral survives the taper, chart fits', () => {
+  const t2 = SH.tentacle(24);
+  const errs = SH.check(t2);
+  if (errs.length) throw new Error(errs.join('; '));
+  const pat = SH.toPattern(t2);
+  if (pat.rows.some((r) => r.length !== pat.width)) throw new Error('width');
+  const h = pat.rows.join('').split('').filter((c) => c === 'h').length;
+  if (h < 24) throw new Error('spiral too short: ' + h);
+  const p = SH.profile(t2);
+  if (p.hi[p.H - 1] - p.lo[p.H - 1] >= 24) throw new Error('tip not tapered');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

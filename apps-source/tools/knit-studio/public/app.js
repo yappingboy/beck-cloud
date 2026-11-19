@@ -627,7 +627,7 @@ function segRow(side, seg, i) {
   row.className = 'seg-row';
   var sel = document.createElement('select');
   [['straight', 'rows'], ['dec', 'decrease'], ['inc', 'increase'],
-   ['sr', 'short rows'], ['hold', 'hold sts']].forEach(function (o) {
+   ['sr', 'short rows'], ['hold', 'hold sts'], ['twist', 'twist (spiral)']].forEach(function (o) {
     var op = document.createElement('option');
     op.value = o[0]; op.textContent = o[1];
     sel.appendChild(op);
@@ -638,6 +638,7 @@ function segRow(side, seg, i) {
     var repl;
     if (sel.value === 'straight') repl = { kind: 'straight', rows: Math.max(1, KS.shaping.edgeRows([old])) };
     else if (sel.value === 'hold') repl = { kind: 'hold', each: 6, rows: KS.shaping.edgeRows([old]), release: false };
+    else if (sel.value === 'twist') repl = { kind: 'twist', every: 2, at: Math.max(1, Math.round(SShape.width / 4)), rows: Math.max(2, KS.shaping.edgeRows([old])) };
     else if (sel.value === 'sr') repl = { kind: 'sr', every: 2, turn: 1, times: Math.max(1, Math.round(KS.shaping.edgeRows([old]) / 2)) };
     else if (old.kind === 'straight') repl = { kind: sel.value, every: Math.max(1, old.rows), each: 1, times: 1, transfer: false };
     else { repl = Object.assign({}, old); repl.kind = sel.value; }
@@ -662,6 +663,10 @@ function segRow(side, seg, i) {
     num('every', seg.every, 1, 99, 'every');
     num('turn', seg.turn, 1, 99, 'st before edge, w&t');
     num('times', seg.times, 1, 999, '\u00d7 n');
+  } else if (seg.kind === 'twist') {
+    num('every', seg.every, 1, 99, 'every');
+    num('at', seg.at, 1, 999, 'st from edge, w&t');
+    num('rows', seg.rows, 1, 999, 'rows');
   } else if (seg.kind === 'hold') {
     num('each', seg.each, 1, 999, 'sts on holder');
     num('rows', seg.rows, 1, 999, 'rows held');
@@ -684,6 +689,18 @@ function segRow(side, seg, i) {
       tc.onchange = function () { SShape.edges[side][i].transfer = tc.checked; shapeMirrorSync(side); shapeApply(); };
       t.appendChild(tc); t.appendChild(document.createTextNode('transfer'));
       row.appendChild(t);
+    }
+  }
+  var g = SShape.gauge;
+  if (g) {
+    var ang = KS.shaping.segAngle(seg, g);
+    if (ang) {
+      var ab = document.createElement('span');
+      ab.className = 'ang-badge';
+      ab.textContent = '\u2248 ' + ang.deg.toFixed(0) + '\u00b0';
+      ab.title = 'slope ' + ang.deg.toFixed(1) + '\u00b0 from vertical \u2014 ' + ang.runMm.toFixed(1) +
+        ' mm in over ' + ang.riseMm.toFixed(1) + ' mm up; edge per event ' + ang.hypMm.toFixed(1) + ' mm';
+      row.appendChild(ab);
     }
   }
   var spacer = document.createElement('span'); spacer.className = 'grow'; row.appendChild(spacer);
@@ -716,6 +733,7 @@ function segRow(side, seg, i) {
 function addSeg(side, kind) {
   var seg = kind === 'straight' ? { kind: 'straight', rows: 10 }
     : kind === 'sr' ? { kind: 'sr', every: 2, turn: 1, times: 4 }
+    : kind === 'twist' ? { kind: 'twist', every: 2, at: Math.max(1, Math.round(SShape.width / 4)), rows: 20 }
     : kind === 'hold' ? { kind: 'hold', each: 6, rows: 10, release: false }
     : { kind: kind, every: 1, each: 1, times: 1, transfer: false };
   SShape.edges[side].push(seg);
@@ -740,7 +758,7 @@ function renderShapeForm() {
     b.textContent = side + ' edge';
     head.appendChild(b);
     [['straight', '+ rows'], ['dec', '\u2212 st'], ['inc', '+ st'],
-     ['sr', 'w&t'], ['hold', 'holder']].forEach(function (spec) {
+     ['sr', 'w&t'], ['hold', 'holder'], ['twist', '\u2937 twist']].forEach(function (spec) {
       var btn = document.createElement('button');
       btn.textContent = spec[1];
       btn.onclick = function () { addSeg(side, spec[0]); };
@@ -842,6 +860,18 @@ function renderShapeView() {
           hmark(side === 'left' ? ox + (p.lo[er] - e.minX) * cell - cell * 0.5 : ox + (p.hi[er] - e.minX) * cell + cell * 0.5, y);
         }
         row += sg.every * sg.times;
+      } else if (sg.kind === 'twist') {
+        var nEv = Math.floor(sg.rows / sg.every);
+        for (var k3 = 0; k3 < nEv; k3++) {
+          var er3 = row + sg.every * k3 + (sg.every - 1);
+          if (er3 >= p.H) break;
+          var y3 = oy + (p.H - 1 - er3) * cell + cell / 2;
+          var hx3 = side === 'left'
+            ? ox + (p.lo[er3] + sg.at - 1 - e.minX + 0.5) * cell
+            : ox + (p.hi[er3] - sg.at - e.minX + 0.5) * cell;
+          hmark(hx3, y3);
+        }
+        row += sg.rows;
       } else if (sg.kind === 'hold') {
         for (var r = row; r < row + sg.rows && r < p.H; r++) {
           var y2 = oy + (p.H - 1 - r) * cell + cell / 2;
@@ -991,6 +1021,19 @@ function bindShapeUI() {
     'Shoulder: short-row slope at one edge \u2014 turn Mirror for both shoulders.'));
   bind('presetEar', 'click', loadPreset(function (w) { return KS.shaping.earFlap(Math.round(w / 2)); },
     'Ear flap: one edge short-rows into a rounded point.'));
+  bind('presetTentacle', 'click', loadPreset(KS.shaping.tentacle,
+    'Tentacle: spiral short rows (\u2937) keep turning while the tip tapers closed.'));
+  bind('angApply', 'click', function () {
+    var g = shapeState().gauge;
+    if (!g) return status('Angle needs gauge (sts + rows / 10cm).', true);
+    var deg = Number($('angDeg').value), every = Math.max(1, Number($('angEvery').value) | 0);
+    if (!(deg > 0 && deg < 90)) return status('Target angle must be 1-89\u00b0.', true);
+    var mk = KS.shaping.segFromAngle(deg, g, every, 'sr');
+    SShape.edges.left.push({ kind: 'sr', every: every, turn: mk.turn, times: 4 });
+    shapeMirrorSync('left');
+    shapeApply('w&t seg: turn ' + mk.turn + ' st every ' + every + ' rows \u2248 ' + mk.achievedDeg.toFixed(1) +
+      '\u00b0 (target ' + deg + '\u00b0).');
+  });
   bind('shToChart', 'click', function () {
     var pat = KS.shaping.toPattern(shapeState());
     S.pat = pat; S.id = null;

@@ -34,6 +34,14 @@
         times: clamp(s.times | 0, 1, 2000)
       };
     }
+    if (s.kind === 'twist') { // spiral short rows: turn at a FIXED depth every N rows, width unchanged
+      return {
+        kind: 'twist',
+        every: clamp(s.every | 0, 1, 500),
+        at: clamp(s.at | 0, 1, 4000),
+        rows: clamp(s.rows | 0, 1, 4000)
+      };
+    }
     if (s.kind === 'hold') { // holding stitches: `each` sts off the edge stay unworked for `rows` rows
       return {
         kind: 'hold',
@@ -70,7 +78,7 @@
   function edgeRows(segs) {
     return segs.reduce(function (n, s) {
       if (s.kind === 'straight') return n + s.rows;
-      if (s.kind === 'hold') return n + s.rows;
+      if (s.kind === 'hold' || s.kind === 'twist') return n + s.rows;
       return n + s.every * s.times;
     }, 0);
   }
@@ -101,6 +109,8 @@
       var s = segs[i];
       if (s.kind === 'straight') {
         for (var r = 0; r < s.rows && row < H; r++) off[row++] = acc;
+      } else if (s.kind === 'twist') {
+        for (var tr = 0; tr < s.rows && row < H; tr++) off[row++] = acc; // spiral: width constant
       } else if (s.kind === 'hold') {
         var hs = s.each;
         acc += hs; // sts go on hold starting this row
@@ -164,7 +174,7 @@
   function events(segs) {
     var out = [], row = 0;
     segs.forEach(function (s) {
-      if (s.kind === 'straight' || s.kind === 'hold') { row += s.rows; return; }
+      if (s.kind === 'straight' || s.kind === 'hold' || s.kind === 'twist') { row += s.rows; return; }
       if (s.kind === 'sr') { row += s.every * s.times; return; } // wedge marks drawn separately
       for (var k = 0; k < s.times; k++) {
         row += s.every - 1;
@@ -234,6 +244,15 @@
             }
           }
           row += s.every * s.times;
+        } else if (s.kind === 'twist') {
+          var nEv = Math.floor(s.rows / s.every);
+          for (var k2 = 0; k2 < nEv; k2++) {
+            var er2 = row + s.every * k2 + (s.every - 1);
+            if (er2 >= p.H) break;
+            var gxw = side === 'left' ? (p.lo[er2] + s.at - 1) : (p.hi[er2] - s.at);
+            mark(er2, gxw - e.minX, 'h'); // spiral turn sits at fixed depth, not the edge
+          }
+          row += s.rows;
         } else if (s.kind === 'hold') {
           for (var r = row; r < row + s.rows && r < p.H; r++) {
             for (var q = 0; q < s.each; q++) {
@@ -334,6 +353,10 @@
           found = true;
           lines.push('  every ' + s.every + 'th row w&t ' + s.turn + ' st before this edge x ' + s.times +
             '   [short rows]');
+        } else if (s.kind === 'twist') {
+          found = true;
+          lines.push('  every ' + s.every + 'th row w&t at ' + s.at + ' st from this edge, for ' + s.rows +
+            ' rows   [spiral twist]');
         } else if (s.kind === 'hold') {
           found = true;
           lines.push('  place ' + s.each + ' st on holder at this edge, hold ' + s.rows + ' rows, then ' +
@@ -361,6 +384,35 @@
       right.push([p.hi[r] - e.minX, r]);
     }
     return { left: left, right: right, gridW: e.gridW, H: p.H, minX: e.minX, width: shape.width };
+  }
+
+  /* ---- angle math: shaping geometry <-> physical slope angle ----
+   * With gauge, an edge event of M sts every N rows is a slope: run_mm
+   * horizontal (M sts) over rise_mm vertical (N rows). Angle is measured
+   * FROM VERTICAL (the knitting direction): 0 deg = straight edge,
+   * 90 deg = horizontal. segAngle returns null without a usable gauge. */
+  function segAngle(seg, gauge) {
+    if (!gauge || !(gauge.stsPer10cm > 0) || !(gauge.rowsPer10cm > 0)) return null;
+    var runSts, riseRows;
+    if (seg.kind === 'sr') { runSts = seg.turn; riseRows = seg.every; }
+    else if (seg.kind === 'twist') { runSts = seg.at; riseRows = seg.every; } // spiral pitch angle
+    else if (seg.kind === 'dec' || seg.kind === 'inc') { runSts = seg.each; riseRows = seg.every; }
+    else return null;
+    var runMm = runSts / gauge.stsPer10cm * 100;
+    var riseMm = riseRows / gauge.rowsPer10cm * 100;
+    if (!(riseMm > 0)) return null;
+    var deg = Math.atan2(runMm, riseMm) * 180 / Math.PI;
+    return { deg: deg, runMm: runMm, riseMm: riseMm,
+             hypMm: Math.sqrt(runMm * runMm + riseMm * riseMm) };
+  }
+  // Inverse: an sr/twist segment achieving ~targetDeg at the given cadence.
+  function segFromAngle(targetDeg, gauge, every, kind) {
+    if (!gauge || !(gauge.stsPer10cm > 0) || !(gauge.rowsPer10cm > 0)) return null;
+    var riseMm = every / gauge.rowsPer10cm * 100;
+    var runSts = Math.max(1, Math.round(Math.tan(targetDeg * Math.PI / 180) * riseMm / (100 / gauge.stsPer10cm)));
+    var k = kind || 'sr';
+    var made = segAngle(k === 'twist' ? { kind: 'twist', at: runSts, every: every } : { kind: 'sr', turn: runSts, every: every }, gauge);
+    return { kind: k, every: every, turn: runSts, at: runSts, achievedDeg: made.deg };
   }
 
   /* ---- presets: sock/3D pieces built from short rows + holding ---- */
@@ -413,11 +465,40 @@
     };
   }
 
+  // Tentacle: constant-width spiral (twist) with a taper to the tip.
+  // W = sts around the tentacle at the base; twist runs `twistRows`, then
+  // both edges taper while the spiral keeps turning to the end.
+  function tentacle(W) {
+    var w = Math.max(12, W | 0);
+    var at = Math.max(2, Math.round(w * 0.25));       // spiral depth ~ a quarter turn
+    var twistRows = 2 * w;                            // long enough to show a helix
+    var tip = Math.max(1, Math.floor(w / 3));         // dec pairs to close the tip
+    return {
+      name: 'tentacle', width: w, mirror: false, gauge: null,
+      edges: {
+        left: [
+          { kind: 'straight', rows: 4 },
+          { kind: 'twist', every: 2, at: at, rows: twistRows },
+          { kind: 'twist', every: 2, at: at, rows: 2 * tip }, // spiral continues through the taper
+          { kind: 'straight', rows: 2 }
+        ],
+        right: [
+          { kind: 'straight', rows: 4 },
+          { kind: 'straight', rows: twistRows },
+          { kind: 'dec', every: 2, each: 1, times: tip },
+          { kind: 'straight', rows: 2 }
+        ]
+      }
+    };
+  }
+
   return {
     normalize: normalize, normSeg: normSeg, edgeRows: edgeRows,
     profile: profile, check: check, extents: extents, events: events,
     toPattern: toPattern, segmentsFromOffsets: segmentsFromOffsets,
     toText: toText, outlinePoints: outlinePoints,
-    sockHeel: sockHeel, sockToe: sockToe, shoulderSlope: shoulderSlope, earFlap: earFlap
+    segAngle: segAngle, segFromAngle: segFromAngle,
+    sockHeel: sockHeel, sockToe: sockToe, shoulderSlope: shoulderSlope,
+    earFlap: earFlap, tentacle: tentacle
   };
 });

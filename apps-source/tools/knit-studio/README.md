@@ -163,6 +163,21 @@ flap, wedge to live gusset sts), **Toe wedge**, **Shoulder slope** (mirror
 for both), **Ear flap**. Exported `.txt` spells them out: `every 2th row
 w&t 1 st before this edge x 15`, `place 12 st on holder ... then take back`.
 
+## Angles and twists
+
+With gauge filled in, every shaped segment shows its physical slope:
+`** 27°` badges next to dec/inc/short-row/spiral segments (degrees from
+vertical, tooltip has mm rise/run and edge length). The
+`target angle ° -> w&t seg` box does the inverse: pick the angle you want,
+it computes the turn distance at your cadence (`KS.shaping.segAngle` /
+`segFromAngle` in the engine).
+
+**Spiral twist (`twist` segment)** — `every N rows w&t at M sts from this edge,
+for R rows`. Width stays constant; wrap marks march up a fixed column, and on
+a seamed tube that spiral becomes a 3D twist. `tentacle` preset: spiral +
+taper to the tip, spiral still turning at the point. Twist pitch angle shows
+in the same badges — that angle ** the angle your tentacle corkscrews at.
+
 ## Amigurumi importer
 
 The **Ami** tab converts crochet amigurumi patterns into knitting. Paste
