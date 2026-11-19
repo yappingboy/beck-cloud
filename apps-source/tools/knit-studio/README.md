@@ -178,6 +178,17 @@ a seamed tube that spiral becomes a 3D twist. `tentacle` preset: spiral +
 taper to the tip, spiral still turning at the point. Twist pitch angle shows
 in the same badges — that angle ** the angle your tentacle corkscrews at.
 
+## Intarsia colors
+
+The chart carries its own color table: `colors: [{name, hex}]`, one entry
+per color slot, up to **38 colors** (chart codes `a` `b` `0`-`9` `A`-`Z`).
+The ✎ button under the palette edits it: native color pickers, names,
+add/remove (removal blocked while a color is in the chart). Slots without an
+entry fall back to a built-in ramp; `a`/`b` keep their historic magenta/blue
+so old charts look unchanged. Everything follows the table: editor canvas,
+library thumbnails, PNG/SVG export (SVG gets a name + hex legend), and the
+`.txt` instructions list every used color.
+
 ## Annotating the shaping diagram
 
 Click anywhere on the shaping preview to pin a text note: it anchors to that

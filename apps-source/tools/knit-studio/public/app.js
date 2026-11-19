@@ -75,6 +75,7 @@ function sizeCanvas() {
 }
 
 function draw() {
+  paletteAutoRefresh();
   var wh = sizeCanvas(), p = activePat();
   ctx.setTransform(dpr(), 0, 0, dpr(), 0, 0);
   ctx.fillStyle = '#262626';
@@ -90,7 +91,7 @@ function draw() {
     ctx.globalAlpha = 0.5;
     S.drag.cells.forEach(function (c) {
       KS.drawCell(ctx, S.code,
-        Math.round(S.ox + c[1] * S.zoom), Math.round(S.oy + c[0] * S.zoom), Math.ceil(S.zoom));
+        Math.round(S.ox + c[1] * S.zoom), Math.round(S.oy + c[0] * S.zoom), Math.ceil(S.zoom), activePat());
     });
     ctx.restore();
   }
@@ -163,6 +164,111 @@ function setTool(t) {
   });
   cv.style.cursor = t === 'pick' ? 'copy' : 'crosshair';
 }
+/* ---------- color slots (intarsia) ---------- */
+var _palPatRef = null, _palColRef = null;
+
+function paletteAutoRefresh() {
+  var p = activePat();
+  if (p !== _palPatRef || (p.colors && p.colors !== _palColRef)) {
+    _palPatRef = p; _palColRef = p.colors;
+    refreshColorSwatches();
+  }
+}
+
+function refreshColorSwatches() {
+  var host = $('palette');
+  Array.prototype.forEach.call(host.querySelectorAll('[data-colorslot]'), function (b) { b.remove(); });
+  var p = activePat();
+  var count = Math.max(2, KS.colorsOf(p || {}).length);
+  for (var i = 0; i < count; i++) {
+    (function (idx) {
+      var code = KS.COLOR_CODES[idx];
+      var b = document.createElement('button');
+      b.dataset.colorslot = idx;
+      b.dataset.code = code;
+      var col = KS.colorAt(p, idx);
+      b.title = col.name + ' \u2014 ' + col.hex;
+      var c = document.createElement('canvas');
+      c.width = c.height = 24;
+      KS.drawCell(c.getContext('2d'), code, 0, 0, 24, p);
+      b.appendChild(c);
+      b.onclick = function () {
+        S.code = code;
+        if (S.tool === 'eraser' || S.tool === 'pick') setTool('brush');
+        syncPalette();
+      };
+      host.appendChild(b);
+    })(i);
+  }
+  var edit = document.createElement('button');
+  edit.dataset.colorslot = 'edit';
+  edit.textContent = '\u270E';
+  edit.title = 'Edit colors \u2014 names, swatches, add, remove';
+  edit.onclick = toggleColorPanel;
+  host.appendChild(edit);
+  syncPalette();
+}
+
+function toggleColorPanel() {
+  var host = $('colorPanel');
+  if (!host) return;
+  if (host.classList.contains('hidden')) {
+    renderColorPanel();
+    host.classList.remove('hidden');
+  } else {
+    host.classList.add('hidden');
+  }
+}
+
+function renderColorPanel() {
+  var host = $('colorPanel');
+  host.innerHTML = '';
+  var p = activePat();
+  if (!p) return;
+  var stored = KS.colorsOf(p);
+  var need = Math.max(2, stored.length);
+  var rows = [];
+  for (var i = 0; i < need; i++) rows.push(stored[i] || { name: null, hex: KS.COLOR_RAMP[i] });
+  var used = {};
+  KS.usedColorCodes(p).forEach(function (code) { used[code] = true; });
+  function write() {
+    p.colors = rows.map(function (r) { return { name: r.name || '', hex: r.hex }; });
+    _palColRef = p.colors;
+    dirty();
+    draw();
+    renderColorPanel();
+    status('Colors updated \u2014 save to persist.');
+  }
+  rows.forEach(function (r, i) {
+    var code = KS.COLOR_CODES[i];
+    var row = document.createElement('div');
+    row.className = 'color-row';
+    var sw = document.createElement('input');
+    sw.type = 'color'; sw.value = r.hex;
+    sw.title = 'Color for chart code "' + code + '"';
+    sw.onchange = function () { r.hex = sw.value.toLowerCase(); write(); };
+    var nm = document.createElement('input');
+    nm.type = 'text'; nm.maxLength = 24;
+    nm.value = r.name || ''; nm.placeholder = 'Color ' + (i + 1);
+    nm.onchange = function () { r.name = nm.value.trim(); write(); };
+    var del = document.createElement('button');
+    del.textContent = '\u2715';
+    del.disabled = !!used[code];
+    del.title = used[code] ? 'in use in this chart' : 'remove color';
+    del.onclick = function () { rows.splice(i, 1); write(); };
+    row.appendChild(sw); row.appendChild(nm); row.appendChild(del);
+    host.appendChild(row);
+  });
+  var add = document.createElement('button');
+  add.textContent = '+ add color';
+  add.disabled = rows.length >= KS.COLOR_CODES.length;
+  add.onclick = function () {
+    rows.push({ name: null, hex: KS.COLOR_RAMP[rows.length] || '#888888' });
+    write();
+  };
+  host.appendChild(add);
+}
+
 function buildPalette() {
   var host = $('palette');
   KS.PALETTE.forEach(function (code) {
@@ -182,13 +288,20 @@ function buildPalette() {
     };
     host.appendChild(b);
   });
-  syncPalette();
+  refreshColorSwatches();
 }
 function syncPalette() {
+  var p = activePat();
   document.querySelectorAll('#palette button').forEach(function (b) {
     b.classList.toggle('active', b.dataset.code === S.code);
   });
-  $('symHint').textContent = KS.CODES[S.code].label + ': ' + KS.CODES[S.code].hint;
+  var ci = KS.colorIndex(S.code);
+  if (ci >= 0) {
+    var col = KS.colorAt(p, ci);
+    $('symHint').textContent = col.name + ' (code "' + S.code + '"): ' + col.hex;
+  } else {
+    $('symHint').textContent = KS.CODES[S.code].label + ': ' + KS.CODES[S.code].hint;
+  }
 }
 
 /* ---------- cell geometry ---------- */
@@ -480,7 +593,7 @@ function makeThumb(p) {
     g.fillRect(0, 0, c.width, c.height);
     for (var y = 0; y < p.height; y++)
       for (var x = 0; x < p.width; x++)
-        KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell);
+        KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell, p);
     var url = c.toDataURL('image/jpeg', 0.75);
     return url.length > 400000 ? null : url;
   } catch (e) { return null; }
@@ -536,7 +649,7 @@ function exportPng() {
   g.fillRect(0, 0, c.width, c.height);
   for (var y = 0; y < p.height; y++)
     for (var x = 0; x < p.width; x++)
-      KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell);
+      KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell, p);
   g.strokeStyle = '#000';
   g.strokeRect(0.5, 0.5, c.width - 1, c.height - 1);
   var a = document.createElement('a');
@@ -576,7 +689,7 @@ function preview() {
   g.fillRect(0, 0, c.width, c.height);
   for (var y = 0; y < p.height; y++)
     for (var x = 0; x < p.width; x++)
-      KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell);
+      KS.drawCell(g, p.rows[y][x], x * cell, y * cell, cell, p);
   var all = p.rows.join(''), dark = (all.match(/x/g) || []).length;
   $('convInfo').textContent = p.width + ' \u00d7 ' + p.height + ' cells \u00b7 ' +
     Math.round(100 * dark / (p.width * p.height)) + '% dark';

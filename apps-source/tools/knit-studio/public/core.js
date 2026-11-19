@@ -22,7 +22,72 @@
     'd': { label: 'Decrease', hint: 'shaping decrease' },
     't': { label: 'K2tog', hint: 'knit 2 together, right-leaning decrease' }
   };
-  var PALETTE = ['.', 'k', 'x', 'h', '<', '>', 'a', 'b', 'i', 'd', 't'];
+  // Intarsia color slots: 'a','b' are slots 0/1; digits and capitals extend
+  // to 38 colors. The chart's optional `colors` table overrides name+hex per
+  // slot; anything unset falls back to COLOR_RAMP.
+  var COLOR_CODES = 'ab0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
+  function hslHex(h, sat, lig) {
+    var c = (1 - Math.abs(2 * lig / 100 - 1)) * sat / 100;
+    var x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+    var mm = 1 - c - 2 * (1 - lig / 100) + c; // normalize helper
+    var l = lig / 100;
+    var m2 = l - c / 2;
+    var rgb = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] :
+      h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+    return '#' + rgb.map(function (v) {
+      var q = Math.round((v + m2) * 255).toString(16);
+      return q.length === 1 ? '0' + q : q;
+    }).join('');
+  }
+  var COLOR_RAMP = COLOR_CODES.map(function (code, i) {
+    if (i === 0) return '#d33682'; // Color A, historic magenta
+    if (i === 1) return '#268bd2'; // Color B, historic blue
+    return hslHex((i * 47 + 8) % 360, 58, 46);
+  });
+  COLOR_CODES.forEach(function (code, i) {
+    CODES[code] = {
+      label: i === 0 ? 'Color A' : i === 1 ? 'Color B' : 'Color ' + (i + 1),
+      hint: 'intarsia color slot ' + (i + 1), color: true
+    };
+  });
+  // Symbol palette: non-color tools; color slots render dynamically per chart.
+  var PALETTE = ['.', 'k', 'x', 'h', '<', '>', 'i', 'd', 't'];
+
+  function colorIndex(code) { return COLOR_CODES.indexOf(code); }
+  function colorsOf(p) {
+    var out = [];
+    if (p && Array.isArray(p.colors)) {
+      p.colors.forEach(function (c) {
+        if (out.length >= COLOR_CODES.length) return;
+        var hex = c && /^#[0-9a-f]{6}$/i.test(String(c.hex)) ? String(c.hex).toLowerCase() : (COLOR_RAMP[out.length] || '#888888');
+        var name = c ? String(c.name || '').trim().substring(0, 24) : '';
+        out.push({ name: name || null, hex: hex });
+      });
+    }
+    return out;
+  }
+  function colorAt(p, idx) {
+    var t = colorsOf(p);
+    var e = t[idx] || {};
+    return {
+      name: e.name || (idx < 2 ? 'Color ' + 'AB'.charAt(idx) : 'Color ' + (idx + 1)),
+      hex: e.hex || COLOR_RAMP[idx] || '#888888'
+    };
+  }
+  function colorHex(p, idx) { return colorAt(p, idx).hex; }
+  function escapeXml(t) {
+    return String(t).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+  }
+  function usedColorCodes(p) {
+    var seen = [], out = [];
+    (p.rows || []).forEach(function (r) {
+      for (var i = 0; i < r.length; i++) {
+        var ci = colorIndex(r[i]);
+        if (ci >= 0 && !seen[ci]) { seen[ci] = true; out.push(COLOR_CODES[ci]); }
+      }
+    });
+    return out;
+  }
 
   var INK = '#e8e8e8';
   var CELL_FG = '#101010';
@@ -64,6 +129,8 @@
         if (!(r[i] in CODES)) throw new Error('unknown cell code "' + r[i] + '" in row ' + y);
       }
     }
+    if (p.colors !== undefined && !Array.isArray(p.colors)) delete p.colors;
+    if (p.colors) p.colors = colorsOf(p);
     if (!p.meta || typeof p.meta !== 'object') p.meta = { tags: [], notes: '' };
     if (!Array.isArray(p.meta.tags)) p.meta.tags = [];
     return p;
@@ -306,6 +373,14 @@
       var side = (r % 2 === 0) ? 'RS' : 'WS';
       lines.push('Row ' + (r + 1) + ' (' + side + '): ' + rle(p.rows[y]));
     }
+    var uc = usedColorCodes(p);
+    if (uc.length) {
+      lines.push('', 'colors:');
+      uc.forEach(function (code) {
+        var col = colorAt(p, colorIndex(code));
+        lines.push('  ' + col.name + ' = ' + col.hex + '   [code "' + code + '"]');
+      });
+    }
     return lines.join('\n');
   }
 
@@ -313,14 +388,16 @@
   function toSvg(p, cell) {
     cell = cell || 20;
     var W = p.width * cell, H = p.height * cell, pad = 24;
+    var uc = usedColorCodes(p);
+    var legendH = uc.length ? 12 + Math.ceil(uc.length / 8) * 16 : 0;
     var s = '<svg xmlns="http://www.w3.org/2000/svg" width="' + (W + pad * 2) +
-      '" height="' + (H + pad * 2) + '" viewBox="0 0 ' + (W + pad * 2) + ' ' + (H + pad * 2) + '">\n';
+      '" height="' + (H + pad * 2 + legendH) + '" viewBox="0 0 ' + (W + pad * 2) + ' ' + (H + pad * 2 + legendH) + '">\n';
     s += '<rect width="100%" height="100%" fill="white"/>\n';
     var g = ' transform="translate(' + pad + ',' + pad + ')"';
     s += '<g' + g + '>\n';
     for (var y = 0; y < p.height; y++) {
       for (var x = 0; x < p.width; x++) {
-        s += cellSvg(p.rows[y][x], x * cell, y * cell, cell);
+        s += cellSvg(p.rows[y][x], x * cell, y * cell, cell, p);
       }
     }
     for (var x2 = 0; x2 <= p.width; x2++) s += '<line x1="' + x2 * cell + '" y1="0" x2="' + x2 * cell + '" y2="' + H + '" stroke="#999" stroke-width="0.5"/>';
@@ -330,19 +407,35 @@
       var ty = (p.height - r) * cell + cell / 2;
       s += '<text x="-4" y="' + (ty + 4) + '" font-size="10" text-anchor="end" font-family="sans-serif">' + r + '</text>';
     }
-    s += '</g>\n</svg>\n';
+    s += '</g>\n';
+    if (uc.length) {
+      s += '<g transform="translate(' + pad + ',' + (pad + H + 6) + ')" font-family="sans-serif" font-size="11">\n';
+      var cx = 0, cy = 0;
+      uc.forEach(function (code, i) {
+        if (i && i % 8 === 0) { cx = 0; cy += 16; }
+        var col = colorAt(p, colorIndex(code));
+        s += '<rect x="' + cx + '" y="' + (cy + 2) + '" width="11" height="11" fill="' + col.hex + '" stroke="#333"/>' +
+          '<text x="' + (cx + 15) + '" y="' + (cy + 11) + '">' + escapeXml(col.name) + ' ' + col.hex + '</text>';
+        cx += 20 + 7 * col.name.length;
+      });
+      s += '</g>\n';
+    }
+    s += '</svg>\n';
     return s;
   }
 
-  function cellSvg(code, px, py, c) {
+  function cellSvg(code, px, py, c, p) {
     var m = c * 0.15, s = '';
+    var ci = colorIndex(code);
+    if (ci >= 0) {
+      return '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) +
+        '" fill="' + colorHex(p, ci) + '" stroke="#101010" stroke-width="0.5"/>';
+    }
     switch (code) {
       case 'x': s += '<rect x="' + px + '" y="' + py + '" width="' + c + '" height="' + c + '" fill="#111"/>'; break;
       case 'h': s += '<rect x="' + (px + c * 0.3) + '" y="' + (py + c * 0.3) + '" width="' + (c * 0.4) + '" height="' + (c * 0.4) + '" fill="#111"/>'; break;
       case '<': s += '<line x1="' + (px + c) + '" y1="' + (py + c) + '" x2="' + (px + c * 0.15) + '" y2="' + (py + c * 0.15) + '" stroke="#111" stroke-width="2"/>'; break;
       case '>': s += '<line x1="' + px + '" y1="' + (py + c) + '" x2="' + (px + c * 0.85) + '" y2="' + (py + c * 0.15) + '" stroke="#111" stroke-width="2"/>'; break;
-      case 'a': s += '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) + '" fill="#d33682"/>'; break;
-      case 'b': s += '<rect x="' + (px + m) + '" y="' + (py + m) + '" width="' + (c - 2 * m) + '" height="' + (c - 2 * m) + '" fill="#268bd2" opacity="0.45" stroke="#268bd2"/>'; break;
       case 'i': s += '<polygon points="' + (px + c / 2) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + c - m) + ' ' + (px + m) + ',' + (py + c - m) + '" fill="#2aa198"/>'; break;
       case 'd': s += '<polygon points="' + (px + m) + ',' + (py + m) + ' ' + (px + c - m) + ',' + (py + m) + ' ' + (px + c / 2) + ',' + (py + c - m) + '" fill="#dc322f"/>'; break;
       case 't':
@@ -488,9 +581,20 @@
 
   /* ---------- canvas rendering (browsers only) ---------- */
 
-  function drawCell(ctx, code, px, py, size) {
+  function drawCell(ctx, code, px, py, size, p) {
     if (code === '.') return;
     var c = size, m = c * 0.15;
+    var ci = colorIndex(code);
+    if (ci >= 0) {
+      ctx.save();
+      ctx.fillStyle = colorHex(p, ci);
+      ctx.fillRect(px + m, py + m, c - 2 * m, c - 2 * m);
+      ctx.strokeStyle = '#101010';
+      ctx.lineWidth = Math.max(0.5, c * 0.05);
+      ctx.strokeRect(px + m, py + m, c - 2 * m, c - 2 * m);
+      ctx.restore();
+      return;
+    }
     ctx.save();
     if (code === 'x') {
       ctx.fillStyle = '#101010';
@@ -505,14 +609,6 @@
       if (code === '<') { ctx.moveTo(px + c, py + c); ctx.lineTo(px + c * 0.1, py + c * 0.1); }
       else { ctx.moveTo(px, py + c); ctx.lineTo(px + c * 0.9, py + c * 0.1); }
       ctx.stroke();
-    } else if (code === 'a') {
-      ctx.fillStyle = '#d33682';
-      ctx.fillRect(px + m, py + m, c - 2 * m, c - 2 * m);
-    } else if (code === 'b') {
-      ctx.fillStyle = 'rgba(38,139,210,0.45)';
-      ctx.fillRect(px + m, py + m, c - 2 * m, c - 2 * m);
-      ctx.strokeStyle = '#268bd2';
-      ctx.strokeRect(px + m, py + m, c - 2 * m, c - 2 * m);
     } else if (code === 'i') {
       ctx.fillStyle = '#2aa198';
       ctx.beginPath();
@@ -558,7 +654,7 @@
     for (var y = y0; y < y1; y++) {
       var row = p.rows[y];
       for (var x = x0; x < x1; x++) {
-        drawCell(ctx, row[x], Math.round(ox + x * z), Math.round(oy + y * z), Math.ceil(z));
+        drawCell(ctx, row[x], Math.round(ox + x * z), Math.round(oy + y * z), Math.ceil(z), p);
       }
     }
     if (view.showGrid && z >= 6) {
@@ -636,6 +732,9 @@
     addPanel: addPanel, getPanel: getPanel, removePanel: removePanel,
     setPanelChart: setPanelChart, panelDims: panelDims,
     projectToText: projectToText, projectFromSlicer: projectFromSlicer,
+    colorIndex: colorIndex, colorsOf: colorsOf, colorAt: colorAt,
+    colorHex: colorHex, usedColorCodes: usedColorCodes,
+    COLOR_CODES: COLOR_CODES, COLOR_RAMP: COLOR_RAMP,
     rle: rle, toText: toText, toSvg: toSvg, slug: slug,
     drawCell: drawCell, renderChart: renderChart, fitView: fitView
   };

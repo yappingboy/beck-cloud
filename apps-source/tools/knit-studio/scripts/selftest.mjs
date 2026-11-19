@@ -131,5 +131,80 @@ t('k2tog code t validates, palette, text export', () => {
   if (!txt.includes('t1')) throw new Error('rle should emit t1: ' + txt.split('\n').pop());
 });
 
+/* ---------- intarsia colors ---------- */
+t('color slots: 38 codes, a/b kept, capitals + digits valid cells', () => {
+  if (KS.COLOR_CODES.length !== 38) throw new Error('slots ' + KS.COLOR_CODES.length);
+  if (KS.colorIndex('a') !== 0 || KS.colorIndex('b') !== 1) throw new Error('legacy slots moved');
+  if (KS.colorIndex('C') !== 14 || KS.colorIndex('3') !== 5) throw new Error('index math');
+  if (KS.colorIndex('k') !== -1 || KS.colorIndex('t') !== -1) throw new Error('symbols are not colors');
+  const p = KS.blank('t', 4, 2);
+  p.rows = ['aB3C', '.09z'.replace('z', 'Z')];
+  KS.validate(p);
+  let threw = false;
+  try { KS.validate(KS.blank('t', 1, 1) && Object.assign(KS.blank('x', 1, 1), { rows: ['#'] })); }
+  catch (e) { threw = true; }
+  if (!threw) throw new Error('"#" accepted as a cell code');
+});
+
+t('colors table sanitizing: hex regex, name cap, junk dropped', () => {
+  const p = KS.blank('t', 2, 1);
+  p.colors = [
+    { name: '  Fern  ', hex: '#0F8000' },
+    { name: 'x'.repeat(40), hex: 'red' },
+    'junk',
+    { hex: '#0000ff' }
+  ];
+  KS.validate(p);
+  const t2 = KS.colorsOf(p);
+  if (t2[0].name !== 'Fern' || t2[0].hex !== '#0f8000') throw new Error('entry 0: ' + JSON.stringify(t2[0]));
+  if (t2[1].name.length !== 24) throw new Error('name cap');
+  if (t2[1].hex !== KS.COLOR_RAMP[1]) throw new Error('bad hex should fall back to ramp');
+  if (t2[3].hex !== '#0000ff') throw new Error('entry 3');
+});
+
+t('colorAt defaults: A magenta, B blue, then ramp; names auto', () => {
+  const p = KS.blank('t', 2, 1);
+  const a = KS.colorAt(p, 0), b = KS.colorAt(p, 1), c = KS.colorAt(p, 4);
+  if (a.hex !== '#d33682' || a.name !== 'Color A') throw new Error('A');
+  if (b.hex !== '#268bd2' || b.name !== 'Color B') throw new Error('B');
+  if (c.name !== 'Color 5' || !/^#[0-9a-f]{6}$/.test(c.hex)) throw new Error('slot 5');
+  if (KS.colorAt(p, 99).hex !== '#888888') throw new Error('out of range fallback');
+});
+
+t('setCell paints color codes; usedColorCodes scans rows', () => {
+  const p = KS.blank('t', 3, 1);
+  KS.setCell(p, 0, 0, 'a');
+  KS.setCell(p, 0, 1, '3');
+  KS.setCell(p, 0, 2, 'Q');
+  eq(p.rows, ['a3Q']);
+  eq(KS.usedColorCodes(p), ['a', '3', 'Q']);
+});
+
+t('toText and toSvg carry the color legend', () => {
+  const p = KS.blank('tint', 4, 2);
+  p.rows = ['ab3a', 'b3ab']; // a=slot0, b=slot1, 3=slot5
+  p.colors = [{ name: 'Heather', hex: '#7b5ea7' }, { name: 'Slate', hex: '#556677' }];
+  KS.validate(p);
+  const txt = KS.toText(p);
+  if (!txt.includes('Heather = #7b5ea7') || !txt.includes('[code "a"]')) throw new Error('txt legend: ' + txt);
+  const svg = KS.toSvg(p);
+  if (!svg.includes('fill="#7b5ea7"')) throw new Error('cell fill');
+  if (!svg.includes('>Heather #7b5ea7</text>')) throw new Error('legend text');
+  if (!svg.includes('>Color 6 ')) throw new Error('unnamed slot 3 is Color 6');
+  if (!svg.includes('>Slate #556677</text>')) throw new Error('named B slot');
+});
+
+t('legacy two-color charts: no table injected, defaults named; plain charts no legend', () => {
+  const p = KS.blank('old', 2, 2);
+  p.rows = ['ab', 'ba'];
+  KS.validate(p);
+  if (p.colors !== undefined) throw new Error('colors must stay absent when unset');
+  const txt = KS.toText(p); // a/b ARE color cells, so a defaults legend is correct
+  if (!txt.includes('Color A = #d33682') || !txt.includes('Color B = #268bd2')) throw new Error('defaults legend: ' + txt);
+  const plain = KS.blank('plain', 2, 1);
+  plain.rows = ['.k'];
+  if (KS.toText(plain).includes('colors:')) throw new Error('no colors, no legend');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
