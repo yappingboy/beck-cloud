@@ -24,14 +24,33 @@
     return s;
   }
 
-  var HEADER = /^\s*[>\-|*)\]]*\s*(?:r(?:ound|nd)?|row)\s*#?\s*(\d+)\s*(?:\s*[-\u2013\u2014]\s*(\d+))?\s*[:.\-)\]]?\s*(.*)$/i;
+  var HEADER = /^\s*[>\-|*)\]]*\s*(?:r(?:ounds?|nds?|nd|d)?|rows?)\s*#?\s*(\d+)\s*(?:\s*[-\u2013\u2014]\s*(\d+))?\s*[:.\-)\]]?\s*(.*)$/i;
+  var HEADERISH = /^\s*[>\-|*)\]]*\s*(?:r(?:ounds?|nds?|nd|d)?|rows?)\s*#?\s*\d/i;
 
   // net stitch change from inc/dec wording; null when the keyword is absent
+  // Honors group multipliers: "(sc, inc) x 6", "(4 sc, dec)6x", "*sc, inc* rep 6"
+  var GRP_PAREN = /\(([^)]*)\)\s*(?:(?:[x\u00d7]|rep(?:lets)?\.?|repeats?|times)\s*(\d+)|(\d+)\s*(?:[x\u00d7]|times?))/i;
+  var GRP_STAR = /\*([^*]*)\*\s*(?:(?:[x\u00d7]|rep(?:lets)?\.?|repeats?|times)\s*(\d+)|(\d+)\s*(?:[x\u00d7]|times?))/i;
   function keywordDelta(body, kind) {
+    var innerRe = kind === 'inc'
+      ? /\b(?:inc|increase)s?\b/gi
+      : /\b(?:dec|decrease|reduce|sc2tog|tog)\b/gi;
     var re = kind === 'inc'
       ? /\b(?:inc|increase)s?\b(?:\s*(?:x|\u00d7|by)?\s*(\d+))?|\b(\d+)\s*incs?\b/gi
       : /\b(?:dec|decrease|reduce)s?\b(?:\s*(?:x|\u00d7|by)?\s*(\d+))?|\b(\d+)\s*(?:sc\s+)?decs?\b/gi;
-    var m, n = 0, saw = false;
+    var m, n = 0, saw = false, from = 0;
+    var g = GRP_PAREN.exec(body), gs = GRP_STAR.exec(body);
+    if (gs && (!g || gs.index < g.index)) g = gs;
+    if (g) {
+      var gm = g[2] || g[3];
+      var inner = (g[1] || '').match(innerRe);
+      if (gm && inner) {
+        n += inner.length * parseInt(gm, 10);
+        saw = true;
+        from = g.index + g[0].length;
+      }
+    }
+    re.lastIndex = from;
     while ((m = re.exec(body))) {
       saw = true;
       var mult = m[1] || m[2] || m[3];
@@ -41,16 +60,25 @@
   }
 
   // body + previous round count -> { sts, src } | { sts: null }
-  function parseOne(body, prev) {
+  function parseOne(raw, prev) {
+    var body = String(raw || '').replace(/\(\s*\d+\s*(?:rounds?|rnds?|rows?)\s*\)/gi, ' ').trim();
     var tot = /\((\d+)\s*(?:sts?|stitches|sc|dc)?\)\s*[.,;]?\s*$/.exec(body);
     if (tot) return { sts: parseInt(tot[1], 10), src: 'total' };
+    // "inc around" = one increase worked in every stitch; "dec around" pairs stitches up
+    if (prev !== null && /\binc\w*\s+(?:around|in (?:each|every)|to each)\b/i.test(body)) {
+      return { sts: prev * 2, src: 'delta' };
+    }
+    if (prev !== null && (/\bdec\w*\s+(?:around|in each|in every)\b/i.test(body) || /\bdec\w*\s+each\s+st/i.test(body))) {
+      return { sts: Math.floor(prev / 2), src: 'delta' };
+    }
     var inc = keywordDelta(body, 'inc') || 0;
     var dec = keywordDelta(body, 'dec') || 0;
     if ((inc || dec) && prev !== null) return { sts: prev + inc - dec, src: 'delta' };
-    if (/^(?:work\s+)?even|sc\s*even|work\s+even|even\s+around/i.test(body) && prev !== null) {
+    if (/^(?:work\s+)?even|sc\s*even|work\s+even|even\s+around|in (?:each|every)\s+st\b|\baround\b/i.test(body) && prev !== null) {
       return { sts: prev, src: 'even' };
     }
-    var mr = /\b(?:mr|magic ring|magic circle)\b/i.test(body);
+    
+var mr = /\b(?:mr|magic ring|magic circle)\b/i.test(body);
     var seed = mr && /(\d+)\s*(?:sc|dc|tr|st)/i.exec(body);
     if (seed) return { sts: parseInt(seed[1], 10), src: 'ring' };
     var any = /\((\d+)\s*(?:sts?|stitches)\)/i.exec(body);
@@ -65,10 +93,19 @@
     for (var i = 0; i < lines.length; i++) {
       var line = lines[i];
       var m = HEADER.exec(line);
-      if (!m) continue;
+      if (!m) {
+        if (HEADERISH.test(line)) {
+          errors.push('line ' + (i + 1) + ': unrecognized round header "' +
+            line.trim().substring(0, 44) + '"');
+        }
+        continue;
+      }
       var a = parseInt(m[1], 10);
       var b = m[2] ? parseInt(m[2], 10) : null;
       var body = m[3] || '';
+      if (b !== null && b > a && b - a > 63) {
+        errors.push('line ' + (i + 1) + ': round range ' + a + '-' + b + ' too wide, treated as single round');
+      }
       var span = (b !== null && b > a && b - a <= 63) ? b - a + 1 : 1;
       var ok = true;
       for (var k = 0; k < span; k++) {

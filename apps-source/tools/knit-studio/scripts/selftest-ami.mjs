@@ -137,5 +137,58 @@ t('full pipeline: pattern text -> project-shaped chart', () => {
   if (!txt.includes('PANEL A: Head')) throw new Error('export text');
 });
 
+t('parse Rnds plural + en-dash range + (4 rounds) noise (bug repro)', () => {
+  const BALL = `Rnd 1: MR, 6 sc into ring. (6)
+Rnd 2: inc around. (12)
+Rnd 3: (sc, inc) x 6 (18)
+Rnd 4: (2 sc, inc) x 6  (24)
+Rnd 5: (3 sc, inc) x6  (30)
+Rnd 6: (4 sc, inc)6x (36)
+Rnds 7\u201310:(4 rounds) sc in each st around  (36)
+Rnd 11: (4 sc, dec) x 6  (30)
+Rnd 12: (3 sc, dec) x 6 (24)
+Rnd 13:  (2 sc, dec) x 6 (18)
+Rnd 14:  (sc, dec) x 6 (12)
+Rnd 15: dec around. (6)`;
+  const p = AMI.parseRoundText(BALL);
+  eq(p.errors, []);
+  eq(p.rounds.map((r) => r.sts),
+    [6, 12, 18, 24, 30, 36, 36, 36, 36, 36, 30, 24, 18, 12, 6]);
+  eq(p.rounds.length, 15);
+  const res = AMI.amiToShape(p.rounds.map((r) => r.sts), { split: 2, name: 'ball' });
+  eq(KS.shaping.check(res.shape), []);
+  KS.validate(KS.shaping.toPattern(res.shape));
+});
+
+t('delta fallback without totals: group multipliers + inc/dec around', () => {
+  const noTot = `Rnd 1: MR 6 sc into ring
+Rnd 2: inc around
+Rnd 3: (sc, inc) x 6
+Rnd 4: (2 sc, inc) x 6
+Rnd 5: (3 sc, inc) x6
+Rnd 6: (4 sc, inc)6x
+Rnds 7-10: (4 rounds) sc in each st around
+Rnd 11: (4 sc, dec) x 6
+Rnd 12: (3 sc, dec) x 6
+Rnd 13: (2 sc, dec) x 6
+Rnd 14: (sc, dec) x 6
+Rnd 15: dec around`;
+  const p = AMI.parseRoundText(noTot);
+  eq(p.errors, []);
+  eq(p.rounds.map((r) => r.sts),
+    [6, 12, 18, 24, 30, 36, 36, 36, 36, 36, 30, 24, 18, 12, 6]);
+});
+
+t('star-group multipliers: *sc, inc* rep 6', () => {
+  const p = AMI.parseRoundText('R1: MR 6sc\nR2: *sc, inc* rep 6 (18)');
+  eq(p.errors, []);
+  eq(p.rounds.map((r) => r.sts), [6, 18]);
+});
+
+t('malformed round header reports an error instead of vanishing', () => {
+  const p = AMI.parseRoundText('R1: MR 6sc\nRounds 7, 8, 9: work sparkle puffs\nR10: sc (6)');
+  if (p.errors.length === 0) throw new Error('expected an error for comma header');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
