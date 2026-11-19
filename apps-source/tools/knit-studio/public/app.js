@@ -291,9 +291,9 @@ function setTool(t) {
 var _palPatRef = null, _palColRef = null;
 
 function paletteAutoRefresh() {
-  var p = activePat();
-  if (p !== _palPatRef || (p.colors && p.colors !== _palColRef)) {
-    _palPatRef = p; _palColRef = p.colors;
+  var p = activePat() || null;
+  if (p !== _palPatRef || (p && p.colors && p.colors !== _palColRef)) {
+    _palPatRef = p; _palColRef = p ? p.colors : null;
     refreshColorSwatches();
   }
 }
