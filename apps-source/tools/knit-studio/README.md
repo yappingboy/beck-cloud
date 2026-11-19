@@ -199,6 +199,19 @@ presets, project panels, and appear in `.txt` exports (`row 24: start heel
 turn`). Charts generated from the shape carry the notes on
 `meta.annotations` and `meta.shape`.
 
+## Project templates
+
+The **Templates** tab turns measurements into a multi-panel project: pick a
+garment (socks, sweater, cardigan, shawl, scarf, beanie), enter the wearer's
+dimensions (cm or inches) and your gauge, and every panel arrives as a chart
+plus an editable shaping model — cuffs, tapers, short-row shoulders, held
+heel flaps, w&t toes, crown decreases — with how-to annotations pinned on
+the diagrams. Panel sizes come from your numbers: change chest or ease and
+rebuild. Saved per template in the browser, so the wearer's measurements
+survive refreshes. Engine: `public/templates.js` (`KS.templates`), pure and
+selftested; generated panels always pass `shaping.check` and chart validation.
+Templates are starting points — tune anything in the Projects tab.
+
 ## Amigurumi importer
 
 The **Ami** tab converts crochet amigurumi patterns into knitting. Paste

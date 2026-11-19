@@ -39,6 +39,127 @@ function api(method, url, body) {
   });
 }
 
+/* ---------- project templates ---------- */
+var STpl = { sel: null };
+
+function tplStoreKey(id) { return 'ks-tpl-' + id; }
+
+function renderTpl() {
+  var grid = $('tplGrid');
+  grid.innerHTML = '';
+  KS.templates.TEMPLATES.forEach(function (t) {
+    var b = document.createElement('button');
+    b.className = 'secondary tpl-card';
+    var ico = document.createElement('span');
+    ico.className = 'tpl-ico'; ico.textContent = t.icon;
+    var nm = document.createElement('b');
+    nm.textContent = t.name;
+    var bl = document.createElement('span');
+    bl.className = 'tpl-blurb'; bl.textContent = t.blurb;
+    b.appendChild(ico); b.appendChild(nm); b.appendChild(bl);
+    b.onclick = function () { openTplForm(t.id); };
+    grid.appendChild(b);
+  });
+  $('tplForm').classList.toggle('hidden', !STpl.sel);
+  if (STpl.sel) renderTplForm();
+}
+
+function openTplForm(id) {
+  STpl.sel = id;
+  var t = KS.templates.get(id);
+  $('tplFormTitle').textContent = t.icon + ' ' + t.name + ' \u2014 wearer measurements';
+  if (!$('tplName').value) $('tplName').value = id + '-1';
+  try {
+    var saved = JSON.parse(localStorage.getItem(tplStoreKey(id)) || 'null');
+    if (saved) {
+      if (saved.gauge) {
+        $('tplSts').value = saved.gauge.stsPer10cm || '';
+        $('tplRows').value = saved.gauge.rowsPer10cm || '';
+      }
+      if (saved.units) $('tplUnits').value = saved.units;
+    }
+  } catch (e) { /* fresh defaults */ }
+  renderTpl();
+  $('tplForm').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function renderTplForm() {
+  var t = KS.templates.get(STpl.sel);
+  if (!t) return;
+  var host = $('tplDims');
+  host.innerHTML = '';
+  var inches = $('tplUnits').value === 'in';
+  var saved = {};
+  try { saved = (JSON.parse(localStorage.getItem(tplStoreKey(t.id)) || '{}').dims) || {}; } catch (e) { saved = {}; }
+  t.fields.forEach(function (f) {
+    var lab = document.createElement('label');
+    lab.textContent = f.label + (inches ? ' (in)' : ' (cm)');
+    var inp = document.createElement('input');
+    inp.type = 'number'; inp.id = 'tplDim-' + f.key;
+    inp.step = '0.5'; inp.min = String(inches ? Math.round(f.min / 2.54 * 10) / 10 : f.min);
+    var cm = saved[f.key] !== undefined ? Number(saved[f.key]) : f.def;
+    inp.value = inches ? KS.templates.cmToIn(cm) : cm;
+    lab.appendChild(inp);
+    host.appendChild(lab);
+  });
+}
+
+function tplCollectDims() {
+  var t = KS.templates.get(STpl.sel);
+  var inches = $('tplUnits').value === 'in';
+  var dims = {};
+  t.fields.forEach(function (f) {
+    var v = Number($('tplDim-' + f.key).value);
+    dims[f.key] = inches ? Math.round(v * 25.4 * 10) / 10 : v;
+  });
+  return dims;
+}
+
+function tplBuild() {
+  var id = STpl.sel;
+  if (!id) return;
+  var dims = tplCollectDims();
+  var gauge = { stsPer10cm: Number($('tplSts').value), rowsPer10cm: Number($('tplRows').value) };
+  var errs = KS.templates.validate(id, dims, gauge);
+  if (errs.length) return status(errs.join(' \u00b7 '), true);
+  var built;
+  try {
+    built = KS.templates.build(id, dims, gauge, { name: $('tplName').value.trim() || id });
+  } catch (e) { return status('Template failed: ' + e.message, true); }
+  var proj = KS.blankProject(built.name);
+  proj.gauge = gauge;
+  var failed = [];
+  built.panels.forEach(function (pn) {
+    try {
+      var shape = KS.shaping.normalize(pn.shape);
+      var chart = KS.shaping.toPattern(shape, pn.name);
+      KS.addPanel(proj, chart, pn.name, pn.role, shape);
+    } catch (e) { failed.push(pn.name + ': ' + e.message); }
+  });
+  if (!proj.panels.length) return status('All panels failed: ' + failed.join(' | '), true);
+  proj.meta = proj.meta || {};
+  proj.meta.tags = ['template', id];
+  proj.meta.notes = (built.notes || []).join(' ');
+  try {
+    localStorage.setItem(tplStoreKey(id), JSON.stringify({
+      dims: dims, gauge: gauge, units: $('tplUnits').value
+    }));
+  } catch (e) { /* storage optional */ }
+  S.project = proj;
+  S.projectId = null;
+  S.boundPanel = null;
+  setTab('proj');
+  renderProjectDetail();
+  dirty();
+  status('Built ' + proj.name + ': ' + proj.panels.length + ' panels' +
+    (failed.length ? ' (' + failed.join('; ') + ')' : '') + ' \u2014 save to persist.');
+}
+
+function bindTpl() {
+  $('tplUnits').addEventListener('change', renderTplForm);
+  $('tplCancel').addEventListener('click', function () { STpl.sel = null; renderTpl(); });
+  $('tplBuild').addEventListener('click', tplBuild);
+}
 /* ---------- tabs ---------- */
 function setTab(t) {
   S.tab = t;
@@ -49,6 +170,7 @@ function setTab(t) {
   $('conv').classList.toggle('hidden', t !== 'conv');
   $('shape').classList.toggle('hidden', t !== 'shape');
   $('proj').classList.toggle('hidden', t !== 'proj');
+  $('tpl').classList.toggle('hidden', t !== 'tpl');
   $('cam').classList.toggle('hidden', t !== 'cam');
   $('ami').classList.toggle('hidden', t !== 'ami');
   $('stage').classList.toggle('hidden', t !== 'edit' && t !== 'view');
@@ -56,6 +178,7 @@ function setTab(t) {
   $('side').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   if (t === 'lib') loadLib();
   if (t === 'proj') loadProjects();
+  if (t === 'tpl') renderTpl();
   if (t === 'cam') camDraw();
   if (t === 'ami') renderAmi();
   if (t === 'shape') { renderShapeForm(); renderShapeView(); }
@@ -2091,6 +2214,7 @@ window.addEventListener('beforeunload', function (e) {
   if (S.dirty) { e.preventDefault(); e.returnValue = ''; }
 });
 new ResizeObserver(function () { draw(); }).observe($('stage'));
+bindTpl();
 bindShapeUI();
 bindProjUI();
 bindCamUI();

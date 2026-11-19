@@ -14,6 +14,7 @@
     <button class="tab" data-tab="edit">Editor</button>
     <button class="tab" data-tab="shape">Shaping</button>
     <button class="tab" data-tab="proj">Projects</button>
+    <button class="tab" data-tab="tpl">Templates</button>
     <button class="tab" data-tab="cam">CAM</button>
     <button class="tab" data-tab="ami">Ami</button>
     <button class="tab" data-tab="view">Viewer</button>
@@ -157,6 +158,26 @@
         <button id="pjAddFromEditor">From open chart</button>
       </div>
       <div class="hint">Each panel carries its own chart (+ shaping model when generated). Edit opens it in the editor; \u201cUpdate\u201d writes the chart back. Export gives all panels as one instruction sheet.</div>
+    </div>
+  </section>
+
+  <section id="tpl" class="panel-wide hidden">
+    <h3>Project templates</h3>
+    <p class="hint">Pick a garment, enter the wearer&rsquo;s measurements and your gauge, and knit-studio builds a multi-panel project: charts + editable shaping models for every piece. Starting points, not gospel &mdash; tune everything afterwards.</p>
+    <div id="tplGrid" class="tpl-grid"></div>
+    <div id="tplForm" class="hidden">
+      <div class="group-label" style="margin-top:12px" id="tplFormTitle">Measurements</div>
+      <div class="btn-row" style="align-items:flex-end;flex-wrap:wrap">
+        <label>Units <select id="tplUnits"><option value="cm">cm</option><option value="in">inches</option></select></label>
+        <label>sts / 10cm <input type="number" id="tplSts" min="1" max="120" step="0.5"></label>
+        <label>rows / 10cm <input type="number" id="tplRows" min="1" max="160" step="0.5"></label>
+        <label>Project name <input type="text" id="tplName" maxlength="60"></label>
+      </div>
+      <div id="tplDims" class="tpl-dims"></div>
+      <div class="btn-row">
+        <button id="tplBuild" class="primary">Build project</button>
+        <button id="tplCancel" class="secondary">Back</button>
+      </div>
     </div>
   </section>
 
@@ -315,6 +336,7 @@
 
 <script src="core.js"></script>
 <script src="shaping.js"></script>
+<script src="templates.js"></script>
 <script src="slicer.js"></script>
 <script src="ami.js"></script>
 <script src="app.js"></script>

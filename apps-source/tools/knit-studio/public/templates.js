@@ -1,0 +1,321 @@
+/* knit-studio garment templates (pure): dims in cm -> project panel shapes.
+ * UMD: window.KS.templates (browser) or require() (node selftests).
+ * Each template: id, name, icon, blurb, fields[], build(dims, gauge).
+ * build() returns { panels: [{name, role, shape, notes[]}], notes: [] }.
+ * Shapes use only verified segment kinds (straight/dec/inc/sr/hold);
+ * results are starting points to tune in the Projects/Shaping tabs. */
+(function (root, factory) {
+  var mod = factory();
+  if (typeof module !== 'undefined' && module.exports) module.exports = mod;
+  else { root.KS = root.KS || {}; root.KS.templates = mod; }
+})(typeof globalThis !== 'undefined' ? globalThis : this, function () {
+  'use strict';
+  function clamp(v, a, b) { return v < a ? a : v > b ? b : v; }
+
+  function maker(gauge) {
+    var sts10 = clamp(gauge.stsPer10cm, 1, 200);
+    var rows10 = clamp(gauge.rowsPer10cm, 1, 200);
+    return {
+      sts: function (cm) { return Math.max(8, Math.min(3900, Math.round(cm / 10 * sts10))); },
+      rows: function (cm) { return Math.max(4, Math.min(3900, Math.round(cm / 10 * rows10))); }
+    };
+  }
+  function st(rows) { return { kind: 'straight', rows: rows }; }
+  function dec(every, each, times) { return { kind: 'dec', every: Math.max(1, every | 0), each: Math.max(1, each | 0), times: Math.max(1, times | 0) }; }
+  function inc(every, each, times) { return { kind: 'inc', every: Math.max(1, every | 0), each: Math.max(1, each | 0), times: Math.max(1, times | 0) }; }
+  function hold(each, rows, release) { return { kind: 'hold', each: Math.max(1, each | 0), rows: Math.max(1, rows | 0), release: !!release }; }
+  function sr(every, turn, times) { return { kind: 'sr', every: Math.max(1, every | 0), turn: Math.max(1, turn | 0), times: Math.max(1, times | 0) }; }
+  function edge() { return Array.prototype.slice.call(arguments); }
+
+  var TEMPLATES = [
+    {
+      id: 'socks', name: 'Socks (cuff-down)', icon: '🧦',
+      blurb: 'Pair of top-down socks: cuff, leg, short-row heel, foot, w&t toe to graft. Tune ribbing and heel style in the editor.',
+      fields: [
+        { key: 'footCirc', label: 'Foot circumference', def: 22, min: 12, max: 40 },
+        { key: 'footLen', label: 'Foot length (heel to toe)', def: 24, min: 12, max: 35 },
+        { key: 'legLen', label: 'Leg length (ankle to top)', def: 18, min: 5, max: 45 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var footSts = m.sts(d.footCirc);
+        var legRows = m.rows(d.legLen);
+        var footRows = m.rows(d.footLen);
+        var toeEv = Math.max(2, Math.floor(footSts / 4));   // w&t toe to half width
+        var toeRows = 2 * toeEv;
+        var flapRows = m.rows(d.footCirc / 4);              // heel flap ~ a quarter of circ
+        var held = Math.max(2, Math.floor(footSts / 4));    // half the sts live on the flap
+        var legEven = Math.max(2, legRows - 4);
+        var footEven = Math.max(2, footRows - toeRows - 2);
+        var e = function () {
+          return edge(
+            st(4),                                        // cuff
+            st(legEven),                                  // leg
+            hold(held, flapRows, false),                  // heel: work middle half, take back
+            st(2),
+            st(footEven),                                 // foot
+            sr(2, 1, toeEv),                              // toe wedge
+            st(2)                                         // graft
+          );
+        };
+        var shape = {
+          name: 'sock', width: footSts, gauge: g, mirror: true,
+          edges: { left: e(), right: e() },
+          annotations: [
+            { row: 5, off: 0, text: 'cuff: work ribbing (edit cells for 2x2)' },
+            { row: 5 + legEven, off: held, text: 'heel: flap on middle ' + (footSts - 2 * held) + ' sts, w&t each end, take all back' },
+            { row: 5 + legEven + flapRows + 3 + footEven, off: 0, text: 'toe: w&t wedges, graft live sts' }
+          ]
+        };
+        return {
+          panels: [
+            { name: 'Sock L', role: 'other', shape: shape },
+            { name: 'Sock R', role: 'other', shape: JSON.parse(JSON.stringify(shape)) }
+          ],
+          notes: ['Gauge-driven: regenerate if you change needle size.']
+        };
+      }
+    },
+    {
+      id: 'sweater', name: 'Sweater (drop shoulder)', icon: '🧥',
+      blurb: 'Pullover in pieces: straight back and front to bust line, short-row shoulders, straight sleeves with cap, collar band. Body shapes at the waistline stay straight in v1 — widen tapers in Shaping.',
+      fields: [
+        { key: 'chest', label: 'Bust / chest circumference', def: 96, min: 60, max: 180 },
+        { key: 'bodyLen', label: 'Body length (underarm to shoulder)', def: 42, min: 20, max: 70 },
+        { key: 'sleeveLen', label: 'Sleeve length (underarm to cuff)', def: 45, min: 15, max: 75 },
+        { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
+        { key: 'wristCirc', label: 'Wrist circumference', def: 18, min: 12, max: 35 },
+        { key: 'ease', label: 'Positive ease (+cm)', def: 6, min: -5, max: 30 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var bodySts = m.sts(d.chest + d.ease);
+        var half = Math.max(12, Math.round(bodySts / 2));
+        var bodyRows = m.rows(d.bodyLen);
+        var slopeTurn = Math.max(2, Math.floor(half / 24));
+        var slope = function () { return sr(2, slopeTurn, 2); };
+        var backShape = {
+          name: 'back', width: half, gauge: g, mirror: false,
+          edges: {
+            left: edge(st(4), st(bodyRows - 6), slope()),
+            right: edge(st(4), st(bodyRows - 6), slope())
+          },
+          annotations: [
+            { row: 5, off: 0, text: 'rib band: work 2x2 rib (edit cells)' },
+            { row: bodyRows - 5, off: 0, text: 'shoulder: short-row slope, hold live or BO' }
+          ]
+        };
+        var frontShape = {
+          name: 'front', width: half, gauge: g, mirror: false,
+          edges: {
+            left: edge(st(4), st(bodyRows - 6), slope()),
+            right: edge(st(4), st(bodyRows - 6), slope())
+          },
+          annotations: [
+            { row: bodyRows - Math.max(6, Math.round(bodyRows * 0.18)), off: Math.round(half / 2), text: 'neck: shape or pick up here' }
+          ]
+        };
+        var armSts = m.sts(d.armCirc + 4);
+        var wristSts = m.sts(d.wristCirc + 2);
+        var sleeveRows = m.rows(d.sleeveLen);
+        var taper = armSts - wristSts;
+        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
+        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
+        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.62 / taperTimes));
+        var widthAtCap = Math.max(wristSts, wristSts + 2 * taperEach * taperTimes);
+        var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 6)); // 6 events total -> leave >=10 sts
+        var cap = function () { return dec(2, capEach, 3); };
+        var sleeveEdge = function () {
+          return edge(
+            st(Math.max(4, Math.round(sleeveRows * 0.12))),       // cuff rib
+            inc(taperEvery, taperEach, taperTimes),
+            st(Math.max(2, sleeveRows - Math.round(sleeveRows * 0.12) - taperEvery * taperTimes - 10)),
+            cap()
+          );
+        };
+        var sleeveL = { name: 'sleeve L', width: Math.max(10, wristSts), gauge: g, mirror: false, edges: { left: sleeveEdge(), right: sleeveEdge() }, annotations: [{ row: 3, off: 0, text: 'base = wrist sts; taper widens to upper arm' }] };
+        var collarSts = Math.max(16, m.sts((d.chest + d.ease) * 0.21));
+        var collar = { name: 'collar band', width: collarSts, gauge: g, mirror: false, edges: { left: edge(st(m.rows(3))), right: edge(st(m.rows(3))) }, annotations: [{ row: 2, off: 0, text: 'work in rib, 3 cm deep' }] };
+        var sl = JSON.parse(JSON.stringify(sleeveL)); sl.name = 'sleeve L';
+        var srr = JSON.parse(JSON.stringify(sleeveL)); srr.name = 'sleeve R';
+        return {
+          panels: [
+            { name: 'Back', role: 'back', shape: backShape },
+            { name: 'Front', role: 'front', shape: frontShape },
+            { name: 'Sleeve L', role: 'sleeve-left', shape: sl },
+            { name: 'Sleeve R', role: 'sleeve-right', shape: srr },
+            { name: 'Collar', role: 'collar', shape: collar }
+          ],
+          notes: ['Seamed pullover; swatch gauge before cutting yarn.']
+        };
+      }
+    },
+    {
+      id: 'cardigan', name: 'Cardigan', icon: '🧶',
+      blurb: 'Open front: two fronts, back, straight sleeves with cap, button bands. V1 fronts are straight; add waist shaping in Shaping.',
+      fields: [
+        { key: 'chest', label: 'Bust / chest circumference', def: 96, min: 60, max: 180 },
+        { key: 'bodyLen', label: 'Body length', def: 52, min: 25, max: 90 },
+        { key: 'sleeveLen', label: 'Sleeve length', def: 45, min: 15, max: 75 },
+        { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
+        { key: 'wristCirc', label: 'Wrist circumference', def: 18, min: 12, max: 35 },
+        { key: 'ease', label: 'Positive ease (+cm)', def: 8, min: -5, max: 30 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var bodySts = m.sts(d.chest + d.ease);
+        var frontW = Math.max(10, Math.round(bodySts / 4));
+        var bodyRows = m.rows(d.bodyLen);
+        var slopeTurn = Math.max(2, Math.floor(frontW / 20));
+        var front = function (side) {
+          var left = edge(st(6), st(bodyRows - 8));                        // button band edge: straight
+          var right = edge(st(6), st(bodyRows - 8), sr(2, slopeTurn, 2));  // shoulder slope
+          return side === 'R' ? { left: right, right: left } : { left: left, right: right };
+        };
+        var f1 = { name: 'front L', width: frontW, gauge: g, mirror: false, edges: front('L'), annotations: [{ row: 3, off: 0, text: 'inner edge = button band' }] };
+        var f2 = { name: 'front R', width: frontW, gauge: g, mirror: false, edges: front('R') };
+        var backShape = { name: 'back', width: Math.max(12, Math.round(bodySts / 2)), gauge: g, mirror: false, edges: { left: edge(st(6), st(bodyRows - 6)), right: edge(st(6), st(bodyRows - 6)) } };
+        var armSts = m.sts(d.armCirc + 4);
+        var wristSts = m.sts(d.wristCirc + 2);
+        var sleeveRows = m.rows(d.sleeveLen);
+        var taper = armSts - wristSts;
+        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
+        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
+        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.62 / taperTimes));
+        var widthAtCap = Math.max(wristSts, wristSts + 2 * taperEach * taperTimes);
+        var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 6)); // 6 events total -> leave >=10 sts
+        var sEdge = function () {
+          return edge(
+            st(Math.max(4, Math.round(sleeveRows * 0.12))),
+            inc(taperEvery, taperEach, taperTimes),
+            st(Math.max(2, sleeveRows - Math.round(sleeveRows * 0.12) - taperEvery * taperTimes - 12)),
+            dec(2, capEach, 3)
+          );
+        };
+        var sl = { name: 'sleeve L', width: Math.max(10, wristSts), gauge: g, mirror: false, edges: { left: sEdge(), right: sEdge() } };
+        var bandW = Math.max(6, m.sts(2.5));
+        var band = { name: 'button band', width: bandW, gauge: g, mirror: false, edges: { left: edge(st(bodyRows)), right: edge(st(bodyRows)) }, annotations: [{ row: 2, off: 0, text: 'two bands, one per front edge' }] };
+        var sl2 = JSON.parse(JSON.stringify(sl)); sl2.name = 'sleeve R';
+        return {
+          panels: [
+            { name: 'Front L', role: 'front', shape: f1 },
+            { name: 'Front R', role: 'front', shape: f2 },
+            { name: 'Back', role: 'back', shape: backShape },
+            { name: 'Sleeve L', role: 'sleeve-left', shape: sl },
+            { name: 'Sleeve R', role: 'sleeve-right', shape: sl2 },
+            { name: 'Bands', role: 'band', shape: band }
+          ],
+          notes: ['Mark buttonholes on the chart while you tune.']
+        };
+      }
+    },
+    {
+      id: 'shawl', name: 'Shawl (triangle)', icon: '🔺',
+      blurb: 'Top-down triangle: a few live sts at the neck, inc at both edges every other row to the wingspan.',
+      fields: [
+        { key: 'neckW', label: 'Neck edge width', def: 16, min: 6, max: 40 },
+        { key: 'depth', label: 'Depth (neck to point)', def: 60, min: 25, max: 90 },
+        { key: 'wingspan', label: 'Wingspan (top edge)', def: 170, min: 60, max: 260 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var neckSts = Math.max(6, m.sts(d.neckW));
+        var topSts = m.sts(d.wingspan);
+        var ev = Math.max(2, Math.round((topSts - neckSts) / 2));
+        var rowsNeeded = 2 * ev + 4;
+        var rowsAvail = m.rows(d.depth);
+        var every = Math.max(2, Math.min(12, Math.ceil(rowsAvail / ev / 2) * 2));
+        var e = function () { return edge(st(2), inc(every, Math.max(1, Math.ceil((topSts - neckSts) / 2 / ev)), ev), st(2)); };
+        var shape = {
+          name: 'shawl', width: neckSts, gauge: g, mirror: true,
+          edges: { left: e(), right: e() },
+          annotations: [{ row: 2, off: 0, text: 'cast on at neck; inc every ' + every + ' rows at each edge' }]
+        };
+        return { panels: [{ name: 'Shawl', role: 'other', shape: shape }], notes: [] };
+      }
+    },
+    {
+      id: 'scarf', name: 'Scarf', icon: '🧣',
+      blurb: 'Straight rectangle. Any stitch pattern fits the chart once generated.',
+      fields: [
+        { key: 'width', label: 'Width', def: 30, min: 10, max: 60 },
+        { key: 'length', label: 'Length', def: 150, min: 50, max: 250 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var shape = {
+          name: 'scarf', width: m.sts(d.width), gauge: g, mirror: false,
+          edges: { left: edge(st(m.rows(d.length))), right: edge(st(m.rows(d.length))) },
+          annotations: [{ row: 2, off: 0, text: 'edges: slip 1 for a chained selvedge' }]
+        };
+        return { panels: [{ name: 'Scarf', role: 'other', shape: shape }], notes: [] };
+      }
+    },
+    {
+      id: 'beanie', name: 'Beanie', icon: '🎿',
+      blurb: 'Ribbed brim, straight body, short crown: repeated decreases to a small opening.',
+      fields: [
+        { key: 'headCirc', label: 'Head circumference', def: 56, min: 30, max: 70 },
+        { key: 'depth', label: 'Depth (brim edge to crown)', def: 19, min: 12, max: 30 },
+        { key: 'ease', label: 'Ease (negative ok)', def: -2, min: -6, max: 4 }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var headSts = m.sts(d.headCirc + d.ease);
+        var rowsAll = m.rows(d.depth);
+        var brim = Math.max(8, Math.round(rowsAll * 0.3));
+        var decEach = Math.max(1, Math.floor(headSts / 12));
+        var decTimes = Math.max(2, Math.round((headSts * 0.8) / (2 * decEach)));
+        var e = function () { return edge(st(brim), st(4), dec(2, decEach, decTimes), st(2)); };
+        var shape = {
+          name: 'beanie', width: headSts, gauge: g, mirror: true,
+          edges: { left: e(), right: e() },
+          annotations: [
+            { row: 2, off: 0, text: 'brim: 2x2 rib' },
+            { row: brim + 5, off: 0, text: 'crown: dec pattern to ~10 sts, cinch' }
+          ]
+        };
+        return { panels: [{ name: 'Beanie', role: 'other', shape: shape }], notes: ['Worked flat, seamed; or halve for in-the-round.'] };
+      }
+    }
+  ];
+
+  function get(id) {
+    for (var i = 0; i < TEMPLATES.length; i++) if (TEMPLATES[i].id === id) return TEMPLATES[i];
+    return null;
+  }
+  function defaults(id) {
+    var t = get(id);
+    var d = {};
+    if (t) t.fields.forEach(function (f) { d[f.key] = f.def; });
+    return d;
+  }
+  function validate(id, dims, gauge) {
+    var errs = [];
+    var t = get(id);
+    if (!t) return ['unknown template: ' + id];
+    if (!gauge || !(gauge.stsPer10cm > 0) || !(gauge.rowsPer10cm > 0)) {
+      errs.push('gauge required (sts + rows per 10 cm)');
+    }
+    t.fields.forEach(function (f) {
+      var v = Number(dims[f.key]);
+      if (!(v >= f.min && v <= f.max)) {
+        errs.push(f.label + ' must be ' + f.min + '-' + f.max + ' cm');
+      }
+    });
+    return errs;
+  }
+  function build(id, dims, gauge, opts) {
+    var errs = validate(id, dims, gauge);
+    if (errs.length) { var e = new Error(errs.join('; ')); e.code = 'dims'; throw e; }
+    var t = get(id);
+    var out = t.build(dims, gauge);
+    out.name = (opts && opts.name) || (t.name.toLowerCase().replace(/[^a-z]+/g, '-'));
+    return out;
+  }
+  // Unit helpers for the form
+  function inToCm(inch) { return Math.round(inch * 25.4 * 10) / 10; }
+  function cmToIn(cm) { return Math.round(cm / 25.4 * 10) / 10; }
+
+  return { TEMPLATES: TEMPLATES, get: get, defaults: defaults, validate: validate, build: build, inToCm: inToCm, cmToIn: cmToIn };
+});
