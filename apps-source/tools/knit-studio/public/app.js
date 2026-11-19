@@ -93,12 +93,25 @@ function renderTplForm() {
   try { saved = (JSON.parse(localStorage.getItem(tplStoreKey(t.id)) || '{}').dims) || {}; } catch (e) { saved = {}; }
   t.fields.forEach(function (f) {
     var lab = document.createElement('label');
-    lab.textContent = f.label + (inches ? ' (in)' : ' (cm)');
-    var inp = document.createElement('input');
-    inp.type = 'number'; inp.id = 'tplDim-' + f.key;
-    inp.step = '0.5'; inp.min = String(inches ? Math.round(f.min / 2.54 * 10) / 10 : f.min);
-    var cm = saved[f.key] !== undefined ? Number(saved[f.key]) : f.def;
-    inp.value = inches ? KS.templates.cmToIn(cm) : cm;
+    var inp;
+    if (f.type === 'select') {
+      lab.textContent = f.label;
+      inp = document.createElement('select');
+      inp.id = 'tplDim-' + f.key;
+      f.options.forEach(function (opt) {
+        var op = document.createElement('option');
+        op.value = opt; op.textContent = opt;
+        inp.appendChild(op);
+      });
+      inp.value = saved[f.key] !== undefined ? String(saved[f.key]) : f.def;
+    } else {
+      lab.textContent = f.label + (inches ? ' (in)' : ' (cm)');
+      inp = document.createElement('input');
+      inp.type = 'number'; inp.id = 'tplDim-' + f.key;
+      inp.step = '0.5'; inp.min = String(inches ? Math.round(f.min / 2.54 * 10) / 10 : f.min);
+      var cm = saved[f.key] !== undefined ? Number(saved[f.key]) : f.def;
+      inp.value = inches ? KS.templates.cmToIn(cm) : cm;
+    }
     lab.appendChild(inp);
     host.appendChild(lab);
   });
@@ -109,6 +122,7 @@ function tplCollectDims() {
   var inches = $('tplUnits').value === 'in';
   var dims = {};
   t.fields.forEach(function (f) {
+    if (f.type === 'select') { dims[f.key] = $('tplDim-' + f.key).value; return; }
     var v = Number($('tplDim-' + f.key).value);
     dims[f.key] = inches ? Math.round(v * 25.4 * 10) / 10 : v;
   });

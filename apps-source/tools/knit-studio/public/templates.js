@@ -210,6 +210,113 @@
       }
     },
     {
+      id: 'tshirt', name: 'T-Shirt', icon: '👕',
+      blurb: 'Classic Tee: straight body, short sleeves with caps, shoulder seams. Pick a collar - crew, scoop, V-neck, polo, or henley - panel set, neckbands and plackets adapt.',
+      fields: [
+        { key: 'chest', label: 'Bust / chest circumference', def: 96, min: 60, max: 180 },
+        { key: 'bodyLen', label: 'Body length (shoulder to hem)', def: 64, min: 35, max: 95 },
+        { key: 'sleeveLen', label: 'Sleeve length', def: 20, min: 8, max: 45 },
+        { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
+        { key: 'cuffCirc', label: 'Sleeve cuff circumference', def: 28, min: 14, max: 45 },
+        { key: 'ease', label: 'Positive ease (+cm)', def: 4, min: -4, max: 20 },
+        { key: 'collar', label: 'Collar', type: 'select', def: 'crew', options: ['crew', 'scoop', 'v-neck', 'polo', 'henley'] }
+      ],
+      build: function (d, g) {
+        var m = maker(g);
+        var bodySts = m.sts(d.chest + d.ease);
+        var half = Math.max(12, Math.round(bodySts / 2));
+        var bodyRows = m.rows(d.bodyLen);
+        var slopeTurn = Math.max(2, Math.floor(half / 24));
+        var slope = function () { return sr(2, slopeTurn, 2); };
+        var neckCm = { crew: 9, scoop: 15, 'v-neck': 0, polo: 16, henley: 14 }[d.collar] || 9;
+        var neckRow = Math.max(2, bodyRows - Math.max(2, m.rows(neckCm)));
+        var hemAnn = { row: 2, off: 0, text: 'hem band: 2x2 rib, 2-3 cm' };
+        var backShape = {
+          name: 'back', width: half, gauge: g, mirror: false,
+          edges: {
+            left: edge(st(8), st(bodyRows - 10), slope()),
+            right: edge(st(8), st(bodyRows - 10), slope())
+          },
+          annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: 'back neck: ' + (d.collar === 'v-neck' ? 'shallow curve, bind off or hold' : d.collar + ' depth ~' + neckCm + ' cm from shoulder') }]
+        };
+        var panels = [];
+        if (d.collar === 'v-neck') {
+          var fHalf = Math.max(10, Math.round(bodySts / 4));
+          var fEdge = function (outerRight) {
+            var straight = edge(st(8), st(bodyRows - 10));
+            var sloped = edge(st(8), st(bodyRows - 10), slope());
+            return outerRight ? { left: straight, right: sloped } : { left: sloped, right: straight };
+          };
+          panels.push({ name: 'Front L', role: 'front', shape: { name: 'front L', width: fHalf, gauge: g, mirror: false, edges: fEdge(false), annotations: [hemAnn, { row: neckRow, off: 0, text: 'V from center front: inner edge stays straight, V forms at seam; band cut on bias' }] } });
+          panels.push({ name: 'Front R', role: 'front', shape: { name: 'front R', width: fHalf, gauge: g, mirror: false, edges: fEdge(true), annotations: [hemAnn] } });
+        } else {
+          panels.push({
+            name: 'Front', role: 'front',
+            shape: {
+              name: 'front', width: half, gauge: g, mirror: false,
+              edges: {
+                left: edge(st(8), st(bodyRows - 10), slope()),
+                right: edge(st(8), st(bodyRows - 10), slope())
+              },
+              annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: (d.collar === 'crew' || d.collar === 'scoop' ? d.collar + ' neck ' + neckCm + ' cm deep: shape round or pick up live sts here' : d.collar + ': flat neck, placket at center') }]
+            }
+          });
+        }
+        panels.unshift({ name: 'Back', role: 'back', shape: backShape });
+        var armSts = m.sts(d.armCirc + 2);
+        var cuffSts = m.sts(d.cuffCirc);
+        var sleeveRows = m.rows(d.sleeveLen);
+        var taper = armSts - cuffSts;
+        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
+        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
+        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.55 / taperTimes));
+        var widthAtCap = cuffSts + 2 * taperEach * taperTimes;
+        var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 4)); // tee caps stay low
+        var sEdge = function () {
+          return edge(
+            st(Math.max(4, Math.round(sleeveRows * 0.15))),
+            inc(taperEvery, taperEach, taperTimes),
+            st(Math.max(2, sleeveRows - Math.round(sleeveRows * 0.15) - taperEvery * taperTimes - 6)),
+            dec(2, capEach, 2)
+          );
+        };
+        var sl = { name: 'sleeve L', width: Math.max(10, cuffSts), gauge: g, mirror: false, edges: { left: sEdge(), right: sEdge() }, annotations: [{ row: 2, off: 0, text: 'cuff band in the round style rib' }] };
+        var sr2 = JSON.parse(JSON.stringify(sl));
+        sr2.name = 'sleeve R';
+        panels.push({ name: 'Sleeve L', role: 'sleeve-left', shape: sl });
+        panels.push({ name: 'Sleeve R', role: 'sleeve-right', shape: sr2 });
+        var bandRows = { crew: 8, scoop: 10, 'v-neck': 10, polo: 10, henley: 7 }[d.collar] || 8;
+        var bandName = d.collar === 'v-neck' ? 'Bias neck strips (x2)' : 'Neckband';
+        panels.push({
+          name: bandName, role: 'collar',
+          shape: {
+            name: 'collar', width: Math.max(10, m.sts(d.collar === 'v-neck' ? 3.5 : 42 * 0.9)), gauge: g, mirror: false,
+            edges: { left: edge(st(bandRows)), right: edge(st(bandRows)) },
+            annotations: [{ row: 2, off: 0, text: d.collar === 'v-neck' ? 'two bias strips for the V, join to band then neck' : '1x1 rib band, sew to neck' }]
+          }
+        });
+        if (d.collar === 'polo' || d.collar === 'henley') {
+          var plRows = m.rows(d.collar === 'polo' ? 14 : 20);
+          var pl = function (i, buttons) {
+            return {
+              name: 'Placket ' + (i + 1), role: 'placket',
+              shape: {
+                name: 'placket', width: Math.max(6, m.sts(3.5)), gauge: g, mirror: false,
+                edges: { left: edge(st(plRows)), right: edge(st(plRows)) },
+                annotations: [{ row: Math.max(2, plRows - 3), off: 1, text: buttons + ' buttonhole' + (buttons > 1 ? 's' : '') + ' at top' }]
+              }
+            };
+          };
+          panels.push(pl(0, d.collar === 'polo' ? 1 : 3));
+          panels.push(pl(1, d.collar === 'polo' ? 0 : 0));
+        }
+        return {
+          panels: panels,
+          notes: ['Tee knits faster than a sweater; that is not a flaw in the gauge.', 'Seam shoulders first, then set sleeves, side seams last.']
+        };
+      }
+    },
+    {
       id: 'shawl', name: 'Shawl (triangle)', icon: '🔺',
       blurb: 'Top-down triangle: a few live sts at the neck, inc at both edges every other row to the wingspan.',
       fields: [
@@ -298,6 +405,12 @@
       errs.push('gauge required (sts + rows per 10 cm)');
     }
     t.fields.forEach(function (f) {
+      if (f.type === 'select') {
+        if (f.options.indexOf(String(dims[f.key])) < 0) {
+          errs.push(f.label + ': choose ' + f.options.join(' / '));
+        }
+        return;
+      }
       var v = Number(dims[f.key]);
       if (!(v >= f.min && v <= f.max)) {
         errs.push(f.label + ' must be ' + f.min + '-' + f.max + ' cm');

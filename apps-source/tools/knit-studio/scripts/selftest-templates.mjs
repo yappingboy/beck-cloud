@@ -92,7 +92,7 @@ t('annotations survive normalize on every template panel', () => {
   TP.TEMPLATES.forEach((tpl) => {
     const built = TP.build(tpl.id, TP.defaults(tpl.id), G, {});
     const withAnn = built.panels.filter((pn) => (pn.shape.annotations || []).length);
-    if (['socks', 'sweater', 'cardigan', 'beanie'].includes(tpl.id) && !withAnn.length) {
+    if (['socks', 'sweater', 'cardigan', 'beanie', 'tshirt'].includes(tpl.id) && !withAnn.length) {
       throw new Error(tpl.id + ': expected guidance annotations');
     }
     withAnn.forEach((pn) => {
@@ -100,6 +100,40 @@ t('annotations survive normalize on every template panel', () => {
       if (!n.annotations.length) throw new Error(tpl.id + '/' + pn.name + ': annotations lost');
     });
   });
+});
+
+t('tshirt: every collar variant builds valid panels', () => {
+  ['crew', 'scoop', 'v-neck', 'polo', 'henley'].forEach((c) => {
+    const built = TP.build('tshirt', Object.assign(TP.defaults('tshirt'), { collar: c }), G, {});
+    built.panels.forEach((pn) => {
+      const shape = SH.normalize(pn.shape);
+      const errs = SH.check(shape);
+      if (errs.length) throw new Error(c + '/' + pn.name + ': ' + errs.join('; '));
+      KS.validate(SH.toPattern(shape, pn.name));
+    });
+  });
+});
+
+t('tshirt: collar changes the panel set', () => {
+  const d = TP.defaults('tshirt');
+  const crew = TP.build('tshirt', Object.assign({}, d, { collar: 'crew' }), G, {});
+  if (!crew.panels.some((p) => p.role === 'collar')) throw new Error('crew needs neckband');
+  if (crew.panels.some((p) => p.role === 'placket')) throw new Error('crew has plackets');
+  const polo = TP.build('tshirt', Object.assign({}, d, { collar: 'polo' }), G, {});
+  if (!polo.panels.some((p) => p.role === 'placket')) throw new Error('polo placket missing');
+  const hen = TP.build('tshirt', Object.assign({}, d, { collar: 'henley' }), G, {});
+  if (hen.panels.filter((p) => p.role === 'placket').length < 2) throw new Error('henley needs two plackets');
+  const v = TP.build('tshirt', Object.assign({}, d, { collar: 'v-neck' }), G, {});
+  if (v.panels.filter((p) => p.role === 'front').length !== 2) throw new Error('v-neck must split front');
+  if (v.panels.filter((p) => p.role === 'collar').length !== 1) throw new Error('v-neck bias strips missing');
+});
+
+t('templates: select field rejects unknown option, accepts valid', () => {
+  const d = TP.defaults('tshirt');
+  if (TP.validate('tshirt', Object.assign({}, d, { collar: 'turtleneck' }), G).length === 0) {
+    throw new Error('turtleneck accepted');
+  }
+  if (TP.validate('tshirt', Object.assign({}, d, { collar: 'scoop' }), G).length) throw new Error('scoop rejected');
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);

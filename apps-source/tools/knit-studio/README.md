@@ -202,7 +202,8 @@ turn`). Charts generated from the shape carry the notes on
 ## Project templates
 
 The **Templates** tab turns measurements into a multi-panel project: pick a
-garment (socks, sweater, cardigan, shawl, scarf, beanie), enter the wearer's
+garment (socks, sweater, cardigan, T-shirt with five collar styles, shawl,
+scarf, beanie), enter the wearer's
 dimensions (cm or inches) and your gauge, and every panel arrives as a chart
 plus an editable shaping model — cuffs, tapers, short-row shoulders, held
 heel flaps, w&t toes, crown decreases — with how-to annotations pinned on
