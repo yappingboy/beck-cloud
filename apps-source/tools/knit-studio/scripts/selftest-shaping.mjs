@@ -111,5 +111,81 @@ t('toText shows japanese triplet notation', () => {
   if (!txt.includes('[6-1-4]')) throw new Error(txt);
 });
 
+/* ---- short rows + holding stitches ---- */
+t('normSeg clamps sr and hold fields', () => {
+  const sr = SH.normSeg({ kind: 'sr', every: 0, turn: 999, times: 7 });
+  eq(sr, { kind: 'sr', every: 1, turn: 200, times: 7 });
+  const hd = SH.normSeg({ kind: 'hold', each: 0, rows: 5, release: true });
+  eq(hd, { kind: 'hold', each: 1, rows: 5, release: true });
+});
+
+t('sr wedge geometry matches an equivalent decrease', () => {
+  const a = shape({ width: 20, edges: { left: [{ kind: 'sr', every: 2, turn: 1, times: 3 }], right: [{ kind: 'straight', rows: 6 }] } });
+  const b = shape({ width: 20, edges: { left: [{ kind: 'dec', every: 2, each: 1, times: 3 }], right: [{ kind: 'straight', rows: 6 }] } });
+  eq(SH.profile(a).leftOff, SH.profile(b).leftOff);
+  if (SH.profile(a).H !== 6) throw new Error('H');
+});
+
+t('hold narrows for its rows then releases; release binds off', () => {
+  const s = shape({ width: 20, edges: { left: [{ kind: 'hold', each: 4, rows: 3 }], right: [{ kind: 'straight', rows: 5 }] } });
+  eq(SH.profile(s).leftOff, [4, 4, 4, 0, 0]);
+  const r = shape({ width: 20, edges: { left: [{ kind: 'hold', each: 4, rows: 3, release: true }], right: [{ kind: 'straight', rows: 5 }] } });
+  eq(SH.profile(r).leftOff, [4, 4, 4, 4, 4]);
+});
+
+t('edgeRows counts sr and hold spans', () => {
+  if (SH.edgeRows([{ kind: 'sr', every: 2, turn: 1, times: 5 }]) !== 10) throw new Error('sr');
+  if (SH.edgeRows([{ kind: 'hold', each: 3, rows: 7 }]) !== 7) throw new Error('hold');
+});
+
+t('events() ignores sr and hold (marks are drawn per segment)', () => {
+  const s = shape({ width: 20, edges: { left: [{ kind: 'sr', every: 2, turn: 1, times: 3 }, { kind: 'hold', each: 2, rows: 4 }], right: [] } });
+  const p = SH.profile(s);
+  eq(SH.events(p.edges.left), []);
+});
+
+t('chart from sr wedge carries h wrap marks', () => {
+  const s = shape({ width: 12, edges: { left: [{ kind: 'sr', every: 2, turn: 1, times: 3 }], right: [{ kind: 'straight', rows: 6 }] } });
+  const pat = SH.toPattern(s);
+  const rows = pat.rows;
+  if (rows.length !== 6 || rows.some((r) => r.length !== pat.width)) throw new Error('grid size');
+  const hCount = rows.join('').split('').filter((c) => c === 'h').length;
+  if (hCount < 3) throw new Error('expected a wrap mark per short row, got ' + hCount);
+});
+
+t('chart from hold span shows held sts for exactly its rows', () => {
+  const s = shape({ width: 12, edges: { left: [{ kind: 'hold', each: 3, rows: 4 }], right: [{ kind: 'straight', rows: 8 }] } });
+  const pat = SH.toPattern(s);
+  const withH = pat.rows.filter((r) => r.includes('h')).length;
+  if (withH !== 4) throw new Error('held rows ' + withH);
+  pat.rows.forEach((r) => { if ((r.split('h').length - 1) > 0 && (r.split('h').length - 1) !== 3) throw new Error('held width drift'); });
+});
+
+t('toText prints w&t and holder instructions', () => {
+  const s = shape({ width: 20, edges: { left: [{ kind: 'sr', every: 2, turn: 1, times: 6 }], right: [{ kind: 'hold', each: 5, rows: 8 }] } });
+  const txt = SH.toText(s);
+  if (!txt.includes('w&t 1 st')) throw new Error('missing w&t line: ' + txt);
+  if (!txt.includes('holder') || !txt.includes('take back')) throw new Error('missing holder line: ' + txt);
+});
+
+t('sock presets build valid, checkable shapes with charts', () => {
+  [SH.sockHeel(32), SH.sockToe(64), SH.shoulderSlope(48), SH.earFlap(24)].forEach((p) => {
+    const errs = SH.check(p);
+    if (errs.length) throw new Error(p.name + ': ' + errs.join('; '));
+    const pat = SH.toPattern(p);
+    if (pat.rows.length !== pat.height) throw new Error(p.name + ' rows');
+    if (pat.rows.some((r) => r.length !== pat.width)) throw new Error(p.name + ' width');
+  });
+});
+
+t('heel preset: flap straight, wedge turns, live sts remain', () => {
+  const h = SH.sockHeel(32);
+  const p = SH.profile(h);
+  const topW = p.hi[p.H - 1] - p.lo[p.H - 1];
+  if (topW < 8) throw new Error('heel should leave live gusset sts, top=' + topW);
+  const txt = SH.toText(h);
+  if (!txt.includes('w&t')) throw new Error('no short rows in heel text');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

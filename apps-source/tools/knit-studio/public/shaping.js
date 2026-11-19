@@ -26,6 +26,22 @@
         transfer: !!s.transfer
       };
     }
+    if (s.kind === 'sr') { // short rows: w&t this far before the edge, wedge closes by `turn` per event
+      return {
+        kind: 'sr',
+        every: clamp(s.every | 0, 1, 500),
+        turn: clamp(s.turn | 0, 1, 200),
+        times: clamp(s.times | 0, 1, 2000)
+      };
+    }
+    if (s.kind === 'hold') { // holding stitches: `each` sts off the edge stay unworked for `rows` rows
+      return {
+        kind: 'hold',
+        each: clamp(s.each | 0, 1, 4000),
+        rows: clamp(s.rows | 0, 1, 4000),
+        release: !!s.release
+      };
+    }
     throw new Error('unknown segment kind: ' + s.kind);
   }
 
@@ -53,7 +69,9 @@
 
   function edgeRows(segs) {
     return segs.reduce(function (n, s) {
-      return n + (s.kind === 'straight' ? s.rows : s.every * s.times);
+      if (s.kind === 'straight') return n + s.rows;
+      if (s.kind === 'hold') return n + s.rows;
+      return n + s.every * s.times;
     }, 0);
   }
 
@@ -83,6 +101,20 @@
       var s = segs[i];
       if (s.kind === 'straight') {
         for (var r = 0; r < s.rows && row < H; r++) off[row++] = acc;
+      } else if (s.kind === 'hold') {
+        var hs = s.each;
+        acc += hs; // sts go on hold starting this row
+        for (var hr = 0; hr < s.rows && row < H; hr++) off[row++] = acc;
+        if (!s.release) acc -= hs; // released: following rows knit them again
+      } else if (s.kind === 'sr') {
+        // geometry of a wedge: the turn point recedes `turn` sts per event,
+        // exactly like a decrease; only glyphs and text differ
+        for (var sk = 0; sk < s.times; sk++) {
+          for (var sq = 0; sq < s.every && row < H; sq++) {
+            if (sq === s.every - 1) acc += s.turn;
+            off[row++] = acc;
+          }
+        }
       } else {
         var d = (s.kind === 'dec' ? 1 : -1) * s.each;
         for (var k = 0; k < s.times; k++) {
@@ -132,7 +164,8 @@
   function events(segs) {
     var out = [], row = 0;
     segs.forEach(function (s) {
-      if (s.kind === 'straight') { row += s.rows; return; }
+      if (s.kind === 'straight' || s.kind === 'hold') { row += s.rows; return; }
+      if (s.kind === 'sr') { row += s.every * s.times; return; } // wedge marks drawn separately
       for (var k = 0; k < s.times; k++) {
         row += s.every - 1;
         out.push({ row: row + 1, dir: s.kind === 'dec' ? 1 : -1, each: s.each, transfer: !!s.transfer });
@@ -186,6 +219,35 @@
     }
     apply(evL, 'left');
     apply(evR, 'right');
+    // short-row and holding marks: 'h' on live-but-unworked needles
+    function marksFor(segs, side) {
+      var row = 0;
+      segs.forEach(function (s) {
+        if (s.kind === 'sr') {
+          for (var k = 0; k < s.times; k++) {
+            var er = row + s.every * k + (s.every - 1);
+            if (er >= p.H) break;
+            mark(er, (side === 'left' ? p.lo[er] - 1 : p.hi[er]) - e.minX, 'h'); // the wrap
+            for (var t = 1; t < s.turn; t++) { // held loops just past the turn
+              var gx = side === 'left' ? (p.lo[er] - 1 - t) : (p.hi[er] + t);
+              mark(er, gx - e.minX, 'h');
+            }
+          }
+          row += s.every * s.times;
+        } else if (s.kind === 'hold') {
+          for (var r = row; r < row + s.rows && r < p.H; r++) {
+            for (var q = 0; q < s.each; q++) {
+              var gx2 = side === 'left' ? (p.lo[r] - 1 - q) : (p.hi[r] + q);
+              mark(r, gx2 - e.minX, 'h');
+            }
+          }
+          row += s.rows;
+        } else if (s.kind === 'straight') { row += s.rows; }
+        else { row += s.every * s.times; }
+      });
+    }
+    marksFor(p.edges.left, 'left');
+    marksFor(p.edges.right, 'right');
     var pat = {
       format: 'knit-studio/1',
       name: name || (shape.name || 'panel'),
@@ -268,6 +330,15 @@
       var found = false;
       p.edges[side].forEach(function (s) {
         if (s.kind === 'straight') lines.push('  work ' + s.rows + ' rows even');
+        else if (s.kind === 'sr') {
+          found = true;
+          lines.push('  every ' + s.every + 'th row w&t ' + s.turn + ' st before this edge x ' + s.times +
+            '   [short rows]');
+        } else if (s.kind === 'hold') {
+          found = true;
+          lines.push('  place ' + s.each + ' st on holder at this edge, hold ' + s.rows + ' rows, then ' +
+            (s.release ? 'bind off' : 'take back') + '   [holding]');
+        }
         else {
           found = true;
           lines.push('  every ' + s.every + 'th row ' + (s.kind === 'dec' ? 'dec' : 'inc') +
@@ -292,10 +363,61 @@
     return { left: left, right: right, gridW: e.gridW, H: p.H, minX: e.minX, width: shape.width };
   }
 
+  /* ---- presets: sock/3D pieces built from short rows + holding ---- */
+  // Dutch heel over half the leg stitches: straight flap, wedge turn at both
+  // edges (w&t 1 st earlier every 2 rows), 2 rows left live for gusset pickup.
+  function sockHeel(W) {
+    var w = Math.max(8, W | 0), t = Math.max(1, Math.floor(w / 4));
+    function edge() {
+      return [
+        { kind: 'straight', rows: w },
+        { kind: 'sr', every: 2, turn: 1, times: t },
+        { kind: 'straight', rows: 2 }
+      ];
+    }
+    return { name: 'sock heel', width: w, mirror: false, gauge: null, edges: { left: edge(), right: edge() } };
+  }
+  // Short-row toe: wedge both edges to a ~half-width grafting point.
+  function sockToe(W) {
+    var w = Math.max(12, W | 0), t = Math.max(1, Math.floor(w / 4));
+    var edge = [{ kind: 'sr', every: 2, turn: 1, times: t }];
+    return { name: 'sock toe', width: w, mirror: false, gauge: null, edges: { left: edge, right: edge } };
+  }
+  // Short-row shoulder slope at the neck edge (mirror for both shoulders).
+  function shoulderSlope(W) {
+    var w = Math.max(16, W | 0);
+    var turn = Math.max(2, Math.floor(w / 12)), times = Math.max(1, Math.floor(w / 8));
+    return {
+      name: 'shoulder slope', width: w, mirror: false, gauge: null,
+      edges: {
+        left: [{ kind: 'straight', rows: 2 }],
+        right: [
+          { kind: 'straight', rows: 2 },
+          { kind: 'sr', every: 2, turn: turn, times: times }
+        ]
+      }
+    };
+  }
+  // Ear flap / mug style wedge: one edge short-rows into a rounded point.
+  function earFlap(W) {
+    var w = Math.max(10, W | 0), t = Math.max(1, Math.floor(w / 2));
+    return {
+      name: 'ear flap', width: w, mirror: false, gauge: null,
+      edges: {
+        left: [{ kind: 'straight', rows: 2 + 2 * t }],
+        right: [
+          { kind: 'straight', rows: 2 },
+          { kind: 'sr', every: 2, turn: 1, times: t }
+        ]
+      }
+    };
+  }
+
   return {
     normalize: normalize, normSeg: normSeg, edgeRows: edgeRows,
     profile: profile, check: check, extents: extents, events: events,
     toPattern: toPattern, segmentsFromOffsets: segmentsFromOffsets,
-    toText: toText, outlinePoints: outlinePoints
+    toText: toText, outlinePoints: outlinePoints,
+    sockHeel: sockHeel, sockToe: sockToe, shoulderSlope: shoulderSlope, earFlap: earFlap
   };
 });

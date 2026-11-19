@@ -146,6 +146,23 @@ same gauge. The status line reports the resolved scale and its reason; a
 itself. After slicing, the status shows the physical size (`42 x 58 cm at
 this gauge`) so bad scales can't sneak by.
 
+## 3D shaping: short rows & holding stitches
+
+Edges in the Shaping tab accept two segment kinds beyond dec/inc:
+
+- **Short rows (`sr`)** — `every N rows, w&t M sts before this edge, x T`.
+  The turn point recedes by M each event, so the edge wedges like a Dutch
+  heel or short-row toe. The chart marks the wrap and the live-but-unworked
+  needles with `h` (holding position, same idiom as machine diagrams).
+- **Holders (`hold`)** — `place E sts at this edge on hold for R rows`,
+  then take back (default) or bind off (`release`). Held spans render as `h`
+  for exactly their rows and the edge reopens after release.
+
+Presets build from these: **Heel flap + turn** (half-leg width, straight
+flap, wedge to live gusset sts), **Toe wedge**, **Shoulder slope** (mirror
+for both), **Ear flap**. Exported `.txt` spells them out: `every 2th row
+w&t 1 st before this edge x 15`, `place 12 st on holder ... then take back`.
+
 ## Amigurumi importer
 
 The **Ami** tab converts crochet amigurumi patterns into knitting. Paste

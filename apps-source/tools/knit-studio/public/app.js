@@ -626,7 +626,8 @@ function segRow(side, seg, i) {
   var row = document.createElement('div');
   row.className = 'seg-row';
   var sel = document.createElement('select');
-  [['straight', 'rows'], ['dec', 'decrease'], ['inc', 'increase']].forEach(function (o) {
+  [['straight', 'rows'], ['dec', 'decrease'], ['inc', 'increase'],
+   ['sr', 'short rows'], ['hold', 'hold sts']].forEach(function (o) {
     var op = document.createElement('option');
     op.value = o[0]; op.textContent = o[1];
     sel.appendChild(op);
@@ -635,7 +636,9 @@ function segRow(side, seg, i) {
   sel.onchange = function () {
     var edges = SShape.edges[side], old = edges[i];
     var repl;
-    if (sel.value === 'straight') repl = { kind: 'straight', rows: Math.max(1, old.kind === 'straight' ? old.rows : old.every * old.times) };
+    if (sel.value === 'straight') repl = { kind: 'straight', rows: Math.max(1, KS.shaping.edgeRows([old])) };
+    else if (sel.value === 'hold') repl = { kind: 'hold', each: 6, rows: KS.shaping.edgeRows([old]), release: false };
+    else if (sel.value === 'sr') repl = { kind: 'sr', every: 2, turn: 1, times: Math.max(1, Math.round(KS.shaping.edgeRows([old]) / 2)) };
     else if (old.kind === 'straight') repl = { kind: sel.value, every: Math.max(1, old.rows), each: 1, times: 1, transfer: false };
     else { repl = Object.assign({}, old); repl.kind = sel.value; }
     edges[i] = repl;
@@ -655,7 +658,21 @@ function segRow(side, seg, i) {
     row.appendChild(n);
   }
   if (seg.kind === 'straight') num('rows', seg.rows, 1, 999, 'rows');
-  else {
+  else if (seg.kind === 'sr') {
+    num('every', seg.every, 1, 99, 'every');
+    num('turn', seg.turn, 1, 99, 'st before edge, w&t');
+    num('times', seg.times, 1, 999, '\u00d7 n');
+  } else if (seg.kind === 'hold') {
+    num('each', seg.each, 1, 999, 'sts on holder');
+    num('rows', seg.rows, 1, 999, 'rows held');
+    var rl = document.createElement('label');
+    rl.className = 'checkrow';
+    var rc = document.createElement('input');
+    rc.type = 'checkbox'; rc.checked = !!seg.release;
+    rc.onchange = function () { SShape.edges[side][i].release = rc.checked; shapeMirrorSync(side); shapeApply(); };
+    rl.appendChild(rc); rl.appendChild(document.createTextNode('bind off'));
+    row.appendChild(rl);
+  } else {
     num('every', seg.every, 1, 99, 'every');
     num('each', seg.each, 1, 99, '\u00d7 st');
     num('times', seg.times, 1, 999, '\u00d7 n');
@@ -697,8 +714,9 @@ function segRow(side, seg, i) {
 }
 
 function addSeg(side, kind) {
-  var seg = kind === 'straight'
-    ? { kind: 'straight', rows: 10 }
+  var seg = kind === 'straight' ? { kind: 'straight', rows: 10 }
+    : kind === 'sr' ? { kind: 'sr', every: 2, turn: 1, times: 4 }
+    : kind === 'hold' ? { kind: 'hold', each: 6, rows: 10, release: false }
     : { kind: kind, every: 1, each: 1, times: 1, transfer: false };
   SShape.edges[side].push(seg);
   shapeMirrorSync(side); shapeApply();
@@ -721,7 +739,8 @@ function renderShapeForm() {
     var b = document.createElement('b');
     b.textContent = side + ' edge';
     head.appendChild(b);
-    [['straight', '+ rows'], ['dec', '\u2212 st'], ['inc', '+ st']].forEach(function (spec) {
+    [['straight', '+ rows'], ['dec', '\u2212 st'], ['inc', '+ st'],
+     ['sr', 'w&t'], ['hold', 'holder']].forEach(function (spec) {
       var btn = document.createElement('button');
       btn.textContent = spec[1];
       btn.onclick = function () { addSeg(side, spec[0]); };
@@ -806,6 +825,40 @@ function renderShapeView() {
   }
   drawEvents(KS.shaping.events(p.edges.left), 'left');
   drawEvents(KS.shaping.events(p.edges.right), 'right');
+  // short-row wraps + held stitches: small squares, same idiom as the 'h' glyph
+  function hmark(x, y) {
+    ctx.fillStyle = '#b58900';
+    var q = Math.max(2.5, cell * 0.36);
+    ctx.fillRect(x - q / 2, y - q / 2, q, q);
+  }
+  function drawWedges(segs, side) {
+    var row = 0;
+    (segs || []).forEach(function (sg) {
+      if (sg.kind === 'sr') {
+        for (var k = 0; k < sg.times; k++) {
+          var er = row + sg.every * k + (sg.every - 1);
+          if (er >= p.H) break;
+          var y = oy + (p.H - 1 - er) * cell + cell / 2;
+          hmark(side === 'left' ? ox + (p.lo[er] - e.minX) * cell - cell * 0.5 : ox + (p.hi[er] - e.minX) * cell + cell * 0.5, y);
+        }
+        row += sg.every * sg.times;
+      } else if (sg.kind === 'hold') {
+        for (var r = row; r < row + sg.rows && r < p.H; r++) {
+          var y2 = oy + (p.H - 1 - r) * cell + cell / 2;
+          for (var q2 = 0; q2 < Math.min(sg.each, 6); q2++) {
+            var hx = side === 'left'
+              ? ox + (p.lo[r] - e.minX) * cell - cell * (q2 + 0.5)
+              : ox + (p.hi[r] - e.minX) * cell + cell * (q2 + 0.5);
+            hmark(hx, y2);
+          }
+        }
+        row += sg.rows;
+      } else if (sg.kind === 'straight') { row += sg.rows; }
+      else { row += sg.every * sg.times; }
+    });
+  }
+  drawWedges(p.edges.left, 'left');
+  drawWedges(p.edges.right, 'right');
   // outline
   ctx.strokeStyle = '#58a6ff';
   ctx.lineWidth = 1.5;
@@ -923,6 +976,21 @@ function bindShapeUI() {
     } else status('Open pattern has no shaping data.', true);
   });
   bind('shClear', 'click', function () { SShape = shapeDefault(); shapeApply('New blank panel.'); });
+  function loadPreset(fn, note) {
+    return function () {
+      var w = Math.max(2, Number($('shWidth').value) || 60);
+      SShape = KS.shaping.normalize(fn(w));
+      shapeApply(note);
+    };
+  }
+  bind('presetHeel', 'click', loadPreset(function (w) { return KS.shaping.sockHeel(Math.round(w / 2)); },
+    'Heel: straight flap over half the leg sts, wedge turn (w&t 1 st earlier every 2 rows), live sts for gusset.'));
+  bind('presetToe', 'click', loadPreset(KS.shaping.sockToe,
+    'Toe: short-row wedge at both edges to a grafting point.'));
+  bind('presetShoulder', 'click', loadPreset(KS.shaping.shoulderSlope,
+    'Shoulder: short-row slope at one edge \u2014 turn Mirror for both shoulders.'));
+  bind('presetEar', 'click', loadPreset(function (w) { return KS.shaping.earFlap(Math.round(w / 2)); },
+    'Ear flap: one edge short-rows into a rounded point.'));
   bind('shToChart', 'click', function () {
     var pat = KS.shaping.toPattern(shapeState());
     S.pat = pat; S.id = null;
