@@ -64,13 +64,24 @@
     } else if (!re.length) {
       re = [{ kind: 'straight', rows: Math.max(1, edgeRows(le)) }];
     }
+    var anns = [];
+    if (Array.isArray(shape.annotations)) {
+      shape.annotations.forEach(function (a) {
+        if (!a || typeof a !== 'object') return;
+        var txt = String(a.text || '').trim().substring(0, 120);
+        if (!txt) return;
+        anns.push({ row: clamp(a.row | 0, 1, 4000), off: a.off | 0, text: txt });
+      });
+      if (anns.length > 200) anns = anns.slice(0, 200);
+    }
     var out = {
       format: 'knit-studio-shape/1',
       name: shape.name || 'panel',
       width: clamp(shape.width | 0, 1, 4000),
       gauge: shape.gauge || null,
       mirror: !!shape.mirror,
-      edges: { left: le, right: re }
+      edges: { left: le, right: re },
+      annotations: anns
     };
     return out;
   }
@@ -273,7 +284,11 @@
       width: e.gridW, height: p.H,
       gauge: shape.gauge || null,
       rows: rows,
-      meta: { tags: ['shaping'], notes: 'generated from shaping designer', shape: JSON.parse(JSON.stringify(shape)) }
+      meta: {
+        tags: ['shaping'], notes: 'generated from shaping designer',
+        annotations: JSON.parse(JSON.stringify(shape.annotations || [])),
+        shape: JSON.parse(JSON.stringify(shape))
+      }
     };
     return pat;
   }
@@ -371,6 +386,12 @@
       });
       if (!found) lines.push('  (even all rows)');
     });
+    if (shape.annotations && shape.annotations.length) {
+      lines.push('', 'notes:');
+      shape.annotations.forEach(function (a) {
+        lines.push('  row ' + a.row + (a.off ? ' +' + a.off + ' st from edge' : '') + ': ' + a.text);
+      });
+    }
     lines.push('', 'top width: ' + (p.hi[p.H - 1] - p.lo[p.H - 1]) + ' st');
     return lines.join('\n');
   }

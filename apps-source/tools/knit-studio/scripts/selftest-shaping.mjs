@@ -249,5 +249,43 @@ t('tentacle preset: valid shape, spiral survives the taper, chart fits', () => {
   if (p.hi[p.H - 1] - p.lo[p.H - 1] >= 24) throw new Error('tip not tapered');
 });
 
+/* ---- annotations ---- */
+t('normalize keeps valid annotations, drops junk, caps text', () => {
+  const s = shape({
+    annotations: [
+      { row: 5, off: 3, text: '  pick up gusset  ' },
+      { row: 0, text: 'row clamps to 1' },
+      { row: 9, text: '   ' },
+      { row: 3, text: 'x'.repeat(300) },
+      null, 'nope'
+    ]
+  });
+  eq(s.annotations, [
+    { row: 5, off: 3, text: 'pick up gusset' },
+    { row: 1, off: 0, text: 'row clamps to 1' },
+    { row: 3, off: 0, text: 'x'.repeat(120) }
+  ]);
+});
+
+t('shapes without annotations normalize to []', () => {
+  eq(shape({}).annotations, []);
+});
+
+t('toText prints notes, toPattern exposes them on meta', () => {
+  const s = shape({ annotations: [{ row: 4, off: 2, text: 'w&t here' }] });
+  const txt = SH.toText(s);
+  if (!txt.includes('row 4 +2 st from edge: w&t here')) throw new Error(txt);
+  const pat = SH.toPattern(s);
+  eq(pat.meta.annotations, [{ row: 4, off: 2, text: 'w&t here' }]);
+  eq(pat.meta.shape.annotations, [{ row: 4, off: 2, text: 'w&t here' }]);
+});
+
+t('annotations survive preset normalize round-trip', () => {
+  const h = SH.sockHeel(24);
+  h.annotations = [{ row: 12, off: 0, text: 'start heel turn' }];
+  const back = SH.normalize(h);
+  eq(back.annotations, [{ row: 12, off: 0, text: 'start heel turn' }]);
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

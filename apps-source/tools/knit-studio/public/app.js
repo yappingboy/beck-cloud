@@ -595,6 +595,7 @@ function convMake() {
 var SShape = null;
 var sView = { cell: 8, ox: 35, oy: 20, H: 0, gridW: 0, minX: 0, handles: [] };
 var sDrag = null;
+var sNote = null;
 
 function shapeDefault() {
   return KS.shaping.normalize({
@@ -768,6 +769,36 @@ function renderShapeForm() {
     sh.edges[side].forEach(function (seg, i) { blk.appendChild(segRow(side, seg, i)); });
     host.appendChild(blk);
   });
+  var nh = $('shNotes');
+  if (nh) {
+    nh.innerHTML = '';
+    var anns = sh.annotations || [];
+    if (!anns.length) {
+      var hint2 = document.createElement('div');
+      hint2.className = 'hint';
+      hint2.textContent = 'No notes yet \u2014 click anywhere on the diagram to pin one.';
+      nh.appendChild(hint2);
+    }
+    anns.forEach(function (a, i) {
+      var row = document.createElement('div');
+      row.className = 'note-row';
+      var tag = document.createElement('span');
+      tag.className = 'note-tag';
+      tag.textContent = 'row ' + a.row;
+      var inp = document.createElement('input');
+      inp.type = 'text'; inp.maxLength = 120; inp.value = a.text;
+      inp.onchange = function () {
+        a.text = inp.value.trim();
+        if (!a.text) SShape.annotations.splice(i, 1);
+        shapeApply();
+      };
+      var x = document.createElement('button');
+      x.textContent = '\u2715'; x.title = 'delete note';
+      x.onclick = function () { SShape.annotations.splice(i, 1); shapeApply('Note removed.'); };
+      row.appendChild(tag); row.appendChild(inp); row.appendChild(x);
+      nh.appendChild(row);
+    });
+  }
 }
 
 function shapePat() { return KS.shaping.toPattern(shapeState()); }
@@ -928,6 +959,32 @@ function renderShapeView() {
       ctx.restore();
     });
   });
+  // annotations: amber dot + leader + text, anchored row/off-from-left-edge
+  ctx.font = '11px ui-sans-serif, system-ui, sans-serif';
+  (sh.annotations || []).forEach(function (a) {
+    var r = a.row - 1;
+    if (r < 0 || r >= p.H) return;
+    var ax = ox + (p.lo[r] + (a.off || 0) - e.minX) * cell + cell * 0.5;
+    var ay = oy + (p.H - 1 - r) * cell + cell * 0.5;
+    ctx.fillStyle = '#f0a030';
+    ctx.beginPath(); ctx.arc(ax, ay, 3, 0, 6.2832); ctx.fill();
+    var tw = ctx.measureText(a.text).width;
+    var tx = ax + 10;
+    if (tx + tw > cv.width - 4) tx = Math.max(4, ax - 12 - tw);
+    ctx.strokeStyle = 'rgba(240,160,48,0.7)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(ax, ay); ctx.lineTo(tx > ax ? tx : tx + tw, ay + 4); ctx.stroke();
+    ctx.fillStyle = '#f0a030';
+    ctx.fillText(a.text, tx, ay - 2);
+  });
+  if (sNote && sNote.row >= 1 && sNote.row <= p.H) {
+    var nr = sNote.row - 1;
+    var nx = ox + (p.lo[nr] + sNote.off - e.minX) * cell + cell * 0.5;
+    var ny = oy + (p.H - 1 - nr) * cell + cell * 0.5;
+    ctx.strokeStyle = '#f0a030';
+    ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.arc(nx, ny, 5, 0, 6.2832); ctx.stroke();
+  }
   var errs = KS.shaping.check(sh);
   var topW = p.hi[p.H - 1] - p.lo[p.H - 1];
   $('shapeInfo').innerHTML = p.H + ' rows \u00b7 base ' + sh.width + ' st \u00b7 top ' + topW + ' st'
@@ -940,6 +997,68 @@ function shapePt(ev) {
   return { mx: ev.clientX - r.left, my: ev.clientY - r.top };
 }
 
+function placeNote(m) {
+  var sh = shapeState();
+  var p = KS.shaping.profile(sh);
+  var r = sView.H - 1 - Math.floor((m.my - sView.oy) / sView.cell);
+  r = Math.max(0, Math.min(sView.H - 1, r));
+  var gx = Math.floor((m.mx - sView.ox) / sView.cell) + sView.minX;
+  sNote = { row: r + 1, off: Math.max(0, gx - p.lo[r]) };
+  renderShapeView();
+  showNoteInput();
+}
+
+function hideNoteInput() {
+  var box = $('shNoteBox');
+  if (box) box.style.display = 'none';
+}
+
+function commitNote() {
+  var pending = sNote;
+  var box = $('shNoteBox');
+  sNote = null;
+  hideNoteInput();
+  if (pending && box) {
+    var txt = box.value.trim();
+    if (txt) {
+      SShape.annotations = SShape.annotations || [];
+      SShape.annotations.push({ row: pending.row, off: pending.off, text: txt });
+      shapeApply('Note pinned at row ' + pending.row + '.');
+      return;
+    }
+  }
+  renderShapeView();
+}
+
+function showNoteInput() {
+  var cv = $('shapeCv');
+  var host = cv.parentElement;
+  if (getComputedStyle(host).position === 'static') host.style.position = 'relative';
+  var box = $('shNoteBox');
+  if (!box) {
+    box = document.createElement('input');
+    box.id = 'shNoteBox';
+    box.type = 'text'; box.maxLength = 120; box.className = 'note-input';
+    box.placeholder = 'note for this row\u2026 (Enter pins, Esc cancels)';
+    box.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter') { e.preventDefault(); commitNote(); }
+      else if (e.key === 'Escape') { sNote = null; hideNoteInput(); renderShapeView(); }
+    });
+    box.addEventListener('blur', function () { if (sNote) commitNote(); });
+    host.appendChild(box);
+  }
+  var sh = shapeState();
+  var p = KS.shaping.profile(sh);
+  var r = sNote.row - 1;
+  var ax = sView.ox + (p.lo[r] + sNote.off - sView.minX) * sView.cell + sView.cell * 0.5;
+  var ay = sView.oy + (sView.H - 1 - r) * sView.cell + sView.cell * 0.5;
+  box.style.left = (cv.offsetLeft + Math.min(ax + 8, cv.width - 240)) + 'px';
+  box.style.top = (cv.offsetTop + ay - 8) + 'px';
+  box.value = '';
+  box.style.display = 'block';
+  setTimeout(function () { box.focus(); }, 0);
+}
+
 function bindShapeCanvas() {
   var cv = $('shapeCv');
   cv.addEventListener('pointerdown', function (ev) {
@@ -949,9 +1068,13 @@ function bindShapeCanvas() {
       var d = Math.abs(h.x - m.mx) + Math.abs(h.y - m.my);
       if (d < bd) { bd = d; best = h; }
     });
-    if (!best || bd > 14) return;
-    sDrag = best;
-    cv.setPointerCapture(ev.pointerId);
+    if (best && bd <= 14) {
+      sDrag = best;
+      cv.setPointerCapture(ev.pointerId);
+      ev.preventDefault();
+      return;
+    }
+    placeNote(m);
     ev.preventDefault();
   });
   cv.addEventListener('pointermove', function (ev) {

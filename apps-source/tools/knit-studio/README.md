@@ -178,6 +178,16 @@ a seamed tube that spiral becomes a 3D twist. `tentacle` preset: spiral +
 taper to the tip, spiral still turning at the point. Twist pitch angle shows
 in the same badges — that angle ** the angle your tentacle corkscrews at.
 
+## Annotating the shaping diagram
+
+Click anywhere on the shaping preview to pin a text note: it anchors to that
+row and stitch offset, draws as an amber dot + leader + label, and lands in
+the **Notes** list where you can retype or delete it. Notes live in the shape
+model (`annotations: [{row, off, text}]`), so they survive save/load,
+presets, project panels, and appear in `.txt` exports (`row 24: start heel
+turn`). Charts generated from the shape carry the notes on
+`meta.annotations` and `meta.shape`.
+
 ## Amigurumi importer
 
 The **Ami** tab converts crochet amigurumi patterns into knitting. Paste
