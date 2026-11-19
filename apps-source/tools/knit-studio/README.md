@@ -125,7 +125,11 @@ Panel ids (`p1`, `p2`, …) stay unique while the panel lives and are reused
 after removal. Roles: `front, back, sleeve-left, sleeve-right, collar, cuff,
 band, hood, pocket, placket, other`. The Projects tab edits panels in place;
 **Edit** opens a panel chart in the editor, **Update panel chart** pushes the
-edit back. Export produces one instruction sheet covering every panel.
+edit back. Export produces one instruction sheet covering every panel,
+plus a rough **yarn estimate**: worked stitches across all panels converted
+to meters from the project gauge (a panel's own shaping gauge wins when set),
+scaled by fabric type (stockinette, rib, cables, ...). Ballpark only, on
+purpose — weigh a swatch before buying yarn.
 
 ## CAM slicer (S2S)
 

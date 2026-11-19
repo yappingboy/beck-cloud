@@ -288,5 +288,46 @@ t('shaping model survives project round-trip', () => {
   if (!txt.includes('every 6th row inc 1 st x 4')) throw new Error('shaping text missing from export: ' + txt);
 });
 
+
+/* ---------- yarn estimation ---------- */
+t('yarnMeters: calibrated stockinette + fabric multipliers', () => {
+  const full = KS.blank('f', 100, 100);
+  full.rows = full.rows.map(() => 'k'.repeat(100));
+  const g = { stsPer10cm: 20, rowsPer10cm: 26 };
+  eq(KS.yarnMeters(full, g, 'stockinette'), 128);
+  eq(KS.yarnMeters(full, g, 'rib'), 160);
+  eq(KS.yarnMeters(full, g, 'nonsense-fabric'), 128);
+  eq(KS.yarnMeters(full, null, 'stockinette'), null);
+  eq(KS.yarnMeters(null, g, 'stockinette'), null);
+});
+
+t('workedStitches ignores dots, spaces and middots', () => {
+  const c = KS.blank('m', 6, 2);
+  c.rows = ['..k..k', '.\u00b7 k .'];
+  eq(KS.workedStitches(c), 3);
+});
+
+t('projectYarn sums panels, honors shape gauge, counts missing', () => {
+  const p = KS.blankProject('yarn ball test');
+  p.gauge = { stsPer10cm: 20, rowsPer10cm: 26 };
+  const big = KS.blank('b', 100, 100);
+  big.rows = big.rows.map(() => 'k'.repeat(100));
+  const shaped = KS.blank('s', 50, 50);
+  shaped.rows = shaped.rows.map(() => 'k'.repeat(50));
+  const shapeGauge = {
+    format: 'knit-studio-shape/1', width: 50,
+    gauge: { stsPer10cm: 10, rowsPer10cm: 13 }, edges: { left: [], right: [] }
+  };
+  KS.addPanel(p, big, 'front', 'front');
+  KS.addPanel(p, shaped, 'loose', 'other', JSON.parse(JSON.stringify(shapeGauge)));
+  p.panels.push({ id: 'px', name: 'empty', role: 'other', chart: null, shape: null, notes: '' });
+  const y = KS.projectYarn(p, 'stockinette');
+  eq(y.panels.map((x) => x.meters), [128, 64, null]);
+  eq(y.total, 192);
+  eq(y.missingGauge, 1);
+  const txt = KS.projectToText(p);
+  if (!txt.includes('yarn estimate: ~192 m')) throw new Error('export line missing');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

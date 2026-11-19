@@ -542,6 +542,61 @@
     return { width: pn.chart.width, height: pn.chart.height };
   }
 
+  // Yarn length estimation. One knit stitch wraps roughly
+  // BASE x (stitch width + row height) of yarn; BASE 1.45 calibrated so a
+  // 10x10 cm stockinette swatch at 20 sts/26 rows lands near 6-7 m, which
+  // matches a worsted gauge swatch weighed against its label's m/g.
+  // Fabric multipliers are stockinette-relative and commonly quoted.
+  var YARN_BASE = 1.45;
+  var FABRICS = {
+    stockinette: 1, garter: 1.55, rib: 1.25, seed: 1.2, lace: 0.95, cables: 1.3
+  };
+  function workedStitches(chart) {
+    if (!chart || !Array.isArray(chart.rows)) return 0;
+    var sts = 0;
+    chart.rows.forEach(function (r) {
+      var row;
+      if (typeof r === 'string') row = r;
+      else if (Array.isArray(r)) {
+        row = r.map(function (c) {
+          if (!c) return ' ';
+          if (typeof c === 'string') return c;
+          var sym = c.symbol || c.char || '';
+          return sym ? sym.charAt(0) : ' ';
+        }).join('');
+      } else row = ' ';
+      for (var i = 0; i < row.length; i++) {
+        var ch = row.charAt(i);
+        if (ch !== '.' && ch !== ' ' && ch !== '\u00b7' && ch !== '\u00a0') sts++;
+      }
+    });
+    return sts;
+  }
+  // -> estimated meters | null when gauge or chart is missing
+  function yarnMeters(chart, gauge, fabric) {
+    if (!gauge || !(gauge.stsPer10cm > 0) || !(gauge.rowsPer10cm > 0) ||
+      !chart || !Array.isArray(chart.rows) || !chart.rows.length) return null;
+    var sts = workedStitches(chart);
+    if (!sts) return null;
+    var f = FABRICS[fabric] !== undefined ? FABRICS[fabric] : 1;
+    var cmPerSt = YARN_BASE * (10 / gauge.stsPer10cm + 10 / gauge.rowsPer10cm) * f;
+    return Math.round(sts * cmPerSt / 100);
+  }
+  // -> { panels: [{id, name, meters}], total: number|null, missingGauge: n }
+  function projectYarn(p, fabric) {
+    var res = { panels: [], total: 0, missingGauge: 0 };
+    if (!p || !p.panels) return res;
+    p.panels.forEach(function (pn) {
+      var g = (pn.shape && pn.shape.gauge) || p.gauge || null;
+      var m = yarnMeters(pn.chart, g, fabric);
+      if (m === null) res.missingGauge++;
+      else res.total += m;
+      res.panels.push({ id: pn.id, name: pn.name, meters: m });
+    });
+    if (!res.total) res.total = null;
+    return res;
+  }
+
   // All-panel instruction text (chart rows + shaping notes).
   // shapingText defaults to KS.shaping.toText when loaded (browser global or test global).
   function projectToText(p, shapingText) {
@@ -559,6 +614,12 @@
         if (pn.shape && st) { lines.push(''); lines.push(st(pn.shape)); }
       } else lines.push('(no chart yet)');
     });
+    var y = projectYarn(p, (p.meta && p.meta.fabric) || 'stockinette');
+    if (y.total !== null) {
+      lines.push('', 'yarn estimate: ~' + y.total + ' m (' +
+        ((p.meta && p.meta.fabric) || 'stockinette') + '; rough, swatch and weigh to be sure)' +
+        (y.missingGauge ? ' \u2014 ' + y.missingGauge + ' panel(s) without gauge skipped' : ''));
+    }
     return lines.join('\n');
   }
 
@@ -732,6 +793,8 @@
     addPanel: addPanel, getPanel: getPanel, removePanel: removePanel,
     setPanelChart: setPanelChart, panelDims: panelDims,
     projectToText: projectToText, projectFromSlicer: projectFromSlicer,
+    yarnMeters: yarnMeters, projectYarn: projectYarn, workedStitches: workedStitches,
+    YARN_BASE: YARN_BASE, FABRICS: FABRICS,
     colorIndex: colorIndex, colorsOf: colorsOf, colorAt: colorAt,
     colorHex: colorHex, usedColorCodes: usedColorCodes,
     COLOR_CODES: COLOR_CODES, COLOR_RAMP: COLOR_RAMP,

@@ -1545,6 +1545,8 @@ function renderProjectDetail() {
   $('pjGRows').value = p.gauge ? p.gauge.rowsPer10cm : '';
   var host = $('pjPanelList');
   host.innerHTML = '';
+  var fabric = (p.meta && p.meta.fabric) || 'stockinette';
+  var yarn = KS.projectYarn(p, fabric);
   p.panels.forEach(function (pn, i) {
     var row = document.createElement('div');
     row.className = 'panel-row' + (S.boundPanel === pn.id ? ' bound' : '');
@@ -1567,6 +1569,10 @@ function renderProjectDetail() {
     var dims = document.createElement('span');
     dims.className = 'dims';
     dims.textContent = pn.chart ? d.width + ' st \u00d7 ' + d.height + ' rows' : 'no chart';
+    if (yarn.panels[i] && yarn.panels[i].meters !== null) {
+      dims.textContent += ' \u00b7 ~' + yarn.panels[i].meters + ' m';
+      dims.title = 'yarn estimate at gauge' + (p.gauge ? ' ' + p.gauge.stsPer10cm + '/' + p.gauge.rowsPer10cm : '');
+    }
     row.appendChild(dims);
     var grow = document.createElement('span'); grow.className = 'grow'; row.appendChild(grow);
     function btn(txt, title, fn, cls) {
@@ -1593,6 +1599,29 @@ function renderProjectDetail() {
     }, 'danger');
     host.appendChild(row);
   });
+  var yh = $('pjYarn');
+  yh.innerHTML = '';
+  if (yarn.total !== null) {
+    yh.appendChild(document.createTextNode('Yarn estimate: ~' + yarn.total + ' m of '));
+    var sel = document.createElement('select');
+    sel.title = 'stitch pattern changes yarn usage a lot; estimate is rough - swatch and weigh';
+    Object.keys(KS.FABRICS).forEach(function (f) {
+      var o = document.createElement('option');
+      o.value = f; o.textContent = f; sel.appendChild(o);
+    });
+    sel.value = fabric;
+    sel.onchange = function () {
+      p.meta = p.meta || {}; p.meta.fabric = sel.value;
+      projectDirty(); renderProjectDetail();
+    };
+    yh.appendChild(sel);
+    var tail = document.createElement('span');
+    tail.textContent = ' fabric' + (yarn.missingGauge ?
+      ' (' + yarn.missingGauge + ' panel(s) skipped: no gauge)' : ' \u2014 rough; weigh your swatch');
+    yh.appendChild(tail);
+  } else if (p.panels.length) {
+    yh.textContent = 'Yarn estimate: set a gauge above to see yardage.';
+  }
 }
 
 function editPanel(id) {
