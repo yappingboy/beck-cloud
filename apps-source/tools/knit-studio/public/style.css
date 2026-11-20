@@ -238,3 +238,14 @@ button.primary:hover { background: var(--acc-hi); }
 .ami-row .dl.inc { color: #5cc9ba; font-weight: 700; }
 .ami-row .dl.dec { color: #e07070; font-weight: 700; }
 #amiConv { color: #d0b060; white-space: pre-wrap; }
+
+/* custom template editor */
+.tpl-card { position: relative; }
+.tpl-card .tpl-edit { position: absolute; top: 6px; right: 8px; opacity: .55; font-size: 14px; }
+.tpl-card .tpl-edit:hover { opacity: 1; }
+.tpl-card.tpl-new { border-style: dashed; opacity: .85; }
+.ct-row { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; margin: 4px 0; }
+.ct-row .ctl { font-size: 11px; opacity: .65; font-weight: 600; }
+.ct-row input[type="number"] { width: 60px; }
+.ct-row .ct-key { font-family: monospace; width: 90px; }
+.ct-row input[type="text"], .ct-row input:not([type]) { width: 130px; }

@@ -217,6 +217,15 @@ survive refreshes. Engine: `public/templates.js` (`KS.templates`), pure and
 selftested; generated panels always pass `shaping.check` and chart validation.
 Templates are starting points — tune anything in the Projects tab.
 
+**Your own templates:** the gallery's ✚ card builds custom templates from a
+name, measurement fields (label/key/default/min/max) and flat trapezoid
+panels — width and length from a field or fixed cm, a bottom taper (narrower
+cast-on that widens out), a top taper, and plain bands in rows. Panels are
+generated with the same gauge-driven, evenly-spread increase math as the
+built-ins, so tapers land smooth. Templates live in browser storage and
+export/import as JSON for sharing or backup. Engine: `public/customtpl.js`
+(`KS.customTpl`), DOM-free and selftested.
+
 ## Amigurumi importer
 
 The **Ami** tab converts crochet amigurumi patterns into knitting. Paste

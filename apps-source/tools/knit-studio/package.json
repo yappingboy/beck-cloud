@@ -7,7 +7,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "test": "node scripts/selftest.mjs && node scripts/selftest-shaping.mjs && node scripts/selftest-projects.mjs && node scripts/selftest-ami.mjs && node scripts/selftest-templates.mjs"
+    "test": "node scripts/selftest.mjs && node scripts/selftest-shaping.mjs && node scripts/selftest-projects.mjs && node scripts/selftest-ami.mjs && node scripts/selftest-templates.mjs && node scripts/selftest-customtpl.mjs"
   },
   "engines": {
     "node": ">=18"

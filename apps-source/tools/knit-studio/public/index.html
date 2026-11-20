@@ -166,6 +166,27 @@
     <h3>Project templates</h3>
     <p class="hint">Pick a garment, enter the wearer&rsquo;s measurements and your gauge, and knit-studio builds a multi-panel project: charts + editable shaping models for every piece. Starting points, not gospel &mdash; tune everything afterwards.</p>
     <div id="tplGrid" class="tpl-grid"></div>
+    <div id="cTplEdit" class="hidden">
+      <div class="group-label" id="cTplTitle">New custom template</div>
+      <div class="row2">
+        <label>Name <input id="ctName" maxlength="60"></label>
+        <label>Icon <input id="ctIcon" maxlength="4" size="3"></label>
+      </div>
+      <label>Description <input id="ctBlurb" maxlength="300"></label>
+      <div class="group-label">Measurement fields</div>
+      <div id="ctFields"></div>
+      <div class="btn-row"><button id="ctAddField" class="secondary">+ Field</button></div>
+      <div class="group-label">Panels (flat trapezoids)</div>
+      <div id="ctPanels"></div>
+      <div class="btn-row"><button id="ctAddPanel" class="secondary">+ Panel</button></div>
+      <div class="hint">Width/length reference a measurement field or a fixed cm value. Bottom taper: cast-on is narrower and widens to full. Top taper: narrows toward the top. Bands are plain rows; edit cells for rib.</div>
+      <div class="btn-row">
+        <button id="ctSave" class="primary">Save template</button>
+        <button id="ctExport" class="secondary">Export JSON</button>
+        <button id="ctDelete" class="secondary">Delete</button>
+        <button id="ctCancel" class="secondary">Cancel</button>
+      </div>
+    </div>
     <div id="tplForm" class="hidden">
       <div class="group-label" style="margin-top:12px" id="tplFormTitle">Measurements</div>
       <div class="btn-row" style="align-items:flex-end;flex-wrap:wrap">
@@ -338,6 +359,7 @@
 <script src="core.js"></script>
 <script src="shaping.js"></script>
 <script src="templates.js"></script>
+<script src="customtpl.js"></script>
 <script src="slicer.js"></script>
 <script src="ami.js"></script>
 <script src="app.js"></script>

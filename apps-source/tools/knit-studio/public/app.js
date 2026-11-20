@@ -44,10 +44,129 @@ var STpl = { sel: null };
 
 function tplStoreKey(id) { return 'ks-tpl-' + id; }
 
+function tplGetSpec(id) {
+  return String(id).indexOf('c-') === 0 ? KS.customTpl.get(id) : KS.templates.get(id);
+}
+
+/* ---------- custom template editor ---------- */
+var CEd = { spec: null };
+
+function cTplOpen(id) {
+  CEd.spec = id ? JSON.parse(JSON.stringify(KS.customTpl.get(id) || 'null')) : null;
+  if (!CEd.spec || !CEd.spec.panels) CEd.spec = KS.customTpl.blank();
+  renderCEditor();
+  $('cTplEdit').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function ctTxt(val, ph, fn) {
+  var i = document.createElement('input');
+  if (ph) i.placeholder = ph;
+  i.value = val;
+  i.oninput = function () { fn(i.value); };
+  return i;
+}
+function ctNum(val, fn) {
+  var i = document.createElement('input');
+  i.type = 'number'; i.value = val;
+  i.oninput = function () { fn(Number(i.value)); };
+  return i;
+}
+function ctLbl(txt) {
+  var b = document.createElement('b');
+  b.className = 'ctl'; b.textContent = txt;
+  return b;
+}
+
+function renderCEditor() {
+  var t = CEd.spec;
+  if (!t) { $('cTplEdit').classList.add('hidden'); return; }
+  $('cTplEdit').classList.remove('hidden');
+  $('cTplTitle').textContent = t.id ? 'Edit: ' + t.name : 'New custom template';
+  $('ctName').value = t.name;
+  $('ctIcon').value = t.icon;
+  $('ctBlurb').value = t.blurb;
+  $('ctDelete').classList.toggle('hidden', !t.id);
+  var fh = $('ctFields');
+  fh.innerHTML = '';
+  t.fields.forEach(function (f, i) {
+    var row = document.createElement('div');
+    row.className = 'ct-row';
+    row.appendChild(ctLbl('label'));
+    row.appendChild(ctTxt(f.label, 'Neck width', function (v) { f.label = v; }));
+    var k = ctTxt(f.key, 'key', function (v) {
+      f.key = v.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 20);
+    });
+    k.className = 'ct-key'; k.title = 'field key (a-z, 0-9, _)';
+    row.appendChild(ctLbl('key')); row.appendChild(k);
+    row.appendChild(ctLbl('def')); row.appendChild(ctNum(f.def, function (v) { f.def = v; }));
+    row.appendChild(ctLbl('min')); row.appendChild(ctNum(f.min, function (v) { f.min = v; }));
+    row.appendChild(ctLbl('max')); row.appendChild(ctNum(f.max, function (v) { f.max = v; }));
+    var x = document.createElement('button');
+    x.className = 'secondary'; x.textContent = '\u2715'; x.title = 'remove field';
+    x.onclick = function () { t.fields.splice(i, 1); renderCEditor(); };
+    row.appendChild(x);
+    fh.appendChild(row);
+  });
+  var ph2 = $('ctPanels');
+  ph2.innerHTML = '';
+  t.panels.forEach(function (p, i) {
+    var row = document.createElement('div');
+    row.className = 'ct-row';
+    row.appendChild(ctLbl('name'));
+    row.appendChild(ctTxt(p.name, 'Panel A', function (v) { p.name = v; }));
+    var role = document.createElement('select');
+    KS.customTpl.ROLES.forEach(function (r) {
+      var o = document.createElement('option'); o.value = r; o.textContent = r;
+      role.appendChild(o);
+    });
+    role.value = p.role;
+    role.onchange = function () { p.role = role.value; };
+    row.appendChild(ctLbl('role')); row.appendChild(role);
+    [['width', 'w'], ['length', 'len']].forEach(function (pair) {
+      var key = pair[0], v = p[key];
+      var sel = document.createElement('select');
+      t.fields.forEach(function (f) {
+        var o = document.createElement('option'); o.value = f.key; o.textContent = f.key;
+        sel.appendChild(o);
+      });
+      var fixed = document.createElement('option');
+      fixed.value = 'cm'; fixed.textContent = 'fixed';
+      sel.appendChild(fixed);
+      var known = t.fields.some(function (f) { return f.key === v.key; });
+      sel.value = v.mode === 'field' && known ? v.key : 'cm';
+      if (v.mode === 'field' && !known) v.mode = 'cm';
+      sel.onchange = function () {
+        if (sel.value === 'cm') v.mode = 'cm';
+        else { v.mode = 'field'; v.key = sel.value; }
+        renderCEditor();
+      };
+      row.appendChild(ctLbl(pair[1]));
+      row.appendChild(sel);
+      var num = ctNum(v.cm || (key === 'width' ? 40 : 50), function (x2) { v.cm = x2; });
+      num.title = 'used when "fixed"';
+      row.appendChild(num);
+    });
+    row.appendChild(ctLbl('top\u2192')); row.appendChild(ctNum(p.topCm, function (v2) { p.topCm = v2; }));
+    row.appendChild(ctLbl('bot\u2192')); row.appendChild(ctNum(p.bottomCm, function (v2) { p.bottomCm = v2; }));
+    row.appendChild(ctLbl('bandT')); row.appendChild(ctNum(p.bandTop, function (v2) { p.bandTop = v2; }));
+    row.appendChild(ctLbl('bandB')); row.appendChild(ctNum(p.bandBottom, function (v2) { p.bandBottom = v2; }));
+    var cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.checked = !!p.mirror;
+    cb.onchange = function () { p.mirror = cb.checked; };
+    row.appendChild(ctLbl('mirror')); row.appendChild(cb);
+    var x = document.createElement('button');
+    x.className = 'secondary'; x.textContent = '\u2715'; x.title = 'remove panel';
+    x.onclick = function () { t.panels.splice(i, 1); renderCEditor(); };
+    row.appendChild(x);
+    ph2.appendChild(row);
+  });
+}
+
+
 function renderTpl() {
   var grid = $('tplGrid');
   grid.innerHTML = '';
-  KS.templates.TEMPLATES.forEach(function (t) {
+  function card(t, onOpen, editFn) {
     var b = document.createElement('button');
     b.className = 'secondary tpl-card';
     var ico = document.createElement('span');
@@ -57,16 +176,47 @@ function renderTpl() {
     var bl = document.createElement('span');
     bl.className = 'tpl-blurb'; bl.textContent = t.blurb;
     b.appendChild(ico); b.appendChild(nm); b.appendChild(bl);
-    b.onclick = function () { openTplForm(t.id); };
+    b.onclick = onOpen;
+    if (editFn) {
+      var e = document.createElement('span');
+      e.className = 'tpl-edit'; e.textContent = '\u270e'; e.title = 'edit template';
+      e.onclick = function (ev) { ev.stopPropagation(); editFn(); };
+      b.appendChild(e);
+    }
     grid.appendChild(b);
+  }
+  KS.templates.TEMPLATES.forEach(function (t) {
+    card(t, function () { openTplForm(t.id); });
   });
+  KS.customTpl.list().forEach(function (t) {
+    card(t, function () { openTplForm(t.id); }, function () { cTplOpen(t.id); });
+  });
+  var ncard = document.createElement('button');
+  ncard.className = 'secondary tpl-card tpl-new';
+  var ni = document.createElement('span'); ni.className = 'tpl-ico'; ni.textContent = '\u271a';
+  var nb = document.createElement('b'); nb.textContent = 'New custom template';
+  var nbl = document.createElement('span'); nbl.className = 'tpl-blurb';
+  nbl.textContent = 'Your own shapes and measurements, saved in this browser.';
+  ncard.appendChild(ni); ncard.appendChild(nb); ncard.appendChild(nbl);
+  ncard.onclick = function () { cTplOpen(null); };
+  grid.appendChild(ncard);
+  var icard = document.createElement('button');
+  icard.className = 'secondary tpl-card tpl-new';
+  var ii = document.createElement('span'); ii.className = 'tpl-ico'; ii.textContent = '\uD83D\uDCE5';
+  var ib = document.createElement('b'); ib.textContent = 'Import JSON';
+  var ible = document.createElement('span'); ible.className = 'tpl-blurb';
+  ible.textContent = 'Load a custom template file.';
+  icard.appendChild(ii); icard.appendChild(ib); icard.appendChild(ible);
+  icard.onclick = function () { var f = $('cTplFile'); if (f) f.click(); };
+  grid.appendChild(icard);
   $('tplForm').classList.toggle('hidden', !STpl.sel);
   if (STpl.sel) renderTplForm();
 }
 
 function openTplForm(id) {
   STpl.sel = id;
-  var t = KS.templates.get(id);
+  var t = tplGetSpec(id);
+  if (!t) { STpl.sel = null; renderTpl(); return status('Template no longer exists', true); }
   $('tplFormTitle').textContent = t.icon + ' ' + t.name + ' \u2014 wearer measurements';
   if (!$('tplName').value) $('tplName').value = id + '-1';
   try {
@@ -84,7 +234,7 @@ function openTplForm(id) {
 }
 
 function renderTplForm() {
-  var t = KS.templates.get(STpl.sel);
+  var t = tplGetSpec(STpl.sel);
   if (!t) return;
   var host = $('tplDims');
   host.innerHTML = '';
@@ -118,7 +268,7 @@ function renderTplForm() {
 }
 
 function tplCollectDims() {
-  var t = KS.templates.get(STpl.sel);
+  var t = tplGetSpec(STpl.sel);
   var inches = $('tplUnits').value === 'in';
   var dims = {};
   t.fields.forEach(function (f) {
@@ -134,11 +284,15 @@ function tplBuild() {
   if (!id) return;
   var dims = tplCollectDims();
   var gauge = { stsPer10cm: Number($('tplSts').value), rowsPer10cm: Number($('tplRows').value) };
-  var errs = KS.templates.validate(id, dims, gauge);
+  var custom = String(id).indexOf('c-') === 0;
+  var errs = custom ? KS.customTpl.validate(KS.customTpl.get(id))
+    : KS.templates.validate(id, dims, gauge);
   if (errs.length) return status(errs.join(' \u00b7 '), true);
   var built;
   try {
-    built = KS.templates.build(id, dims, gauge, { name: $('tplName').value.trim() || id });
+    built = custom
+      ? KS.customTpl.build(KS.customTpl.get(id), dims, gauge, { name: $('tplName').value.trim() || id })
+      : KS.templates.build(id, dims, gauge, { name: $('tplName').value.trim() || id });
   } catch (e) { return status('Template failed: ' + e.message, true); }
   var proj = KS.blankProject(built.name);
   proj.gauge = gauge;
@@ -172,6 +326,68 @@ function tplBuild() {
 function bindTpl() {
   $('tplUnits').addEventListener('change', renderTplForm);
   $('tplCancel').addEventListener('click', function () { STpl.sel = null; renderTpl(); });
+  $('ctAddField').addEventListener('click', function () {
+    if (!CEd.spec) return;
+    var n = CEd.spec.fields.length + 1;
+    CEd.spec.fields.push({ key: 'field' + n, label: 'Measurement ' + n, def: 40, min: 5, max: 200 });
+    renderCEditor();
+  });
+  $('ctAddPanel').addEventListener('click', function () {
+    if (!CEd.spec) return;
+    var idx = CEd.spec.panels.length;
+    CEd.spec.panels.push({
+      name: 'Panel ' + String.fromCharCode(65 + idx), role: 'other',
+      width: { mode: 'cm', cm: 40 }, length: { mode: 'cm', cm: 50 },
+      topCm: 0, bottomCm: 0, bandTop: 0, bandBottom: 0, mirror: false
+    });
+    renderCEditor();
+  });
+  $('ctSave').addEventListener('click', function () {
+    if (!CEd.spec) return;
+    CEd.spec.name = $('ctName').value.trim() || 'My template';
+    CEd.spec.icon = $('ctIcon').value || '\u2702\ufe0f';
+    CEd.spec.blurb = $('ctBlurb').value.trim();
+    try {
+      var saved = KS.customTpl.save(CEd.spec);
+      status('Custom template "' + saved.name + '" saved.');
+      CEd.spec = null;
+      renderCEditor();
+      renderTpl();
+    } catch (e) { status(e.message, true); }
+  });
+  $('ctDelete').addEventListener('click', function () {
+    if (!CEd.spec || !CEd.spec.id) return;
+    if (!confirm('Delete custom template "' + CEd.spec.name + '"?')) return;
+    KS.customTpl.remove(CEd.spec.id);
+    CEd.spec = null;
+    renderCEditor();
+    renderTpl();
+    status('Custom template deleted.');
+  });
+  $('ctExport').addEventListener('click', function () {
+    if (!CEd.spec) return;
+    download(KS.slug(CEd.spec.name || 'template') + '.json',
+      JSON.stringify(CEd.spec, null, 2), 'application/json');
+  });
+  $('ctCancel').addEventListener('click', function () { CEd.spec = null; renderCEditor(); });
+  var ctf = document.createElement('input');
+  ctf.type = 'file'; ctf.id = 'cTplFile'; ctf.accept = '.json,application/json';
+  ctf.className = 'hidden';
+  document.body.appendChild(ctf);
+  ctf.onchange = function () {
+    var f = ctf.files && ctf.files[0];
+    ctf.value = '';
+    if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        CEd.spec = KS.customTpl.fromJson(r.result);
+        renderCEditor();
+        status('Template imported \u2014 review and save.');
+      } catch (e) { status('Import failed: ' + e.message, true); }
+    };
+    r.readAsText(f);
+  };
   $('tplBuild').addEventListener('click', tplBuild);
 }
 /* ---------- tabs ---------- */
