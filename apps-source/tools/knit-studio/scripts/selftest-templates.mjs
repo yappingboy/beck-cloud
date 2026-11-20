@@ -237,5 +237,52 @@ t('polo/henley split the center front with opening annotation', () => {
   if (crew.panels.filter((p) => p.role === 'front').length !== 1) throw new Error('crew front must stay whole');
 });
 
+t('sweater armhole x collar: all 16 combos build valid panels', () => {
+  ['setin', 'drop', 'saddle', 'raglan'].forEach((arm) => {
+    ['crew', 'turtle', 'v-neck', 'shirt'].forEach((col) => {
+      const built = TP.build('sweater', Object.assign(TP.defaults('sweater'), { armhole: arm, collar: col }), G, {});
+      built.panels.forEach((pn) => {
+        const errs = SH.check(pn.shape);
+        if (errs.length) throw new Error(arm + '/' + col + '/' + pn.name + ': ' + errs.join('; '));
+        KS.validate(SH.toPattern(pn.shape, pn.name));
+      });
+    });
+  });
+});
+
+t('drop shoulder widens the body and squares the sleeve', () => {
+  const d = TP.defaults('sweater');
+  const setin = TP.build('sweater', Object.assign({}, d, { armhole: 'setin' }), G, {});
+  const drop = TP.build('sweater', Object.assign({}, d, { armhole: 'drop' }), G, {});
+  const backW = (b) => b.panels.find((p) => p.role === 'back').shape.width;
+  if (!(backW(drop) > backW(setin))) throw new Error('drop body not wider: ' + backW(setin) + ' -> ' + backW(drop));
+  const kinds = drop.panels.find((p) => p.role === 'sleeve-left').shape.edges.left.map((x) => x.kind).join(',');
+  if (/inc|dec/.test(kinds)) throw new Error('drop sleeve must stay straight: ' + kinds);
+});
+
+t('raglan slopes body and sleeve; saddle adds tabs', () => {
+  const d = TP.defaults('sweater');
+  const rag = TP.build('sweater', Object.assign({}, d, { armhole: 'raglan' }), G, {});
+  if (!rag.panels.find((p) => p.role === 'back').shape.edges.left.some((x) => x.kind === 'dec')) throw new Error('raglan body has no slope');
+  if (!rag.panels.find((p) => p.role === 'sleeve-left').shape.edges.left.some((x) => x.kind === 'dec')) throw new Error('raglan sleeve has no cap slope');
+  const sad = TP.build('sweater', Object.assign({}, d, { armhole: 'saddle' }), G, {});
+  const tabs = sad.panels.filter((p) => /saddle tab/i.test(p.name));
+  if (tabs.length !== 2) throw new Error('saddle needs 2 tabs, got ' + tabs.length);
+  tabs.forEach((t2) => { if (t2.shape.annotations.length === 0) throw new Error('tab needs instructions'); });
+});
+
+t('collar styles: turtle is a tall tube, v-neck 3 strips, shirt band+leaf', () => {
+  const d = TP.defaults('sweater');
+  const collars = (col) => TP.build('sweater', Object.assign({}, d, { collar: col }), G, {}).panels.filter((p) => p.role === 'collar');
+  const crew = collars('crew'); const tur = collars('turtle');
+  const rowsOf = (ps) => ps[0].shape.edges.left.reduce((a, x) => a + (x.rows || 0), 0);
+  if (crew.length !== 1 || tur.length !== 1) throw new Error('crew/turtle need exactly one collar panel');
+  if (!(rowsOf(tur) > rowsOf(crew) * 3)) throw new Error('turtle not a tall tube: ' + rowsOf(crew) + ' -> ' + rowsOf(tur));
+  const w = (ps) => ps[0].shape.width;
+  if (!(w(tur) < w(crew))) throw new Error('turtle tube must sit tighter than crew band');
+  if (collars('v-neck').length !== 3) throw new Error('v-neck needs back band + 2 front strips');
+  if (collars('shirt').length !== 2) throw new Error('shirt needs band + leaf');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

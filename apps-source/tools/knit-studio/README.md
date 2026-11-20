@@ -213,7 +213,10 @@ plus an editable shaping model — cuffs, tapers, held heel flaps, w&t toes,
 crown decreases — with how-to annotations pinned on the diagrams. Sweater,
 cardigan and T-shirt each take a **shoulder shaping** choice (straight, short-row
 slope, decrease wedge) plus **neck width and depth**; neckbands are cut to the
-elliptical opening you pick. On the T-shirt, polo and henley split the center
+elliptical opening you pick. The sweater adds a **sleeve/shoulder style** —
+set-in cap, drop shoulder, saddle shoulder (with tabs) or raglan — and a
+**collar**: turtleneck tube, crew band, V-neck bias strips or shirt collar
+(band + leaf). On the T-shirt, polo and henley split the center
 front into two panels — the plackets sew behind that opening. Panel sizes come
 from your numbers: change chest or ease and rebuild. Saved per template in the browser, so the wearer's measurements
 survive refreshes. Engine: `public/templates.js` (`KS.templates`), pure and
