@@ -209,10 +209,13 @@ The **Templates** tab turns measurements into a multi-panel project: pick a
 garment (socks, sweater, cardigan, T-shirt with five collar styles, shawl,
 scarf, beanie), enter the wearer's
 dimensions (cm or inches) and your gauge, and every panel arrives as a chart
-plus an editable shaping model — cuffs, tapers, short-row shoulders, held
-heel flaps, w&t toes, crown decreases — with how-to annotations pinned on
-the diagrams. Panel sizes come from your numbers: change chest or ease and
-rebuild. Saved per template in the browser, so the wearer's measurements
+plus an editable shaping model — cuffs, tapers, held heel flaps, w&t toes,
+crown decreases — with how-to annotations pinned on the diagrams. Sweater,
+cardigan and T-shirt each take a **shoulder shaping** choice (straight, short-row
+slope, decrease wedge) plus **neck width and depth**; neckbands are cut to the
+elliptical opening you pick. On the T-shirt, polo and henley split the center
+front into two panels — the plackets sew behind that opening. Panel sizes come
+from your numbers: change chest or ease and rebuild. Saved per template in the browser, so the wearer's measurements
 survive refreshes. Engine: `public/templates.js` (`KS.templates`), pure and
 selftested; generated panels always pass `shaping.check` and chart validation.
 Templates are starting points — tune anything in the Projects tab.

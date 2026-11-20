@@ -173,5 +173,69 @@ t('socks: side-seam instep+sole panels, heel tapers in and out', () => {
   });
 });
 
+t('shoulder options: sweater/cardigan/tshirt build valid for all modes', () => {
+  ['sweater', 'cardigan', 'tshirt'].forEach((id) => {
+    ['straight', 'shortrow', 'wedge'].forEach((mode) => {
+      const built = TP.build(id, Object.assign(TP.defaults(id), { shoulder: mode }), G, {});
+      built.panels.forEach((pn) => {
+        const errs = SH.check(pn.shape);
+        if (errs.length) throw new Error(id + '/' + mode + '/' + pn.name + ': ' + errs.join('; '));
+        KS.validate(SH.toPattern(pn.shape, pn.name));
+      });
+      if (mode === 'straight') {
+        const body = built.panels.find((p) => p.role === 'back' || p.role === 'front');
+        const tops = body.shape.edges.left.filter((x) => x.kind === 'sr' || x.kind === 'dec');
+        if (tops.length) throw new Error(id + ': straight shoulders still slope');
+      }
+    });
+  });
+});
+
+t('shoulder modes differ: wedge consumes more rows than straight', () => {
+  const d = TP.defaults('tshirt');
+  const flat = TP.build('tshirt', Object.assign({}, d, { shoulder: 'straight' }), G, {});
+  const wedge = TP.build('tshirt', Object.assign({}, d, { shoulder: 'wedge' }), G, {});
+  const kinds = (b) => b.panels.find((p) => p.role === 'back').shape.edges.left.map((x) => x.kind).join(',');
+  if (!kinds(wedge).includes('dec')) throw new Error('wedge mode produced no wedge: ' + kinds(wedge));
+  if (kinds(flat).includes('dec') || kinds(flat).includes('sr')) throw new Error('straight mode shaped: ' + kinds(flat));
+});
+
+t('neck size: bigger neckW grows the neckband; deeper neckRow moves annotation', () => {
+  const d = TP.defaults('sweater');
+  const narrow = TP.build('sweater', Object.assign({}, d, { neckW: 14, neckD: 7 }), G, {});
+  const wide = TP.build('sweater', Object.assign({}, d, { neckW: 26, neckD: 14 }), G, {});
+  const band = (b) => b.panels.find((p) => p.role === 'collar').shape.width;
+  if (!(band(wide) > band(narrow))) throw new Error('neckband did not grow: ' + band(narrow) + ' -> ' + band(wide));
+  const annRow = (b) => Math.min(...(b.panels.find((p) => p.role === 'front').shape.annotations || [])
+    .filter((a) => /front neck/.test(a.text)).map((a) => a.row));
+  if (!(annRow(wide) < annRow(narrow))) throw new Error('deeper neck annotation not higher up');
+});
+
+t('tshirt neck size drives tee neckband too', () => {
+  const d = TP.defaults('tshirt');
+  const a = TP.build('tshirt', Object.assign({}, d, { collar: 'crew', neckW: 15, neckD: 8 }), G, {});
+  const b = TP.build('tshirt', Object.assign({}, d, { collar: 'crew', neckW: 28, neckD: 16 }), G, {});
+  const w = (p) => p.panels.find((x) => x.role === 'collar').shape.width;
+  if (!(w(b) > w(a))) throw new Error('tee neckband static: ' + w(a) + ' -> ' + w(b));
+});
+
+t('polo/henley split the center front with opening annotation', () => {
+  const d = TP.defaults('tshirt');
+  ['polo', 'henley'].forEach((c) => {
+    const b = TP.build('tshirt', Object.assign({}, d, { collar: c }), G, {});
+    const fronts = b.panels.filter((p) => p.role === 'front');
+    if (fronts.length !== 2) throw new Error(c + ' must split front into two panels, got ' + fronts.length);
+    const anns = fronts.flatMap((p) => (p.shape.annotations || []).map((a) => a.text)).join(' | ');
+    if (!/center front opening/.test(anns)) throw new Error(c + ' missing opening annotation: ' + anns);
+    const pl = b.panels.filter((p) => p.role === 'placket');
+    if (!pl.length) throw new Error(c + ' needs placket');
+    if (!pl.some((p) => (p.shape.annotations || []).some((a) => /sew behind/.test(a.text)))) {
+      throw new Error(c + ' placket missing sew-behind annotation');
+    }
+  });
+  const crew = TP.build('tshirt', Object.assign({}, d, { collar: 'crew' }), G, {});
+  if (crew.panels.filter((p) => p.role === 'front').length !== 1) throw new Error('crew front must stay whole');
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

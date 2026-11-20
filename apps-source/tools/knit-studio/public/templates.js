@@ -20,6 +20,23 @@
       rows: function (cm) { return Math.max(4, Math.min(3900, Math.round(cm / 10 * rows10))); }
     };
   }
+  // Ramanujan ellipse perimeter; a/b are half-axes (cm)
+  function ellipsePer(a, b) {
+    return Math.PI * (3 * (a + b) - Math.sqrt((3 * a + b) * (a + 3 * b)));
+  }
+  // neckband stitches: front half-ellipse (neckW x neckD) + back half-ellipse
+  // (neckW x 4 cm), fit ~12% under the opening so it stretches on
+  function neckBandSts(m, neckW, neckD) {
+    var per = (ellipsePer(neckW / 2, Math.max(3, neckD)) +
+      ellipsePer(neckW / 2, 4)) / 2;
+    return Math.max(12, m.sts(per * 0.88));
+  }
+  // shoulder treatment at the top of a body edge: flat, short-row slope, wedge
+  function shoulderSeg(mode, slopeTurn) {
+    if (mode === 'straight') return st(4);
+    if (mode === 'wedge') return dec(2, Math.max(1, Math.round(slopeTurn * 2 / 3)), 3);
+    return sr(2, slopeTurn, 2);
+  }
   function st(rows) { return { kind: 'straight', rows: rows }; }
   function dec(every, each, times) { return { kind: 'dec', every: Math.max(1, every | 0), each: Math.max(1, each | 0), times: Math.max(1, times | 0) }; }
   function inc(every, each, times) { return { kind: 'inc', every: Math.max(1, every | 0), each: Math.max(1, each | 0), times: Math.max(1, times | 0) }; }
@@ -103,14 +120,17 @@
     },
     {
       id: 'sweater', name: 'Sweater (drop shoulder)', icon: '🧥',
-      blurb: 'Pullover in pieces: straight back and front to bust line, short-row shoulders, straight sleeves with cap, collar band. Body shapes at the waistline stay straight in v1 — widen tapers in Shaping.',
+      blurb: 'Pullover in pieces: straight body, shoulder choice (straight / short-row / wedge), sleeves with caps, neckband sized from your neck width and depth. Body shapes at the waistline stay straight in v1 — widen tapers in Shaping.',
       fields: [
         { key: 'chest', label: 'Bust / chest circumference', def: 96, min: 60, max: 180 },
         { key: 'bodyLen', label: 'Body length (underarm to shoulder)', def: 42, min: 20, max: 70 },
         { key: 'sleeveLen', label: 'Sleeve length (underarm to cuff)', def: 45, min: 15, max: 75 },
         { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
         { key: 'wristCirc', label: 'Wrist circumference', def: 18, min: 12, max: 35 },
-        { key: 'ease', label: 'Positive ease (+cm)', def: 6, min: -5, max: 30 }
+        { key: 'ease', label: 'Positive ease (+cm)', def: 6, min: -5, max: 30 },
+        { key: 'shoulder', label: 'Shoulder shaping', type: 'select', def: 'shortrow', options: ['straight', 'shortrow', 'wedge'] },
+        { key: 'neckW', label: 'Neck width', def: 18, min: 12, max: 30 },
+        { key: 'neckD', label: 'Front neck depth', def: 9, min: 4, max: 16 }
       ],
       build: function (d, g) {
         var m = maker(g);
@@ -118,26 +138,36 @@
         var half = Math.max(12, Math.round(bodySts / 2));
         var bodyRows = m.rows(d.bodyLen);
         var slopeTurn = Math.max(2, Math.floor(half / 24));
-        var slope = function () { return sr(2, slopeTurn, 2); };
+        var shSpan = d.shoulder === 'wedge' ? 6 : 4;
+        var bodyEdge = function () {
+          return edge(st(4), st(Math.max(2, bodyRows - 4 - shSpan)), shoulderSeg(d.shoulder, slopeTurn));
+        };
+        var neckSts = Math.max(8, Math.min(half - 8, m.sts(d.neckW)));
+        var neckRow = Math.max(2, bodyRows - Math.max(2, m.rows(d.neckD)));
+        var neckAnn = function (front) {
+          return { row: front ? neckRow : Math.max(2, bodyRows - m.rows(4)),
+            off: Math.round(half / 2),
+            text: (front ? 'front' : 'back') + ' neck: BO/hold center ' + neckSts +
+              ' sts (' + d.neckW + ' cm wide), ' + (front ? d.neckD : 4) + ' cm deep' };
+        };
         var backShape = {
           name: 'back', width: half, gauge: g, mirror: false,
           edges: {
-            left: edge(st(4), st(bodyRows - 6), slope()),
-            right: edge(st(4), st(bodyRows - 6), slope())
+            left: bodyEdge(), right: bodyEdge()
           },
           annotations: [
             { row: 5, off: 0, text: 'rib band: work 2x2 rib (edit cells)' },
-            { row: bodyRows - 5, off: 0, text: 'shoulder: short-row slope, hold live or BO' }
+            { row: bodyRows - 5, off: 0, text: 'shoulder: ' + (d.shoulder || 'shortrow') + ' shaping; hold live or BO' },
+            neckAnn(false)
           ]
         };
         var frontShape = {
           name: 'front', width: half, gauge: g, mirror: false,
           edges: {
-            left: edge(st(4), st(bodyRows - 6), slope()),
-            right: edge(st(4), st(bodyRows - 6), slope())
+            left: bodyEdge(), right: bodyEdge()
           },
           annotations: [
-            { row: bodyRows - Math.max(6, Math.round(bodyRows * 0.18)), off: Math.round(half / 2), text: 'neck: shape or pick up here' }
+            neckAnn(true)
           ]
         };
         var armSts = m.sts(d.armCirc + 4);
@@ -159,7 +189,7 @@
           );
         };
         var sleeveL = { name: 'sleeve L', width: Math.max(10, wristSts), gauge: g, mirror: false, edges: { left: sleeveEdge(), right: sleeveEdge() }, annotations: [{ row: 3, off: 0, text: 'base = wrist sts; taper widens to upper arm' }] };
-        var collarSts = Math.max(16, m.sts((d.chest + d.ease) * 0.21));
+        var collarSts = neckBandSts(m, d.neckW, d.neckD);
         var collar = { name: 'collar band', width: collarSts, gauge: g, mirror: false, edges: { left: edge(st(m.rows(3))), right: edge(st(m.rows(3))) }, annotations: [{ row: 2, off: 0, text: 'work in rib, 3 cm deep' }] };
         var sl = JSON.parse(JSON.stringify(sleeveL)); sl.name = 'sleeve L';
         var srr = JSON.parse(JSON.stringify(sleeveL)); srr.name = 'sleeve R';
@@ -184,7 +214,10 @@
         { key: 'sleeveLen', label: 'Sleeve length', def: 45, min: 15, max: 75 },
         { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
         { key: 'wristCirc', label: 'Wrist circumference', def: 18, min: 12, max: 35 },
-        { key: 'ease', label: 'Positive ease (+cm)', def: 8, min: -5, max: 30 }
+        { key: 'ease', label: 'Positive ease (+cm)', def: 8, min: -5, max: 30 },
+        { key: 'shoulder', label: 'Shoulder shaping', type: 'select', def: 'shortrow', options: ['straight', 'shortrow', 'wedge'] },
+        { key: 'neckW', label: 'Neck width', def: 18, min: 12, max: 30 },
+        { key: 'neckD', label: 'Front neck depth', def: 9, min: 4, max: 16 }
       ],
       build: function (d, g) {
         var m = maker(g);
@@ -194,10 +227,11 @@
         var slopeTurn = Math.max(2, Math.floor(frontW / 20));
         var front = function (side) {
           var left = edge(st(6), st(bodyRows - 8));                        // button band edge: straight
-          var right = edge(st(6), st(bodyRows - 8), sr(2, slopeTurn, 2));  // shoulder slope
+          var right = edge(st(6), st(Math.max(2, bodyRows - 8 - (d.shoulder === 'wedge' ? 2 : 0))), shoulderSeg(d.shoulder, slopeTurn));  // shoulder
           return side === 'R' ? { left: right, right: left } : { left: left, right: right };
         };
-        var f1 = { name: 'front L', width: frontW, gauge: g, mirror: false, edges: front('L'), annotations: [{ row: 3, off: 0, text: 'inner edge = button band' }] };
+        var f1 = { name: 'front L', width: frontW, gauge: g, mirror: false, edges: front('L'), annotations: [{ row: 3, off: 0, text: 'inner edge = button band' },
+          { row: Math.max(2, bodyRows - Math.max(2, m.rows(d.neckD))), off: Math.max(0, frontW - 6), text: 'neck: curve from band edge to shoulder, ' + d.neckW + ' x ' + d.neckD + ' cm' }] };
         var f2 = { name: 'front R', width: frontW, gauge: g, mirror: false, edges: front('R') };
         var backShape = { name: 'back', width: Math.max(12, Math.round(bodySts / 2)), gauge: g, mirror: false, edges: { left: edge(st(6), st(bodyRows - 6)), right: edge(st(6), st(bodyRows - 6)) } };
         var armSts = m.sts(d.armCirc + 4);
@@ -236,7 +270,7 @@
     },
     {
       id: 'tshirt', name: 'T-Shirt', icon: '👕',
-      blurb: 'Classic Tee: straight body, short sleeves with caps, shoulder seams. Pick a collar - crew, scoop, V-neck, polo, or henley - panel set, neckbands and plackets adapt.',
+      blurb: 'Classic Tee: straight body, short sleeves with caps, shoulder seams. Pick a collar - crew, scoop, V-neck, polo, or henley - panel set, neckbands and plackets adapt. Polo and henley split the center front; the plackets sew behind that opening.',
       fields: [
         { key: 'chest', label: 'Bust / chest circumference', def: 96, min: 60, max: 180 },
         { key: 'bodyLen', label: 'Body length (shoulder to hem)', def: 64, min: 35, max: 95 },
@@ -244,6 +278,9 @@
         { key: 'armCirc', label: 'Upper arm circumference', def: 32, min: 18, max: 60 },
         { key: 'cuffCirc', label: 'Sleeve cuff circumference', def: 28, min: 14, max: 45 },
         { key: 'ease', label: 'Positive ease (+cm)', def: 4, min: -4, max: 20 },
+        { key: 'shoulder', label: 'Shoulder shaping', type: 'select', def: 'shortrow', options: ['straight', 'shortrow', 'wedge'] },
+        { key: 'neckW', label: 'Neck width', def: 18, min: 12, max: 30 },
+        { key: 'neckD', label: 'Neck depth', def: 9, min: 2, max: 24 },
         { key: 'collar', label: 'Collar', type: 'select', def: 'crew', options: ['crew', 'scoop', 'v-neck', 'polo', 'henley'] }
       ],
       build: function (d, g) {
@@ -252,27 +289,30 @@
         var half = Math.max(12, Math.round(bodySts / 2));
         var bodyRows = m.rows(d.bodyLen);
         var slopeTurn = Math.max(2, Math.floor(half / 24));
-        var slope = function () { return sr(2, slopeTurn, 2); };
-        var neckCm = { crew: 9, scoop: 15, 'v-neck': 0, polo: 16, henley: 14 }[d.collar] || 9;
-        var neckRow = Math.max(2, bodyRows - Math.max(2, m.rows(neckCm)));
+        var shSpan = d.shoulder === 'wedge' ? 6 : 4;
+        var slope = function () { return shoulderSeg(d.shoulder, slopeTurn); };
+        var teeEdge = function () {
+          return edge(st(8), st(Math.max(2, bodyRows - 8 - shSpan)), slope());
+        };
+        var neckRow = Math.max(2, bodyRows - Math.max(2, m.rows(d.neckD)));
         var hemAnn = { row: 2, off: 0, text: 'hem band: 2x2 rib, 2-3 cm' };
         var backShape = {
           name: 'back', width: half, gauge: g, mirror: false,
           edges: {
-            left: edge(st(8), st(bodyRows - 10), slope()),
-            right: edge(st(8), st(bodyRows - 10), slope())
+            left: teeEdge(), right: teeEdge()
           },
-          annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: 'back neck: ' + (d.collar === 'v-neck' ? 'shallow curve, bind off or hold' : d.collar + ' depth ~' + neckCm + ' cm from shoulder') }]
+          annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: 'back neck: ' + (d.collar === 'v-neck' ? 'shallow curve, bind off or hold' : d.collar + ' neck ' + d.neckW + ' x ' + d.neckD + ' cm, back depth ~4 cm') }]
         };
         var panels = [];
-        if (d.collar === 'v-neck') {
-          var fHalf = Math.max(10, Math.round(bodySts / 4));
+        if (d.collar === 'v-neck' || d.collar === 'polo' || d.collar === 'henley') {
+          var open = (d.collar === 'polo' || d.collar === 'henley') ? Math.max(6, m.sts(3)) : 0;
+          var fHalf = Math.max(10, Math.round((half - open) / 2));
           var fEdge = function (outerRight) {
             var straight = edge(st(8), st(bodyRows - 10));
             var sloped = edge(st(8), st(bodyRows - 10), slope());
             return outerRight ? { left: straight, right: sloped } : { left: sloped, right: straight };
           };
-          panels.push({ name: 'Front L', role: 'front', shape: { name: 'front L', width: fHalf, gauge: g, mirror: false, edges: fEdge(false), annotations: [hemAnn, { row: neckRow, off: 0, text: 'V from center front: inner edge stays straight, V forms at seam; band cut on bias' }] } });
+          panels.push({ name: 'Front L', role: 'front', shape: { name: 'front L', width: fHalf, gauge: g, mirror: false, edges: fEdge(false), annotations: [hemAnn, { row: neckRow, off: 0, text: d.collar === 'v-neck' ? 'V from center front: inner edge stays straight, V forms at seam; band cut on bias' : 'center front opening: sew the placket behind this edge, wrong side' }] } });
           panels.push({ name: 'Front R', role: 'front', shape: { name: 'front R', width: fHalf, gauge: g, mirror: false, edges: fEdge(true), annotations: [hemAnn] } });
         } else {
           panels.push({
@@ -280,10 +320,9 @@
             shape: {
               name: 'front', width: half, gauge: g, mirror: false,
               edges: {
-                left: edge(st(8), st(bodyRows - 10), slope()),
-                right: edge(st(8), st(bodyRows - 10), slope())
+                left: teeEdge(), right: teeEdge()
               },
-              annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: (d.collar === 'crew' || d.collar === 'scoop' ? d.collar + ' neck ' + neckCm + ' cm deep: shape round or pick up live sts here' : d.collar + ': flat neck, placket at center') }]
+              annotations: [hemAnn, { row: neckRow, off: Math.round(half / 2), text: d.collar + ' neck ' + d.neckW + ' x ' + d.neckD + ' cm: hold/BO center sts, shape round or pick up live sts' }]
             }
           });
         }
@@ -315,7 +354,7 @@
         panels.push({
           name: bandName, role: 'collar',
           shape: {
-            name: 'collar', width: Math.max(10, m.sts(d.collar === 'v-neck' ? 3.5 : 42 * 0.9)), gauge: g, mirror: false,
+            name: 'collar', width: d.collar === 'v-neck' ? Math.max(10, m.sts(3.5)) : neckBandSts(m, d.neckW, d.neckD), gauge: g, mirror: false,
             edges: { left: edge(st(bandRows)), right: edge(st(bandRows)) },
             annotations: [{ row: 2, off: 0, text: d.collar === 'v-neck' ? 'two bias strips for the V, join to band then neck' : '1x1 rib band, sew to neck' }]
           }
@@ -328,7 +367,10 @@
               shape: {
                 name: 'placket', width: Math.max(6, m.sts(3.5)), gauge: g, mirror: false,
                 edges: { left: edge(st(plRows)), right: edge(st(plRows)) },
-                annotations: [{ row: Math.max(2, plRows - 3), off: 1, text: buttons + ' buttonhole' + (buttons > 1 ? 's' : '') + ' at top' }]
+                annotations: [
+                  { row: 2, off: 0, text: 'sew behind center front opening, wrong side; finish edges first' },
+                  { row: Math.max(2, plRows - 3), off: 1, text: buttons ? buttons + ' buttonhole' + (buttons > 1 ? 's' : '') + ' at top' : 'button side: no holes' }
+                ]
               }
             };
           };
