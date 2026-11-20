@@ -351,13 +351,15 @@
 
   /* ---------- exports ---------- */
 
-  // Run-length encoding of one row: "k10 x4 k6".
+  // Run-length encoding of one row: "k10 x4 k6". Unworked cells ('.')
+  // are skipped: instructions list only stitches you actually work;
+  // wrap/hold marks show the chart's real turns.
   function rle(row) {
     var out = [], prev = null, n = 0;
     for (var i = 0; i <= row.length; i++) {
       var c = i < row.length ? row[i] : null;
       if (c === prev) { n++; continue; }
-      if (prev !== null) out.push((prev === '.' ? 'no-work ' : prev) + n);
+      if (prev !== null && prev !== '.') out.push(prev + n);
       prev = c; n = 1;
     }
     return out.join(' ');
@@ -371,7 +373,9 @@
     for (var r = 0; r < p.height; r++) {
       var y = p.height - 1 - r; // bottom-up
       var side = (r % 2 === 0) ? 'RS' : 'WS';
-      lines.push('Row ' + (r + 1) + ' (' + side + '): ' + rle(p.rows[y]));
+      var body = rle(p.rows[y]);
+      lines.push('Row ' + (r + 1) + ' (' + side + '): ' +
+        (body || 'not worked (short rows / held edge - see chart turns)'));
     }
     var uc = usedColorCodes(p);
     if (uc.length) {

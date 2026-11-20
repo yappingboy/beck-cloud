@@ -89,11 +89,23 @@ t('imageToChart dither stays binary', () => {
 });
 
 t('rle + toText', () => {
-  if (KS.rle('kkkxx..') !== 'k3 x2 no-work 2') throw new Error('rle got ' + KS.rle('kkkxx..'));
+  if (KS.rle('kkkxx..') !== 'k3 x2') throw new Error('rle got ' + KS.rle('kkkxx..'));
+if (KS.rle('..kk..p.') !== 'k2 p1') throw new Error('rle must skip unworked cells, got ' + KS.rle('..kk..p.'));
+if (KS.rle('....') !== '') throw new Error('blank row must encode empty, got ' + KS.rle('....'));
   const p = KS.blank('band', 4, 2);
   p.rows = ['kxkx', 'xxxx'];
   const txt = KS.toText(p);
   if (!txt.includes('Row 1 (RS): x4')) throw new Error('bottom row should be Row 1: ' + txt);
+});
+
+t('toText lists only worked stitches; blank rows explained', () => {
+  const p = KS.blank('shortrow', 6, 3);
+  p.rows = ['......', '.kk...', 'kkkkkk']; // bottom-up rows[0] = top
+  const txt = KS.toText(p);
+  if (txt.includes('no-work')) throw new Error('instructions still say no-work: ' + txt);
+  if (!txt.includes('Row 1 (RS): k6')) throw new Error('full row wrong: ' + txt);
+  if (!txt.includes('Row 2 (WS): k2')) throw new Error('partial row must list worked sts only: ' + txt);
+  if (!/Row 3 \(RS\): not worked/.test(txt)) throw new Error('blank row needs a plain-language note: ' + txt);
 });
 
 t('fromSlicer maps bottom-up rows', () => {
