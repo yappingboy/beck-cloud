@@ -30,7 +30,7 @@
   var TEMPLATES = [
     {
       id: 'socks', name: 'Socks (cuff-down)', icon: '🧦',
-      blurb: 'Pair of top-down socks: cuff, leg, short-row heel, foot, w&t toe to graft. Tune ribbing and heel style in the editor.',
+      blurb: 'Top-down side-seam socks: instep + sole panels per sock. Heel tapers in, works a flap, tapers back out; rounded toe. Seams stay on the sides.',
       fields: [
         { key: 'footCirc', label: 'Foot circumference', def: 22, min: 12, max: 40 },
         { key: 'footLen', label: 'Foot length (heel to toe)', def: 24, min: 12, max: 35 },
@@ -38,41 +38,66 @@
       ],
       build: function (d, g) {
         var m = maker(g);
-        var footSts = m.sts(d.footCirc);
+        var halfW = Math.max(14, Math.round(m.sts(d.footCirc) / 2));
         var legRows = m.rows(d.legLen);
         var footRows = m.rows(d.footLen);
-        var toeEv = Math.max(2, Math.floor(footSts / 4));   // w&t toe to half width
-        var toeRows = 2 * toeEv;
-        var flapRows = m.rows(d.footCirc / 4);              // heel flap ~ a quarter of circ
-        var held = Math.max(2, Math.floor(footSts / 4));    // half the sts live on the flap
-        var legEven = Math.max(2, legRows - 4);
-        var footEven = Math.max(2, footRows - toeRows - 2);
-        var e = function () {
+        var legStraight = Math.max(2, legRows - 4);
+        var cupEach = Math.max(1, Math.floor(halfW / 8));
+        var cupTimes = 2;
+        var cupEvery = 2;
+        var flapRows = Math.max(6, m.rows(5));
+        var gusEvery = 3;
+        var toeEv = Math.max(2, Math.min(Math.floor((halfW - 8) / 2), Math.round(footRows * 0.18)));
+        var footStraight = Math.max(2, footRows - flapRows - gusEvery * cupTimes - toeEv * 2 - 2);
+        var totalRows = 4 + legStraight + cupEvery * cupTimes + flapRows +
+          gusEvery * cupTimes + footStraight + toeEv * 2 + 2;
+        var soleEdge = function () {
           return edge(
-            st(4),                                        // cuff
-            st(legEven),                                  // leg
-            hold(held, flapRows, false),                  // heel: work middle half, take back
-            st(2),
-            st(footEven),                                 // foot
-            sr(2, 1, toeEv),                              // toe wedge
-            st(2)                                         // graft
+            st(4 + legStraight),
+            dec(cupEvery, cupEach, cupTimes),
+            st(flapRows),
+            inc(gusEvery, cupEach, cupTimes),
+            st(footStraight),
+            dec(2, 1, toeEv),
+            st(2)
           );
         };
-        var shape = {
-          name: 'sock', width: footSts, gauge: g, mirror: true,
-          edges: { left: e(), right: e() },
+        var instepEdge = function () {
+          return edge(
+            st(totalRows - 2 - toeEv * 2),
+            dec(2, 1, toeEv),
+            st(2)
+          );
+        };
+        var sole = {
+          name: 'sole', width: halfW, gauge: g, mirror: true,
+          edges: { left: soleEdge(), right: soleEdge() },
           annotations: [
-            { row: 5, off: 0, text: 'cuff: work ribbing (edit cells for 2x2)' },
-            { row: 5 + legEven, off: held, text: 'heel: flap on middle ' + (footSts - 2 * held) + ' sts, w&t each end, take all back' },
-            { row: 5 + legEven + flapRows + 3 + footEven, off: 0, text: 'toe: w&t wedges, graft live sts' }
+            { row: 5, off: 0, text: 'cuff: rib; work instep panel alongside to matching row count' },
+            { row: 5 + legStraight, off: cupEach, text: 'heel cup: decrease at both edges to half width' },
+            { row: 5 + legStraight + cupEvery * cupTimes + flapRows, off: 0, text: 'gusset: even increases back to foot width' },
+            { row: totalRows - toeEv * 2, off: 0, text: 'round toe: dec every other row, leave live sts' }
+          ]
+        };
+        var instep = {
+          name: 'instep', width: halfW, gauge: g, mirror: true,
+          edges: { left: instepEdge(), right: instepEdge() },
+          annotations: [
+            { row: 5, off: 0, text: 'straight panel, no heel shaping here' },
+            { row: totalRows - toeEv * 2, off: 0, text: 'round toe in sync with sole panel' }
           ]
         };
         return {
           panels: [
-            { name: 'Sock L', role: 'other', shape: shape },
-            { name: 'Sock R', role: 'other', shape: JSON.parse(JSON.stringify(shape)) }
+            { name: 'Sock L instep', role: 'other', shape: instep },
+            { name: 'Sock L sole', role: 'other', shape: sole },
+            { name: 'Sock R instep', role: 'other', shape: JSON.parse(JSON.stringify(instep)) },
+            { name: 'Sock R sole', role: 'other', shape: JSON.parse(JSON.stringify(sole)) }
           ],
-          notes: ['Gauge-driven: regenerate if you change needle size.']
+          notes: [
+            'Side-seam construction: sew instep to sole along BOTH long edges, then graft or seam the live toe sts. Seams run up the sides, never over the foot.',
+            'Heel lives in the sole panel only: taper in, straight flap, taper back out.'
+          ]
         };
       }
     },
@@ -119,9 +144,9 @@
         var wristSts = m.sts(d.wristCirc + 2);
         var sleeveRows = m.rows(d.sleeveLen);
         var taper = armSts - wristSts;
-        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
-        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
-        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.62 / taperTimes));
+        var taperEach = taper > 12 ? 2 : 1;
+        var taperTimes = Math.max(1, Math.ceil(Math.round(taper / 2) / taperEach));
+        var taperEvery = Math.max(2, Math.round(sleeveRows * 0.6 / taperTimes));
         var widthAtCap = Math.max(wristSts, wristSts + 2 * taperEach * taperTimes);
         var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 6)); // 6 events total -> leave >=10 sts
         var cap = function () { return dec(2, capEach, 3); };
@@ -179,9 +204,9 @@
         var wristSts = m.sts(d.wristCirc + 2);
         var sleeveRows = m.rows(d.sleeveLen);
         var taper = armSts - wristSts;
-        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
-        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
-        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.62 / taperTimes));
+        var taperEach = taper > 12 ? 2 : 1;
+        var taperTimes = Math.max(1, Math.ceil(Math.round(taper / 2) / taperEach));
+        var taperEvery = Math.max(2, Math.round(sleeveRows * 0.6 / taperTimes));
         var widthAtCap = Math.max(wristSts, wristSts + 2 * taperEach * taperTimes);
         var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 6)); // 6 events total -> leave >=10 sts
         var sEdge = function () {
@@ -267,9 +292,9 @@
         var cuffSts = m.sts(d.cuffCirc);
         var sleeveRows = m.rows(d.sleeveLen);
         var taper = armSts - cuffSts;
-        var taperEach = taper > 3 ? Math.max(1, Math.round(taper / 2)) : 1;
-        var taperTimes = taper > 3 ? Math.max(1, Math.floor(taper / taperEach)) : 1;
-        var taperEvery = Math.max(4, Math.floor(sleeveRows * 0.55 / taperTimes));
+        var taperEach = taper > 12 ? 2 : 1;
+        var taperTimes = Math.max(1, Math.ceil(Math.round(taper / 2) / taperEach));
+        var taperEvery = Math.max(2, Math.round(sleeveRows * 0.6 / taperTimes));
         var widthAtCap = cuffSts + 2 * taperEach * taperTimes;
         var capEach = Math.max(1, Math.floor((widthAtCap - 10) / 4)); // tee caps stay low
         var sEdge = function () {

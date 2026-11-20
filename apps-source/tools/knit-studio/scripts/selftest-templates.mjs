@@ -37,14 +37,16 @@ for (const tpl of TP.TEMPLATES) {
   t(tpl.id + ': every panel passes shaping check + chart validate', () => { everyPanelOk(tpl.id); });
 }
 
-t('socks: 2 panels, toe closes to half the foot width', () => {
+t('socks: instep+sole panels per sock, top width = half foot circumference', () => {
   const built = TP.build('socks', TP.defaults('socks'), G, {});
-  if (built.panels.length !== 2) throw new Error('panels');
+  if (built.panels.length !== 4) throw new Error('panels');
   const shape = SH.normalize(built.panels[0].shape);
   const p = SH.profile(shape);
   const footSts = Math.round(22 / 10 * 22);
-  const topW = p.hi[p.H - 1] - p.lo[p.H - 1];
-  if (Math.abs(topW - footSts / 2) > 4) throw new Error('top ' + topW + ' want ~' + footSts / 2);
+  const w0 = p.hi[0] - p.lo[0];
+  const wEnd = p.hi[p.H - 1] - p.lo[p.H - 1];
+  if (Math.abs(w0 - footSts / 2) > 4) throw new Error('cast-on ' + w0 + ' want ~' + footSts / 2);
+  if (!(wEnd < w0 / 2 + 2)) throw new Error('toe must round down, got ' + wEnd + ' from ' + w0);
 });
 
 t('scaling: +10 cm bust widens back panel, taller gauge widens more', () => {
@@ -134,6 +136,41 @@ t('templates: select field rejects unknown option, accepts valid', () => {
     throw new Error('turtleneck accepted');
   }
   if (TP.validate('tshirt', Object.assign({}, d, { collar: 'scoop' }), G).length) throw new Error('scoop rejected');
+});
+
+t('sleeve tapers are smooth: <=2 sts per event, spread over many rows', () => {
+  ['sweater', 'cardigan', 'tshirt'].forEach((id) => {
+    const built = TP.build(id, TP.defaults(id), G, {});
+    const sl = built.panels.find((p) => /sleeve l/i.test(p.name));
+    if (!sl) throw new Error(id + ': no sleeve panel');
+    const incs = sl.shape.edges.left.filter((x) => x.kind === 'inc');
+    if (!incs.length) throw new Error(id + ': no taper increases');
+    incs.forEach((x) => {
+      if (x.each > 2) throw new Error(id + ': chunky +' + x.each + ' sts in one event');
+      if (x.times < 2) throw new Error(id + ': taper not spread over multiple events');
+      if (x.every < 2) throw new Error(id + ': increases more often than every 2nd row');
+    });
+  });
+});
+
+t('socks: side-seam instep+sole panels, heel tapers in and out', () => {
+  const built = TP.build('socks', TP.defaults('socks'), G, {});
+  if (built.panels.length !== 4) throw new Error('expected instep+sole per sock, got ' + built.panels.length);
+  const sole = built.panels.find((p) => /sole/.test(p.name));
+  const segs = sole.shape.edges.left;
+  if (segs.some((x) => x.kind === 'hold' || x.kind === 'sr')) throw new Error('heel must shape width, not short-rows');
+  const d = segs.map((x) => x.kind);
+  if (d.indexOf('dec') < 0 || d.indexOf('inc') < 0 || d.indexOf('inc') <= d.indexOf('dec')) {
+    throw new Error('heel must taper in then out: ' + d.join(','));
+  }
+  const instep = built.panels.find((p) => /instep/.test(p.name));
+  if (instep.shape.edges.left.some((x) => x.kind !== 'straight' && x.kind !== 'st' && x.kind !== 'dec')) {
+    throw new Error('instep must stay straight except toe');
+  }
+  built.panels.forEach((pn) => {
+    const errs = SH.check(pn.shape);
+    if (errs.length) throw new Error(pn.name + ': ' + errs.join('; '));
+  });
 });
 
 console.log(`\n${pass} passed, ${fail} failed`);
