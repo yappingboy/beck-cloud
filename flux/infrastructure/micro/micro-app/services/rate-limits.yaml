@@ -174,7 +174,9 @@ spec:
     period: 60s
 
 ---
-# Knit Studio: personal tool → 20/min burst
+# Knit Studio: personal SPA-style tool; one page load is ~15 static assets
+# plus API calls, so the bucket is sized for reloads, not single API hits.
+# (average 20/burst 10 429'd normal page loads at the edge.)
 apiVersion: traefik.io/v1alpha1
 kind: Middleware
 metadata:
@@ -182,6 +184,6 @@ metadata:
   namespace: micro
 spec:
   rateLimit:
-    average: 20
-    burst: 10
+    average: 300
+    burst: 100
     period: 60s
