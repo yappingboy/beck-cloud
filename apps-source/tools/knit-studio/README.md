@@ -31,6 +31,7 @@ tools/knit-studio/
 │   ├── templates.js # garment templates (UMD: KS.templates)
 │   ├── customtpl.js # user-defined templates + storage (UMD: KS.customTpl)
 │   ├── stamps.js    # pixel-art stamps: grid model, transforms, composite (UMD: KS.stamps)
+│   ├── patterns.js  # repeat generators: colorwork + stitch fills (UMD: KS.patterns)
 │   ├── slicer.js    # S2S/CAM slicer
 │   ├── ami.js       # amigurumi round parser
 │   └── app.js       # UI wiring
@@ -43,7 +44,8 @@ tools/knit-studio/
     ├── selftest-ami.mjs       # amigurumi importer
     ├── selftest-templates.mjs # garment templates
     ├── selftest-customtpl.mjs # custom templates
-    └── selftest-stamps.mjs    # pixel-art stamps
+    ├── selftest-stamps.mjs    # pixel-art stamps
+    └── selftest-patterns.mjs  # patterning tools
 ```
 
 Conventions:
@@ -204,6 +206,25 @@ so old charts look unchanged. Everything follows the table: editor canvas,
 library thumbnails, PNG/SVG export (SVG gets a name + hex legend), and the
 `.txt` instructions list every used color.
 
+## Patterning tools
+
+The Editor's **Patterning** box fills the whole chart or a dragged region
+with a repeating generator. Two groups:
+
+- **Colorwork** writes intarsia color slots: stripes (color cycle list like
+  `a,b,7` + rows per band), checkerboard (two colors + block size), diagonal
+  twill (same, sheared 45°).
+- **Stitch textures** alternate knit (`k`) and off (`x`) cells: stockinette,
+  garter rows, rib (column groups), seed, basket weave (block checker).
+
+The ▨ **Pattern tool** (key `g`) turns any drag into a patterned region fill;
+the pattern's origin sits at the region's top-left corner, so bands and
+repeats line up where you drop them. Color dropdowns list the chart's own
+palette names. Everything is one ctrl+Z away, and patterned charts export
+normally — `.txt` instructions get the same run-length rows as painted ones.
+Engine: `public/patterns.js` (`KS.patterns`), DOM-free and selftested;
+`cellAt(kind, x, y, params)` is the pure generator.
+
 ## Pixel-art stamps (intarsia motifs)
 
 The **Stamps** tab draws small pixel-art motifs on a grid (up to 64×64) and
@@ -307,7 +328,7 @@ library volume, so existing PVCs keep them without manifest changes).
 ## Tests
 
 ```sh
-npm test                              # all seven suites
+npm test                              # all eight suites
 node scripts/selftest.mjs             # core model/transforms/exports
 node scripts/selftest-shaping.mjs     # shaping engine
 node scripts/selftest-projects.mjs    # projects + CAM slicer
@@ -315,4 +336,5 @@ node scripts/selftest-ami.mjs         # amigurumi importer
 node scripts/selftest-templates.mjs   # garment templates
 node scripts/selftest-customtpl.mjs   # custom template editor
 node scripts/selftest-stamps.mjs      # pixel-art stamps
+node scripts/selftest-patterns.mjs    # patterning tools
 ```

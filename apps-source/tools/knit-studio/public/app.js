@@ -499,7 +499,8 @@ var TOOLS = [
   ['line', '\u2571 Line', 'l'], ['rect', '\u25af Rect', 'r'],
   ['rectfill', '\u25a0 Rect fill', 'a'], ['bucket', '\u26c2 Fill', 'f'],
   ['pick', '\ud80c\udc53 Pick', 'p'],
-  ['stamp', '\ud83d\udcec Stamp', 's']
+  ['stamp', '\ud83d\udcec Stamp', 's'],
+  ['patrect', '\u25a8 Pattern', 'g']
 ];
 function buildTools() {
   var host = $('tools');
@@ -528,6 +529,7 @@ function paletteAutoRefresh() {
   if (p !== _palPatRef || (p && p.colors && p.colors !== _palColRef)) {
     _palPatRef = p; _palColRef = p ? p.colors : null;
     refreshColorSwatches();
+    updatePatColorSelects();
   }
 }
 
@@ -722,7 +724,7 @@ cv.addEventListener('pointerdown', function (e) {
     if (inBounds(c)) { KS.floodFill(S.pat, c.y, c.x, S.code); pushHist(); }
     return;
   }
-  if (S.tool === 'line' || S.tool === 'rect' || S.tool === 'rectfill') {
+  if (S.tool === 'line' || S.tool === 'rect' || S.tool === 'rectfill' || S.tool === 'patrect') {
     S.drag = { shape: S.tool, x0: c.x, y0: c.y, cells: [] };
     return;
   }
@@ -750,7 +752,10 @@ cv.addEventListener('pointermove', function (e) {
 
 function endDrag(e) {
   if (!S.drag) return;
-  if (S.drag.shape && S.drag.cells.length) applyCells(S.drag.cells, S.code);
+  if (S.drag.shape && S.drag.cells.length) {
+    if (S.drag.shape === 'patrect') patFillCells(S.drag.cells);
+    else applyCells(S.drag.cells, S.code);
+  }
   S.drag = null;
   draw();
 }
@@ -780,7 +785,7 @@ function syncForm() {
       ? 'Open chart belongs to project "' + S.project.name + '" \u00b7 panel "' + pn.name + '"'
       : '';
   }
-  ['pName', 'pTags', 'pGSts', 'pGRows', 'pNotes', 'rzW', 'rzH', 'btnResize', 'btnDup']
+  ['pName', 'pTags', 'pGSts', 'pGRows', 'pNotes', 'rzW', 'rzH', 'btnResize', 'btnDup', 'btnPatFill']
     .forEach(function (id) { $(id).disabled = !editable; });
   ['btnSave', 'btnSaveAs'].forEach(function (id) { $(id).disabled = S.tab !== 'edit'; });
   ['btnExJson', 'btnExPng', 'btnExSvg', 'btnExTxt'].forEach(function (id) { $(id).disabled = !p; });
@@ -2410,7 +2415,7 @@ window.addEventListener('keydown', function (e) {
   if (k === '-' || k === '_') { zoomBy(1 / 1.25); return; }
   if (k === '0') { fit(); draw(); return; }
   if (S.tab !== 'edit') return;
-  var map = { b: 'brush', e: 'eraser', l: 'line', r: 'rect', a: 'rectfill', f: 'bucket', p: 'pick', s: 'stamp' };
+  var map = { b: 'brush', e: 'eraser', l: 'line', r: 'rect', a: 'rectfill', f: 'bucket', p: 'pick', s: 'stamp', g: 'patrect' };
   if (map[k]) setTool(map[k]);
 });
 
@@ -2694,9 +2699,121 @@ function bindStampUI() {
   };
 }
 
+
+/* ---------- patterning tools ---------- */
+function patKindSel() { return $('patKind').value; }
+function patParamEl(key) { return $('patP_' + key); }
+function patSpecFromUI() {
+  var kd = KS.patterns.kind(patKindSel());
+  var spec = { kind: kd.id };
+  (kd.params || []).forEach(function (par) {
+    var el = patParamEl(par.key);
+    if (el) spec[par.key] = el.value;
+  });
+  return spec;
+}
+function renderPatParams() {
+  var kd = KS.patterns.kind(patKindSel());
+  var host = $('patParams');
+  host.innerHTML = '';
+  (kd.params || []).forEach(function (par) {
+    var lab = document.createElement('label');
+    lab.textContent = par.label + ' ';
+    var el;
+    if (par.type === 'color') {
+      el = document.createElement('select');
+      patColorOptions(el, par.def);
+    } else if (par.type === 'int') {
+      el = document.createElement('input');
+      el.type = 'number';
+      el.min = par.min; el.max = par.max; el.value = par.def;
+      el.style.width = '64px';
+    } else {
+      el = document.createElement('input');
+      el.type = 'text';
+      el.value = par.def;
+      el.placeholder = 'a,b,7';
+    }
+    el.id = 'patP_' + par.key;
+    lab.appendChild(el);
+    host.appendChild(lab);
+  });
+}
+function patColorOptions(sel, def) {
+  var p = activePat();
+  sel.innerHTML = '';
+  var n = Math.max(2, KS.colorsOf(p || {}).length);
+  n = Math.min(KS.COLOR_CODES.length, Math.max(n + 1, 3)); // room to pick new-ish slots
+  for (var i = 0; i < n; i++) {
+    var code = KS.COLOR_CODES[i];
+    var o = document.createElement('option');
+    o.value = code;
+    var col = KS.colorAt(p, i);
+    o.textContent = code + ' \u2014 ' + col.name;
+    if (code === def) o.selected = true;
+    sel.appendChild(o);
+  }
+}
+function updatePatColorSelects() {
+  var host = $('patParams');
+  if (!host) return;
+  Array.prototype.forEach.call(host.querySelectorAll('select'), function (sel) {
+    var was = sel.value;
+    patColorOptions(sel, was);
+  });
+}
+function patApply(count, specLabel, n, x, y) {
+  var p = S.pat;
+  if (n > 0) {
+    pushHist();
+    refreshColorSwatches();
+    status(count + ': ' + n + ' cells' + (x !== undefined ? ' at (' + x + ',' + y + ')' : '') + ' \u2014 ctrl+Z restores');
+  } else {
+    status('Pattern filled nothing new.');
+  }
+}
+function patFillCells(cells) {
+  var xs = cells.map(function (c) { return c.x; }), ys = cells.map(function (c) { return c.y; });
+  var x0 = Math.min.apply(null, xs), x1 = Math.max.apply(null, xs) + 1;
+  var y0 = Math.min.apply(null, ys), y1 = Math.max.apply(null, ys) + 1;
+  var spec;
+  try { spec = patSpecFromUI(); } catch (e) { status(e.message, true); return; }
+  try {
+    var n = KS.patterns.fillRect(S.pat, x0, y0, x1, y1, spec);
+    patApply('Patterned region', spec.kind, n, x0, y0);
+  } catch (e) { status(e.message, true); }
+}
+function bindPatUI() {
+  var sel = $('patKind');
+  ['colorwork', 'stitches'].forEach(function (grp) {
+    var og = document.createElement('optgroup');
+    og.label = grp === 'colorwork' ? 'Colorwork' : 'Stitch textures';
+    KS.patterns.KINDS.filter(function (k2) { return k2.group === grp; }).forEach(function (k2) {
+      var o = document.createElement('option');
+      o.value = k2.id; o.textContent = k2.label;
+      og.appendChild(o);
+    });
+    sel.appendChild(og);
+  });
+  sel.onchange = renderPatParams;
+  renderPatParams();
+  $('btnPatFill').onclick = function () {
+    var p = activePat();
+    if (!p || S.tab !== 'edit') { status('Open a chart in the Editor to pattern it.', true); return; }
+    var spec;
+    try { spec = patSpecFromUI(); } catch (e) { status(e.message, true); return; }
+    try {
+      var n = KS.patterns.fillChart(p, spec);
+      patApply('Patterened chart', spec.kind, n);
+      draw();
+    } catch (e) { status(e.message, true); }
+  };
+}
+
 bindCamUI();
 bindAmiUI();
 bindStampUI();
+bindPatUI();
 
 setTab('lib');
 draw();

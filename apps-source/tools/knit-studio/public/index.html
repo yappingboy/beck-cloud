@@ -387,6 +387,13 @@
       <button id="btnResize" class="secondary">Resample</button>
       <div class="hint">Nearest-neighbour on cells. Gauge scales with it to keep physical size.</div>
     </div>
+    <div class="group">
+      <div class="group-label">Patterning</div>
+      <label>Pattern <select id="patKind"></select></label>
+      <div id="patParams"></div>
+      <button id="btnPatFill" class="secondary">Fill whole chart</button>
+      <div class="hint">Or drag with the &#9648; Pattern tool to fill just that region. Colorwork writes intarsia slots; textures alternate knit &rsquo;k&rsquo; vs off &rsquo;x&rsquo;. Undo restores.</div>
+    </div>
     <div class="group btn-col">
       <button id="btnSave" class="primary">Save <kbd>Ctrl-S</kbd></button>
       <button id="btnSaveAs" class="secondary">Save as&hellip;</button>
@@ -409,6 +416,7 @@
 <script src="slicer.js"></script>
 <script src="ami.js"></script>
 <script src="stamps.js"></script>
+<script src="patterns.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
