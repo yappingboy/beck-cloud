@@ -17,7 +17,11 @@
   else { root.KS = root.KS || {}; root.KS.customTpl = mod; }
 })(typeof globalThis !== 'undefined' ? globalThis : this, function () {
   'use strict';
-  var KEY = '***';
+  var KEY = 'ks-custom-templates';
+  // Historical key: a masked placeholder shipped as the real key, and
+  // anything on the origin could collide with it. list() migrates data
+  // off it once and tolerates foreign shapes instead of crashing.
+  var LEGACY_KEY = '***';
   var ROLES = ['front', 'back', 'sleeve-left', 'sleeve-right', 'collar',
     'cuff', 'band', 'hood', 'pocket', 'placket', 'other'];
   var store = null;
@@ -192,10 +196,30 @@
     return { name: (opts && opts.name) || t.name, panels: panels, notes: notes };
   }
 
+  // Coerce stored junk into an item list: arrays pass through (filtered),
+  // plain objects are salvaged by value (dict-shaped storage), anything
+  // else is nothing to see.
+  function coerce(raw) {
+    var v;
+    try { v = JSON.parse(raw); } catch (e) { return null; }
+    if (Array.isArray(v)) return v.filter(function (t) { return t && typeof t === 'object'; });
+    if (v && typeof v === 'object') {
+      return Object.keys(v).map(function (k) { return v[k]; })
+        .filter(function (t) { return t && typeof t === 'object'; });
+    }
+    return null;
+  }
   function list() {
     var s = ls();
     if (!s) return [];
-    try { return JSON.parse(s.getItem(KEY)) || []; } catch (e) { return []; }
+    var v = coerce(s.getItem(KEY));
+    if (v) return v;
+    var legacy = coerce(s.getItem(LEGACY_KEY));
+    if (legacy && legacy.length) {
+      try { s.setItem(KEY, JSON.stringify(legacy)); } catch (e) { /* read-only storage */ }
+      return legacy;
+    }
+    return [];
   }
   function get(id) {
     var items = list();
@@ -234,7 +258,7 @@
   }
 
   return {
-    KEY: KEY, ROLES: ROLES, blank: blank, validate: validate, build: build,
+    KEY: KEY, LEGACY_KEY: LEGACY_KEY, ROLES: ROLES, blank: blank, validate: validate, build: build,
     list: list, get: get, save: save, remove: remove, fromJson: fromJson,
     _setStorage: function (s) { store = s; }
   };

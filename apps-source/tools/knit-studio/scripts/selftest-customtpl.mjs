@@ -139,5 +139,33 @@ t('fromJson: id dropped, invalid rejected', () => {
   if (!threw) throw new Error('invalid import survived');
 });
 
+t('storage: real key, legacy dict migration, foreign junk never crashes list', () => {
+  const KEY = CT.KEY, LEGACY = CT.LEGACY_KEY;
+  if (KEY !== 'ks-custom' + '-templates') throw new Error('KEY drifted: ' + KEY);
+  if (LEGACY !== '*'.repeat(3)) throw new Error('legacy key drifted');
+  const mem = {};
+  CT._setStorage({ getItem: (k) => (k in mem ? mem[k] : null), setItem: (k, v) => { mem[k] = String(v); } });
+  // user scenario: another module's id-keyed dict squatting the legacy key
+  mem[LEGACY] = JSON.stringify({ st1: { id: 'st1', name: 'migratable' }, st2: 'junk-string' });
+  const got = CT.list();
+  if (got.length !== 1 || got[0].name !== 'migratable') throw new Error('legacy dict not salvaged: ' + JSON.stringify(got));
+  if (!Array.isArray(JSON.parse(mem[KEY]))) throw new Error('migration did not persist an array to the real key');
+  // object squatting the CURRENT key: salvaged as values, still an array out
+  mem[KEY] = JSON.stringify({ a: { id: 'a', name: 'x' } });
+  if (CT.list().length !== 1) throw new Error('object under real key not salvaged');
+  // string/number/null junk: empty array, never a throw
+  for (const junk of ['"garbage"', '42', 'null', '{oops']) {
+    mem[KEY] = junk; delete mem[LEGACY];
+    if (!Array.isArray(CT.list()) || CT.list().length) throw new Error('junk leaked: ' + junk);
+  }
+  // save() recovers the salvaged items and writes a clean array
+  mem[KEY] = JSON.stringify({ s: { id: 's', name: 'kept' } });
+  const arr = CT.list();
+  if (CT.get('s') === null) throw new Error('get lost salvaged item');
+  CT.remove('s');
+  if (JSON.parse(mem[KEY]).length !== 0) throw new Error('remove did not persist array');
+  CT._setStorage(null);
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);
