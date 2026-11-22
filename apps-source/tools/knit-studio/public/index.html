@@ -17,6 +17,7 @@
     <button class="tab" data-tab="tpl">Templates</button>
     <button class="tab" data-tab="cam">CAM</button>
     <button class="tab" data-tab="ami">Ami</button>
+    <button class="tab" data-tab="stamp">Stamps</button>
     <button class="tab" data-tab="view">Viewer</button>
     <button class="tab" data-tab="conv">Convert</button>
   </nav>
@@ -283,6 +284,51 @@
     </div>
   </section>
 
+  <section id="stamp" class="panel-wide hidden">
+    <div class="stamps-wrap">
+      <div class="stamps-edit">
+        <h3>Pixel-art stamps</h3>
+        <p class="hint">Small intarsia motifs you can stamp onto any chart. Empty cells are transparent: the chart&rsquo;s own color shows through, so stamps layer over existing colorwork.</p>
+        <div class="btn-row">
+          <input id="stName" placeholder="Stamp name" style="flex:1">
+          <label>W <input id="stW" type="number" min="1" max="64" value="12" style="width:52px"></label>
+          <label>H <input id="stH" type="number" min="1" max="64" value="12" style="width:52px"></label>
+          <button id="stNew">New</button>
+        </div>
+        <canvas id="stCv"></canvas>
+        <div class="stamps-tools">
+          <div id="stChips" class="stamps-chips"></div>
+          <button id="stAddColor" title="Add a color slot">+ color</button>
+          <button id="stErase" title="Toggle eraser (or right-drag)">⌫ Erase</button>
+          <span class="grow"></span>
+          <button id="stFlipH" title="Flip horizontal">↔</button>
+          <button id="stFlipV" title="Flip vertical">↕</button>
+          <button id="stRot" title="Rotate 90° clockwise">⟳</button>
+          <button id="stZoom2" title="Double pixel size">⤢ ×2</button>
+          <button id="stClear" title="Clear pixels, keep size">Clear</button>
+        </div>
+        <div class="btn-row">
+          <input type="color" id="stHex" title="Selected color hex">
+          <input id="stColName" placeholder="Color name" style="flex:1">
+        </div>
+        <div class="btn-row">
+          <button id="stSave" class="primary">💾 Save stamp</button>
+          <button id="stApplyChart" class="primary">📮 Stamp onto open chart</button>
+          <button id="stExportTxt">Export .txt</button>
+        </div>
+        <label>Import pixel text &mdash; legend lines like <code>r = #d33682 Heart</code>, then one char per cell (. = empty)
+          <textarea id="stImportText" rows="5" placeholder="r = #d33682 Heart&#10;.rr.rr.&#10;rrrrrrr&#10;rrrrrrr&#10;.rrrrr.&#10;..rrr.."></textarea>
+        </label>
+        <div class="btn-row"><button id="stImportBtn">Import as new stamp</button></div>
+      </div>
+      <div class="stamps-lib">
+        <h3>Stock motifs &amp; saved stamps</h3>
+        <p class="hint">Stamp now places the motif centered on the chart open in the Editor or Viewer. In the Editor, the 📮 Stamp tool places it under the click instead.</p>
+        <div id="stGallery" class="stamps-gallery"></div>
+      </div>
+    </div>
+  </section>
+
   <section id="conv" class="panel-wide hidden">
     <div class="conv-grid">
       <div class="conv-form">
@@ -362,6 +408,7 @@
 <script src="customtpl.js"></script>
 <script src="slicer.js"></script>
 <script src="ami.js"></script>
+<script src="stamps.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

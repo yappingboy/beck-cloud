@@ -403,6 +403,7 @@ function setTab(t) {
   $('tpl').classList.toggle('hidden', t !== 'tpl');
   $('cam').classList.toggle('hidden', t !== 'cam');
   $('ami').classList.toggle('hidden', t !== 'ami');
+  $('stamp').classList.toggle('hidden', t !== 'stamp');
   $('stage').classList.toggle('hidden', t !== 'edit' && t !== 'view');
   $('toolbar').classList.toggle('hidden', t !== 'edit');
   $('side').classList.toggle('hidden', t !== 'edit' && t !== 'view');
@@ -411,6 +412,7 @@ function setTab(t) {
   if (t === 'tpl') renderTpl();
   if (t === 'cam') camDraw();
   if (t === 'ami') renderAmi();
+  if (t === 'stamp') renderStampTab();
   if (t === 'shape') { renderShapeForm(); renderShapeView(); }
   if (t === 'view' && !S.viewPat) status('Viewer: pick a pattern in the library and press View.');
   syncForm();
@@ -496,7 +498,8 @@ var TOOLS = [
   ['brush', '\u270e Brush', 'b'], ['eraser', '\u232b Eraser', 'e'],
   ['line', '\u2571 Line', 'l'], ['rect', '\u25af Rect', 'r'],
   ['rectfill', '\u25a0 Rect fill', 'a'], ['bucket', '\u26c2 Fill', 'f'],
-  ['pick', '\ud80c\udc53 Pick', 'p']
+  ['pick', '\ud80c\udc53 Pick', 'p'],
+  ['stamp', '\ud83d\udcec Stamp', 's']
 ];
 function buildTools() {
   var host = $('tools');
@@ -713,6 +716,7 @@ cv.addEventListener('pointerdown', function (e) {
     if (code) { S.code = code; syncPalette(); }
     return;
   }
+  if (S.tool === 'stamp') { stPlace(S.pat, c.x, c.y, S.stWork || KS.stamps.library()[0], true); return; }
   cv.setPointerCapture(e.pointerId);
   if (S.tool === 'bucket') {
     if (inBounds(c)) { KS.floodFill(S.pat, c.y, c.x, S.code); pushHist(); }
@@ -2406,7 +2410,7 @@ window.addEventListener('keydown', function (e) {
   if (k === '-' || k === '_') { zoomBy(1 / 1.25); return; }
   if (k === '0') { fit(); draw(); return; }
   if (S.tab !== 'edit') return;
-  var map = { b: 'brush', e: 'eraser', l: 'line', r: 'rect', a: 'rectfill', f: 'bucket', p: 'pick' };
+  var map = { b: 'brush', e: 'eraser', l: 'line', r: 'rect', a: 'rectfill', f: 'bucket', p: 'pick', s: 'stamp' };
   if (map[k]) setTool(map[k]);
 });
 
@@ -2476,8 +2480,223 @@ new ResizeObserver(function () { draw(); }).observe($('stage'));
 bindTpl();
 bindShapeUI();
 bindProjUI();
+
+/* ---------- stamps (intarsia pixel art) ---------- */
+S.stWork = null; S.stSlot = 0; S.stErasing = false; S.stDrag = null;
+var ST_CELL = 20;
+
+function stEnsure() {
+  if (!S.stWork) S.stWork = JSON.parse(JSON.stringify(KS.stamps.library()[0]));
+  if (S.stWork.colors.length === 0) KS.stamps.slotColor(S.stWork, 0);
+  return S.stWork;
+}
+function stCanvasDraw() {
+  var st = stEnsure(), c = $('stCv'), cx = c.getContext('2d');
+  c.width = st.w * ST_CELL; c.height = st.h * ST_CELL;
+  for (var y = 0; y < st.h; y++) for (var x = 0; x < st.w; x++) {
+    var px = x * ST_CELL, py = y * ST_CELL, ch = st.rows[y][x];
+    cx.fillStyle = ((x + y) % 2) ? '#d9d9d9' : '#f4f4f4';
+    cx.fillRect(px, py, ST_CELL, ST_CELL);
+    if (ch !== '.') {
+      cx.fillStyle = KS.colorAt(st, KS.colorIndex(ch)).hex;
+      cx.fillRect(px + 1, py + 1, ST_CELL - 2, ST_CELL - 2);
+    }
+    cx.strokeStyle = 'rgba(0,0,0,.12)';
+    cx.strokeRect(px + 0.5, py + 0.5, ST_CELL, ST_CELL);
+  }
+}
+function stChips() {
+  var st = stEnsure(), host = $('stChips');
+  host.innerHTML = '';
+  for (var i = 0; i < st.colors.length; i++) (function (idx) {
+    var b = document.createElement('button');
+    b.style.background = KS.colorAt(st, idx).hex;
+    b.title = (st.colors[idx] && st.colors[idx].name) || ('Color ' + (idx + 1));
+    b.classList.toggle('active', !S.stErasing && S.stSlot === idx);
+    b.onclick = function () { S.stErasing = false; S.stSlot = idx; renderStampTab(); };
+    host.appendChild(b);
+  })(i);
+  var col = KS.stamps.slotColor(st, S.stSlot);
+  $('stHex').value = col.hex;
+  $('stColName').value = col.name || '';
+}
+function stMini(st) {
+  var c = document.createElement('canvas');
+  var cell = Math.max(2, Math.floor(96 / Math.max(st.w, st.h)));
+  c.width = st.w * cell; c.height = st.h * cell;
+  var cx = c.getContext('2d');
+  for (var y = 0; y < st.h; y++) for (var x = 0; x < st.w; x++) {
+    var ch = st.rows[y][x];
+    if (ch === '.') continue;
+    cx.fillStyle = KS.colorAt(st, KS.colorIndex(ch)).hex;
+    cx.fillRect(x * cell, y * cell, cell, cell);
+  }
+  return c;
+}
+function stampToActive(st) {
+  var p = activePat();
+  if (!p) { status('Open a chart in the Editor first (Library \u2192 open, or New).', true); return; }
+  stPlace(p, Math.round(p.width / 2), Math.round(p.height / 2), st, false);
+}
+// Place centered on (cx, cy); underClick=true keeps the motif under the
+// cursor and clips at the chart edge, centered placement refuses overflow.
+function stPlace(p, cx, cy, st, underClick) {
+  var x = cx - Math.floor(st.w / 2), y = cy - Math.floor(st.h / 2);
+  if (!underClick && (x < 0 || y < 0 || x + st.w > p.width || y + st.h > p.height)) {
+    status('Stamp "' + st.name + '" (' + st.w + '\u00d7' + st.h + ') does not fit "' + p.name +
+      '" (' + p.width + '\u00d7' + p.height + ').', true);
+    return;
+  }
+  var before = p.rows.join('\n');
+  var r;
+  try {
+    r = KS.stamps.apply(p, x, y, st, { clip: !!underClick });
+  } catch (e) { status(e.message, true); return; }
+  if (p.rows.join('\n') === before) { status('Stamped nothing new from "' + st.name + '".'); return; }
+  if (p === S.pat) pushHist();
+  refreshColorSwatches();
+  status('Stamped "' + st.name + '" on "' + p.name + '": ' + r.written + ' cells, ' +
+    r.slots.length + ' color' + (r.slots.length === 1 ? '' : 's') +
+    (S.project && S.boundPanel ? ' \u2014 save the project to keep it' : ''));
+  draw();
+}
+function renderStampGallery() {
+  var host = $('stGallery');
+  host.innerHTML = '';
+  function card(st, saved) {
+    var d = document.createElement('div'); d.className = 'st-card';
+    d.appendChild(stMini(st));
+    var nm = document.createElement('div'); nm.className = 'st-name';
+    nm.textContent = st.name; d.appendChild(nm);
+    var sz = document.createElement('div'); sz.className = 'hint';
+    sz.textContent = st.w + ' \u00d7 ' + st.h + ' \u00b7 ' + KS.stamps.usedSlots(st).length + ' colors';
+    d.appendChild(sz);
+    var row = document.createElement('div'); row.className = 'btn-row';
+    function btn(label, title, fn) {
+      var b = document.createElement('button'); b.textContent = label; b.title = title;
+      b.onclick = fn; row.appendChild(b);
+    }
+    btn('\u270e', 'edit this stamp', function () {
+      S.stWork = JSON.parse(JSON.stringify(st)); S.stSlot = 0; S.stErasing = false;
+      renderStampTab();
+    });
+    btn('\ud83d\udcec', 'stamp onto the open chart', function () { stampToActive(st); });
+    if (saved) btn('\ud83d\uddd1', 'delete saved stamp', function () {
+      KS.stamps.remove(st.id);
+      if (S.stWork && S.stWork.id === st.id) S.stWork.id = null;
+      renderStampGallery();
+    });
+    d.appendChild(row);
+    host.appendChild(d);
+  }
+  KS.stamps.library().forEach(function (st) { card(st, false); });
+  KS.stamps.list().forEach(function (row) { card(KS.stamps.getStamp(row.id), true); });
+}
+function renderStampTab() {
+  var st = stEnsure();
+  $('stName').value = st.name;
+  $('stW').value = st.w;
+  $('stH').value = st.h;
+  $('stErase').classList.toggle('active', S.stErasing);
+  stCanvasDraw();
+  stChips();
+  renderStampGallery();
+}
+function bindStampUI() {
+  var c = $('stCv');
+  function cellAt(ev) {
+    var r = c.getBoundingClientRect();
+    return { x: Math.floor((ev.clientX - r.left) / ST_CELL), y: Math.floor((ev.clientY - r.top) / ST_CELL) };
+  }
+  function paint(ev) {
+    var st = stEnsure(), pt = cellAt(ev);
+    if (pt.x < 0 || pt.y < 0 || pt.x >= st.w || pt.y >= st.h) return;
+    KS.stamps.paint(st, pt.y, pt.x, S.stErasing ? null : S.stSlot);
+    stCanvasDraw();
+  }
+  c.addEventListener('pointerdown', function (ev) {
+    ev.preventDefault();
+    c.setPointerCapture(ev.pointerId);
+    S.stDrag = true;
+    if (ev.button === 2) {
+      var st = stEnsure(), pt = cellAt(ev);
+      if (pt.x >= 0 && pt.y >= 0 && pt.x < st.w && pt.y < st.h) KS.stamps.paint(st, pt.y, pt.x, null);
+      stCanvasDraw();
+      return;
+    }
+    paint(ev);
+  });
+  c.addEventListener('pointermove', function (ev) { if (S.stDrag) paint(ev); });
+  c.addEventListener('pointerup', function () { S.stDrag = null; });
+  c.addEventListener('pointercancel', function () { S.stDrag = null; });
+  c.addEventListener('contextmenu', function (ev) { ev.preventDefault(); });
+
+  $('stNew').onclick = function () {
+    S.stWork = KS.stamps.create($('stName').value || 'My stamp', +$('stW').value || 12, +$('stH').value || 12);
+    S.stSlot = 0; S.stErasing = false;
+    renderStampTab();
+  };
+  $('stAddColor').onclick = function () {
+    var st = stEnsure();
+    if (st.colors.length >= KS.COLOR_CODES.length) { status('All 38 color slots used', true); return; }
+    KS.stamps.slotColor(st, st.colors.length);
+    S.stSlot = st.colors.length - 1; S.stErasing = false;
+    renderStampTab();
+  };
+  $('stErase').onclick = function () { S.stErasing = !S.stErasing; renderStampTab(); };
+  $('stFlipH').onclick = function () { KS.stamps.flipH(stEnsure()); renderStampTab(); };
+  $('stFlipV').onclick = function () { KS.stamps.flipV(stEnsure()); renderStampTab(); };
+  $('stRot').onclick = function () { S.stWork = KS.stamps.rotate90(stEnsure()); renderStampTab(); };
+  $('stZoom2').onclick = function () {
+    var st = stEnsure();
+    if (st.w * 2 > KS.stamps.MAXDIM || st.h * 2 > KS.stamps.MAXDIM) { status('Already at max stamp size', true); return; }
+    S.stWork = KS.stamps.zoom(st, 2);
+    renderStampTab();
+  };
+  $('stClear').onclick = function () { S.stWork = KS.stamps.clear(stEnsure()); renderStampTab(); };
+  $('stHex').oninput = function () {
+    var st = stEnsure();
+    KS.stamps.slotColor(st, S.stSlot).hex = $('stHex').value.toLowerCase();
+    stCanvasDraw(); stChips(); renderStampGallery();
+  };
+  $('stColName').onchange = function () {
+    var st = stEnsure();
+    KS.stamps.slotColor(st, S.stSlot).name = $('stColName').value.trim().substring(0, 24) || null;
+    stChips();
+  };
+  $('stSave').onclick = function () {
+    var st = stEnsure();
+    st.name = $('stName').value.trim() || st.name;
+    try {
+      st.id = KS.stamps.save(st);
+      S.stWork = JSON.parse(JSON.stringify(st));
+      status('Saved stamp "' + st.name + '"');
+      renderStampGallery();
+    } catch (e) { status(e.message, true); }
+  };
+  $('stApplyChart').onclick = function () {
+    var st = stEnsure();
+    st.name = $('stName').value.trim() || st.name;
+    stampToActive(st);
+  };
+  $('stExportTxt').onclick = function () {
+    var st = stEnsure();
+    download(KS.slug(st.name || 'stamp') + '.txt', KS.stamps.exportText(st), 'text/plain');
+  };
+  $('stImportBtn').onclick = function () {
+    try {
+      var st = KS.stamps.importText($('stName').value.trim() || 'imported', $('stImportText').value);
+      S.stWork = st; S.stSlot = 0; S.stErasing = false;
+      $('stImportText').value = '';
+      status('Imported "' + st.name + '" (' + st.w + '\u00d7' + st.h + ')');
+      renderStampTab();
+    } catch (e) { status(e.message, true); }
+  };
+}
+
 bindCamUI();
 bindAmiUI();
+bindStampUI();
 
 setTab('lib');
 draw();

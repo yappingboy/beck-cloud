@@ -23,16 +23,27 @@ PORT=9000 node server.js  # custom port
 tools/knit-studio/
 ├── server.js        # zero-dep http server: static files + library API
 ├── public/
-│   ├── index.html   # single-page UI shell (tabs: Library/Editor/Shaping/Viewer/Convert)
+│   ├── index.html   # single-page UI shell (Library/Editor/Shaping/Projects/
+│   │                #   Templates/CAM/Ami/Stamps/Viewer/Convert tabs)
 │   ├── style.css
 │   ├── core.js      # pattern model + transforms + chart renderer (UMD: window.KS / require)
 │   ├── shaping.js   # shaping engine: parametric garment edges (UMD: KS.shaping)
+│   ├── templates.js # garment templates (UMD: KS.templates)
+│   ├── customtpl.js # user-defined templates + storage (UMD: KS.customTpl)
+│   ├── stamps.js    # pixel-art stamps: grid model, transforms, composite (UMD: KS.stamps)
+│   ├── slicer.js    # S2S/CAM slicer
+│   ├── ami.js       # amigurumi round parser
 │   └── app.js       # UI wiring
 ├── library/         # pattern storage: one JSON file per pattern, <id>.json
 │   └── index.json is NOT used — listing scans the dir
 └── scripts/
-    ├── selftest.mjs         # node logic tests for core.js
-    └── selftest-shaping.mjs # node logic tests for shaping.js
+    ├── selftest.mjs           # core model/transforms/exports
+    ├── selftest-shaping.mjs   # shaping engine
+    ├── selftest-projects.mjs  # projects + CAM
+    ├── selftest-ami.mjs       # amigurumi importer
+    ├── selftest-templates.mjs # garment templates
+    ├── selftest-customtpl.mjs # custom templates
+    └── selftest-stamps.mjs    # pixel-art stamps
 ```
 
 Conventions:
@@ -193,6 +204,31 @@ so old charts look unchanged. Everything follows the table: editor canvas,
 library thumbnails, PNG/SVG export (SVG gets a name + hex legend), and the
 `.txt` instructions list every used color.
 
+## Pixel-art stamps (intarsia motifs)
+
+The **Stamps** tab draws small pixel-art motifs on a grid (up to 64×64) and
+stamps them onto any chart. Empty cells are transparent, so the chart's own
+colorwork shows through — the point of an intarsia patch. A stamp carries
+its own color table like a chart does; stamping maps stamp colors onto the
+target palette: identical hexes reuse an existing slot, new colors append
+one, and a chart with all 38 slots full fails with a clean error instead of
+clobbering a color.
+
+- Draw: click/drag to paint, right-drag or ⌫ to erase; ↔ ↕ ⟳ ⤢ transform;
+  + color adds a slot (up to 38), the color picker and name edit it.
+- Stock motifs: heart, star, snowflake, gull, tree, diamond — edit or save
+  any of them.
+- Text format: legend lines (`r = #d33682 Heart`), then rows, one character
+  per cell, `.` = empty. Paste pixel art in, export `.txt` out.
+- Placing: **Stamp onto open chart** drops the motif centered on the chart
+  open in the Editor or Viewer (refuses when it would not fit). In the
+  Editor, the 📮 Stamp tool (key `s`) drops the current stamp under each
+  click, clipping at chart edges. Panel charts work too: open a project
+  panel in the editor, stamp, save the project.
+- Saved stamps live in browser localStorage (`ks-stamps`), separate from
+  the pattern library. Engine: `public/stamps.js` (`KS.stamps`), DOM-free,
+  selftested.
+
 ## Annotating the shaping diagram
 
 Click anywhere on the shaping preview to pin a text note: it anchors to that
@@ -271,9 +307,12 @@ library volume, so existing PVCs keep them without manifest changes).
 ## Tests
 
 ```sh
-npm test                      # all three suites
+npm test                              # all seven suites
 node scripts/selftest.mjs             # core model/transforms/exports
 node scripts/selftest-shaping.mjs     # shaping engine
 node scripts/selftest-projects.mjs    # projects + CAM slicer
-node scripts/selftest-ami.mjs           # amigurumi importer
+node scripts/selftest-ami.mjs         # amigurumi importer
+node scripts/selftest-templates.mjs   # garment templates
+node scripts/selftest-customtpl.mjs   # custom template editor
+node scripts/selftest-stamps.mjs      # pixel-art stamps
 ```
