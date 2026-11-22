@@ -329,5 +329,25 @@ t('projectYarn sums panels, honors shape gauge, counts missing', () => {
   if (!txt.includes('yarn estimate: ~192 m')) throw new Error('export line missing');
 });
 
+t('panel shaping model survives JSON + validate roundtrip', () => {
+  const p = KS.blankProject('shapey');
+  const shape = {
+    name: 'back', width: 20, gauge: null, mirror: false,
+    edges: {
+      left: [{ kind: 'straight', rows: 4 }, { kind: 'dec', every: 2, each: 2, times: 3 }, { kind: 'straight', rows: 2 }],
+      right: [{ kind: 'straight', rows: 4 }, { kind: 'dec', every: 2, each: 2, times: 3 }, { kind: 'straight', rows: 2 }]
+    }
+  };
+  const pn = KS.addPanel(p, KS.blank('back', 20, 10), 'Back', 'back', shape);
+  if (!pn.shape) throw new Error('addPanel lost the shape');
+  const back = KS.validateProject(JSON.parse(JSON.stringify(p)));
+  const pn2 = back.panels[0];
+  if (!pn2.shape || !Array.isArray(pn2.shape.edges.left)) throw new Error('shape lost through JSON + validate');
+  const errs = KS.shaping.check(pn2.shape);
+  if (errs.length) throw new Error('shape invalid after roundtrip: ' + errs.join('; '));
+  const chart = KS.shaping.toPattern(KS.shaping.normalize(pn2.shape), 'Back');
+  KS.validate(chart); // regenerate a chart from the recovered model
+});
+
 console.log(`\n${pass} passed, ${fail} failed`);
 process.exit(fail ? 1 : 0);

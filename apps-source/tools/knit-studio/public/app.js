@@ -315,7 +315,7 @@ function tplBuild() {
   } catch (e) { /* storage optional */ }
   S.project = proj;
   S.projectId = null;
-  S.boundPanel = null;
+  S.boundPanel = null; S.shapeBind = null;
   setTab('proj');
   renderProjectDetail();
   dirty();
@@ -413,7 +413,7 @@ function setTab(t) {
   if (t === 'cam') camDraw();
   if (t === 'ami') renderAmi();
   if (t === 'stamp') renderStampTab();
-  if (t === 'shape') { renderShapeForm(); renderShapeView(); }
+  if (t === 'shape') { renderShapeForm(); renderShapeView(); updateShapeBindBox(); }
   if (t === 'view' && !S.viewPat) status('Viewer: pick a pattern in the library and press View.');
   syncForm();
   if (activePat()) { S.zoom = -1; fit(); } // force refit on tab switch
@@ -1672,7 +1672,7 @@ function shapeGaugeFromForm() {
 /* ---------- projects (multi-panel) ---------- */
 S.project = null;      // knit-studio-project/1 being edited
 S.projectId = null;    // server id once saved
-S.boundPanel = null;   // panel id whose chart is open in the editor
+S.boundPanel = null; S.shapeBind = null;   // panel id whose chart is open in the editor
 S.projList = [];
 
 function projectDirty() { dirty(); }
@@ -1724,7 +1724,7 @@ function projCardAction(act, id) {
   if (act === 'del') {
     if (!confirm('Delete project "' + id + '"? Cannot be undone.')) return;
     api('DELETE', '/api/projects/' + encodeURIComponent(id)).then(function () {
-      if (S.projectId === id) { S.project = null; S.projectId = null; S.boundPanel = null; renderProjectDetail(); }
+      if (S.projectId === id) { S.project = null; S.projectId = null; S.boundPanel = null; S.shapeBind = null; renderProjectDetail(); }
       loadProjects();
     }).catch(function (e) { status(e.message, true); });
     return;
@@ -1732,7 +1732,7 @@ function projCardAction(act, id) {
   api('GET', '/api/projects/' + encodeURIComponent(id)).then(function (json) {
     var p = KS.validateProject(json);
     if (act === 'json') { download(id + '.project.json', JSON.stringify(p, null, 1), 'application/json'); return; }
-    S.project = p; S.projectId = id; S.boundPanel = null;
+    S.project = p; S.projectId = id; S.boundPanel = null; S.shapeBind = null;
     renderProjectDetail();
     status('Opened project "' + p.name + '".');
   }).catch(function (e) { status(e.message, true); });
@@ -1742,7 +1742,7 @@ function newProjectFlow() {
   var name = prompt('Project name?', 'my-sweater');
   if (!name) return;
   S.project = KS.blankProject(name.trim());
-  S.projectId = null; S.boundPanel = null;
+  S.projectId = null; S.boundPanel = null; S.shapeBind = null;
   renderProjectDetail();
   status('New project \u2014 add panels, then save.');
 }
@@ -1806,6 +1806,8 @@ function renderProjectDetail() {
       b.onclick = fn; row.appendChild(b);
     }
     btn('\u270e', 'open chart in editor', function () { editPanel(pn.id); });
+    btn('\u223f', pn.shape ? 'edit this panel\u2019s shaping model in the Shaping tab'
+      : 'shape it from the chart size (panel has no shaping model yet)', function () { openShapePanel(pn.id); });
     btn('\u2191', 'move up', function () {
       if (i === 0) return;
       p.panels.splice(i, 1); p.panels.splice(i - 1, 0, pn);
@@ -1818,7 +1820,7 @@ function renderProjectDetail() {
     });
     btn('\u2715', 'remove panel', function () {
       if (!confirm('Remove panel ' + String.fromCharCode(65 + i) + ' "' + pn.name + '"?')) return;
-      if (S.boundPanel === pn.id) S.boundPanel = null;
+      if (S.boundPanel === pn.id) S.boundPanel = null; S.shapeBind = null;
       KS.removePanel(p, pn.id);
       projectDirty(); renderProjectDetail();
     }, 'danger');
@@ -1924,7 +1926,7 @@ function bindProjUI() {
     fr.onload = function () {
       try {
         S.project = KS.validateProject(JSON.parse(fr.result));
-        S.projectId = null; S.boundPanel = null;
+        S.projectId = null; S.boundPanel = null; S.shapeBind = null;
         renderProjectDetail();
         status('Imported ' + f.name + ' \u2014 save to add it to the list.');
       } catch (err) { status('Bad project file: ' + err.message, true); }
@@ -1938,7 +1940,7 @@ function bindProjUI() {
   });
   $('pjSave').onclick = saveProject;
   $('pjClose').onclick = function () {
-    S.project = null; S.projectId = null; S.boundPanel = null;
+    S.project = null; S.projectId = null; S.boundPanel = null; S.shapeBind = null;
     renderProjectDetail(); loadProjects();
   };
   $('pjExportTxt').onclick = function () {
@@ -1955,6 +1957,55 @@ function bindProjUI() {
   $('pjAddFromShape').onclick = function () { addPanelFrom('shape'); };
   $('pjAddFromEditor').onclick = function () { addPanelFrom('editor'); };
   $('btnPushPanel').onclick = pushPanelToProject;
+
+  /* shaping round-trip: project panel <-> Shaping tab */
+  function openShapePanel(id) {
+    if (!S.project) return;
+    var pn = KS.getPanel(S.project, id);
+    if (!pn) return;
+    if (pn.shape) {
+      SShape = JSON.parse(JSON.stringify(pn.shape));
+      S.shapeBind = id;
+      setTab('shape');
+      status('Editing shaping of panel "' + pn.name + '" \u2014 use Save shaping to panel when done.');
+      return;
+    }
+    var d = KS.panelDims(pn);
+    var segs = [{ kind: 'straight', rows: Math.max(2, d.height) }];
+    SShape = KS.shaping.normalize({
+      name: pn.name, width: Math.max(2, d.width), gauge: S.project.gauge || null, mirror: false,
+      edges: { left: segs.slice(), right: segs.slice() }
+    });
+    S.shapeBind = id;
+    setTab('shape');
+    status('Panel "' + pn.name + '" had no shaping model: started flat at ' + d.width + ' st \u00d7 ' + d.height + ' rows. Saving replaces its chart.');
+  }
+  function updateShapeBindBox() {
+    var box = $('shapeBindBox');
+    if (!box) return;
+    var pn = S.project && S.shapeBind ? KS.getPanel(S.project, S.shapeBind) : null;
+    box.classList.toggle('hidden', !pn);
+    if (pn) $('shapeBindLbl').textContent = 'Shaping belongs to project "' + S.project.name +
+      '" \u00b7 panel "' + pn.name + '"';
+  }
+  window.updateShapeBindBox = updateShapeBindBox;
+  $('btnPushShape').onclick = function () {
+    if (!S.project || !S.shapeBind) return;
+    var pn = KS.getPanel(S.project, S.shapeBind);
+    if (!pn) return status('Bound panel is gone.', true);
+    var sh;
+    try { sh = KS.shaping.normalize(SShape); } catch (e) { return status(e.message, true); }
+    var errs = KS.shaping.check(sh);
+    if (errs.length) return status(errs.join(' \u00b7 '), true);
+    try { pn.chart = KS.shaping.toPattern(sh, pn.name); } catch (e) { return status('Chart failed: ' + e.message, true); }
+    pn.shape = sh;
+    SShape = sh;
+    projectDirty();
+    renderShapeForm();
+    renderShapeView();
+    updateShapeBindBox();
+    status('Saved shaping to panel "' + pn.name + '" \u2014 chart regenerated; save the project to keep it');
+  };
 }
 
 /* ---------- CAM slicer (S2S tracker port) ---------- */
@@ -2203,7 +2254,7 @@ function bindCamUI() {
     var proj = KS.projectFromSlicer(C.data, name.trim());
     var id = KS.slug(name);
     api('PUT', '/api/projects/' + encodeURIComponent(id), proj).then(function (sum) {
-      S.project = proj; S.projectId = sum.id; S.boundPanel = null;
+      S.project = proj; S.projectId = sum.id; S.boundPanel = null; S.shapeBind = null;
       status('Project "' + sum.id + '" saved with ' + sum.panels + ' panels.');
       setTab('proj');
       renderProjectDetail();
@@ -2214,7 +2265,7 @@ function bindCamUI() {
     if (!C.data) return status('CAM: nothing sliced yet.', true);
     if (C.panelIdx === -1) return status('CAM: pick a panel to open as a chart.', true);
     var pats = KS.fromSlicer(C.data, C.name);
-    S.pat = pats[C.panelIdx]; S.id = null; S.boundPanel = null;
+    S.pat = pats[C.panelIdx]; S.id = null; S.boundPanel = null; S.shapeBind = null;
     resetHist(); clean(); setTab('edit');
     status('Panel ' + String.fromCharCode(65 + C.panelIdx) + ' opened as a chart.');
   };
@@ -2366,7 +2417,7 @@ function bindAmiUI() {
     var res = amiConvert();
     if (!res) return;
     S.pat = KS.shaping.toPattern(res.shape);
-    S.id = null; S.boundPanel = null;
+    S.id = null; S.boundPanel = null; S.shapeBind = null;
     resetHist(); clean(); setTab('edit');
     status('Flat chart generated from ' + amiCounts().length + ' rounds.');
   };
@@ -2380,7 +2431,7 @@ function bindAmiUI() {
     KS.addPanel(proj, pat, 'Piece', 'other', JSON.parse(JSON.stringify(res.shape)));
     var id = KS.slug(name);
     api('PUT', '/api/projects/' + encodeURIComponent(id), proj).then(function (sum) {
-      S.project = proj; S.projectId = sum.id; S.boundPanel = null;
+      S.project = proj; S.projectId = sum.id; S.boundPanel = null; S.shapeBind = null;
       status('Project "' + sum.id + '" saved from amigurumi pattern.');
       setTab('proj');
       renderProjectDetail();

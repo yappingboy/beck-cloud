@@ -278,7 +278,13 @@ front into two panels — the plackets sew behind that opening. Panel sizes come
 from your numbers: change chest or ease and rebuild. Saved per template in the browser, so the wearer's measurements
 survive refreshes. Engine: `public/templates.js` (`KS.templates`), pure and
 selftested; generated panels always pass `shaping.check` and chart validation.
-Templates are starting points — tune anything in the Projects tab.
+Templates are starting points — and they stay editable: every generated
+panel carries its full **shaping model**. The ∿ button on any panel row in
+Projects opens that model in the Shaping tab (a panel without one starts
+flat at the chart's size); **Save shaping to panel** writes the edited model
+back and regenerates the chart from it, so parametric tweaks never leave you
+repainting cells.
+
 
 **Your own templates:** the gallery's ✚ card builds custom templates from a
 name, measurement fields (label/key/default/min/max) and flat trapezoid
