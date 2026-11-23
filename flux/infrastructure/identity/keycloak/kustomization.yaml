@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - keycloak.yaml
   - certificate.yaml
+  - theme-configmap.yaml

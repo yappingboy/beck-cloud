@@ -1,0 +1,584 @@
+/* BeckCloud Keycloak Login Theme
+ * Dark mode by default. BeckCloud brand colors and typography.
+ */
+
+/* ── CSS Custom Properties (BeckCloud Brand) ─────────────────── */
+:root {
+  --becclo: #0F1729;
+  --gunmetal: #1E293B;
+  --steel: #334155;
+  --frost: #E2E8F0;
+  --cloud: #94A3B8;
+  --ember: #E8A838;
+  --violet: #7C5CFC;
+  --coral: #FF6B4A;
+  --greenlight: #4ADE80;
+  --amber: #FBBF24;
+  --red: #EF4444;
+
+  --font-heading: 'JetBrains Mono', monospace;
+  --font-body: 'Inter', sans-serif;
+
+  --radius: 6px;
+  --radius-lg: 8px;
+}
+
+/* ── Font Import ─────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600;700&display=swap');
+
+/* ── Reset & Base ────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 16px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  font-family: var(--font-body);
+  background: var(--becclo);
+  color: var(--frost);
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+/* ── Background Ambiance ─────────────────────────────────────── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(232, 168, 56, 0.08) 0%, transparent 60%),
+    radial-gradient(ellipse 60% 40% at 80% 100%, rgba(124, 92, 252, 0.06) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Subtle dot grid overlay */
+body::after {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: radial-gradient(var(--steel) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.25;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* ── Login Container ─────────────────────────────────────────── */
+#kc-container-wrapper {
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  padding: 1rem;
+}
+
+#kc-container {
+  max-width: 420px;
+  margin: 0 auto;
+  width: 100%;
+}
+
+/* ── Card ────────────────────────────────────────────────────── */
+#kc-card {
+  background: var(--gunmetal);
+  border: 1px solid var(--steel);
+  border-radius: var(--radius-lg);
+  padding: 2rem;
+  position: relative;
+  box-shadow:
+    0 4px 24px rgba(0, 0, 0, 0.4),
+    0 0 0 1px rgba(232, 168, 56, 0.05);
+}
+
+/* Top accent bar */
+#kc-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 2rem;
+  right: 2rem;
+  height: 2px;
+  background: linear-gradient(90deg, var(--ember) 0%, var(--coral) 100%);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ── Logo ────────────────────────────────────────────────────── */
+#kc-logo {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  padding-bottom: 1.5rem;
+}
+
+#kc-logo img,
+#kc-logo svg {
+  height: 56px;
+  width: auto;
+}
+
+/* ── Brand Header ────────────────────────────────────────────── */
+#kc-header-wrapper {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+#kc-header {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 1.5rem;
+  color: var(--frost);
+  letter-spacing: -0.5px;
+  line-height: 1.2;
+}
+
+#kc-header-subtitle {
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  color: var(--cloud);
+  margin-top: 0.375rem;
+  line-height: 1.5;
+}
+
+/* ── Form Elements ───────────────────────────────────────────── */
+.form-group {
+  margin-bottom: 1rem;
+}
+
+.form-label {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--cloud);
+  margin-bottom: 0.375rem;
+}
+
+/* ── Inputs ──────────────────────────────────────────────────── */
+input[type="text"],
+input[type="password"],
+input[type="email"],
+input[type="number"] {
+  width: 100%;
+  padding: 0.625rem 0.75rem;
+  background: var(--becclo);
+  border: 1px solid var(--steel);
+  border-radius: var(--radius);
+  color: var(--frost);
+  font-family: var(--font-body);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  outline: none;
+}
+
+input[type="text"]:focus,
+input[type="password"]:focus,
+input[type="email"]:focus,
+input[type="number"]:focus {
+  border-color: var(--ember);
+  box-shadow: 0 0 0 2px rgba(232, 168, 56, 0.15);
+}
+
+input::placeholder {
+  color: var(--cloud);
+  opacity: 0.7;
+}
+
+/* ── Buttons ─────────────────────────────────────────────────── */
+.kc-btn {
+  display: block;
+  width: 100%;
+  padding: 0.625rem 1rem;
+  font-family: var(--font-body);
+  font-weight: 600;
+  font-size: 0.875rem;
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease, box-shadow 0.2s ease;
+  text-align: center;
+  line-height: 1.4;
+}
+
+.kc-btn-primary {
+  background: var(--ember);
+  color: var(--becclo);
+}
+
+.kc-btn-primary:hover {
+  background: #d4952e;
+  box-shadow: 0 0 0 2px rgba(232, 168, 56, 0.3);
+}
+
+.kc-btn-primary:active {
+  transform: scale(0.99);
+}
+
+.kc-btn-secondary {
+  background: transparent;
+  color: var(--ember);
+  border: 1px solid var(--ember);
+}
+
+.kc-btn-secondary:hover {
+  background: rgba(232, 168, 56, 0.1);
+}
+
+.kc-btn-ghost {
+  background: transparent;
+  color: var(--cloud);
+  border: 1px solid var(--steel);
+}
+
+.kc-btn-ghost:hover {
+  color: var(--frost);
+  border-color: var(--cloud);
+}
+
+/* ── Links ───────────────────────────────────────────────────── */
+#kc-form-options a,
+#kc-form-options a:visited {
+  color: var(--ember);
+  text-decoration: none;
+  font-size: 0.8125rem;
+  transition: color 0.15s ease;
+}
+
+#kc-form-options a:hover {
+  color: #d4952e;
+  text-decoration: underline;
+}
+
+/* ── Social Provider Buttons ─────────────────────────────────── */
+#kc-social-providers ul {
+  list-style: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+#kc-social-providers li a {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  padding: 0.5rem 1rem;
+  background: var(--becclo);
+  border: 1px solid var(--steel);
+  border-radius: var(--radius);
+  color: var(--frost);
+  font-family: var(--font-body);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+#kc-social-providers li a:hover {
+  border-color: var(--ember);
+  background: rgba(232, 168, 56, 0.05);
+}
+
+/* ── Checkbox ────────────────────────────────────────────────── */
+#kc-form-options .checkbox-group {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+#kc-form-options input[type="checkbox"] {
+  appearance: none;
+  -webkit-appearance: none;
+  width: 1rem;
+  height: 1rem;
+  border: 1px solid var(--steel);
+  border-radius: 3px;
+  background: var(--becclo);
+  cursor: pointer;
+  position: relative;
+  flex-shrink: 0;
+}
+
+#kc-form-options input[type="checkbox"]:checked {
+  background: var(--ember);
+  border-color: var(--ember);
+}
+
+#kc-form-options input[type="checkbox"]:checked::after {
+  content: '';
+  position: absolute;
+  top: 1px;
+  left: 3px;
+  width: 6px;
+  height: 10px;
+  border: solid var(--becclo);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+#kc-form-options .checkbox-label {
+  font-size: 0.8125rem;
+  color: var(--cloud);
+  cursor: pointer;
+  user-select: none;
+}
+
+/* ── Messages / Alerts ───────────────────────────────────────── */
+#alert-title {
+  font-family: var(--font-heading);
+  font-weight: 700;
+  font-size: 0.875rem;
+  color: var(--frost);
+  margin-bottom: 0.25rem;
+}
+
+#kc-message {
+  font-size: 0.8125rem;
+  color: var(--cloud);
+  line-height: 1.5;
+}
+
+#kc-message ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+#kc-message ul li {
+  font-size: 0.8125rem;
+  color: var(--red);
+  margin-bottom: 0.25rem;
+  padding-left: 1rem;
+  position: relative;
+}
+
+#kc-message ul li::before {
+  content: '•';
+  position: absolute;
+  left: 0;
+  color: var(--red);
+}
+
+/* Info / success message */
+.info-message {
+  background: rgba(124, 92, 252, 0.1);
+  border: 1px solid rgba(124, 92, 252, 0.3);
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.8125rem;
+  color: var(--frost);
+  line-height: 1.5;
+}
+
+/* ── OTP / Two-Step Verification ─────────────────────────────── */
+.otp-input-group {
+  display: flex;
+  gap: 0.5rem;
+  justify-content: center;
+  margin-bottom: 1rem;
+}
+
+.otp-input {
+  width: 3.5rem;
+  height: 3.5rem;
+  text-align: center;
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  background: var(--becclo);
+  border: 1px solid var(--steel);
+  border-radius: var(--radius);
+  color: var(--frost);
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.otp-input:focus {
+  border-color: var(--ember);
+  box-shadow: 0 0 0 2px rgba(232, 168, 56, 0.15);
+}
+
+.otp-info {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--cloud);
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* ── Divider ─────────────────────────────────────────────────── */
+.kc-divider {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin: 1.25rem 0;
+  color: var(--cloud);
+  font-size: 0.75rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.kc-divider::before,
+.kc-divider::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--steel);
+}
+
+/* ── Footer Links ────────────────────────────────────────────── */
+#kc-footer-wrapper {
+  text-align: center;
+  margin-top: 1.25rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--steel);
+}
+
+#kc-footer {
+  font-size: 0.75rem;
+  color: var(--cloud);
+  line-height: 1.5;
+}
+
+#kc-footer a {
+  color: var(--ember);
+  text-decoration: none;
+}
+
+#kc-footer a:hover {
+  text-decoration: underline;
+}
+
+#kc-footer-links {
+  display: flex;
+  justify-content: center;
+  gap: 1rem;
+  margin-top: 0.5rem;
+  flex-wrap: wrap;
+}
+
+#kc-footer-links a {
+  font-size: 0.75rem;
+  color: var(--cloud);
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+#kc-footer-links a:hover {
+  color: var(--ember);
+}
+
+/* ── Terms ───────────────────────────────────────────────────── */
+#kc-terms-text {
+  text-align: center;
+  font-size: 0.8125rem;
+  color: var(--cloud);
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+/* ── Revoke Access ───────────────────────────────────────────── */
+.revoke-info {
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+
+.revoke-info p {
+  font-size: 0.8125rem;
+  color: var(--cloud);
+  line-height: 1.5;
+}
+
+/* ── Responsive ──────────────────────────────────────────────── */
+@media (max-width: 480px) {
+  #kc-card {
+    padding: 1.5rem;
+    margin: 0.5rem;
+  }
+
+  #kc-header {
+    font-size: 1.25rem;
+  }
+
+  .otp-input {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.25rem;
+  }
+}
+
+/* ── Accessibility: Focus visible ────────────────────────────── */
+*:focus-visible {
+  outline: 2px solid var(--ember);
+  outline-offset: 2px;
+}
+
+/* ── Animations ──────────────────────────────────────────────── */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+#kc-card {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* ── Password Strength Meter ─────────────────────────────────── */
+#password-strength {
+  margin-top: 0.5rem;
+  display: none;
+}
+
+#password-strength-meter {
+  height: 3px;
+  background: var(--steel);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-bottom: 0.375rem;
+}
+
+#password-strength-meter-fill {
+  height: 100%;
+  width: 0%;
+  transition: width 0.3s ease, background-color 0.3s ease;
+  border-radius: 2px;
+}
+
+#password-strength-text {
+  font-size: 0.75rem;
+  color: var(--cloud);
+}
+
+/* Strength levels */
+.strength-weak #password-strength-meter-fill {
+  background: var(--red);
+}
+.strength-fair #password-strength-meter-fill {
+  background: var(--amber);
+}
+.strength-good #password-strength-meter-fill {
+  background: var(--greenlight);
+}
+.strength-strong #password-strength-meter-fill {
+  background: var(--greenlight);
+}
