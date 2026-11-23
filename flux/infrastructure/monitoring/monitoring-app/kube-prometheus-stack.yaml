@@ -112,7 +112,9 @@ spec:
           auto_assign_org: true
           auto_assign_org_role: Admin
         paths:
-          custom_css: /etc/grafana/beckcloud.css
+          # Must live under static_root_path (/usr/share/grafana/public);
+          # Grafana serves it as /public/beckcloud.css and links it in the app shell.
+          custom_css: /usr/share/grafana/public/beckcloud.css
       # Brand CSS lives in grafana-brand-css.yaml (same directory) and is
       # mounted at the paths.custom_css location. tokens: docs/brand/brand-tokens.css
       extraVolumes:
@@ -121,7 +123,7 @@ spec:
             name: grafana-brand-css
       extraVolumeMounts:
         - name: beckcloud-brand-css
-          mountPath: /etc/grafana/beckcloud.css
+          mountPath: /usr/share/grafana/public/beckcloud.css
           subPath: beckcloud.css
           readOnly: true
       ingress:
