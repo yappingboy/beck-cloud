@@ -34,7 +34,7 @@
       </div>
 
       <div style="text-align: center; margin-bottom: 1.5rem;">
-        <img src="${otpLogin.otpLoginUrl}" alt="QR Code" style="max-width: 200px; border-radius: var(--radius);"/>
+        <img src="${(otpLogin.otpLoginUrl!(url.loginAction!''))}" alt="QR Code" style="max-width: 200px; border-radius: var(--radius);"/>
       </div>
 
       <div class="otp-info">

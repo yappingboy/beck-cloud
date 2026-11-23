@@ -29,7 +29,7 @@
   <div id="kc-card">
     <#if !auth?has_content || !auth.showUsername()>
       <#if !auth.showEmail()??>
-        <form id="kc-reset-password-form" action="${url.loginResetFormUrl}" method="post">
+        <form id="kc-reset-password-form" action="${url.loginAction}" method="post">
           <div class="form-group">
             <label for="username" class="form-label">${msg("username")}</label>
             <input type="text" id="username" class="form-control" name="username"
@@ -41,7 +41,7 @@
           </div>
         </form>
       <#else>
-        <form id="kc-reset-password-form" action="${url.loginResetFormUrl}" method="post">
+        <form id="kc-reset-password-form" action="${url.loginAction}" method="post">
           <div class="form-group">
             <label for="username" class="form-label">${msg("username")}</label>
             <input type="text" id="username" class="form-control" name="username"
@@ -64,7 +64,7 @@
         <a href="${url.loginUrl}">${msg("loginIdpConfirmDifferent")}</a>
       </div>
     <#else>
-      <form id="kc-reset-password-form" action="${url.loginResetFormUrl}" method="post">
+      <form id="kc-reset-password-form" action="${url.loginAction}" method="post">
         <div class="form-group">
           <label for="username" class="form-label">${msg("username")}</label>
           <input type="text" id="username" class="form-control" name="username"

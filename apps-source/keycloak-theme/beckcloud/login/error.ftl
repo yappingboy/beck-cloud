@@ -34,7 +34,7 @@
     <div id="kc-form-buttons" style="margin-top: 1.5rem;">
       <#if skipLink?has_content && skipLink>
         <#if url.backLink?has_content>
-          <a href="${url.backLink}" class="kc-btn kc-btn-secondary">${msg("doBack")}</a>
+          <a href="${(url.backLink!(url.loginUrl!''))}" class="kc-btn kc-btn-secondary">${msg("doBack")}</a>
         </#if>
       <#else>
         <#if url.loginUrl?has_content>

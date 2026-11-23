@@ -32,7 +32,7 @@
         <div class="form-group">
           <label for="username" class="form-label">${msg("username")}</label>
           <input type="text" id="username" class="form-control" name="username"
-                 value="${register.username}" autocomplete="username" placeholder="${msg('loginUsernameHint')}" autofocus/>
+                 value="${(register.username!'')}" autocomplete="username" placeholder="${msg('loginUsernameHint')}" autofocus/>
           <#if errors.usernameExist??>
             <span class="error-text">${msg("errorUsernameAlreadyExists")}</span>
           </#if>
@@ -41,7 +41,7 @@
         <div class="form-group">
           <label for="email" class="form-label">${msg("email")}</label>
           <input type="email" id="email" class="form-control" name="email"
-                 value="${register.email}" autocomplete="email" placeholder="you@example.com"/>
+                 value="${(register.email!'')}" autocomplete="email" placeholder="you@example.com"/>
           <#if errors.emailExists??>
             <span class="error-text">${msg("errorEmailAlreadyExists")}</span>
           </#if>
@@ -84,7 +84,7 @@
           <div class="form-group">
             <label for="email" class="form-label">${msg("email")}</label>
             <input type="email" id="email" class="form-control" name="email"
-                   value="${register.email}" autocomplete="email" placeholder="you@example.com" autofocus/>
+                   value="${(register.email!'')}" autocomplete="email" placeholder="you@example.com" autofocus/>
             <#if errors.emailExists??>
               <span class="error-text">${msg("errorEmailAlreadyExists")}</span>
             </#if>

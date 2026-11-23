@@ -120,3 +120,16 @@ Rather than rewriting CSS in every service, create a **shared design token syste
 - Affine: Set `AFFINE_THEME` env var + custom CSS in settings
 - Silex: Custom CSS in Silex settings panel
 - Spoolman/Manyfold: Inject CSS via Traefik `addHeaders` middleware with custom `<link>` or `<style>` tag
+
+## 2026-11-23 canary validation: theme is NOT deployable (deploy attempt aborted pre-prod)
+Built ConfigMap from `apps-source/keycloak-theme/beckcloud/`, mounted it in a throwaway Keycloak 26 (H2, `start-dev`, zero prod impact), and render-tested. Login page renders branded (200, Ember Gold CSS + logo serve). But:
+1. **Error page 500s.** `error.ftl` throws `NullPointerException` (`msg(errorMessage)` when the model key is absent). Every failed auth attempt renders the error page → cluster-wide ugly-error 500s on wrong passwords.
+2. **Parent inheritance does not resolve.** `loginTheme=beckcloud` + `parent=base`: pages we don't ship (`logout-confirm.ftl`, `login-reset-password.ftl`) raise `TemplateNotFoundException` although they exist in `base/login`. With `loginTheme=base` the same pages render 200. Missing pages = 500.
+3. **8 of 14 page templates have dead filenames** (never rendered, canonical names differ): `reset-password.ftl`→`login-reset-password.ftl`, `password-update.ftl`→`login-update-password.ftl`, `otp-login.ftl`→`login-otp.ftl`, `login-idp-link.ftl`→`login-idp-link-confirm.ftl`, `login-oauth2-grant.ftl`→`login-oauth-grant.ftl`, `login-oauth2.ftl`/`forgot-username.ftl` (flow removed in 26), i.e. forgot-password, OTP, logout-confirm and consent are **unbranded or 500**.
+4. **`template.ftl` macro mismatch** (fixed pre-deploy): pages used `<#nested "header">` outside any macro → FreeMarker `ParseException` on login. Also `${login.username}` unguarded → `InvalidReferenceException` on first render. Both fixed in source (`05427c9` follow-up), but the inheritance/dead-name problems remain.
+
+**Remediation options:**
+- **A. CSS-only branding (low risk, recommended first):** new minimal theme, `parent=keycloak.v2`, no `.ftl` overrides, brand via `styles=` CSS injection over PatternFly. All 20+ flows keep working; colors/fonts/hero styled.
+- **B. Full template theme (high effort):** fix `theme.properties` inheritance, rework `template.ftl` to also export base-compatible `registrationLayout`, rename all pages to canonical names, then re-test every flow in the canary (login, forgot, OTP, WebAuthn, consent, register, logout-confirm, error).
+
+Canary harness (reusable): ConfigMap `items[].path` mount + pod spec approach documented; prod deployment was never modified.

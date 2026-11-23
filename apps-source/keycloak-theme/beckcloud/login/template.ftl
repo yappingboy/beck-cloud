@@ -14,7 +14,7 @@
 <body>
   <div id="kc-container-wrapper">
     <div id="kc-container">
-      <#nested "content">
+      <#nested>
     </div>
     <div id="kc-footer-wrapper">
       <div id="kc-footer">

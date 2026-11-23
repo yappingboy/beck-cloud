@@ -26,7 +26,7 @@
   </div>
 
   <div id="kc-header-wrapper">
-    <div id="kc-header" class="kc-logo-text"><#nested "header"></div>
+    <div id="kc-header" class="kc-logo-text">${realm.displayName!"BeckCloud"}</div>
   </div>
 
   <div id="kc-card">
@@ -34,13 +34,13 @@
       <#if !realm.loginWithEmailAllowed>
         <div class="form-group">
           <label for="username" class="form-label">${msg("username")}</label>
-          <input id="username" class="form-control" name="username" value="${login.username}"
+          <input id="username" class="form-control" name="username" value="${(login.username!'')}"
                  autocomplete="username" placeholder="${msg('loginUsernameHint')}" autofocus/>
         </div>
       <#elseif !realm.registrationEmailAsUsername>
         <div class="form-group">
           <label for="username" class="form-label">${msg("username")}</label>
-          <input id="username" class="form-control" name="username" value="${login.username}"
+          <input id="username" class="form-control" name="username" value="${(login.username!'')}"
                  autocomplete="username" placeholder="${msg('loginUsernameHint')}" autofocus/>
         </div>
       </#if>
@@ -48,7 +48,7 @@
       <#if realm.loginWithEmailAllowed && realm.registrationEmailAsUsername>
         <div class="form-group">
           <label for="username" class="form-label">${msg("username")}</label>
-          <input id="username" class="form-control" name="username" value="${login.username}"
+          <input id="username" class="form-control" name="username" value="${(login.username!'')}"
                  autocomplete="username" placeholder="${msg('loginUsernameHint')}" autofocus/>
         </div>
       </#if>
@@ -80,13 +80,13 @@
       </div>
       <div id="kc-footer-links">
         <#if realm.resetPasswordAllowed>
-          <a href="${url.loginResetUrl}">${msg("loginPasswordResetLink")}</a>
+          <a href="${(url.loginResetUrl!(url.loginAction!''))}">${msg("loginPasswordResetLink")}</a>
         </#if>
         <#if realm.registrationAllowed>
           <a href="${url.registrationUrl}">${msg("loginRegisterLink")}</a>
         </#if>
         <#if realm.editUsernameAllowed>
-          <a href="${url.loginUrl}?username=${login.username}">${msg("loginIdpConfirmDifferent")}</a>
+          <a href="${url.loginUrl}?username=${(login.username!'')}">${msg("loginIdpConfirmDifferent")}</a>
         </#if>
       </div>
     </#if>
@@ -99,8 +99,8 @@
         <ul>
           <#list social.providers as p>
             <li>
-              <a href="${p.loginUrl}" class="social-provider-btn">
-                <span>${p.displayName}</span>
+              <a href="${(p.loginUrl!'')}" class="social-provider-btn">
+                <span>${(p.displayName!'')}</span>
               </a>
             </li>
           </#list>

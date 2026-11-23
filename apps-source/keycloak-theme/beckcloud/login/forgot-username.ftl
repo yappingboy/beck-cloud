@@ -27,7 +27,7 @@
   </div>
 
   <div id="kc-card">
-    <form id="kc-reset-username-form" action="${url.loginResetUrl}" method="post">
+    <form id="kc-reset-username-form" action="${url.loginAction}" method="post">
       <div class="form-group">
         <label for="firstName" class="form-label">${msg("firstName")}</label>
         <input type="text" id="firstName" class="form-control" name="firstName"
