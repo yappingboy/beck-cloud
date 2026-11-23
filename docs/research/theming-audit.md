@@ -5,9 +5,9 @@
 
 ## Current State: What's Already Branded
 
-### ✅ Fully Branded (Keycloak Login Theme)
+### ⚠️ Keycloak Login Theme — spec'd & built, NOT deployed (corrected 2026-11-23)
 - **Service:** Keycloak login pages (all SSO-authenticated services)
-- **Status:** Complete. Custom `beckcloud` theme deployed
+- **Status:** WRONG IN ORIGINAL AUDIT. Realm `homelab` has `loginTheme: "beckcloud"` set, but the Keycloak pod's `/opt/keycloak/themes/` contains no `beckcloud` directory (providers/ empty, no volume mounted), so Keycloak silently falls back to `keycloak.v2`. Live login HTML confirms: `href="/resources/.../login/keycloak.v2/css/styles.css"`. Theme source + build script exist at `apps-source/keycloak-theme/` (incl. `dist/beckcloud-keycloak-theme.yaml`), never wired into the Deployment.
 - **CSS:** `/beck-cloud/keycloak-theme/beckcloud/login/resources/css/beckcloud.css`
 - **Features:** Brand colors, fonts (Inter + JetBrains Mono), dark mode, login form styling, OTP inputs, password strength meter, animations
 - **Scope:** Affects every service that uses SSO login (Grafana, CMS, Hubble, Traefik, OpenNebula, Affine, Silex)

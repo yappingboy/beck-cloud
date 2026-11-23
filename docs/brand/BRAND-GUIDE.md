@@ -120,9 +120,11 @@ It's a person's homelab. Act like it.
 
 ---
 
-## 6. Logo Concept
+## 6. Logo
 
 See [LOGO.md](./LOGO.md) for the full technical specification.
+
+Production assets live in [`assets/`](./assets/) — hexagon mark, horizontal/stacked lockups, color variants (dark/light/inverted/monochrome), plus favicon and PWA icon exports. Usage rules and minimum sizes in [LOGO.md §5](./LOGO.md) and [`assets/README.md`](./assets/README.md).
 
 ### Quick Summary
 

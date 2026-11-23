@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 460 268" role="img" aria-label="BeckCloud">
+  <g transform="translate(150,10) scale(0.8)">
+    <path d="M100,20 L169.3,60 L169.3,140 L100,180 L30.7,140 L30.7,60 Z" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linejoin="miter"/>
+    <path d="M110,48 C129,76 143,104 137,131 C132,152 119,162 105,160 C89,157 79,142 81,120 C83,96 96,70 110,48 Z" fill="#FFFFFF"/>
+  </g>
+  <defs><linearGradient id="cs-inverted" x1="0" y1="0" x2="1" y2="0"><stop offset="0" stop-color="#FFFFFF"/><stop offset="1" stop-color="#E2E8F0"/></linearGradient></defs>
+  <text x="52" y="240" font-family="'JetBrains Mono', ui-monospace, Consolas, monospace" font-weight="700" font-size="66" letter-spacing="-0.5"><tspan fill="#FFFFFF">Beck</tspan><tspan fill="url(#cs-inverted)">Cloud</tspan></text>
+</svg>
