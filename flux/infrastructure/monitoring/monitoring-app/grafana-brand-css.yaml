@@ -1,0 +1,40 @@
+# BeckCloud brand overlay for Grafana.
+# Mounted at /etc/grafana/beckcloud.css and referenced by
+# grafana.ini [paths].custom_css in kube-prometheus-stack.yaml.
+# Palette source of truth: docs/brand/brand-tokens.css (do not hand-edit hues).
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: grafana-brand-css
+  namespace: monitoring
+  labels:
+    app.kubernetes.io/part-of: beckcloud-brand
+  annotations:
+    docs.becklab.cloud/brand-tokens: docs/brand/brand-tokens.css
+data:
+  beckcloud.css: |
+    /* BeckCloud brand overlay - Ember Gold on Gunmetal
+       tokens: docs/brand/brand-tokens.css */
+    :root {
+      --bc-ember: #e8a838;
+      --bc-ember-dark: #b87f1e;
+      --bc-violet: #7c5cfc;
+      --bc-coral: #ff6b4a;
+      --bc-gunmetal: #0f1729;
+      --bc-slate: #1e293b;
+    }
+    ::selection { background: var(--bc-ember); color: var(--bc-gunmetal); }
+    a:hover { color: var(--bc-ember); }
+    input:focus-visible,
+    select:focus-visible,
+    textarea:focus-visible,
+    a:focus-visible,
+    [role="button"]:focus-visible {
+      outline: 2px solid var(--bc-ember);
+      outline-offset: 1px;
+    }
+    .react-select__control--is-focused {
+      border-color: var(--bc-ember) !important;
+      box-shadow: 0 0 0 1px var(--bc-ember-dark) !important;
+    }

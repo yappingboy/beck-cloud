@@ -113,21 +113,16 @@ spec:
           auto_assign_org_role: Admin
         paths:
           custom_css: /etc/grafana/beckcloud.css
-      # BeckCloud brand accent overlay; tokens: docs/brand/brand-tokens.css
-      extraFiles:
-        beckcloud.css: |
-          /* BeckCloud brand overlay for Grafana — Ember Gold accent, gunmetal depth */
-          :root {
-            --bc-ember: #e8a838;
-            --bc-violet: #7c5cfc;
-            --bc-coral: #ff6b4a;
-            --bc-space: #0f1729;
-          }
-          header { border-bottom: 2px solid var(--bc-ember); }
-          ::selection { background: var(--bc-ember); color: var(--bc-space); }
-          a:hover { color: var(--bc-ember); }
-          input:focus-visible, select:focus-visible, textarea:focus-visible {
-            outline-color: var(--bc-ember);
-          }
+      # Brand CSS lives in grafana-brand-css.yaml (same directory) and is
+      # mounted at the paths.custom_css location. tokens: docs/brand/brand-tokens.css
+      extraVolumes:
+        - name: beckcloud-brand-css
+          configMap:
+            name: grafana-brand-css
+      extraVolumeMounts:
+        - name: beckcloud-brand-css
+          mountPath: /etc/grafana/beckcloud.css
+          subPath: beckcloud.css
+          readOnly: true
       ingress:
         enabled: false
