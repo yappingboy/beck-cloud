@@ -1,0 +1,44 @@
+/* BeckCloud shared brand tokens — single source of truth.
+ * Source of record: docs/brand/COLORS.md. Per-service themes import these
+ * values; regenerate service overlays from this file, don't fork hexes.
+ *
+ * Consumers (2026-11-23):
+ *   - Keycloak login:  apps-source/keycloak-theme/beckcloud/login/resources/css/beckcloud.css
+ *   - Grafana:         flux/infrastructure/monitoring/monitoring-app/kube-prometheus-stack.yaml (extraFiles)
+ *   - Directus:        settings API (custom_* color fields; see apps-source/scripts/brand-services.md)
+ */
+
+:root {
+  /* Primary palette */
+  --bc-ember: #e8a838;        /* Ember Gold — THE brand color */
+  --bc-ember-dark: #b87f1e;   /* hover/pressed */
+  --bc-violet: #7c5cfc;       /* Violet Haze — "infrastructure" accent */
+  --bc-coral: #ff6b4a;        /* Coral Pulse — use sparingly, demands attention */
+
+  /* Status */
+  --bc-success: #4ade80;      /* Greenlight */
+  --bc-warning: #fbbf24;      /* Amber (status, not brand) */
+  --bc-error: #ef4444;        /* Red Alert */
+
+  /* Neutrals (dark-first) */
+  --bc-space: #0f1729;        /* Deep Space — deepest background */
+  --bc-gunmetal: #1e293b;     /* Gunmetal — panels */
+  --bc-gunmetal-2: #283548;   /* elevated surfaces */
+  --bc-steel: #334155;        /* Steel — borders */
+  --bc-slate: #475569;        /* muted UI */
+  --bc-cloud: #94a3b8;        /* Cloud — muted text (AA on gunmetal: large text only) */
+  --bc-text: #e2e8f0;         /* body text on dark */
+
+  /* Typography */
+  --bc-font-ui: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bc-font-mono: "JetBrains Mono", ui-monospace, "Fira Code", monospace;
+
+  /* Shape & rhythm */
+  --bc-radius: 8px;
+  --bc-radius-sm: 4px;
+  --bc-space-1: 4px;
+  --bc-space-2: 8px;
+  --bc-space-3: 16px;
+  --bc-space-4: 24px;
+  --bc-space-5: 40px;
+}
