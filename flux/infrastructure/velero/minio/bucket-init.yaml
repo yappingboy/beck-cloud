@@ -11,7 +11,9 @@ spec:
       restartPolicy: Never
       containers:
         - name: mc
-          image: quay.io/minio/mc:RELEASE.2025-08-13T08-35-41Z
+          # quay.io/minio/mc is now auth-gated for anonymous pulls (401).
+          # The minio server image bundles /usr/bin/mc and is cached on our nodes.
+          image: quay.io/minio/minio:RELEASE.2025-06-13T11-33-47Z
           imagePullPolicy: IfNotPresent
           command:
             - /bin/sh
