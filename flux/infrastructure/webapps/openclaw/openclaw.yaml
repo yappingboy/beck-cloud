@@ -37,7 +37,11 @@ spec:
     - match: Host(`nova.becklab.cloud`)
       kind: Rule
       middlewares:
-        - name: sso-admin-chain
+        # no-auth-header variant: sso-admin-chain forwards oauth2-proxy's
+        # Authorization header, clobbering the gateway token the Control UI
+        # sends for native plugin page assets (/__openclaw__/plugins/...),
+        # so the Workboard tab's module fetch 401s at the gateway.
+        - name: sso-admin-chain-no-auth-header
           namespace: identity
       services:
         - name: openclaw-gateway
