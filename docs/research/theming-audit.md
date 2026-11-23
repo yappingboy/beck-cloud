@@ -133,3 +133,19 @@ Built ConfigMap from `apps-source/keycloak-theme/beckcloud/`, mounted it in a th
 - **B. Full template theme (high effort):** fix `theme.properties` inheritance, rework `template.ftl` to also export base-compatible `registrationLayout`, rename all pages to canonical names, then re-test every flow in the canary (login, forgot, OTP, WebAuthn, consent, register, logout-confirm, error).
 
 Canary harness (reusable): ConfigMap `items[].path` mount + pod spec approach documented; prod deployment was never modified.
+
+## 2026-11-23 RESOLVED: CSS-only theme (Option A) deployed to production
+Theme rebuilt as `parent=keycloak.v2` with **zero .ftl overrides**; branding via
+`login/resources/css/beckcloud.css` (Ember Gold `--pf-t--global--color--brand--*` tokens,
+gunmetal hero, logo lockup over `#kc-header-wrapper`). Broken template set preserved
+under `apps-source/keycloak-theme/_archive-templates/` for a future Option-B rework.
+- Wiring: `flux/infrastructure/identity/keycloak/theme-configmap.yaml` (regenerate with
+  `apps-source/keycloak-theme/build-theme.sh`) mounted at `/opt/keycloak/themes/beckcloud`
+  in the Flux Deployment. Realm `homelab` already had `loginTheme=beckcloud` — mount activates it.
+- Canary gate (throwaway KC26, same ConfigMap): login/reset-credentials/error pages 200, assets 200.
+- Prod verification (main @ 43ad876, rollout complete): login 200 renders
+  `/resources/<v>/login/beckcloud/css/{styles,beckcloud}.css` (v2 fallback refs = 0),
+  logo 200 at `.../login/beckcloud/images/beckcloud-logo.svg` (CSS-relative `../images/`),
+  failed-login re-render 200 + branded, nova-monitoring token grant still OK.
+- Deploy sidequest: Flux `infrastructure` Kustomization was blocked by stale completed
+  `velero/minio-make-bucket` Job (immutable `spec.template`); deleted Job, sync unblocked.
