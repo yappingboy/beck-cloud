@@ -544,3 +544,77 @@
 .service-card[data-category="infrastructure"] { --card-accent: #7C5CFC; }
 
 .card-status { display: inline-flex; align-items: center; gap: 0.75rem; }
+
+/* ============================================================
+   PUBLIC DIRECTORY — status badges, sort, request links
+   (consolidated 2026-11-28; supersedes earlier patches)
+   ============================================================ */
+.sort-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-shrink: 0;
+}
+.sort-wrap .sort-label {
+  font-family: var(--font-heading);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  color: var(--text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+.sort-select {
+  font-family: var(--font-heading);
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.4375rem 2rem 0.4375rem 0.75rem;
+  background: var(--bg-secondary) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%2364748B' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat right 0.625rem center;
+  border: 1px solid var(--border-default);
+  border-radius: 8px;
+  color: var(--text-primary);
+  appearance: none;
+  -webkit-appearance: none;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.sort-select:focus {
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(232, 168, 56, 0.12);
+}
+
+.status-badge.down {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.status-badge.down .status-dot { background: #EF4444; }
+
+.status-badge.checking {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-tertiary);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.status-badge.checking .status-dot {
+  background: var(--text-tertiary);
+  animation: bc-pulse 1.2s ease-in-out infinite;
+}
+@keyframes bc-pulse { 50% { opacity: 0.35; } }
+
+.status-badge.unknown {
+  background: transparent;
+  color: var(--text-tertiary);
+  border: 1px solid var(--border-subtle);
+}
+.status-badge.unknown .status-dot { background: var(--text-tertiary); opacity: 0.5; }
+
+/* Request-access link variant (services behind SSO) */
+.card-link.request { color: var(--brand-secondary); }
+.card-link.request:hover { color: var(--brand-primary); }
+
+/* Category accents — public directory palette (brand: color is signal) */
+.service-card[data-category="tools"]          { --card-accent: #E8A838; }
+.service-card[data-category="media"]          { --card-accent: #FF6B4A; }
+.service-card[data-category="identity"]       { --card-accent: #4ADE80; }
+.service-card[data-category="infrastructure"] { --card-accent: #38BDF8; }

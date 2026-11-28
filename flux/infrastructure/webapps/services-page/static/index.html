@@ -35,15 +35,15 @@
       <nav aria-label="Primary navigation">
         <ul class="nav-links" id="nav-links">
           <li><a href="https://becklab.cloud/#what">What It Does</a></li>
-          <li><a href="https://services.becklab.cloud/">Services</a></li>
+          <li><a href="/services/">Services</a></li>
           <li><a href="https://becklab.cloud/#pricing">Pricing</a></li>
           <li><a href="https://becklab.cloud/#about">About</a></li>
         </ul>
       </nav>
 
       <div class="nav-actions">
-        <a href="https://services.becklab.cloud/" class="btn-ghost" aria-current="page">Directory</a>
-        <a href="https://becklab.cloud/" class="btn-ghost">Home</a>
+        <a href="/services/" class="btn-ghost" aria-current="page">Directory</a>
+        <a href="https://becklab.cloud/portal" class="btn-ghost">User Profile</a>
         <a href="mailto:contact@beckcloud.cloud" class="btn-primary-sm">Request Account</a>
         <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
           <span></span><span></span><span></span>
@@ -62,7 +62,7 @@
         </div>
         <h1>Service <span class="gradient-text">Directory</span></h1>
         <p class="page-subtitle">Everything running on BeckCloud you can touch. Public services show a live status dot — the rest are behind SSO with a request-access link.</p>
-        <p class="page-meta"><span id="result-count">0 services</span> · Sorted alphabetically · Filter by category below</p>
+        <p class="page-meta"><span id="result-count">16 services</span> · 10 open, 6 by request · status probed live from inside the cluster</p>
       </div>
     </section>
 
@@ -80,7 +80,6 @@
           <button class="filter-pill" data-filter="identity">Identity</button>
           <button class="filter-pill" data-filter="infrastructure">Infrastructure</button>
         </div>
-        </div>
         <div class="sort-wrap">
           <label class="sort-label" for="sort-select">Sort</label>
           <select id="sort-select" class="sort-select">
@@ -90,6 +89,18 @@
         </div>
       </div>
     </section>
+
+    <!-- ========== DIRECTORY ========== -->
+    <section class="services-directory">
+      <div class="container">
+        <div class="services-grid-full" id="services-grid">
+
+          <!-- Cards are alphabetized by title. data-visibility: public | internal.
+               Live status: js/status.js hits same-origin /ping/<key> endpoints
+               served by this page's nginx (see nginx.conf). -->
+
+          <article class="service-card" data-category="media" data-visibility="public" data-status-key="jellyfin">
+            <div class="card-top"><div class="card-icon">🎬</div><div class="card-header"><h3 class="card-title">Jellyfin</h3><div class="card-host"><a href="https://jellyfin.becklab.cloud" target="_blank" rel="noopener">jellyfin.becklab.cloud</a></div></div></div>
             <p class="card-body">Free-software media streaming. Movies, shows, and music without a subscription tax.</p>
             <div class="card-footer"><span class="card-category">Media</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://jellyfin.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
           </article>
@@ -184,6 +195,11 @@
             <div class="card-footer"><span class="card-category">Infrastructure</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link request" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Nova%20Console">Request access →</a></span></div>
           </article>
 
+          <article class="empty-state" id="empty-state" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <p>No services match that filter. Try fewer words.</p>
+          </article>
+
         </div>
       </div>
     </section>
@@ -202,7 +218,7 @@
         </div>
         <div class="footer-links">
           <a href="https://becklab.cloud/">Home</a>
-          <a href="https://services.becklab.cloud/">Services</a>
+          <a href="/services/">Services</a>
           <a href="mailto:contact@beckcloud.cloud">contact@beckcloud.cloud</a>
         </div>
       </div>

@@ -74,6 +74,33 @@
     showInternal.addEventListener("change", filterCards);
   }
 
+  /* Sort: alphabetical, or category-then-alphabetical */
+  var sortSelect = document.getElementById("sort-select");
+  var CAT_ORDER = ["media", "tools", "identity", "infrastructure"];
+
+  function applySort(mode) {
+    var grid = document.getElementById("services-grid");
+    if (!grid) return;
+    var cards = Array.prototype.slice.call(grid.querySelectorAll(".service-card"));
+    cards.sort(function (a, b) {
+      var na = (a.querySelector(".card-title") || {}).textContent || "";
+      var nb = (b.querySelector(".card-title") || {}).textContent || "";
+      na = na.trim().toLowerCase(); nb = nb.trim().toLowerCase();
+      if (mode === "category") {
+        var ca = CAT_ORDER.indexOf(a.getAttribute("data-category"));
+        var cb = CAT_ORDER.indexOf(b.getAttribute("data-category"));
+        if (ca !== cb) return ca - cb;
+      }
+      return na < nb ? -1 : na > nb ? 1 : 0;
+    });
+    cards.forEach(function (c) { grid.appendChild(c); });
+  }
+
+  if (sortSelect) {
+    sortSelect.addEventListener("change", function () { applySort(sortSelect.value); });
+    applySort(sortSelect.value || "category");
+  }
+
   /* Scroll-reveal (matches landing page) */
   if ("IntersectionObserver" in window) {
     var reveals = document.querySelectorAll(".reveal");
