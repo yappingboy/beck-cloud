@@ -22,9 +22,23 @@
 
 #### 1. Grafana (`grafana.becklab.cloud`)
 - **Auth:** SSO via oauth2-proxy (Keycloak login already branded ✅)
-- **Current theme:** Default kube-prometheus-stack Grafana theme (dark mode built-in but generic)
-- **What needs it:** Brand colors (Ember Gold for highlights, Violet Haze for secondary), custom CSS injected via Grafana custom.ini
-- **Complexity:** Medium — Grafana's custom CSS is limited but doable. Color overrides for panels, nav, sidebar.
+- **Current theme:** Stock Grafana 11.2.2 dark theme
+- **Verdict (2026-11-28): NOT themeable by config.** The `paths.custom_css`
+  option was removed upstream in Grafana 11, so the obvious hook does not exist:
+  - `grep custom_css /usr/share/grafana/conf/defaults.ini` → no match
+  - `strings bin/grafana | grep -ci custom_css` → `0`
+  - with `custom_css = /usr/share/grafana/public/beckcloud.css` set in
+    `grafana.ini`, the file served fine (`GET /public/beckcloud.css` → `200`,
+    678 bytes) but the app shell emitted no `<link>` for it, and
+    `/api/admin/settings` reported `paths keys: []`. Grafana ignored the setting.
+  - Only supported knob in OSS is `users.default_theme` (light | dark). Real
+    white-labelling is an Enterprise feature.
+- **What it would take:** proxy-side HTML rewrite to inject the `<link>`. Traefik
+  cannot rewrite response bodies, so this needs an added hop (nginx/envoy
+  sub_filter). Deliberately not done; the dead `custom_css` wiring was reverted
+  so the repo does not lie about having a brand hook.
+- **Complexity:** High, for a nav-bar accent. Park unless brand parity is a
+  hard requirement.
 
 #### 2. Directus (`cms.becklab.cloud`)
 - **Auth:** SSO via oauth2-proxy
@@ -112,7 +126,10 @@ Rather than rewriting CSS in every service, create a **shared design token syste
 
 ### Technical Notes
 
-- Grafana: Use `grafana.ini` → `custom.css_file` pointing to mounted theme CSS
+- Grafana: **no custom-CSS hook in v11** (see the Grafana section above). Do not
+  re-add `paths.custom_css`; it is silently ignored. Use
+  `docs/brand/brand-tokens.css` as the palette source for services that *do*
+  accept CSS.
 - Directus: Create `@directus-extension/theme-custom` or use `DIRECTUS_BRAND_COLOR` env vars + custom CSS via admin settings
 - Traefik: Modify `traefik.yaml` dashboard static config, add custom CSS via `--api.dashboard=true` + custom template
 - Hubble: Override Hubble's CSS via Traefik `headers` middleware + custom response

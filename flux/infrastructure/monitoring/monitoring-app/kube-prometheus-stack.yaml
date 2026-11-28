@@ -111,20 +111,9 @@ spec:
         users:
           auto_assign_org: true
           auto_assign_org_role: Admin
-        paths:
-          # Must live under static_root_path (/usr/share/grafana/public);
-          # Grafana serves it as /public/beckcloud.css and links it in the app shell.
-          custom_css: /usr/share/grafana/public/beckcloud.css
-      # Brand CSS lives in grafana-brand-css.yaml (same directory) and is
-      # mounted at the paths.custom_css location. tokens: docs/brand/brand-tokens.css
-      extraVolumes:
-        - name: beckcloud-brand-css
-          configMap:
-            name: grafana-brand-css
-      extraVolumeMounts:
-        - name: beckcloud-brand-css
-          mountPath: /usr/share/grafana/public/beckcloud.css
-          subPath: beckcloud.css
-          readOnly: true
+      # NOTE: no brand CSS here on purpose. Grafana OSS 11.2.2 dropped
+      # paths.custom_css (absent from conf/defaults.ini and the grafana
+      # binary), so any custom_css wiring here is silently dead.
+      # See docs/research/theming-audit.md before retrying.
       ingress:
         enabled: false
