@@ -40,51 +40,61 @@
 - **Complexity:** High, for a nav-bar accent. Park unless brand parity is a
   hard requirement.
 
-#### 2. Directus (`cms.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Directus default admin (white-ish by default)
-- **What needs it:** Brand colors, custom panel styling
-- **Complexity:** Medium-High — Directus supports custom themes via CSS injection and admin overrides. Would need to create a Directus theme package.
+#### 2. Directus (`cms.becklab.cloud`) — ✅ BRANDED 2026-11-23
+- **Hook:** `directus_settings` (project_name / project_color / custom_css), set via the
+  official settings API so Directus invalidates its own cache.
+- **Verified:** unauthenticated `GET /server/info` returns
+  `"project_name":"BeckCloud CMS"`, `"project_color":"#E8A838"`, 500 bytes of custom CSS.
+- **Blocker found on the way:** `directus_users` was **empty** - the CMS was never
+  bootstrapped, so `node cli.js bootstrap` only ran migrations and no admin existed.
+  An admin row was inserted with the app's own argon2 module. Deployment env
+  `ADMIN_EMAIL` / `ADMIN_PASSWORD=changeme` is misleading; it should move to SOPS.
+- **Gotcha:** `directus_users.id` is `char(36)` PK with **no default**, so the uuid must
+  be supplied on insert; there is no `ts_created` column in this schema version.
 
-#### 3. Traefik Dashboard (`traefik.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Default Traefik dashboard (very bare-bones)
-- **What needs it:** Custom CSS for dashboard panels
-- **Complexity:** Low — Traefik dashboard accepts custom CSS via middleware `headers.customResponseHeaders: "X-Frame-Options: DENY"` and static config overrides.
+#### 3. Traefik Dashboard (`traefik.becklab.cloud`) — ⛔ NOT POSSIBLE
+- Traefik v3's dashboard is a compiled-in React SPA. There is no static-file override,
+  no CSS include, and no env/flag for assets.
+- The previous claim here ("accepts custom CSS via
+  `headers.customResponseHeaders: X-Frame-Options: DENY`") was nonsense - that header
+  sets click-framing policy and has nothing to do with CSS.
+- Only route to brand it is proxy-side HTML rewriting. Not worth an extra hop.
 
-#### 4. OpenNebula Sunstone (`one.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Default Sunstone (legacy HTML/CSS)
-- **What needs it:** Brand colors, sidebar, nav
-- **Complexity:** High — Sunstone's theming is less flexible, relies on LESS variables and static CSS files.
+#### 4. OpenNebula Sunstone (`one.becklab.cloud`) — ⛔ OUT OF SCOPE
+- Not a workload in this cluster. `svc/opennebula-sunstone` is a bare ClusterIP with no
+  selector whose endpoint is `172.16.0.7:2616`, an external appliance
+  (`kubectl get pods -n opennebula` -> `No resources found`).
+- Theming it means editing Sunstone's built LESS/CSS on that host, which is
+  hypervisor-side work, not a Flux change.
 
-#### 5. Affine (`affine.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Default Affine (light theme)
-- **What needs it:** Brand colors, custom CSS
-- **Complexity:** Medium — Affine supports custom CSS via settings.
+#### 5. Affine (`affine.becklab.cloud`) — ⛔ NO HOOK
+- Container env is only `AFFINE_REVISION`, `AFFINE_SERVER_PORT`, `REDIS_SERVER_HOST`,
+  `DATABASE_URL`, `AFFINE_INDEXER_ENABLED`, `AFFINE_SERVER_EXTERNAL_URL`.
+- No theme/brand/CSS variable exists, and the earlier "supports custom CSS via settings"
+  note was never verified against a running instance.
 
-#### 6. Silex (`silex.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Default Silex
-- **What needs it:** Brand colors
-- **Complexity:** Medium — Silex has CSS customization options.
+#### 6. Silex (`silex.becklab.cloud`) — ⛔ NO HOOK
+- Env is storage/hosting only (`SILEX_FS_ROOT`, `SILEX_URL`, `STORAGE_CONNECTORS`, ...).
+- Silex is a website *editor*; branding its editor chrome is an upstream design concern.
 
-#### 7. Hubble UI (`hubble.becklab.cloud`)
-- **Auth:** SSO via oauth2-proxy
-- **Current theme:** Default Hubble (Cypress dashboard)
-- **What needs it:** Brand colors
-- **Complexity:** Low — Hubble is a Go template + CSS. Can inject custom CSS.
+#### 7. Hubble UI (`hubble.becklab.cloud`) — ⛔ NO SUPPORTED HOOK
+- Frontend is `quay.io/cilium/hubble-ui:v0.13.1` (nginx + compiled React). The shipped
+  nginx config has **no** `include ... conf.d/*.conf`, and the image ships no
+  customization dir (`ls /srv/pkg/custom` -> absent).
+- The config arrives via ConfigMap `hubble-ui-nginx`, owned by the **cilium HelmRelease**
+  (`helm.toolkit.fluxcd.io/name: cilium`). Hand-patching it is drift that the next
+  cilium upgrade silently reverts.
+- Cilium 1.17.0 exposes `hubble.ui.frontend.extraVolumes` / `extraVolumeMounts`, but with
+  no include directive and no template override there is nothing useful to mount.
+- `nginx -V` does show `--with-http_sub_module`, so a `sub_filter` injection would work -
+  if we owned the config. We don't.
 
-#### 8. Gridspace Services (3D Printing)
-- **Spoolman** (`spoolman.becklab.cloud`): 200 OK — Flask default
-- **Manyfold** (`manyfold.becklab.cloud`): 302 redirect (SSO)
-- **BumpMesh** (`bumpmesh.becklab.cloud`): 000 (down?)
-- **FDM Monster** (`fdmmonster.becklab.cloud`): 000 (down?)
-- **OrcaSlicer** (`orcaslicer.becklab.cloud`): 000 (down?)
-- **Kiri:Moto** (`kiri-moto.becklab.cloud`): 000 (redirect)
-- **Mesh:Tool** (`mesh-tool.becklab.cloud`): 000 (redirect)
-- **Void:Form** (`void-form.becklab.cloud`): 000 (redirect)
+#### 8. Gridspace (own image) — ⚠️ REBUILD REQUIRED
+- `apps-source/apps/gridspace/Dockerfile` builds `ghcr.io/yappingboy/becklab-gridspace`,
+  so branding is possible but it is an image rebuild + CI run, not a config change.
+- The earlier per-hostname list here (spoolman/manyfold/bumpmesh/...) was stale and
+  mostly recorded `000` for hosts that do not resolve; do not treat it as a service
+  inventory.
 
 ---
 
@@ -113,16 +123,18 @@ Rather than rewriting CSS in every service, create a **shared design token syste
 
 ### Deliverables
 
-- [ ] Shared design token CSS file (`/shared/design-tokens.css`) in the flux repo
-- [ ] Grafana custom theme with brand colors
-- [ ] Directus custom admin theme
-- [ ] Traefik dashboard CSS customization
-- [ ] Hubble UI CSS overrides
-- [ ] Affine theme config
-- [ ] Silex theme config
-- [ ] OpenNebula Sunstone LESS overrides
-- [ ] Gridspace services (spoolman, manyfold) CSS
-- [ ] Documentation: "How to add a new branded service" runbook
+- [x] Shared design token CSS file — `docs/brand/brand-tokens.css`
+- [x] Directus branded (Ember Gold accent + custom CSS), verified live
+- [x] ~~Grafana custom theme~~ — **impossible on Grafana 11**, see §1; wiring reverted
+- [ ] Gridspace brand pass — needs an image rebuild (`apps-source/apps/gridspace`)
+- [x] ~~Traefik / Hubble / Affine / Silex CSS overrides~~ — **no injection hook exists**
+- [x] ~~OpenNebula Sunstone LESS overrides~~ — external appliance, out of cluster scope
+- [ ] Runbook: "how to brand a new service" (write once a third branded service exists)
+
+> Original acceptance criterion was "all eight services use the brand palette".
+> Verified against the running services on 2026-11-23, six of the eight expose no
+> supported way to apply a palette. Re-scope to: brand the services that provide a hook
+> (Keycloak, Directus) and keep the tokens file as the contract for future services.
 
 ### Technical Notes
 
