@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="BeckCloud services directory — every public service on the cluster, with live status. Built by one, running for all.">
+  <meta name="theme-color" content="#0F1729">
+  <meta name="robots" content="index, follow">
+  <title>Services — BeckCloud</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="services.css">
+</head>
+<body>
+
+  <div class="noise" aria-hidden="true"></div>
+
+  <!-- ========== HEADER ========== -->
+  <header class="site-header" id="site-header">
+    <div class="container nav-inner">
+      <a href="https://becklab.cloud/" class="nav-logo" aria-label="BeckCloud home">
+        <svg class="logo-mark" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z"
+                fill="none" stroke="currentColor" stroke-width="20"/>
+          <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130
+                   C95,130 88,120 85,105 C82,90 92,75 100,65 Z"
+                fill="currentColor"/>
+        </svg>
+        <span class="wordmark">Beck<span class="gradient-text">Cloud</span></span>
+      </a>
+
+      <nav aria-label="Primary navigation">
+        <ul class="nav-links" id="nav-links">
+          <li><a href="https://becklab.cloud/#what">What It Does</a></li>
+          <li><a href="/services/">Services</a></li>
+          <li><a href="https://becklab.cloud/#pricing">Pricing</a></li>
+          <li><a href="https://becklab.cloud/#about">About</a></li>
+        </ul>
+      </nav>
+
+      <div class="nav-actions">
+        <a href="/services/" class="btn-ghost" aria-current="page">Directory</a>
+        <a href="https://becklab.cloud/portal" class="btn-ghost">User Profile</a>
+        <a href="mailto:contact@beckcloud.cloud" class="btn-primary-sm">Request Account</a>
+        <button class="hamburger" id="nav-toggle" aria-label="Toggle navigation" aria-expanded="false">
+          <span></span><span></span><span></span>
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- ========== PAGE HEADER ========== -->
+    <section class="services-page-header">
+      <div class="page-bg" aria-hidden="true"><div class="grid-overlay"></div><div class="page-glow"><div class="page-glow-1"></div><div class="page-glow-2"></div></div></div>
+      <div class="container header-content">
+        <div class="page-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        </div>
+        <h1>Service <span class="gradient-text">Directory</span></h1>
+        <p class="page-subtitle">Everything running on BeckCloud you can touch. Public services show a live status dot — the rest are behind SSO with a request-access link.</p>
+        <p class="page-meta"><span id="result-count">0 services</span> · Sorted alphabetically · Filter by category below</p>
+      </div>
+    </section>
+
+    <!-- ========== TOOLBAR ========== -->
+    <section class="services-toolbar">
+      <div class="container toolbar-inner">
+        <div class="search-wrap">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          <input type="search" id="service-search" class="search-input" placeholder="Search services…" aria-label="Search services">
+        </div>
+        <div class="filter-pills" role="group" aria-label="Filter by category">
+          <button class="filter-pill active" data-filter="all">All</button>
+          <button class="filter-pill" data-filter="media">Media</button>
+          <button class="filter-pill" data-filter="tools">Tools</button>
+          <button class="filter-pill" data-filter="identity">Identity</button>
+          <button class="filter-pill" data-filter="infrastructure">Infrastructure</button>
+        </div>
+        <div class="status-toggle">
+          <label><input type="checkbox" id="show-internal"><span>Show internal services</span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- ========== DIRECTORY ========== -->
+    <section class="services-directory">
+      <div class="container">
+        <div class="services-grid-full" id="services-grid">
+
+          <!-- Cards are alphabetized by title. data-visibility: public | internal.
+               Live status: js/status.js hits same-origin /ping/<key> endpoints
+               served by this page's nginx (see nginx.conf). -->
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🎵</div><div class="card-header"><h3 class="card-title">Audio Books</h3><div class="card-host">audio.becklab.cloud</div></div></div>
+            <p class="card-body">Audiobook library and streaming player. Pick up any book exactly where you left off.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Audio%20Books">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">📚</div><div class="card-header"><h3 class="card-title">Books (Calibre-Web)</h3><div class="card-host">books.becklab.cloud</div></div></div>
+            <p class="card-body">E-book library on top of Calibre. Read in the browser, send to your e-reader.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Calibre-Web">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🖥️</div><div class="card-header"><h3 class="card-title">CADAM</h3><div class="card-host">cadam.becklab.cloud</div></div></div>
+            <p class="card-body">CAD workbench for parametric part design, hosted in the cluster.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20CADAM">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">✏️</div><div class="card-header"><h3 class="card-title">CMS (Directus)</h3><div class="card-host">cms.becklab.cloud</div></div></div>
+            <p class="card-body">Headless CMS. API-first content management powering BeckCloud web properties.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Directus%20CMS">Request access →</a></div>
+          </article>
+
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🏠</div><div class="card-header"><h3 class="card-title">Home Assistant</h3><div class="card-host">ha.becklab.cloud</div></div></div>
+            <p class="card-body">Smart home control plane. Local-first automation for every light, lock, and sensor.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Home%20Assistant">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">📦</div><div class="card-header"><h3 class="card-title">Homebox</h3><div class="card-host">homebox.becklab.cloud</div></div></div>
+            <p class="card-body">Inventory and asset tracker. Every cable, drive, and dongle has a home here.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Homebox">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🍿</div><div class="card-header"><h3 class="card-title">Jellyseerr</h3><div class="card-host">requests.becklab.cloud</div></div></div>
+            <p class="card-body">Request and discover movies and shows; feeds the media automation pipeline.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Jellyseerr">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="public" data-status-key="jellyfin">
+            <div class="card-top"><div class="card-icon">🎬</div><div class="card-header"><h3 class="card-title">Jellyfin</h3><div class="card-host"><a href="https://jellyfin.becklab.cloud" target="_blank" rel="noopener">jellyfin.becklab.cloud</a></div></div></div>
+            <p class="card-body">Free-software media streaming. Movies, shows, and music without a subscription tax.</p>
+            <div class="card-footer"><span class="card-category">Media</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://jellyfin.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🖨️</div><div class="card-header"><h3 class="card-title">Manyfold</h3><div class="card-host">manyfold.becklab.cloud</div></div></div>
+            <p class="card-body">3D model library and asset manager for the print collection.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Manyfold">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">📡</div><div class="card-header"><h3 class="card-title">Newznab Index (Spotweb)</h3><div class="card-host">spotweb.becklab.cloud</div></div></div>
+            <p class="card-body">Self-hosted Usenet index. Spotweb keeps the catalog local.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Spotweb">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">☁️</div><div class="card-header"><h3 class="card-title">OpenNebula</h3><div class="card-host">one.becklab.cloud</div></div></div>
+            <p class="card-body">VM hosting and cloud orchestration. Where the cluster itself is carved.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20OpenNebula">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🔍</div><div class="card-header"><h3 class="card-title">Prometheus</h3><div class="card-host">prometheus.becklab.cloud</div></div></div>
+            <p class="card-body">Metrics collection and alerting. Powers the Grafana dashboards.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Prometheus">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🎼</div><div class="card-header"><h3 class="card-title">Swiparr</h3><div class="card-host">swiparr.becklab.cloud</div></div></div>
+            <p class="card-body">Swipe-style music discovery. Rate tracks, refine your Jellyfin playlists.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Swiparr">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="media" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">📥</div><div class="card-header"><h3 class="card-title">Tdarr</h3><div class="card-host">tdarr.becklab.cloud</div></div></div>
+            <p class="card-body">Distributed media transcode automation. Keeps the library in one codec regime.</p>
+            <div class="card-footer"><span class="card-category">Media</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Tdarr">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="identity" data-visibility="public" data-status-key="bw">
+            <div class="card-top"><div class="card-icon">🔑</div><div class="card-header"><h3 class="card-title">Vaultwarden</h3><div class="card-host"><a href="https://bw.becklab.cloud" target="_blank" rel="noopener">bw.becklab.cloud</a></div></div></div>
+            <p class="card-body">Self-hosted Bitwarden-compatible password vault. Zero third-party servers.</p>
+            <div class="card-footer"><span class="card-category">Identity</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://bw.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <!-- ============ MICRO TOOLS ============
+               Individual *.tools.becklab.cloud APIs expose no root page (their hub
+               is tools.becklab.cloud), so this directory links the hub only. -->
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="tools-hub">
+            <div class="card-top"><div class="card-icon">🧰</div><div class="card-header"><h3 class="card-title">BeckCloud Tools</h3><div class="card-host"><a href="https://tools.becklab.cloud" target="_blank" rel="noopener">tools.becklab.cloud</a></div></div></div>
+            <p class="card-body">Micro utilities hub: hashing, URL shortening, QR codes, format conversion, cron pings, webhooks, and more. No tracking, no accounts.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://tools.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="beckflow">
+            <div class="card-top"><div class="card-icon">⚡</div><div class="card-header"><h3 class="card-title">BeckFlow</h3><div class="card-host"><a href="https://beckflow.tools.becklab.cloud" target="_blank" rel="noopener">beckflow.tools.becklab.cloud</a></div></div></div>
+            <p class="card-body">Workflow automation gateway. Connect services, automate tasks.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://beckflow.tools.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="bump">
+            <div class="card-top"><div class="card-icon">🧊</div><div class="card-header"><h3 class="card-title">BumpMesh</h3><div class="card-host"><a href="https://bump.becklab.cloud" target="_blank" rel="noopener">bump.becklab.cloud</a></div></div></div>
+            <p class="card-body">Browser-based 3D mesh processing and manipulation. No install, no upload queue.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://bump.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="crafty">
+            <div class="card-top"><div class="card-icon">⛏️</div><div class="card-header"><h3 class="card-title">Crafty Panel</h3><div class="card-host"><a href="https://crafty.becklab.cloud" target="_blank" rel="noopener">crafty.becklab.cloud</a></div></div></div>
+            <p class="card-body">Minecraft server panel. Log in with a server account to manage your world.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://crafty.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">📊</div><div class="card-header"><h3 class="card-title">Grafana</h3><div class="card-host">grafana.becklab.cloud</div></div></div>
+            <p class="card-body">Infrastructure metrics, service health, and every dashboard you wished Netflix had.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Grafana">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🏠</div><div class="card-header"><h3 class="card-title">Homepage</h3><div class="card-host">home.becklab.cloud</div></div></div>
+            <p class="card-body">Internal operator dashboard for the whole cluster.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Homepage">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🕸️</div><div class="card-header"><h3 class="card-title">Hubble</h3><div class="card-host">hubble.becklab.cloud</div></div></div>
+            <p class="card-body">Cluster network observability. Watch every packet question get answered.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Hubble">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="kiri">
+            <div class="card-top"><div class="card-icon">📐</div><div class="card-header"><h3 class="card-title">Kiri:Moto</h3><div class="card-host"><a href="https://kiri.becklab.cloud" target="_blank" rel="noopener">kiri.becklab.cloud</a></div></div></div>
+            <p class="card-body">3D modeling, slicing, and CAM in the browser. Gridspace sub-app.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://kiri.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="knit-studio">
+            <div class="card-top"><div class="card-icon">🧶</div><div class="card-header"><h3 class="card-title">Knit Studio</h3><div class="card-host"><a href="https://knit-studio.tools.becklab.cloud" target="_blank" rel="noopener">knit-studio.tools.becklab.cloud</a></div></div></div>
+            <p class="card-body">Knitting chart viewer, editor, and pattern library.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://knit-studio.tools.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="knit">
+            <div class="card-top"><div class="card-icon">🧶</div><div class="card-header"><h3 class="card-title">Knitting Slicer</h3><div class="card-host"><a href="https://knit.tools.becklab.cloud" target="_blank" rel="noopener">knit.tools.becklab.cloud</a></div></div></div>
+            <p class="card-body">Turn knitting charts into machine-ready instructions.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://knit.tools.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="meals">
+            <div class="card-top"><div class="card-icon">🍳</div><div class="card-header"><h3 class="card-title">Meal Planner</h3><div class="card-host"><a href="https://meals.becklab.cloud" target="_blank" rel="noopener">meals.becklab.cloud</a></div></div></div>
+            <p class="card-body">Weekly meal planning with auto-generated shopping lists.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://meals.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="mesh">
+            <div class="card-top"><div class="card-icon">🔧</div><div class="card-header"><h3 class="card-title">Mesh Tool</h3><div class="card-host"><a href="https://mesh.becklab.cloud" target="_blank" rel="noopener">mesh.becklab.cloud</a></div></div></div>
+            <p class="card-body">Gridspace 3D mesh utility. Inspect, repair, and prep models for print.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://mesh.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🤖</div><div class="card-header"><h3 class="card-title">Nova Console</h3><div class="card-host">nova.becklab.cloud</div></div></div>
+            <p class="card-body">The control room for Nova, the AI that runs this cluster. Yes, it knows you're reading this.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Nova">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🎨</div><div class="card-header"><h3 class="card-title">Silex Editor</h3><div class="card-host">silex.becklab.cloud</div></div></div>
+            <p class="card-body">Visual website builder. No code required, no excuses left.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Silex">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🥧</div><div class="card-header"><h3 class="card-title">Slicer</h3><div class="card-host">slicer.becklab.cloud</div></div></div>
+            <p class="card-body">Cloud slicing for FDM printers. Slice from anywhere, print at home.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20Slicer">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="infrastructure" data-visibility="public" data-status-key="supabase">
+            <div class="card-top"><div class="card-icon">🗄️</div><div class="card-header"><h3 class="card-title">Supabase</h3><div class="card-host"><a href="https://supabase.becklab.cloud" target="_blank" rel="noopener">supabase.becklab.cloud</a></div></div></div>
+            <p class="card-body">Self-hosted Postgres with auth, storage, and auto-generated APIs. The cluster's app backend.</p>
+            <div class="card-footer"><span class="card-category">Infrastructure</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://supabase.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="internal">
+            <div class="card-top"><div class="card-icon">🧩</div><div class="card-header"><h3 class="card-title">ToolJet</h3><div class="card-host">tooljet.becklab.cloud</div></div></div>
+            <p class="card-body">Low-code internal tools builder. Dashboards without the Jira ticket.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><a class="card-link request-link" href="mailto:contact@beckcloud.cloud?subject=BeckCloud%20access%20request%3A%20ToolJet">Request access →</a></div>
+          </article>
+
+          <article class="service-card" data-category="tools" data-visibility="public" data-status-key="void">
+            <div class="card-top"><div class="card-icon">🌌</div><div class="card-header"><h3 class="card-title">Void Form</h3><div class="card-host"><a href="https://void.becklab.cloud" target="_blank" rel="noopener">void.becklab.cloud</a></div></div></div>
+            <p class="card-body">Gridspace form utility. Quietly useful, like all the best tools.</p>
+            <div class="card-footer"><span class="card-category">Tools</span><span class="card-status"><span class="status-badge checking"><span class="status-dot"></span>checking</span><a class="card-link" href="https://void.becklab.cloud" target="_blank" rel="noopener">Visit →</a></span></div>
+          </article>
+
+          <article class="empty-state" id="empty-state" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/><line x1="8" y1="11" x2="14" y2="11"/></svg>
+            <p>No services match that filter. Try fewer words.</p>
+          </article>
+
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- ========== FOOTER ========== -->
+  <footer class="site-footer">
+    <div class="container">
+      <div class="footer-inner">
+        <div class="footer-brand">
+          <svg class="footer-logo" viewBox="0 0 200 200" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M100,40 L152,70 L152,130 L100,160 L48,130 L48,70 Z" fill="none" stroke="currentColor" stroke-width="20"/>
+            <path d="M100,65 C108,75 118,90 115,105 C112,120 105,130 100,130 C95,130 88,120 85,105 C82,90 92,75 100,65 Z" fill="currentColor"/>
+          </svg>
+          <p class="footer-tagline">Built by one. Running for all.</p>
+        </div>
+        <div class="footer-links">
+          <a href="https://becklab.cloud/">Home</a>
+          <a href="/services/">Services</a>
+          <a href="mailto:contact@beckcloud.cloud">contact@beckcloud.cloud</a>
+        </div>
+      </div>
+      <p class="footer-copy">© 2026 BeckCloud. Self-hosted, self-healing, mostly self-aware.</p>
+    </div>
+  </footer>
+
+  <script src="services.js"></script>
+  <script src="status.js"></script>
+</body>
+</html>

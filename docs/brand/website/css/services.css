@@ -518,3 +518,29 @@
   .search-wrap { max-width: 100%; }
   .filter-pills { justify-content: center; }
 }
+
+/* ============================================================
+   LIVE STATUS variants (added for /services page, 2026-11-28)
+   ============================================================ */
+.status-badge.down {
+  background: rgba(239, 68, 68, 0.1);
+  color: #EF4444;
+  border: 1px solid rgba(239, 68, 68, 0.25);
+}
+.status-badge.down .status-dot { background: #EF4444; }
+
+.status-badge.checking {
+  background: rgba(148, 163, 184, 0.08);
+  color: var(--text-tertiary);
+  border: 1px solid rgba(148, 163, 184, 0.15);
+}
+.status-badge.checking .status-dot {
+  background: var(--text-tertiary);
+  animation: bc-pulse 1.2s ease-in-out infinite;
+}
+@keyframes bc-pulse { 50% { opacity: 0.35; } }
+
+.service-card[data-category="tools"]          { --card-accent: #60A5FA; }
+.service-card[data-category="infrastructure"] { --card-accent: #7C5CFC; }
+
+.card-status { display: inline-flex; align-items: center; gap: 0.75rem; }
