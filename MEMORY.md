@@ -202,3 +202,11 @@ Agent configs in `agents/` directory. Each has a README.md.
 - nginx serves html/cadam/ (built tree) with SPA fallback /cadam/index.html
 - Gotcha: 'latest' tag + IfNotPresent + Flux 1m sync = race. Pin by digest.
 - Gotcha: vite.config.ts outDir says dist/cadam but nitro emits to .output/public — trust the build log
+
+## 2026-11-28 — Public services page (workboard e3f828cd, done)
+- Services directory live: https://services.becklab.cloud — static nginx + ConfigMap in `flux/infrastructure/webapps/services-page/` (webapps ns). 16 curated cards (10 open, 6 request-access mailto); same-origin `/ping/<key>` endpoints proxy in-cluster health (up=200/down=503). Commits 3666d14..5d9a864 on main.
+- TLS gotcha: inline `tls: certResolver` in IngressRoute does nothing here — cluster convention is a cert-manager `Certificate` + `tls.secretName` (added services-page-tls via certificate.yaml). Symptom: TRAEFIK DEFAULT CERT.
+- nginx config mounted via `subPath` never hot-reloads with ConfigMap changes; static files (non-subPath items) DO. After conf edits: `kubectl -n webapps rollout restart deploy/services-page`.
+- Gridspace incident: kiri/mesh/void 503 — pod CrashLoopBackOff (readiness 404, 90+ restarts); tracked as incident card 0241d831. Services page shows it honestly.
+- Hazard: an owner dashboard session can work the same workboard card concurrently in this workspace (same agent identity, same git tree) — check `git status` mtimes / sessions before assuming sole ownership; converge, don't fork artifacts.
+- Micro-tool hosts (*.tools.becklab.cloud) are API-only; 404 at root by design — public UI is tools.becklab.cloud hub.
