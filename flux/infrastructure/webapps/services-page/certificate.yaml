@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: services-page
+  namespace: webapps
+  labels:
+    app: services-page
+spec:
+  secretName: services-page-tls
+  issuerRef:
+    name: letsencrypt-prod
+    kind: ClusterIssuer
+  commonName: services.becklab.cloud
+  dnsNames:
+    - services.becklab.cloud

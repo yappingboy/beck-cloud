@@ -5,6 +5,7 @@ namespace: webapps
 
 resources:
   - services-page.yaml
+  - certificate.yaml
 
 configMapGenerator:
   - name: services-page-static
